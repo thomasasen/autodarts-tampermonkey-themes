@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.1
+// @version      1.0
 // @description  Show a short up/down arrow animation when AVG changes.
 // @author       Thomas Asen
 // @license      MIT

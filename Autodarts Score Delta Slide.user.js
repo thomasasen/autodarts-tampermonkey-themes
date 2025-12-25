@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Score Delta Slide
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.3
+// @version      1.0
 // @description  Animate turn-point changes with a count-up tween.
 // @author       Thomas Asen
 // @license      MIT

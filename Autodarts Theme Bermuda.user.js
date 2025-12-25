@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Bermuda
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.7
+// @version      1.0
 // @description  Autodarts Theme Bermuda
 // @author       Thomas Asen
 // @license      MIT
@@ -16,12 +16,8 @@
 (function () {
   "use strict";
 
-  const {
-    attachTheme,
-    createCssBuilder,
-    commonThemeCss,
-    commonLayoutCss,
-  } = window.autodartsThemeShared;
+  const { attachTheme, createCssBuilder, commonThemeCss, commonLayoutCss } =
+    window.autodartsThemeShared;
 
   // Style tag identifier und erwarteter Variantenname.
   const STYLE_ID = "autodarts-bermuda-custom-style";

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple, Double and Bull Hits
-// @version      0.6
+// @version      1.0
 // @description  Animate Triple, Double and Bull hits
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*

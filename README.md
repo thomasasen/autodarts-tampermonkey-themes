@@ -1,149 +1,99 @@
 # Autodarts Tampermonkey Themes & Effects
 
-Diese Sammlung enthält mehrere **Tampermonkey-Userscripts** für  
-👉 https://play.autodarts.io
+Visual-only Tampermonkey scripts for https://play.autodarts.io.
+They do not change game logic, scores, or detection.
 
-Der Fokus liegt auf:
-- klarer Lesbarkeit
-- konsistenter Optik
-- automatischer Aktivierung je Spielvariante
-- stabiler Funktion auch bei dynamischen DOM-Änderungen
+## Features
+- Theme scripts that auto-activate by game variant
+- Shared layout/theme helper for consistent styling
+- Optional animation/effect scripts to improve readability
+- MutationObserver-based updates for dynamic DOM changes
 
-**Alle Skripte sind rein visuell.**  
-Sie verändern keine Spielmechanik, keine Scores und keine Erkennung.
-
----
-
-## Inhalte
-
-### 🎯 Themes (variantenspezifisch)
-
-Die Themes aktivieren sich **automatisch**, abhängig von der aktuell gespielten Variante.
-
-| Variante   | Script |
-|-----------|--------|
-| X01       | Autodarts Theme X01 |
-| Cricket   | Autodarts Theme Cricket |
-| Bermuda   | Autodarts Theme Bermuda |
-| Shanghai  | Autodarts Theme Shanghai |
-
-**Gemeinsame Eigenschaften**
-- große, gut lesbare Scores
-- klare Trennung von Spielern, Board und Turn-Info
-- automatische Re-Aktivierung bei:
-  - DOM-Updates
-  - In-App-Navigation
-  - Variant-Wechsel
-
----
-
-### ✨ Effects
-
-#### Animate Triple / Double / Bull
-- Visuelle Hervorhebung von Treffern
-- Gradient-Glow, Pulse, klare Farbtrennung
-- Erkennt:
-  - T1–T20
-  - D1–D20
-  - BULL
-- Keine Abhängigkeit von Spielvariante
-
----
+## Table of Contents
+- [Installation](#installation)
+- [Shared Helper](#shared-helper)
+- [Scripts](#scripts)
+- [Configuration](#configuration)
+- [License](#license)
+- [Disclaimer](#disclaimer)
 
 ## Installation
+1. Install the Tampermonkey extension.
+2. Open the raw file for the script you want.
+3. Tampermonkey detects the userscript automatically.
+4. Install and keep auto-updates enabled.
 
-### Voraussetzung
-- Browser: Chrome, Edge, Firefox
-- Extension: **Tampermonkey**
+## Shared Helper
+The theme scripts load a common helper via `@require`:
 
----
+```
+https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js
+```
 
-### Empfohlene Installation (mit Auto-Updates)
+If you fork the repo or use local files, update the `@require` URL accordingly.
 
-1. Öffne das gewünschte Script **direkt über GitHub (raw)**  
-2. Tampermonkey erkennt das Userscript automatisch  
-3. Installieren  
-4. Fertig
+## Scripts
 
-👉 **Updates erfolgen automatisch**, sobald eine neue Version gepusht wird.
+### Themes
 
----
+#### Autodarts Theme X01 (`Autodarts Theme X01.user.js`)
+- Full layout + color theme for X01.
+- Darker navigation and prominent active player.
+- Auto-enables when the variant is X01.
 
-### Verwendung der Themes & des Shared-Helpers
+#### Autodarts Theme Shanghai (`Autodarts Theme Shanghai.user.js`)
+- Shared theme + grid layout tuned for Shanghai.
+- Auto-enables when the variant is Shanghai.
+- Uses the shared helper for consistent updates.
 
-- Die Theme-Skripte laden den gemeinsamen Helper automatisch über `@require`:
-  - `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js`
-- Du musst **nichts separat installieren** – Tampermonkey lädt die Datei beim ersten Aktivieren des Themes.
-- Falls du forkst oder offline nutzt: achte darauf, den `@require`-Pfad anzupassen (gleicher Raw-Link oder lokaler Pfad).
+#### Autodarts Theme Bermuda (`Autodarts Theme Bermuda.user.js`)
+- Shared theme + grid layout tuned for Bermuda.
+- Auto-enables when the variant includes Bermuda.
+- Uses the shared helper for consistent updates.
 
----
+#### Autodarts Theme Cricket (`Autodarts Theme Cricket.user.js`)
+- Lightweight color theme without grid layout changes.
+- Auto-enables when the variant is Cricket.
 
-## Verfügbare Scripts
+### Animations and Effects
 
-### X01 Theme
-Optimiert für Fokus und Wettkampf:
-- aktiver Spieler stark hervorgehoben
-- inaktive Spieler bewusst zurückgenommen
-- dunkle Navigation
+#### Autodarts Animate Triple (`Autodarts Animate Triple.user.js`)
+- Highlights Triple, Double, and Bull hits with animated gradients.
+- Distinct color sets per hit type for quick recognition.
 
----
+#### Autodarts Animate Checkout (`Autodarts Animate Checkout.user.js`)
+- Pulses the active score when a checkout is available.
+- Uses the in-game suggestion area as the trigger.
+- Limited to X01 matches.
 
-### Cricket Theme
-Leichtgewichtiges Farbtheme:
-- keine Layout-Änderungen
-- maximale Stabilität
+#### Autodarts Score Delta Slide (`Autodarts Score Delta Slide.user.js`)
+- Animates turn points with a short count-up tween.
+- Improves readability of score changes during a turn.
 
----
+#### Autodarts Average Trend Arrow (`Autodarts Average Trend Arrow.user.js`)
+- Shows a small up/down arrow next to AVG when it changes.
+- Short bounce animation to indicate trend direction.
 
-### Bermuda Theme
-Volles UI-Layout:
-- Grid-Layout
-- Spieler links, Board rechts
-- Footer direkt unter Header
+#### Autodarts Size Strokes (`Autodarts Size Strokes.user.js`)
+- Adjusts dart marker size and fill color on the board.
+- Optional pulse/glow effect to make markers easier to spot.
 
----
+## Configuration
+Each script has a small configuration block near the top.
 
-### Shanghai Theme
-Analog zu Bermuda, angepasst für Shanghai:
-- Grid-Layout
-- große Scores
-- stabile Re-Evaluation bei DOM-Änderungen
+- `Autodarts Score Delta Slide.user.js`
+  - `CONFIG.animationMs` controls the tween duration.
+  - `CONFIG.scoreSelector` controls which score nodes are animated.
+- `Autodarts Size Strokes.user.js`
+  - `MARKER_RADIUS`, `MARKER_FILL`, and `EFFECT` control size, color, and effect.
+- `Autodarts Average Trend Arrow.user.js`
+  - `ANIMATION_MS` controls the arrow bounce duration.
+- `Autodarts Animate Checkout.user.js`
+  - Selectors and highlight color are adjustable at the top of the file.
 
+## License
+MIT License
 
----
-
-### Animate Triple / Double / Bull
-Universeller Effekt:
-- unabhängig vom Spielmodus
-- reagiert live auf neue Würfe
-
-
----
-
-## Technische Details
-
-- Aktivierung erfolgt über:
-  - `#ad-ext-game-variant`
-- DOM-Änderungen werden überwacht via `MutationObserver`
-- Zusätzlich periodische URL-Checks zur Absicherung
-- Optionaler Reuse von `window.autodartsDesign`, falls vorhanden
-- Fallback-CSS ist immer enthalten
-
----
-
-## Lizenz
-
-MIT License  
-© 2025 Thomas Asen
-
-Basierend auf Konzepten und Stil von  
-[inventwo / skvarel – Autodarts-Stylebot v1.1.0 (MIT)](https://github.com/inventwo/Script-Sammlung/tree/main/CSS)
-
----
-
-## Haftungsausschluss
-
-Dieses Projekt steht in **keiner Verbindung zu Autodarts**.  
-Nutzung auf eigenes Risiko. Änderungen an play.autodarts.io können Anpassungen erforderlich machen.
-
-
+## Disclaimer
+This project is not affiliated with Autodarts.
+Changes to play.autodarts.io may require script updates.

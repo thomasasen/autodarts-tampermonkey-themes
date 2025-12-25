@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Shanghai.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.7
+// @version      1.0
 // @description  Autodarts Theme Shanghai
 // @author       Thomas Asen
 // @license      MIT
@@ -16,12 +16,8 @@
 (function () {
   "use strict";
 
-  const {
-    attachTheme,
-    createCssBuilder,
-    commonThemeCss,
-    commonLayoutCss,
-  } = window.autodartsThemeShared;
+  const { attachTheme, createCssBuilder, commonThemeCss, commonLayoutCss } =
+    window.autodartsThemeShared;
 
   const STYLE_ID = "autodarts-shanghai-custom-style";
   const VARIANT_NAME = "shanghai";

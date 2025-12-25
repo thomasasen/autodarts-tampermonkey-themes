@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Size Strokes
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.2
+// @version      1.0
 // @description  Adjust dart marker size, fill, and effects.
 // @author       Thomas Asen
 // @license      MIT

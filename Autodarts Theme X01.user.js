@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.7
+// @version      1.0
 // @description  Autodarts Theme X01
 // @author       Thomas Asen
 // @license      MIT
