@@ -8,7 +8,7 @@
   --theme-background: #000000;
   --theme-text-color: #000000;
   --theme-text-highlight-color: #9fdb58;
-  --theme-navigation-bg: #222222;
+  --theme-navigation-bg: #434343;
   --theme-navigation-item-color: #666666;
   --theme-player-badge-bg: #9fdb58;
   --theme-player-name-bg: #9fdb58;

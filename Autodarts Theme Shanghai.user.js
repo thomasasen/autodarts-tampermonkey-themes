@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Shanghai.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.6
+// @version      0.7
 // @description  Autodarts Theme Shanghai
 // @author       Thomas Asen
 // @license      MIT
