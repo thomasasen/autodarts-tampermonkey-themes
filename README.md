@@ -128,7 +128,7 @@ MIT License
 © 2025 Thomas Asen
 
 Basierend auf Konzepten und Stil von  
-**inventwo / skvarel – Autodarts-Stylebot v1.1.0 (MIT)**
+[inventwo / skvarel – Autodarts-Stylebot v1.1.0 (MIT)](https://github.com/inventwo/Script-Sammlung/tree/main/CSS)
 
 ---
 
