@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.2
+// @version      0.3
 // @description  Pulse remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -49,7 +49,21 @@
   animation: ad-ext-checkout-pulse 1.6s ease-in-out infinite;
 }
 `;
-    document.head.appendChild(style);
+    const target = document.head || document.documentElement;
+    if (target) {
+      target.appendChild(style);
+    } else {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          const fallbackTarget = document.head || document.documentElement;
+          if (fallbackTarget && !document.getElementById(STYLE_ID)) {
+            fallbackTarget.appendChild(style);
+          }
+        },
+        { once: true }
+      );
+    }
   }
 
   function isX01Variant() {
