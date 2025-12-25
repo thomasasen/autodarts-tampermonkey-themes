@@ -5,7 +5,7 @@
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
-// @run-at       document-end
+// @run-at       document-start
 // @license      MIT
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Animate%20Triple.user.js
