@@ -69,6 +69,15 @@ Die Themes aktivieren sich **automatisch**, abhängig von der aktuell gespielten
 
 ---
 
+### Verwendung der Themes & des Shared-Helpers
+
+- Die Theme-Skripte laden den gemeinsamen Helper automatisch über `@require`:
+  - `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js`
+- Du musst **nichts separat installieren** – Tampermonkey lädt die Datei beim ersten Aktivieren des Themes.
+- Falls du forkst oder offline nutzt: achte darauf, den `@require`-Pfad anzupassen (gleicher Raw-Link oder lokaler Pfad).
+
+---
+
 ## Verfügbare Scripts
 
 ### X01 Theme

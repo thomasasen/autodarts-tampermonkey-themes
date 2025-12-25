@@ -1,19 +1,24 @@
 // ==UserScript==
 // @name         Autodarts Theme Cricket.user
-// @version      0.5
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @version      0.6
 // @description  Autodarts Theme Cricket
 // @author       Thomas Asen
-// @match        *://play.autodarts.io/*
-// @grant        none
-// @run-at       document-start
 // @license      MIT
-// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @match        *://play.autodarts.io/*
+// @run-at       document-start
+// @grant        none
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
 // ==/UserScript==
 
 (function () {
   "use strict";
+
+  const { attachTheme } = window.autodartsThemeShared;
+  const STYLE_ID = "autodarts-cricket-custom-style";
+  const VARIANT_NAME = "cricket";
 
   const customCss = `
 :root{
@@ -132,61 +137,9 @@ span.chakra-switch__track.css-v4l15v {
 }
 `;
 
-  function insertStyle() {
-    if (document.getElementById("autodarts-cricket-custom-style")) {
-      return;
-    }
-
-    const styleTag = document.createElement("style");
-    styleTag.id = "autodarts-cricket-custom-style";
-    styleTag.textContent = customCss;
-    document.head.appendChild(styleTag);
-  }
-
-  function removeStyle() {
-    const existing = document.getElementById("autodarts-cricket-custom-style");
-    if (existing) {
-      existing.remove();
-    }
-  }
-
-  function evaluateAndApply() {
-    const variantEl = document.getElementById("ad-ext-game-variant");
-    if (variantEl && variantEl.textContent.trim() === "Cricket") {
-      insertStyle();
-    } else {
-      removeStyle();
-    }
-  }
-
-  evaluateAndApply();
-
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (
-        mutation.type === "childList" ||
-        mutation.type === "characterData" ||
-        mutation.type === "attributes"
-      ) {
-        evaluateAndApply();
-        break;
-      }
-    }
+  attachTheme({
+    styleId: STYLE_ID,
+    variantName: VARIANT_NAME,
+    buildCss: () => customCss,
   });
-
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-    attributes: true,
-  });
-
-  let lastUrl = location.href;
-  setInterval(() => {
-    const currentUrl = location.href;
-    if (currentUrl !== lastUrl) {
-      lastUrl = currentUrl;
-      evaluateAndApply();
-    }
-  }, 1000);
 })();

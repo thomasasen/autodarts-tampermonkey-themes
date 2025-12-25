@@ -1,19 +1,22 @@
 // ==UserScript==
 // @name         Autodarts Theme X01.user
-// @version      0.5
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @version      0.6
 // @description  Autodarts Theme X01
 // @author       Thomas Asen
-// @match        *://play.autodarts.io/*
-// @grant        none
-// @run-at       document-start
 // @license      MIT
-// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @match        *://play.autodarts.io/*
+// @run-at       document-start
+// @grant        none
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20X01.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20X01.user.js
 // ==/UserScript==
 
 (function () {
   "use strict";
+
+  const { attachTheme, createCssBuilder } = window.autodartsThemeShared;
 
   // Style tag identifier and expected variant name.
   const STYLE_ID = "autodarts-x01-custom-style";
@@ -244,102 +247,15 @@ div.chakra-stack.navigation.css-ege71s,
 }
 `;
 
-  let styleTag;
-  let scheduled = false;
-
-  // Endgueltiges CSS aus Helper oder Fallbacks zusammensetzen.
-  function buildCss() {
-    const themeCss = window.autodartsDesign?.themeCommonCss ?? fallbackThemeCss;
-    const layoutCss =
-      window.autodartsDesign?.layoutCommonCss ?? fallbackLayoutCss;
-    return `${themeCss}${layoutCss}${navigationOverride}`;
-  }
-
-  // Style-Tag anlegen/aktualisieren.
-  function ensureStyle(css) {
-    if (!styleTag) {
-      styleTag = document.createElement("style");
-      styleTag.id = STYLE_ID;
-      document.head.appendChild(styleTag);
-    }
-    if (styleTag.textContent !== css) {
-      styleTag.textContent = css;
-    }
-  }
-
-  function removeStyle() {
-    const existing = document.getElementById(STYLE_ID);
-    if (existing) {
-      existing.remove();
-    }
-    styleTag = null;
-  }
-
-  // Variant-Name holen und normalisieren.
-  function getVariantName() {
-    const variantEl = document.getElementById("ad-ext-game-variant");
-    return variantEl?.textContent?.trim().toLowerCase() || "";
-  }
-
-  // Kernlogik: Variante pruefen, Styles an- oder abschalten.
-  function evaluateAndApply() {
-    const variant = getVariantName();
-
-    if (variant === VARIANT_NAME) {
-      ensureStyle(buildCss());
-    } else {
-      removeStyle();
-    }
-  }
-
-  // Debounce, damit DOM-Aenderungen nicht in eine Endlosschleife laufen.
-  function scheduleEvaluation() {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      evaluateAndApply();
-    });
-  }
-
-  evaluateAndApply();
-
-  // Beobachtet DOM-Aenderungen (Variante / Match-View) und aktualisiert Styles.
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (
-        mutation.type === "childList" ||
-        mutation.type === "characterData" ||
-        mutation.type === "attributes"
-      ) {
-        // Eigene Style-Updates ignorieren, sonst wuerde der Observer sich selbst triggern.
-        if (
-          styleTag &&
-          (mutation.target === styleTag ||
-            mutation.target.parentElement === styleTag)
-        ) {
-          continue;
-        }
-        scheduleEvaluation();
-        break;
-      }
-    }
+  const buildCss = createCssBuilder({
+    fallbackThemeCss,
+    fallbackLayoutCss,
+    extraCss: navigationOverride,
   });
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-    attributes: true,
+  attachTheme({
+    styleId: STYLE_ID,
+    variantName: VARIANT_NAME,
+    buildCss,
   });
-
-  // Einfache URL-ueberwachung, falls Navigation ohne Full-Reload passiert.
-  let lastUrl = location.href;
-  setInterval(() => {
-    const currentUrl = location.href;
-    if (currentUrl !== lastUrl) {
-      lastUrl = currentUrl;
-    }
-    scheduleEvaluation();
-  }, 1000);
 })();
