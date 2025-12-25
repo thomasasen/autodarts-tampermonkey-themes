@@ -22,13 +22,12 @@ Die Themes aktivieren sich **automatisch**, abhängig von der aktuell gespielten
 
 | Variante   | Script |
 |-----------|--------|
-| X01       | Autodarts X01 Theme |
-| Cricket   | Autodarts Cricket Theme |
-| Bermuda   | Autodarts Bermuda Theme |
-| Shanghai  | Autodarts Shanghai Theme |
+| X01       | Autodarts Theme X01 |
+| Cricket   | Autodarts Theme Cricket |
+| Bermuda   | Autodarts Theme Bermuda |
+| Shanghai  | Autodarts Theme Shanghai |
 
 **Gemeinsame Eigenschaften**
-- skvarel Farbkonzept
 - große, gut lesbare Scores
 - klare Trennung von Spielern, Board und Turn-Info
 - automatische Re-Aktivierung bei:
@@ -77,4 +76,65 @@ Optimiert für Fokus und Wettkampf:
 - aktiver Spieler stark hervorgehoben
 - inaktive Spieler bewusst zurückgenommen
 - dunkle Navigation
+
+---
+
+### Cricket Theme
+Leichtgewichtiges Farbtheme:
+- keine Layout-Änderungen
+- maximale Stabilität
+
+---
+
+### Bermuda Theme
+Volles UI-Layout:
+- Grid-Layout
+- Spieler links, Board rechts
+- Footer direkt unter Header
+
+---
+
+### Shanghai Theme
+Analog zu Bermuda, angepasst für Shanghai:
+- Grid-Layout
+- große Scores
+- stabile Re-Evaluation bei DOM-Änderungen
+
+
+---
+
+### Animate Triple / Double / Bull
+Universeller Effekt:
+- unabhängig vom Spielmodus
+- reagiert live auf neue Würfe
+
+
+---
+
+## Technische Details
+
+- Aktivierung erfolgt über:
+  - `#ad-ext-game-variant`
+- DOM-Änderungen werden überwacht via `MutationObserver`
+- Zusätzlich periodische URL-Checks zur Absicherung
+- Optionaler Reuse von `window.autodartsDesign`, falls vorhanden
+- Fallback-CSS ist immer enthalten
+
+---
+
+## Lizenz
+
+MIT License  
+© 2025 Thomas Asen
+
+Basierend auf Konzepten und Stil von  
+**inventwo / skvarel – Autodarts-Stylebot v1.1.0 (MIT)**
+
+---
+
+## Haftungsausschluss
+
+Dieses Projekt steht in **keiner Verbindung zu Autodarts**.  
+Nutzung auf eigenes Risiko. Änderungen an play.autodarts.io können Anpassungen erforderlich machen.
+
 
