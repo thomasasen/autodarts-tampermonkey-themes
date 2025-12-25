@@ -1,15 +1,15 @@
 // ==UserScript==
-// @name         Autodarts X01 Theme (skvarel v1.1.0)
-// @namespace    https://github.com/thomasasen/autodarts_tempermonkey_skripts
-// @version      1.0
-// @description  Apply the skvarel Stylebot theme to Autodarts matches when playing X01. Auto-enables for X01, refreshes after DOM/URL changes, and reuses autodartsdesign.js when present. Based on inventwo Autodarts-Stylebot v1.1.0 (MIT).
+// @name         Autodarts Theme X01.user
+// @version      0.5
+// @description  Autodarts Theme X01
 // @author       Thomas Asen
-// @license      MIT
-// @copyright    2025 inventwo (jkvarel, skvarel) - Autodarts-Stylebot v1.1.0 (MIT)
-// @copyright    2025 Thomas Asen
-// @match        https://play.autodarts.io/matches/*
-// @run-at       document-end
+// @match        *://play.autodarts.io/*
 // @grant        none
+// @run-at       document-end
+// @license      MIT
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20X01.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20X01.user.js
 // ==/UserScript==
 
 (function () {
@@ -250,7 +250,8 @@ div.chakra-stack.navigation.css-ege71s,
   // Endgueltiges CSS aus Helper oder Fallbacks zusammensetzen.
   function buildCss() {
     const themeCss = window.autodartsDesign?.themeCommonCss ?? fallbackThemeCss;
-    const layoutCss = window.autodartsDesign?.layoutCommonCss ?? fallbackLayoutCss;
+    const layoutCss =
+      window.autodartsDesign?.layoutCommonCss ?? fallbackLayoutCss;
     return `${themeCss}${layoutCss}${navigationOverride}`;
   }
 

@@ -1,14 +1,15 @@
 // ==UserScript==
-// @name         Animate Triple Autodarts
-// @version      0.4
+// @name         Autodarts Animate Triple, Double and Bull Hits
+// @version      0.5
 // @description  Animate Triple, Double and Bull hits
-// @author       aMAZiNGJiN
+// @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
+// @run-at       document-end
 // @license      MIT
-// @namespace    https://greasyfork.org/users/1275557
-// @downloadURL https://update.greasyfork.org/scripts/490067/Animate%20Triple%20Autodarts.user.js
-// @updateURL https://update.greasyfork.org/scripts/490067/Animate%20Triple%20Autodarts.meta.js
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Animate%20Triple.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Animate%20Triple.user.js
 // ==/UserScript==
 
 (function () {
@@ -221,4 +222,3 @@
     start();
   }
 })();
-

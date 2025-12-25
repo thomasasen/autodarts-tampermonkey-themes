@@ -1,15 +1,15 @@
 // ==UserScript==
-// @name         Autodarts Bermuda Theme (skvarel)
-// @namespace    https://github.com/thomasasen/autodarts_tempermonkey_skripts
-// @version      1.0
-// @description  Apply the skvarel styling to Autodarts matches when playing Bermuda. Colors plus the X01 grid layout tweaks; auto-enables only for the Bermuda variant and re-applies after DOM or URL changes. Based on inventwo Autodarts-Stylebot v1.1.0 (MIT).
+// @name         Autodarts Theme Bermuda
+// @version      0.5
+// @description  Autodarts Theme Bermuda
 // @author       Thomas Asen
-// @license      MIT
-// @copyright    2025 inventwo (jkvarel, skvarel) - Autodarts-Stylebot v1.1.0 (MIT)
-// @copyright    2025 Thomas Asen
-// @match        https://play.autodarts.io/matches/*
-// @run-at       document-end
+// @match        *://play.autodarts.io/*
 // @grant        none
+// @run-at       document-end
+// @license      MIT
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Bermuda.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Bermuda.user.js
 // ==/UserScript==
 
 (function () {
@@ -253,7 +253,8 @@ div.css-y3hfdd > .css-1igwmid{
   // Endgueltiges CSS aus Helper oder Fallbacks bauen.
   function buildCss() {
     const themeCss = window.autodartsDesign?.themeCommonCss ?? fallbackThemeCss;
-    const layoutCss = window.autodartsDesign?.layoutCommonCss ?? fallbackLayoutCss;
+    const layoutCss =
+      window.autodartsDesign?.layoutCommonCss ?? fallbackLayoutCss;
     return `${themeCss}${layoutCss}`;
   }
 

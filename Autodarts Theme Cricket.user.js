@@ -1,12 +1,15 @@
 // ==UserScript==
-// @name         Autodarts Cricket Theme (skvarel colors)
-// @namespace    https://github.com/inventwo
-// @version      1.0
-// @description  Apply the skvarel color theme to Autodarts matches when playing Cricket. Colors only, no layout tweaks.
-// @author       You
-// @match        https://play.autodarts.io/matches/*
-// @run-at       document-end
+// @name         Autodarts Theme Cricket.user
+// @version      0.5
+// @description  Autodarts Theme Cricket
+// @author       Thomas Asen
+// @match        *://play.autodarts.io/*
 // @grant        none
+// @run-at       document-end
+// @license      MIT
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
 // ==/UserScript==
 
 (function () {
