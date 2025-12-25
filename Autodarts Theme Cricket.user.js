@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.6
+// @version      0.7
 // @description  Autodarts Theme Cricket
 // @author       Thomas Asen
 // @license      MIT
@@ -102,7 +102,12 @@ div.css-rrf7rv {
   color: #222222;
 }
 
-.css-y3hfdd > p {
+.ad-ext_winner-score-wrapper {
+  display: contents !important;
+}
+
+.css-y3hfdd > p,
+.css-y3hfdd > .ad-ext_winner-score-wrapper > p {
   color: var(--theme-text-highlight-color);
 }
 
