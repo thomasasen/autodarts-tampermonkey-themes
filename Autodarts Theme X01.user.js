@@ -185,7 +185,11 @@ div.css-y3hfdd{
   gap: 0px !important;
   height: 25%;
 }
-div.css-y3hfdd > p{
+.ad-ext_winner-score-wrapper{
+  display: contents !important;
+}
+div.css-y3hfdd > p,
+div.css-y3hfdd > .ad-ext_winner-score-wrapper > p{
   color: var(--theme-text-highlight-color);
   grid-row-start: 1 !important;
   grid-row-end: 3 !important;
