@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple, Double and Bull Hits
-// @version      0.5
+// @version      0.6
 // @description  Animate Triple, Double and Bull hits
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
@@ -26,29 +26,29 @@
       throwText: ".ad-ext-turn-throw p.chakra-text",
       textNode: "p.chakra-text",
     },
-    defaultGradientStops: ["#0ebeff", "#ffdd40", "#ae63e4", "#47cf73"],
+    defaultGradientStops: ["#22d3ee", "#9fdb58", "#f59e0b", "#34d399"],
     hitTypes: [
       {
         key: "triple",
         prefix: "T",
         values: [...SEGMENT_VALUES],
-        highlightColor: "#ff80aa",
-        gradientStops: ["#ff4477", "#ffc371", "#ff7eb3"],
+        highlightColor: "#ffb347",
+        gradientStops: ["#ff6b6b", "#ff9f1c", "#ffd166"],
       },
       {
         key: "double",
         prefix: "D",
         values: [...SEGMENT_VALUES],
-        highlightColor: "#73d5ff",
-        gradientStops: ["#5ec8ff", "#3a7bff", "#9af2ff"],
+        highlightColor: "#5ec8ff",
+        gradientStops: ["#22d3ee", "#38bdf8", "#818cf8"],
       },
     ],
     bull: {
       enabled: true,
       key: "bull",
       label: "BULL",
-      highlightColor: "#f2ffe5",
-      gradientStops: ["#2af598", "#22e4ac", "#47cf73"],
+      highlightColor: "#ffe97a",
+      gradientStops: ["#9fdb58", "#4ade80", "#86efac"],
     },
   };
 
