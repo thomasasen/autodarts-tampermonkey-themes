@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Score Delta Slide
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.2
+// @version      0.3
 // @description  Animate turn-point changes with a count-up tween.
 // @author       Thomas Asen
 // @license      MIT
@@ -15,8 +15,10 @@
 (function () {
   "use strict";
 
-  const SCORE_SELECTOR = "p.ad-ext-turn-points";
-  const ANIMATION_MS = 320;
+  const CONFIG = {
+    scoreSelector: "p.ad-ext-turn-points",
+    animationMs: 416,
+  };
 
   const lastValues = new WeakMap();
   const activeAnimations = new WeakMap();
@@ -43,7 +45,7 @@
 
     function step(now) {
       const elapsed = now - start;
-      const progress = Math.min(elapsed / ANIMATION_MS, 1);
+      const progress = Math.min(elapsed / CONFIG.animationMs, 1);
       const eased = easeOutCubic(progress);
       const current = Math.round(fromValue + (toValue - fromValue) * eased);
       element.textContent = String(current);
@@ -66,7 +68,7 @@
   }
 
   function updateScores() {
-    const nodes = document.querySelectorAll(SCORE_SELECTOR);
+    const nodes = document.querySelectorAll(CONFIG.scoreSelector);
     nodes.forEach((node) => {
       if (animatingNodes.has(node)) {
         return;
