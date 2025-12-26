@@ -110,6 +110,11 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 - Passt Marker-Größe und Füllfarbe der Darts auf dem Board an.
 - Optionaler Pulse/Glow-Effekt für bessere Sichtbarkeit.
 
+
+#### Autodarts Animate Checkout Board Blink (`Animation/Autodarts Animate Checkout Board Blink.user.js`)
+
+- Blinks the checkout target segment directly on the board.
+- Supports single, double, triple, and bull targets with configurable effects.
 ## Screenshots und Animationen
 
 Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bewegung.
@@ -129,6 +134,7 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | Animate Score Delta Slide   | ![Animate Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
 | Animate Average Trend Arrow | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
+| Animate Checkout Board Blink | ![Animate Checkout Board Blink](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                                  |
 | Animate Turn Start Sweep    | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
 | Animate Size Strokes        | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
 
@@ -148,6 +154,8 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `CONFIG.sweepDelayMs` steuert die Verzögerung vor dem Sweep.
   - `CONFIG.sweepWidth` und `CONFIG.sweepColor` steuern Breite und Farbe.
 - `Animation/Autodarts Animate Checkout.user.js`
+- `Animation/Autodarts Animate Checkout Board Blink.user.js`
+  - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
 
 ## Bugs und Feedback

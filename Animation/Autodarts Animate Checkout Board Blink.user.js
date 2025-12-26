@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.4
+// @version      1.0
 // @description  Blink the checkout target segment on the board.
 // @author       Thomas Asen
 // @license      MIT
