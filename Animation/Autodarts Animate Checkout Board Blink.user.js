@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      0.1
 // @description  Blink the checkout target segment on the board.
 // @author       Thomas Asen
 // @license      MIT
@@ -21,8 +21,8 @@
     requireX01: true,
     highlightTargets: "first", // "first" | "all"
     effect: "pulse", // "pulse" | "blink" | "glow"
-    color: "rgba(255, 214, 102, 0.85)",
-    strokeColor: "rgba(255, 214, 102, 0.95)",
+    color: "rgba(168, 85, 247, 0.85)",
+    strokeColor: "rgba(168, 85, 247, 0.95)",
     strokeWidthRatio: 0.008,
     animationMs: 1000,
     singleRing: "outer", // "inner" | "outer" | "both"
@@ -134,19 +134,20 @@
     }
 
     const tokens =
-      text
-        .toUpperCase()
-        .match(/DB|BULLSEYE|BULL|SB|OB|[TDS]?\d{1,2}/g) || [];
+      text.toUpperCase().match(/DB|BULLSEYE|BULL|SB|OB|[TDS]?\d{1,2}/g) || [];
 
     const targets = [];
+    let hasExplicit = false;
 
     for (const token of tokens) {
       if (token === "DB" || token === "BULL" || token === "BULLSEYE") {
-        targets.push({ ring: "DB" });
+        targets.push({ target: { ring: "DB" }, isSummary: false });
+        hasExplicit = true;
         continue;
       }
       if (token === "SB" || token === "OB") {
-        targets.push({ ring: "SB" });
+        targets.push({ target: { ring: "SB" }, isSummary: false });
+        hasExplicit = true;
         continue;
       }
 
@@ -164,9 +165,14 @@
 
       if (value === 25) {
         if (prefix === "D") {
-          targets.push({ ring: "DB" });
+          targets.push({ target: { ring: "DB" }, isSummary: false });
+          hasExplicit = true;
         } else {
-          targets.push({ ring: "SB" });
+          const isSummary = prefix !== "S";
+          targets.push({ target: { ring: "SB" }, isSummary });
+          if (!isSummary) {
+            hasExplicit = true;
+          }
         }
         continue;
       }
@@ -177,10 +183,18 @@
 
       const ring =
         prefix === "T" || prefix === "D" || prefix === "S" ? prefix : "S";
-      targets.push({ ring, value });
+      const isSummary = prefix !== "T" && prefix !== "D" && prefix !== "S";
+      targets.push({ target: { ring, value }, isSummary });
+      if (!isSummary) {
+        hasExplicit = true;
+      }
     }
 
-    return targets;
+    const filtered = hasExplicit
+      ? targets.filter((entry) => !entry.isSummary)
+      : targets;
+
+    return filtered.map((entry) => entry.target);
   }
 
   function getBoardRadius(root) {
@@ -289,7 +303,10 @@
     const strokeWidth = Math.max(1, radius * CONFIG.strokeWidthRatio);
     element.style.setProperty("--ad-ext-target-color", CONFIG.color);
     element.style.setProperty("--ad-ext-target-stroke", CONFIG.strokeColor);
-    element.style.setProperty("--ad-ext-target-stroke-width", `${strokeWidth}px`);
+    element.style.setProperty(
+      "--ad-ext-target-stroke-width",
+      `${strokeWidth}px`
+    );
     element.style.setProperty(
       "--ad-ext-target-duration",
       `${CONFIG.animationMs}ms`
