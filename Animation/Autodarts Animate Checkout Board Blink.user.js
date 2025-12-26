@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.3
+// @version      0.4
 // @description  Blink the checkout target segment on the board.
 // @author       Thomas Asen
 // @license      MIT
@@ -288,6 +288,22 @@
     ].join(" ");
   }
 
+  function ringPath(rInner, rOuter) {
+    const outer = [
+      `M 0 ${-rOuter}`,
+      `A ${rOuter} ${rOuter} 0 1 1 0 ${rOuter}`,
+      `A ${rOuter} ${rOuter} 0 1 1 0 ${-rOuter}`,
+      "Z",
+    ].join(" ");
+    const inner = [
+      `M 0 ${-rInner}`,
+      `A ${rInner} ${rInner} 0 1 0 0 ${rInner}`,
+      `A ${rInner} ${rInner} 0 1 0 0 ${-rInner}`,
+      "Z",
+    ].join(" ");
+    return `${outer} ${inner}`;
+  }
+
   function segmentAngles(value) {
     const index = SEGMENT_ORDER.indexOf(value);
     if (index === -1) {
@@ -312,32 +328,37 @@
       "--ad-ext-target-duration",
       `${CONFIG.animationMs}ms`
     );
+    if (element.dataset.noStroke === "true") {
+      element.style.stroke = "none";
+      element.style.strokeWidth = "0";
+    }
   }
 
   function createWedge(radius, innerRatio, outerRatio, startDeg, endDeg) {
     const path = document.createElementNS(SVG_NS, "path");
     const padding = CONFIG.edgePaddingPx || 0;
-    const rInner = Math.max(0, radius * innerRatio - padding);
+    const rInner = Math.max(0, radius * innerRatio);
     const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
     path.setAttribute("d", wedgePath(rInner, rOuter, startDeg, endDeg));
     return path;
   }
 
   function createBull(radius, innerRatio, outerRatio, solid) {
-    const circle = document.createElementNS(SVG_NS, "circle");
     const padding = CONFIG.edgePaddingPx || 0;
     if (solid) {
+      const circle = document.createElementNS(SVG_NS, "circle");
       const rOuter = Math.max(0, radius * outerRatio + padding);
       circle.setAttribute("r", String(rOuter));
-    } else {
-      const rInner = Math.max(0, radius * innerRatio - padding);
-      const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
-      const strokeWidth = Math.max(1, rOuter - rInner);
-      circle.setAttribute("r", String((rInner + rOuter) / 2));
-      circle.setAttribute("fill", "none");
-      circle.setAttribute("stroke-width", String(strokeWidth));
+      return circle;
     }
-    return circle;
+
+    const rInner = Math.max(0, radius * innerRatio);
+    const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
+    const ring = document.createElementNS(SVG_NS, "path");
+    ring.setAttribute("d", ringPath(rInner, rOuter));
+    ring.setAttribute("fill-rule", "evenodd");
+    ring.dataset.noStroke = "true";
+    return ring;
   }
 
   function buildTargetShapes(radius, target) {
