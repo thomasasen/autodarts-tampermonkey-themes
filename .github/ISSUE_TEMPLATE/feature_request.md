@@ -1,34 +1,20 @@
-## Problem / Motivation
-Gibt es ein konkretes Problem oder einen Schmerzpunkt?
-Bitte kurz und verständlich beschreiben.
-
-Beispiel:  
-Bestimmte UI-Elemente von AutoDarts lassen sich mit den bestehenden Themes nicht sinnvoll anpassen.
+---
+name: Feature request
+about: Suggest an idea for this project
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
-## Gewünschte Lösung
-Was soll konkret ergänzt oder geändert werden?
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-Bitte so beschreiben, dass klar ist, **was** passieren soll und **wo**.
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
 
----
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
 
-## Alternativen
-Hast du andere Lösungsansätze oder Workarounds ausprobiert?
-Falls ja, bitte kurz beschreiben.
-
----
-
-## Zusätzlicher Kontext
-Alles, was hilft:
-- Screenshots
-- Skizzen
-- Links
-- Vergleich mit bestehenden Themes
-
----
-
-**Hinweis:**  
-Nicht jede Idee wird umgesetzt.  
-Features sollten zum Projekt passen und technisch realistisch sein.
+**Additional context**
+Add any other context or screenshots about the feature request here.

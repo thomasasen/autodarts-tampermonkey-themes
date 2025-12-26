@@ -1,59 +1,38 @@
-## Fehlerbeschreibung
-Was genau funktioniert nicht?  
-Bitte konkret beschreiben.
+---
+name: Bug report
+about: Create a report to help us improve
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
-## Schritte zur Reproduktion
-Wie lässt sich der Fehler nachstellen?
+**Describe the bug**
+A clear and concise description of what the bug is.
 
-1. AutoDarts öffnen  
-2. Tampermonkey aktivieren  
-3. Theme aktivieren  
-4. …
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
----
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-## Erwartetes Verhalten
-Was sollte stattdessen passieren?
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
----
+**Desktop (please complete the following information):**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Version [e.g. 22]
 
-## Tatsächliches Verhalten
-Was passiert aktuell?
+**Smartphone (please complete the following information):**
+ - Device: [e.g. iPhone6]
+ - OS: [e.g. iOS8.1]
+ - Browser [e.g. stock browser, safari]
+ - Version [e.g. 22]
 
----
-
-## Screenshots / Console-Logs (optional)
-Screenshots oder relevante Console-Ausgaben hier einfügen.
-
----
-
-## Systeminformationen (Desktop)
-Bitte ausfüllen:
-
-- **Betriebssystem:** (z. B. Windows 11, macOS 14, Linux)
-- **Browser:** (z. B. Chrome, Firefox, Edge)
-- **Browser-Version:**  
-- **Tampermonkey-Version:**  
-- **Script-Version:** (z. B. v1.3.0)
-
----
-
-## Systeminformationen (Mobil – optional)
-Nur falls relevant:
-
-- **Gerät:**  
-- **Betriebssystem:**  
-- **Browser:**  
-- **Browser-Version:**
-
----
-
-## Zusätzliche Hinweise
-Alles, was sonst noch helfen könnte.
-
----
-
-**Hinweis:**  
-Bugmeldungen ohne Versionsangaben oder ohne nachvollziehbare Reproduktionsschritte können geschlossen werden.
+**Additional context**
+Add any other context about the problem here.
