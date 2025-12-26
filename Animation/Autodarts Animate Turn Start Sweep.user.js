@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Turn Start Sweep
+// @name         Autodarts Animate Turn Start Sweep
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
 // @description  Show a light sweep when the active player changes.
@@ -8,8 +8,8 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Turn%20Start%20Sweep.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Turn%20Start%20Sweep.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Start%20Sweep.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Start%20Sweep.user.js
 // ==/UserScript==
 
 (function () {

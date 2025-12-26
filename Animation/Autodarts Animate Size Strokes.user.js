@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Size Strokes
+// @name         Autodarts Animate Size Strokes
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
 // @description  Adjust dart marker size, fill, and effects.
@@ -8,8 +8,8 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Size%20Strokes.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Size%20Strokes.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Size%20Strokes.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Size%20Strokes.user.js
 // ==/UserScript==
 
 (function () {

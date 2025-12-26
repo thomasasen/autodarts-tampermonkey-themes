@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Score Delta Slide
+// @name         Autodarts Animate Score Delta Slide
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
 // @description  Animate turn-point changes with a count-up tween.
@@ -8,8 +8,8 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Score%20Delta%20Slide.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Score%20Delta%20Slide.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Score%20Delta%20Slide.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Score%20Delta%20Slide.user.js
 // ==/UserScript==
 
 (function () {

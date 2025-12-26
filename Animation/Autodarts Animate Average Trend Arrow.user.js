@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Average Trend Arrow
+// @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
 // @description  Show a short up/down arrow animation when AVG changes.
@@ -8,8 +8,8 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Average%20Trend%20Arrow.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Average%20Trend%20Arrow.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Average%20Trend%20Arrow.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Average%20Trend%20Arrow.user.js
 // ==/UserScript==
 
 (function () {

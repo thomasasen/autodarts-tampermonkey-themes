@@ -1,6 +1,16 @@
 (function (global) {
   "use strict";
 
+  // Shared helper for the theme userscripts in Template/.
+  // It bundles common CSS and utilities so each theme can stay small.
+  // The theme scripts load this file via @require; you do not install it
+  // separately in Tampermonkey. Only update the @require URL if you fork.
+
+  // Gemeinsamer Helfer für die Theme-Userscripts in Template/.
+  // Er bündelt gängige CSS und Tools, damit jedes Theme vom Umfang klein bleiben kann und das Design durchgängig.
+  // Die Theme-Skripte laden diese Datei über @require; Sie müssen sie nicht separat in Tampermonkey installiert werden.
+  // Aktualisieren Sie die @require-URL nur, wenn Sie einen Fork erstellen.
+
   // Gemeinsame Farbwerte fuer die Themes (X01, Shanghai, Bermuda, etc.).
   const commonThemeCss = `
 :root{

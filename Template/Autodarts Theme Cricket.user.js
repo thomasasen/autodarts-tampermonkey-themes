@@ -8,9 +8,9 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Autodarts%20Theme%20Cricket.user.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/autodarts-theme-shared.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js
 // ==/UserScript==
 
 (function () {
