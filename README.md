@@ -114,11 +114,11 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 
 ### Animationen und Effekte
 
-| Skript              | Vorschau                                                               | Detail/Vorher                                                                        |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Score Delta Slide   | ![Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif)   |
-| Average Trend Arrow | ![Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                    |
-| Size Strokes        | ![Size Strokes after](assets/screenshots/Size%20Strokes%20after.gif)   | ![Size Strokes before](assets/screenshots/Size%20Strokes%20before.png)               |
+| Skript              | Vorschau                                                               | Detail/Vorher                                                                      |
+| ------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Score Delta Slide   | ![Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
+| Average Trend Arrow | ![Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
+| Size Strokes        | ![Size Strokes after](assets/screenshots/Size%20Strokes.gif)           | !                                                                                  |
 
 ## Konfiguration
 
