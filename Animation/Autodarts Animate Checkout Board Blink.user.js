@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.1
+// @version      0.2
 // @description  Blink the checkout target segment on the board.
 // @author       Thomas Asen
 // @license      MIT
@@ -25,7 +25,8 @@
     strokeColor: "rgba(168, 85, 247, 0.95)",
     strokeWidthRatio: 0.008,
     animationMs: 1000,
-    singleRing: "outer", // "inner" | "outer" | "both"
+    singleRing: "both", // "inner" | "outer" | "both"
+    edgePaddingPx: 1,
     ringRatios: {
       outerBullInner: 0.031112,
       outerBullOuter: 0.075556,
@@ -315,19 +316,22 @@
 
   function createWedge(radius, innerRatio, outerRatio, startDeg, endDeg) {
     const path = document.createElementNS(SVG_NS, "path");
-    const rInner = radius * innerRatio;
-    const rOuter = radius * outerRatio;
+    const padding = CONFIG.edgePaddingPx || 0;
+    const rInner = Math.max(0, radius * innerRatio - padding);
+    const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
     path.setAttribute("d", wedgePath(rInner, rOuter, startDeg, endDeg));
     return path;
   }
 
   function createBull(radius, innerRatio, outerRatio, solid) {
     const circle = document.createElementNS(SVG_NS, "circle");
+    const padding = CONFIG.edgePaddingPx || 0;
     if (solid) {
-      circle.setAttribute("r", String(radius * outerRatio));
+      const rOuter = Math.max(0, radius * outerRatio + padding);
+      circle.setAttribute("r", String(rOuter));
     } else {
-      const rInner = radius * innerRatio;
-      const rOuter = radius * outerRatio;
+      const rInner = Math.max(0, radius * innerRatio - padding);
+      const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
       const strokeWidth = Math.max(1, rOuter - rInner);
       circle.setAttribute("r", String((rInner + rOuter) / 2));
       circle.setAttribute("fill", "none");
