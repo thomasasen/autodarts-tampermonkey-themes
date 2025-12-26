@@ -94,6 +94,11 @@ Wenn du das Repo forkst oder lokale Dateien nutzt, passe die `@require`-URL ents
 - Zeigt einen kleinen Auf/Ab-Pfeil neben AVG, wenn es sich aendert.
 - Kurze Bounce-Animation zur Trend-Richtung.
 
+#### Autodarts Turn Start Sweep (`Autodarts Turn Start Sweep.user.js`)
+
+- Kurzer Licht-Sweep ueber dem Player-Block beim Wechsel des aktiven Spielers.
+- Nutzt eine MutationObserver-Erkennung auf die aktive Klasse.
+
 #### Autodarts Size Strokes (`Autodarts Size Strokes.user.js`)
 
 - Passt Marker-Groesse und Fuellfarbe der Darts auf dem Board an.
@@ -131,6 +136,10 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `MARKER_RADIUS`, `MARKER_FILL` und `EFFECT` steuern Groesse, Farbe und Effekt.
 - `Autodarts Average Trend Arrow.user.js`
   - `ANIMATION_MS` steuert die Dauer der Arrow-Bounce-Animation.
+- `Autodarts Turn Start Sweep.user.js`
+  - `CONFIG.sweepDurationMs` steuert die Sweep-Dauer.
+  - `CONFIG.sweepDelayMs` steuert die Verzoegerung vor dem Sweep.
+  - `CONFIG.sweepWidth` und `CONFIG.sweepColor` steuern Breite und Farbe.
 - `Autodarts Animate Checkout.user.js`
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
 
