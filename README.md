@@ -10,6 +10,20 @@ Sie veraendern keine Spiel-Logik, Scores oder Erkennung.
 - Optionale Animations-/Effekt-Skripte fuer bessere Lesbarkeit
 - MutationObserver-basierte Updates fuer dynamische DOM-Aenderungen
 
+## Bugs & Feedback
+
+- 🐞 **Bugs** bitte über [GitHub Issues](https://github.com/thomasasen/autodarts-tampermonkey-themes/issues) melden
+  → Direkt zum Bug-Formular:
+  https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%90%9E-bug-melden.md
+
+- 💡 **Feature-Wünsche** bitte über das Feature-Formular:
+  https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%92%A1-feature-vorschlagen.md
+
+- 💬 **Fragen & allgemeines Feedback** bitte über
+  https://github.com/thomasasen/autodarts-tampermonkey-themes/discussions
+
+Unvollständige Bugmeldungen ohne Versionen oder Reproduktionsschritte können geschlossen werden.
+
 ## Inhaltsverzeichnis
 
 - [Installation](#installation)
@@ -100,6 +114,7 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 
 - Kurzer Licht-Sweep ueber dem Player-Block beim Wechsel des aktiven Spielers.
 - Nutzt eine MutationObserver-Erkennung auf die aktive Klasse.
+- CSS-Pseudo-Element sorgt fuer den Sweep ohne Layout-Shift.
 
 #### Autodarts Animate Size Strokes (`Animation/Autodarts Animate Size Strokes.user.js`)
 
@@ -125,6 +140,7 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | Animate Score Delta Slide   | ![Animate Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
 | Animate Average Trend Arrow | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
+| Animate Turn Start Sweep    | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
 | Animate Size Strokes        | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 |                                                                                    |
 
 ## Konfiguration
@@ -158,6 +174,33 @@ Upstream (inventwo): MIT License. Copyright (c) 2025 jkvarel und skvarel von inv
 ## Lizenz
 
 MIT License
+
+## Hinweis zur Nutzung und Testumgebung
+
+Ich mache das als Hobby, und jeder ist eingeladen, die Skripte zu verwenden, Bugs zu melden oder Kommentare zu schreiben.
+
+Ich teste in meiner Umgebung mit installierten Autodarts Tools:
+https://github.com/creazy231/tools-for-autodarts
+
+Das kann ggf. Einfluss auf die Funktionen meiner Skripte haben.
+Folgende Einstellungen habe ich unter Matches aktiv:
+
+- COLORS: Off
+- AUTO NEXT PLAYER ON TAKEOUT: On
+- SMALLER SCORES: On
+- STREAMING MODE: Off
+- LARGER PLAYER NAMES: On
+- WINNER ANIMATION: On
+- DARTS ZOOM: Off
+- ENHANCED SCORING DISPLAY: On
+- TAKEOUT NOTIFICATION: On
+- AUTOMATIC NEXT LEG: On
+- HIDE MENU IN MATCH: On
+- LARGER LEGS/SETS: Off
+- LAGERGER PLAYER MATCH DATA: On
+- AUTOMATIC FULLSCREEN: On
+- QUICK CORRECTION: On
+- INSTANT REPLAY: Off
 
 ## Haftungsausschluss
 
