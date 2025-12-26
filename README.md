@@ -1,136 +1,154 @@
-# Autodarts Tampermonkey Themes & Effects
+# Autodarts Tampermonkey Themes & Effekte
 
-Visual-only Tampermonkey scripts for https://play.autodarts.io.
-They do not change game logic, scores, or detection.
+Reine Visual-Tampermonkey-Skripte fuer https://play.autodarts.io.
+Sie veraendern keine Spiel-Logik, Scores oder Erkennung.
 
-## Features
+## Funktionen
 
-- Theme scripts that auto-activate by game variant
-- Shared layout/theme helper for consistent styling
-- Optional animation/effect scripts to improve readability
-- MutationObserver-based updates for dynamic DOM changes
+- Theme-Skripte, die sich je Spielvariante automatisch aktivieren
+- Gemeinsamer Layout/Theme-Helper fuer konsistentes Styling
+- Optionale Animations-/Effekt-Skripte fuer bessere Lesbarkeit
+- MutationObserver-basierte Updates fuer dynamische DOM-Aenderungen
 
-## Table of Contents
+## Inhaltsverzeichnis
 
 - [Installation](#installation)
 - [Shared Helper](#shared-helper)
-- [Scripts](#scripts)
-- [Configuration](#configuration)
-- [License](#license)
+- [Skripte](#skripte)
+- [Screenshots und Animationen](#screenshots-und-animationen)
+- [Konfiguration](#konfiguration)
+- [Credits und Upstream-Lizenz](#credits-und-upstream-lizenz)
+- [Lizenz](#lizenz)
 - [Disclaimer](#disclaimer)
 
 ## Installation
 
-1. Install the Tampermonkey extension.
-2. Open the raw file for the script you want.
-3. Tampermonkey detects the userscript automatically.
-4. Install and keep auto-updates enabled.
+1. Installiere die Tampermonkey-Erweiterung.
+2. Oeffne die Raw-Datei des gewuenschten Skripts.
+3. Tampermonkey erkennt das Userscript automatisch.
+4. Installiere es und lasse Auto-Updates aktiviert.
+
+### Updates
+
+- Tampermonkey aktualisiert installierte Skripte automatisch, wenn die `@updateURL`/`@downloadURL` erreichbar ist.
+- Fuer ein manuelles Update: Skript in Tampermonkey oeffnen und auf "Nach Updates suchen" klicken.
+- Wenn du ein lokales Skript nutzt, aktualisiere die Datei und speichere sie erneut in Tampermonkey.
 
 ## Shared Helper
 
-The theme scripts load a common helper via `@require`:
+Die Theme-Skripte laden einen gemeinsamen Helper via `@require`:
 
 ```
 https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/autodarts-theme-shared.js
 ```
 
-If you fork the repo or use local files, update the `@require` URL accordingly.
+Wenn du das Repo forkst oder lokale Dateien nutzt, passe die `@require`-URL entsprechend an.
 
-## Scripts
+## Skripte
 
 ### Themes
 
 #### Autodarts Theme X01 (`Autodarts Theme X01.user.js`)
 
-- Full layout + color theme for X01.
-- Darker navigation and prominent active player.
-- Auto-enables when the variant is X01.
+- Vollstaendiges Layout- und Farb-Theme fuer X01.
+- Dunklere Navigation und hervorgehobener aktiver Spieler.
+- Aktiviert sich automatisch bei der Variante X01.
 
 #### Autodarts Theme Shanghai (`Autodarts Theme Shanghai.user.js`)
 
-- Shared theme + grid layout tuned for Shanghai.
-- Auto-enables when the variant is Shanghai.
-- Uses the shared helper for consistent updates.
+- Gemeinsames Theme plus Grid-Layout fuer Shanghai.
+- Aktiviert sich automatisch bei der Variante Shanghai.
+- Nutzt den Shared Helper fuer konsistente Updates.
 
 #### Autodarts Theme Bermuda (`Autodarts Theme Bermuda.user.js`)
 
-- Shared theme + grid layout tuned for Bermuda.
-- Auto-enables when the variant includes Bermuda.
-- Uses the shared helper for consistent updates.
+- Gemeinsames Theme plus Grid-Layout fuer Bermuda.
+- Aktiviert sich automatisch, wenn die Variante Bermuda enthaelt.
+- Nutzt den Shared Helper fuer konsistente Updates.
 
 #### Autodarts Theme Cricket (`Autodarts Theme Cricket.user.js`)
 
-- Lightweight color theme without grid layout changes.
-- Auto-enables when the variant is Cricket.
+- Leichtgewichtiges Farb-Theme ohne Grid-Layout-Aenderungen.
+- Aktiviert sich automatisch bei der Variante Cricket.
 
-### Animations and Effects
+### Animationen und Effekte
 
 #### Autodarts Animate Triple (`Autodarts Animate Triple.user.js`)
 
-- Highlights Triple, Double, and Bull hits with animated gradients.
-- Distinct color sets per hit type for quick recognition.
+- Hebt Triple-, Double- und Bull-Hits mit animierten Farbverlaeufen hervor.
+- Unterschiedliche Farbsets je Hit-Typ fuer schnelle Erkennung.
 
 #### Autodarts Animate Checkout (`Autodarts Animate Checkout.user.js`)
 
-- Pulses the active score when a checkout is available.
-- Uses the in-game suggestion area as the trigger.
-- Limited to X01 matches.
+- Pulsiert den aktiven Score, wenn ein Checkout moeglich ist.
+- Nutzt den In-Game-Vorschlagsbereich als Trigger.
+- Auf X01-Matches begrenzt.
 
 #### Autodarts Score Delta Slide (`Autodarts Score Delta Slide.user.js`)
 
-- Animates turn points with a short count-up tween.
-- Improves readability of score changes during a turn.
+- Animiert Turn-Punkte mit einem kurzen Count-up-Tween.
+- Verbessert die Lesbarkeit der Score-Aenderungen waehrend eines Turns.
 
 #### Autodarts Average Trend Arrow (`Autodarts Average Trend Arrow.user.js`)
 
-- Shows a small up/down arrow next to AVG when it changes.
-- Short bounce animation to indicate trend direction.
+- Zeigt einen kleinen Auf/Ab-Pfeil neben AVG, wenn es sich aendert.
+- Kurze Bounce-Animation zur Trend-Richtung.
 
 #### Autodarts Size Strokes (`Autodarts Size Strokes.user.js`)
 
-- Adjusts dart marker size and fill color on the board.
-- Optional pulse/glow effect to make markers easier to spot.
+- Passt Marker-Groesse und Fuellfarbe der Darts auf dem Board an.
+- Optionaler Pulse/Glow-Effekt fuer bessere Sichtbarkeit.
 
-## Screenshots and Animations
+## Screenshots und Animationen
 
-All media lives in `assets/screenshots/`. PNGs are static, GIFs show motion.
+Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bewegung.
 
 ### Themes
 
-| Script         | Preview                                                    |
+| Skript         | Vorschau                                                   |
 | -------------- | ---------------------------------------------------------- |
 | X01 Theme      | ![Theme X01](assets/screenshots/Theme%20X01.png)           |
 | Shanghai Theme | ![Theme Shanghai](assets/screenshots/Theme%20Shanghai.png) |
 | Bermuda Theme  | ![Theme Bermuda](assets/screenshots/Theme%20Bermuda.png)   |
 | Cricket Theme  | ![Theme Cricket](assets/screenshots/Theme%20Cricket.png)   |
 
-### Animations and Effects
+### Animationen und Effekte
 
-| Script              | Preview                                                                | Detail/Before                                                                      |
-| ------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Score Delta Slide   | ![Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
-| Average Trend Arrow | ![Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | —                                                                                  |
-| Size Strokes        | ![Size Strokes after](assets/screenshots/Size%20Strokes.gif)           |                                                                                    |
+| Skript              | Vorschau                                                               | Detail/Vorher                                                                        |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Score Delta Slide   | ![Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif)   |
+| Average Trend Arrow | ![Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                    |
+| Size Strokes        | ![Size Strokes after](assets/screenshots/Size%20Strokes%20after.gif)   | ![Size Strokes before](assets/screenshots/Size%20Strokes%20before.png)               |
 
-## Configuration
+## Konfiguration
 
-Each script has a small configuration block near the top.
+Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
 
 - `Autodarts Score Delta Slide.user.js`
-  - `CONFIG.animationMs` controls the tween duration.
-  - `CONFIG.scoreSelector` controls which score nodes are animated.
+  - `CONFIG.animationMs` steuert die Tween-Dauer.
+  - `CONFIG.scoreSelector` steuert, welche Score-Nodes animiert werden.
 - `Autodarts Size Strokes.user.js`
-  - `MARKER_RADIUS`, `MARKER_FILL`, and `EFFECT` control size, color, and effect.
+  - `MARKER_RADIUS`, `MARKER_FILL` und `EFFECT` steuern Groesse, Farbe und Effekt.
 - `Autodarts Average Trend Arrow.user.js`
-  - `ANIMATION_MS` controls the arrow bounce duration.
+  - `ANIMATION_MS` steuert die Dauer der Arrow-Bounce-Animation.
 - `Autodarts Animate Checkout.user.js`
-  - Selectors and highlight color are adjustable at the top of the file.
+  - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
 
-## License
+## Credits und Upstream-Lizenz
+
+Die Themes basieren auf der inventwo Stylebot-Sammlung:
+https://github.com/inventwo/Script-Sammlung/tree/main/CSS
+
+Ich habe diese Stylebot-Themes als Basis genommen, fuer Tampermonkey umgeschrieben
+und diverse Anpassungen vorgenommen.
+
+Upstream (inventwo): MIT License. Copyright (c) 2025 jkvarel und skvarel von inventwo.
+
+## Lizenz
 
 MIT License
 
 ## Disclaimer
 
-This project is not affiliated with Autodarts.
-Changes to play.autodarts.io may require script updates.
+Dieses Projekt ist nicht mit Autodarts verbunden.
+Aenderungen an play.autodarts.io koennen Skript-Updates erforderlich machen.
