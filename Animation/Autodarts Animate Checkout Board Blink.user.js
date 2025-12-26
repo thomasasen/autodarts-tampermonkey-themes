@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.2
+// @version      0.3
 // @description  Blink the checkout target segment on the board.
 // @author       Thomas Asen
 // @license      MIT
@@ -30,10 +30,10 @@
     ringRatios: {
       outerBullInner: 0.031112,
       outerBullOuter: 0.075556,
-      tripleInner: 0.425804,
-      tripleOuter: 0.4697,
-      doubleInner: 0.702356,
-      doubleOuter: 0.746254,
+      tripleInner: 0.431112,
+      tripleOuter: 0.475556,
+      doubleInner: 0.711112,
+      doubleOuter: 0.755556,
     },
   };
 
@@ -141,12 +141,12 @@
     let hasExplicit = false;
 
     for (const token of tokens) {
-      if (token === "DB" || token === "BULL" || token === "BULLSEYE") {
+      if (token === "DB" || token === "BULLSEYE") {
         targets.push({ target: { ring: "DB" }, isSummary: false });
         hasExplicit = true;
         continue;
       }
-      if (token === "SB" || token === "OB") {
+      if (token === "BULL" || token === "SB" || token === "OB") {
         targets.push({ target: { ring: "SB" }, isSummary: false });
         hasExplicit = true;
         continue;
