@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.10
+// @version      0.11
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -28,6 +28,7 @@
    * @property {number} edgePaddingPx - Zusätzlicher Rand für Overlay-Formen.
    * @property {Object} baseColor - Basisfarbe fürs Ausblenden (RGB).
    * @property {Object} opacity - Deckkraft für geschlossen/tot/inaktiv (0..1).
+   * @property {Object} highlight - Farben für Score/Danger-Highlights.
    * @property {Object} ringRatios - Ring-Grenzen des Dartboards.
    */
   const CONFIG = {
@@ -42,11 +43,15 @@
     showDeadTargets: true,
     strokeWidthRatio: 0.006,
     edgePaddingPx: 0.8,
-    baseColor: { r: 40, g: 40, b: 40 },
+    baseColor: { r: 90, g: 90, b: 90 },
     opacity: {
       closed: 0.9,
       dead: 0.98,
       inactive: 0.92,
+    },
+    highlight: {
+      score: { r: 0, g: 178, b: 135, opacity: 0.45, strokeBoost: 0.2 },
+      danger: { r: 222, g: 120, b: 0, opacity: 0.45, strokeBoost: 0.2 },
     },
     ringRatios: {
       outerBullInner: 0.031112,
@@ -89,6 +94,8 @@
   const CLOSED_CLASS = "ad-ext-cricket-target--closed";
   const DEAD_CLASS = "ad-ext-cricket-target--dead";
   const INACTIVE_CLASS = "ad-ext-cricket-target--inactive";
+  const SCORE_CLASS = "ad-ext-cricket-target--score";
+  const DANGER_CLASS = "ad-ext-cricket-target--danger";
 
   let cachedGridRoot = null;
   let lastStateKey = null;
@@ -107,8 +114,8 @@
    * @param {number} alpha - Alpha 0..1.
    * @returns {string}
    */
-  function rgba(alpha) {
-    const { r, g, b } = CONFIG.baseColor;
+  function rgba(alpha, color = CONFIG.baseColor) {
+    const { r, g, b } = color;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
@@ -154,6 +161,18 @@
   --ad-ext-cricket-fill: var(--ad-ext-cricket-inactive-fill);
   --ad-ext-cricket-stroke: var(--ad-ext-cricket-inactive-stroke);
   --ad-ext-cricket-opacity: var(--ad-ext-cricket-inactive-opacity);
+}
+
+.${SCORE_CLASS} {
+  --ad-ext-cricket-fill: var(--ad-ext-cricket-score-fill);
+  --ad-ext-cricket-stroke: var(--ad-ext-cricket-score-stroke);
+  --ad-ext-cricket-opacity: var(--ad-ext-cricket-score-opacity);
+}
+
+.${DANGER_CLASS} {
+  --ad-ext-cricket-fill: var(--ad-ext-cricket-danger-fill);
+  --ad-ext-cricket-stroke: var(--ad-ext-cricket-danger-stroke);
+  --ad-ext-cricket-opacity: var(--ad-ext-cricket-danger-opacity);
 }
 `;
 
@@ -220,8 +239,10 @@
     const players = Array.from(
       document.querySelectorAll(CONFIG.playerSelector)
     );
-    const activeIndex = players.findIndex((player) =>
-      player.matches(CONFIG.activePlayerSelector)
+    const activeIndex = players.findIndex(
+      (player) =>
+        player.matches(CONFIG.activePlayerSelector) ||
+        player.querySelector(CONFIG.activePlayerSelector)
     );
     return { players, activeIndex: activeIndex >= 0 ? activeIndex : 0 };
   }
@@ -349,6 +370,63 @@
     }
     debugLog("buildRowsFromLinearGrid: rows", rows.size);
     return rows;
+  }
+
+  /**
+   * Ermittelt die Spieleranzahl anhand des linearen Grid-Aufbaus.
+   * @param {Element} root - Wurzel der Cricket-Tabelle.
+   * @returns {number|null}
+   */
+  function detectPlayerCountFromGrid(root) {
+    if (!root) {
+      return null;
+    }
+    const children = Array.from(root.children);
+    if (!children.length) {
+      return null;
+    }
+
+    const labelIndices = [];
+    children.forEach((child, index) => {
+      if (normalizeLabel(child.textContent)) {
+        labelIndices.push(index);
+      }
+    });
+
+    if (labelIndices.length < 2) {
+      return null;
+    }
+
+    const diffs = [];
+    for (let i = 1; i < labelIndices.length; i += 1) {
+      const diff = labelIndices[i] - labelIndices[i - 1];
+      if (diff > 0 && diff < 10) {
+        diffs.push(diff);
+      }
+    }
+
+    if (!diffs.length) {
+      return null;
+    }
+
+    const counts = new Map();
+    diffs.forEach((diff) => {
+      counts.set(diff, (counts.get(diff) || 0) + 1);
+    });
+
+    let best = null;
+    counts.forEach((count, diff) => {
+      if (!best || count > best.count) {
+        best = { diff, count };
+      }
+    });
+
+    if (!best || best.diff < 1) {
+      return null;
+    }
+
+    debugLog("detectPlayerCountFromGrid:", best.diff);
+    return best.diff;
   }
 
   /**
@@ -742,7 +820,18 @@
       return null;
     }
 
-    let rows = buildRowsFromLinearGrid(root, playerCount || null);
+    const gridPlayerCount = detectPlayerCountFromGrid(root);
+    let effectivePlayerCount = playerCount || gridPlayerCount;
+    if (gridPlayerCount && playerCount && gridPlayerCount !== playerCount) {
+      debugLog(
+        "getCricketStates: player count mismatch",
+        playerCount,
+        gridPlayerCount
+      );
+      effectivePlayerCount = gridPlayerCount;
+    }
+
+    let rows = buildRowsFromLinearGrid(root, effectivePlayerCount || null);
     if (!rows) {
       const labelNodes = findLabelNodes(root);
       if (!labelNodes.length) {
@@ -756,10 +845,14 @@
           return;
         }
         const row = findRowContainer(root, labelNode);
-        let cells = getRowCells(row, labelNode, playerCount || null);
+        let cells = getRowCells(row, labelNode, effectivePlayerCount || null);
         let fromAlignment = false;
         if (!cells.length) {
-          cells = getRowCellsByAlignment(root, labelNode, playerCount || null);
+          cells = getRowCellsByAlignment(
+            root,
+            labelNode,
+            effectivePlayerCount || null
+          );
           fromAlignment = cells.length > 0;
         }
         if (!cells.length) {
@@ -782,29 +875,53 @@
       }
       const cells = rowInfo.cells;
       const fromAlignment = rowInfo.fromAlignment;
-      const cell = cells[activeIndex] || cells[0];
-      let activeMarks = getMarks(cell);
-      if (activeMarks === null && fromAlignment && isEmptyCell(cell)) {
-        activeMarks = 0;
-      }
-      if (activeMarks === null) {
+      const marks = cells.map((candidate) => {
+        const mark = getMarks(candidate);
+        if (mark !== null && mark !== undefined) {
+          return mark;
+        }
+        return candidate.querySelector(CONFIG.markElementSelector) ? null : 0;
+      });
+
+      const safeActiveIndex =
+        effectivePlayerCount && effectivePlayerCount > 0
+          ? Math.min(activeIndex, effectivePlayerCount - 1)
+          : Math.min(activeIndex, marks.length - 1);
+      const activeMarks =
+        marks[safeActiveIndex] !== undefined
+          ? marks[safeActiveIndex]
+          : marks[0];
+
+      if (activeMarks === null || activeMarks === undefined) {
         return;
       }
 
+      const normalizedMarks = marks.map((mark) =>
+        mark === null || mark === undefined ? 0 : mark
+      );
+
+      const opponentMarks = normalizedMarks.filter(
+        (_, index) => index !== safeActiveIndex
+      );
+      const anyOpponentOpen = opponentMarks.some(
+        (mark) => mark !== null && mark < 3
+      );
+      const anyOpponentClosed = opponentMarks.some(
+        (mark) => mark !== null && mark >= 3
+      );
+
       let allClosed = false;
-      if (CONFIG.showDeadTargets) {
-        allClosed = cells.every((candidate) => {
-          let marks = getMarks(candidate);
-          if (marks === null && fromAlignment && isEmptyCell(candidate)) {
-            marks = 0;
-          }
-          return marks !== null && marks >= 3;
-        });
+      if (CONFIG.showDeadTargets && normalizedMarks.length > 1) {
+        allClosed = normalizedMarks.every((mark) => mark !== null && mark >= 3);
       }
 
       let state = "open";
       if (allClosed) {
         state = "dead";
+      } else if (activeMarks >= 3 && anyOpponentOpen) {
+        state = "score";
+      } else if (activeMarks < 3 && anyOpponentClosed) {
+        state = "danger";
       } else if (activeMarks >= 3) {
         state = "closed";
       }
@@ -1121,6 +1238,36 @@
       rgba(Math.min(1, CONFIG.opacity.inactive + 0.09))
     );
     overlay.style.setProperty("--ad-ext-cricket-inactive-opacity", "1");
+    overlay.style.setProperty(
+      "--ad-ext-cricket-score-fill",
+      rgba(CONFIG.highlight.score.opacity, CONFIG.highlight.score)
+    );
+    overlay.style.setProperty(
+      "--ad-ext-cricket-score-stroke",
+      rgba(
+        Math.min(
+          1,
+          CONFIG.highlight.score.opacity + CONFIG.highlight.score.strokeBoost
+        ),
+        CONFIG.highlight.score
+      )
+    );
+    overlay.style.setProperty("--ad-ext-cricket-score-opacity", "1");
+    overlay.style.setProperty(
+      "--ad-ext-cricket-danger-fill",
+      rgba(CONFIG.highlight.danger.opacity, CONFIG.highlight.danger)
+    );
+    overlay.style.setProperty(
+      "--ad-ext-cricket-danger-stroke",
+      rgba(
+        Math.min(
+          1,
+          CONFIG.highlight.danger.opacity + CONFIG.highlight.danger.strokeBoost
+        ),
+        CONFIG.highlight.danger
+      )
+    );
+    overlay.style.setProperty("--ad-ext-cricket-danger-opacity", "1");
     const strokeWidth = Math.max(1, radius * CONFIG.strokeWidthRatio);
     overlay.style.setProperty(
       "--ad-ext-cricket-stroke-width",
@@ -1154,6 +1301,10 @@
         shape.classList.add(TARGET_CLASS);
         if (!isCricketTarget) {
           shape.classList.add(INACTIVE_CLASS);
+        } else if (stateInfo.state === "score") {
+          shape.classList.add(SCORE_CLASS);
+        } else if (stateInfo.state === "danger") {
+          shape.classList.add(DANGER_CLASS);
         } else if (stateInfo.state === "dead") {
           shape.classList.add(DEAD_CLASS);
         } else if (stateInfo.state === "closed") {
