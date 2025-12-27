@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.04
+// @version      0.05
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -48,18 +48,18 @@
         opacity: 0,
       },
       closed: {
-        fill: "rgba(0, 0, 0, 0.28)",
-        stroke: "rgba(0, 0, 0, 0.35)",
+        fill: "rgba(0, 0, 0, 0.42)",
+        stroke: "rgba(0, 0, 0, 0.53)",
         opacity: 1,
       },
       dead: {
-        fill: "rgba(0, 0, 0, 0.34)",
-        stroke: "rgba(0, 0, 0, 0.4)",
+        fill: "rgba(0, 0, 0, 0.51)",
+        stroke: "rgba(0, 0, 0, 0.6)",
         opacity: 1,
       },
       inactive: {
-        fill: "rgba(0, 0, 0, 0.32)",
-        stroke: "rgba(0, 0, 0, 0.38)",
+        fill: "rgba(0, 0, 0, 0.48)",
+        stroke: "rgba(0, 0, 0, 0.57)",
         opacity: 1,
       },
     },
