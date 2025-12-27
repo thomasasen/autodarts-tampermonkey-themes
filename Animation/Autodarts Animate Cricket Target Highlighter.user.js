@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.09
+// @version      0.10
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -38,11 +38,11 @@
     markElementSelector:
       "[data-mark], [data-marks], [data-hit], [data-hits], " +
       "[class*='mark'], [class*='hit'], [class*='slash'], [class*='cross'], " +
-      ".chakra-icon, svg",
+      ".chakra-icon, svg, img[alt]",
     showDeadTargets: true,
     strokeWidthRatio: 0.006,
     edgePaddingPx: 0.8,
-    baseColor: { r: 0, g: 0, b: 0 },
+    baseColor: { r: 40, g: 40, b: 40 },
     opacity: {
       closed: 0.9,
       dead: 0.98,
@@ -308,6 +308,47 @@
     cachedGridRoot = best ? best.node : null;
     debugLog("findCricketGridRoot: root found", !!cachedGridRoot);
     return cachedGridRoot;
+  }
+
+  /**
+   * Baut Zeilen anhand linearer Grid-Children (Label in erster Zelle).
+   * @param {Element} root - Wurzel der Cricket-Tabelle.
+   * @param {number|null} playerCount - Anzahl der Spieler.
+   * @returns {Map<string, {row: Element, cells: Element[], fromAlignment: boolean}>|null}
+   */
+  function buildRowsFromLinearGrid(root, playerCount) {
+    if (!root || !playerCount) {
+      return null;
+    }
+    const children = Array.from(root.children);
+    if (children.length < playerCount) {
+      return null;
+    }
+
+    const rows = new Map();
+    children.forEach((child, index) => {
+      const label = normalizeLabel(child.textContent);
+      if (!label || rows.has(label)) {
+        return;
+      }
+      const cells = children.slice(index, index + playerCount);
+      if (cells.length < playerCount) {
+        return;
+      }
+      const extraLabel = cells
+        .slice(1)
+        .some((cell) => normalizeLabel(cell.textContent));
+      if (extraLabel) {
+        return;
+      }
+      rows.set(label, { row: root, cells, fromAlignment: false });
+    });
+
+    if (rows.size < 4) {
+      return null;
+    }
+    debugLog("buildRowsFromLinearGrid: rows", rows.size);
+    return rows;
   }
 
   /**
@@ -617,6 +658,16 @@
     if (!marks.length) {
       return null;
     }
+    let maxAlt = null;
+    marks.forEach((mark) => {
+      const altValue = getMarksFromAttributes(mark);
+      if (altValue !== null) {
+        maxAlt = maxAlt === null ? altValue : Math.max(maxAlt, altValue);
+      }
+    });
+    if (maxAlt !== null) {
+      return Math.min(3, maxAlt);
+    }
     return Math.min(3, marks.length);
   }
 
@@ -691,29 +742,32 @@
       return null;
     }
 
-    const labelNodes = findLabelNodes(root);
-    if (!labelNodes.length) {
-      return null;
-    }
+    let rows = buildRowsFromLinearGrid(root, playerCount || null);
+    if (!rows) {
+      const labelNodes = findLabelNodes(root);
+      if (!labelNodes.length) {
+        return null;
+      }
 
-    const rows = new Map();
-    labelNodes.forEach((labelNode) => {
-      const label = normalizeLabel(labelNode.textContent);
-      if (!label || rows.has(label)) {
-        return;
-      }
-      const row = findRowContainer(root, labelNode);
-      let cells = getRowCells(row, labelNode, playerCount || null);
-      let fromAlignment = false;
-      if (!cells.length) {
-        cells = getRowCellsByAlignment(root, labelNode, playerCount || null);
-        fromAlignment = cells.length > 0;
-      }
-      if (!cells.length) {
-        return;
-      }
-      rows.set(label, { row, cells, fromAlignment });
-    });
+      rows = new Map();
+      labelNodes.forEach((labelNode) => {
+        const label = normalizeLabel(labelNode.textContent);
+        if (!label || rows.has(label)) {
+          return;
+        }
+        const row = findRowContainer(root, labelNode);
+        let cells = getRowCells(row, labelNode, playerCount || null);
+        let fromAlignment = false;
+        if (!cells.length) {
+          cells = getRowCellsByAlignment(root, labelNode, playerCount || null);
+          fromAlignment = cells.length > 0;
+        }
+        if (!cells.length) {
+          return;
+        }
+        rows.set(label, { row, cells, fromAlignment });
+      });
+    }
 
     if (!rows.size) {
       debugLog("getCricketStates: no rows found");
