@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.03
+// @version      0.04
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -57,6 +57,11 @@
         stroke: "rgba(0, 0, 0, 0.4)",
         opacity: 1,
       },
+      inactive: {
+        fill: "rgba(0, 0, 0, 0.32)",
+        stroke: "rgba(0, 0, 0, 0.38)",
+        opacity: 1,
+      },
     },
     ringRatios: {
       outerBullInner: 0.031112,
@@ -82,6 +87,12 @@
     { label: "15", value: 15 },
     { label: "BULL", ring: "BULL" },
   ];
+  const ALL_NUMBER_TARGETS = Array.from({ length: 20 }, (_, index) => {
+    const value = index + 1;
+    return { label: String(value), value };
+  });
+  const ALL_TARGETS = [...ALL_NUMBER_TARGETS, { label: "BULL", ring: "BULL" }];
+  const CRICKET_LABELS = new Set(TARGETS.map((target) => target.label));
 
   const LABEL_SET = new Set(TARGETS.map((target) => target.label));
 
@@ -92,6 +103,7 @@
   const OPEN_CLASS = "ad-ext-cricket-target--open";
   const CLOSED_CLASS = "ad-ext-cricket-target--closed";
   const DEAD_CLASS = "ad-ext-cricket-target--dead";
+  const INACTIVE_CLASS = "ad-ext-cricket-target--inactive";
 
   let cachedGridRoot = null;
   let lastStateKey = null;
@@ -141,6 +153,12 @@
   --ad-ext-cricket-fill: var(--ad-ext-cricket-dead-fill);
   --ad-ext-cricket-stroke: var(--ad-ext-cricket-dead-stroke);
   --ad-ext-cricket-opacity: var(--ad-ext-cricket-dead-opacity);
+}
+
+.${INACTIVE_CLASS} {
+  --ad-ext-cricket-fill: var(--ad-ext-cricket-inactive-fill);
+  --ad-ext-cricket-stroke: var(--ad-ext-cricket-inactive-stroke);
+  --ad-ext-cricket-opacity: var(--ad-ext-cricket-inactive-opacity);
 }
 `;
 
@@ -1000,6 +1018,18 @@
       "--ad-ext-cricket-dead-opacity",
       String(CONFIG.colors.dead.opacity)
     );
+    overlay.style.setProperty(
+      "--ad-ext-cricket-inactive-fill",
+      CONFIG.colors.inactive.fill
+    );
+    overlay.style.setProperty(
+      "--ad-ext-cricket-inactive-stroke",
+      CONFIG.colors.inactive.stroke
+    );
+    overlay.style.setProperty(
+      "--ad-ext-cricket-inactive-opacity",
+      String(CONFIG.colors.inactive.opacity)
+    );
     const strokeWidth = Math.max(1, radius * CONFIG.strokeWidthRatio);
     overlay.style.setProperty(
       "--ad-ext-cricket-stroke-width",
@@ -1022,15 +1052,18 @@
     applyOverlayTheme(overlay, board.radius);
     clearOverlay(overlay);
 
-    TARGETS.forEach((target) => {
+    ALL_TARGETS.forEach((target) => {
+      const isCricketTarget = CRICKET_LABELS.has(target.label);
       const stateInfo = stateMap.get(target.label);
-      if (!stateInfo) {
+      if (isCricketTarget && !stateInfo) {
         return;
       }
       const shapes = buildTargetShapes(board.radius, target);
       shapes.forEach((shape) => {
         shape.classList.add(TARGET_CLASS);
-        if (stateInfo.state === "dead") {
+        if (!isCricketTarget) {
+          shape.classList.add(INACTIVE_CLASS);
+        } else if (stateInfo.state === "dead") {
           shape.classList.add(DEAD_CLASS);
         } else if (stateInfo.state === "closed") {
           shape.classList.add(CLOSED_CLASS);
