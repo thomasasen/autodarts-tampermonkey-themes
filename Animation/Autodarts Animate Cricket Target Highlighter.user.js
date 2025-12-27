@@ -36,7 +36,8 @@
     activePlayerSelector: ".ad-ext-player-active",
     markElementSelector:
       "[data-mark], [data-marks], [data-hit], [data-hits], " +
-      "[class*='mark'], [class*='hit'], [class*='slash'], [class*='cross']",
+      "[class*='mark'], [class*='hit'], [class*='slash'], [class*='cross'], " +
+      ".chakra-icon, svg",
     showDeadTargets: true,
     strokeWidthRatio: 0.006,
     edgePaddingPx: 0.8,
@@ -158,7 +159,10 @@
   function isCricketVariant() {
     const variantEl = document.getElementById(CONFIG.variantElementId);
     const variant = variantEl?.textContent?.trim().toLowerCase() || "";
-    return variant.startsWith("cricket");
+    if (variant.startsWith("cricket")) {
+      return true;
+    }
+    return Boolean(findCricketGridRoot());
   }
 
   /**
@@ -330,6 +334,90 @@
   }
 
   /**
+   * Bestimmt Zellen anhand der Zeilen-Ausrichtung (Fallback für getrennte Spalten).
+   * @param {Element} root - Wurzel der Cricket-Tabelle.
+   * @param {Element} labelNode - Label-Element.
+   * @param {number|null} playerCount - Anzahl der Spieler (falls bekannt).
+   * @returns {Element[]}
+   */
+  function getRowCellsByAlignment(root, labelNode, playerCount) {
+    const labelRect = labelNode.getBoundingClientRect();
+    if (!labelRect.height) {
+      return [];
+    }
+
+    const rootRect = root.getBoundingClientRect();
+    const rowMidY = labelRect.top + labelRect.height / 2;
+    const tolerance = Math.max(6, labelRect.height * 0.7);
+
+    const candidates = Array.from(
+      root.querySelectorAll("div, span, p, td")
+    ).filter((node) => {
+      if (node === labelNode || node.contains(labelNode)) {
+        return false;
+      }
+      const rect = node.getBoundingClientRect();
+      if (rect.height < 8 || rect.width < 12) {
+        return false;
+      }
+      if (rect.width > rootRect.width * 0.7) {
+        return false;
+      }
+      const midY = rect.top + rect.height / 2;
+      if (Math.abs(midY - rowMidY) > tolerance) {
+        return false;
+      }
+      const hasMark =
+        getMarksFromText(node.textContent) !== null ||
+        node.querySelector(CONFIG.markElementSelector);
+      const hasCellSize = rect.width >= 28 && rect.height >= 18;
+      return hasMark || hasCellSize;
+    });
+
+    if (!candidates.length) {
+      return [];
+    }
+
+    const groups = [];
+    const sorted = candidates
+      .map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          node,
+          rect,
+          centerX: rect.left + rect.width / 2,
+          area: rect.width * rect.height,
+        };
+      })
+      .sort((a, b) => a.centerX - b.centerX || a.area - b.area);
+
+    const gap = 8;
+    sorted.forEach((entry) => {
+      const group = groups.find(
+        (item) => Math.abs(item.centerX - entry.centerX) <= gap
+      );
+      if (!group) {
+        groups.push({
+          centerX: entry.centerX,
+          entries: [entry],
+        });
+        return;
+      }
+      group.entries.push(entry);
+    });
+
+    const cells = groups
+      .map((group) =>
+        group.entries.reduce((best, current) =>
+          current.area < best.area ? current : best
+        )
+      )
+      .map((entry) => entry.node);
+
+    return pickCells(cells, playerCount);
+  }
+
+  /**
    * Liest Marks aus Attributen wie data-marks oder aria-label.
    * @param {Element} element - Ziel-Element.
    * @returns {number|null}
@@ -467,6 +555,22 @@
   }
 
   /**
+   * Prüft, ob eine Zelle visuell leer ist.
+   * @param {Element} cell - Zellen-Element.
+   * @returns {boolean}
+   */
+  function isEmptyCell(cell) {
+    if (!cell) {
+      return false;
+    }
+    const text = cell.textContent?.trim() || "";
+    if (text) {
+      return false;
+    }
+    return !cell.querySelector(CONFIG.markElementSelector);
+  }
+
+  /**
    * Baut eine Zustands-Map für den aktiven Spieler.
    * @param {number} playerCount - Anzahl der Spieler.
    * @param {number} activeIndex - Index des aktiven Spielers.
@@ -490,11 +594,16 @@
         return;
       }
       const row = findRowContainer(root, labelNode);
-      const cells = getRowCells(row, labelNode, playerCount || null);
+      let cells = getRowCells(row, labelNode, playerCount || null);
+      let fromAlignment = false;
+      if (!cells.length) {
+        cells = getRowCellsByAlignment(root, labelNode, playerCount || null);
+        fromAlignment = cells.length > 0;
+      }
       if (!cells.length) {
         return;
       }
-      rows.set(label, { row, cells });
+      rows.set(label, { row, cells, fromAlignment });
     });
 
     if (!rows.size) {
@@ -508,8 +617,12 @@
         return;
       }
       const cells = rowInfo.cells;
+      const fromAlignment = rowInfo.fromAlignment;
       const cell = cells[activeIndex] || cells[0];
-      const activeMarks = getMarks(cell);
+      let activeMarks = getMarks(cell);
+      if (activeMarks === null && fromAlignment && isEmptyCell(cell)) {
+        activeMarks = 0;
+      }
       if (activeMarks === null) {
         return;
       }
@@ -517,7 +630,10 @@
       let allClosed = false;
       if (CONFIG.showDeadTargets) {
         allClosed = cells.every((candidate) => {
-          const marks = getMarks(candidate);
+          let marks = getMarks(candidate);
+          if (marks === null && fromAlignment && isEmptyCell(candidate)) {
+            marks = 0;
+          }
           return marks !== null && marks >= 3;
         });
       }
