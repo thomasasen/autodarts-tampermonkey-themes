@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.08
+// @version      0.09
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -44,9 +44,9 @@
     edgePaddingPx: 0.8,
     baseColor: { r: 0, g: 0, b: 0 },
     opacity: {
-      closed: 0.7,
-      dead: 0.8,
-      inactive: 0.75,
+      closed: 0.9,
+      dead: 0.98,
+      inactive: 0.92,
     },
     ringRatios: {
       outerBullInner: 0.031112,
@@ -349,6 +349,36 @@
   }
 
   /**
+   * Passt Zellen an, wenn das Label in einer Spieler-Zelle steckt.
+   * @param {Element[]} cells - Gefundene Zellen.
+   * @param {Element} labelNode - Label-Element.
+   * @param {number|null} playerCount - Anzahl der Spieler.
+   * @returns {Element[]}
+   */
+  function adjustCellsForLabel(cells, labelNode, playerCount) {
+    if (!playerCount || !cells.length) {
+      return cells;
+    }
+
+    let adjusted = [...cells];
+    let labelIndex = adjusted.findIndex((cell) => cell.contains(labelNode));
+
+    if (labelIndex === -1 && adjusted.length < playerCount) {
+      const labelCell = labelNode.closest("div, td, th");
+      if (labelCell && !adjusted.includes(labelCell)) {
+        adjusted = [labelCell, ...adjusted];
+        labelIndex = adjusted.findIndex((cell) => cell.contains(labelNode));
+      }
+    }
+
+    if (labelIndex !== -1 && adjusted.length > playerCount) {
+      adjusted = adjusted.filter((_, index) => index !== labelIndex);
+    }
+
+    return adjusted;
+  }
+
+  /**
    * Extrahiert Spieler-Zellen aus einer Zeile.
    * @param {Element} row - Zeilen-Container.
    * @param {Element} labelNode - Label-Element.
@@ -363,11 +393,17 @@
 
     if (labelChild) {
       const siblings = directChildren.filter((child) => child !== labelChild);
-      if (siblings.length >= 2) {
-        return pickCells(siblings, playerCount);
-      }
-      if (siblings.length === 1 && siblings[0].children.length) {
-        return pickCells(Array.from(siblings[0].children), playerCount);
+      if (siblings.length) {
+        const preferNested =
+          siblings.length === 1 &&
+          siblings[0].children.length >= (playerCount || 2);
+        const cells = preferNested
+          ? Array.from(siblings[0].children)
+          : [labelChild, ...siblings];
+        return pickCells(
+          adjustCellsForLabel(cells, labelNode, playerCount),
+          playerCount
+        );
       }
     }
 
@@ -375,7 +411,10 @@
       row.querySelectorAll("[role='cell'], td, .cell, [class*='cell']")
     ).filter((cell) => !cell.contains(labelNode));
 
-    return pickCells(cellCandidates, playerCount);
+    return pickCells(
+      adjustCellsForLabel(cellCandidates, labelNode, playerCount),
+      playerCount
+    );
   }
 
   /**
@@ -398,7 +437,7 @@
     const candidates = Array.from(
       root.querySelectorAll("div, span, p, td")
     ).filter((node) => {
-      if (node === labelNode || node.contains(labelNode)) {
+      if (node === labelNode) {
         return false;
       }
       const rect = node.getBoundingClientRect();
@@ -459,7 +498,10 @@
       )
       .map((entry) => entry.node);
 
-    return pickCells(cells, playerCount);
+    return pickCells(
+      adjustCellsForLabel(cells, labelNode, playerCount),
+      playerCount
+    );
   }
 
   /**
@@ -477,6 +519,7 @@
       "data-count",
       "aria-label",
       "title",
+      "alt",
     ];
 
     for (const key of attributeKeys) {
@@ -605,7 +648,7 @@
     const nestedAttributeTarget =
       cell.querySelector(
         "[data-marks], [data-mark], [data-hits], [data-hit]"
-      ) || cell.querySelector("[aria-label], [title]");
+      ) || cell.querySelector("[aria-label], [title], [alt]");
 
     if (nestedAttributeTarget) {
       const nestedAttributeMarks = getMarksFromAttributes(
