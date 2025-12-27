@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.05
+// @version      0.07
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -26,7 +26,8 @@
    * @property {boolean} showDeadTargets - Auch Ziele markieren, die von allen Spielern geschlossen sind.
    * @property {number} strokeWidthRatio - Strichstärke relativ zum Board-Radius.
    * @property {number} edgePaddingPx - Zusätzlicher Rand für Overlay-Formen.
-   * @property {Object} colors - RGBA-Farben für offen/geschlossen/tot.
+   * @property {Object} baseColor - Basisfarbe fürs Ausblenden (RGB).
+   * @property {Object} opacity - Deckkraft für geschlossen/tot/inaktiv (0..1).
    * @property {Object} ringRatios - Ring-Grenzen des Dartboards.
    */
   const CONFIG = {
@@ -41,27 +42,11 @@
     showDeadTargets: true,
     strokeWidthRatio: 0.006,
     edgePaddingPx: 0.8,
-    colors: {
-      open: {
-        fill: "rgba(0, 0, 0, 0)",
-        stroke: "rgba(0, 0, 0, 0)",
-        opacity: 0,
-      },
-      closed: {
-        fill: "rgba(0, 0, 0, 0.42)",
-        stroke: "rgba(0, 0, 0, 0.53)",
-        opacity: 1,
-      },
-      dead: {
-        fill: "rgba(0, 0, 0, 0.51)",
-        stroke: "rgba(0, 0, 0, 0.6)",
-        opacity: 1,
-      },
-      inactive: {
-        fill: "rgba(0, 0, 0, 0.48)",
-        stroke: "rgba(0, 0, 0, 0.57)",
-        opacity: 1,
-      },
+    baseColor: { r: 0, g: 0, b: 0 },
+    opacity: {
+      closed: 0.42,
+      dead: 0.51,
+      inactive: 0.48,
     },
     ringRatios: {
       outerBullInner: 0.031112,
@@ -115,6 +100,16 @@
       return;
     }
     console.log(logPrefix, ...args);
+  }
+
+  /**
+   * Baut eine RGBA-Farbe aus Basis-RGB und Alpha.
+   * @param {number} alpha - Alpha 0..1.
+   * @returns {string}
+   */
+  function rgba(alpha) {
+    const { r, g, b } = CONFIG.baseColor;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   /**
@@ -982,54 +977,36 @@
    * @returns {void}
    */
   function applyOverlayTheme(overlay, radius) {
-    overlay.style.setProperty(
-      "--ad-ext-cricket-open-fill",
-      CONFIG.colors.open.fill
-    );
-    overlay.style.setProperty(
-      "--ad-ext-cricket-open-stroke",
-      CONFIG.colors.open.stroke
-    );
-    overlay.style.setProperty(
-      "--ad-ext-cricket-open-opacity",
-      String(CONFIG.colors.open.opacity)
-    );
+    overlay.style.setProperty("--ad-ext-cricket-open-fill", rgba(0));
+    overlay.style.setProperty("--ad-ext-cricket-open-stroke", rgba(0));
+    overlay.style.setProperty("--ad-ext-cricket-open-opacity", "0");
     overlay.style.setProperty(
       "--ad-ext-cricket-closed-fill",
-      CONFIG.colors.closed.fill
+      rgba(CONFIG.opacity.closed)
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-closed-stroke",
-      CONFIG.colors.closed.stroke
+      rgba(Math.min(1, CONFIG.opacity.closed + 0.11))
     );
-    overlay.style.setProperty(
-      "--ad-ext-cricket-closed-opacity",
-      String(CONFIG.colors.closed.opacity)
-    );
+    overlay.style.setProperty("--ad-ext-cricket-closed-opacity", "1");
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-fill",
-      CONFIG.colors.dead.fill
+      rgba(CONFIG.opacity.dead)
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-stroke",
-      CONFIG.colors.dead.stroke
+      rgba(Math.min(1, CONFIG.opacity.dead + 0.09))
     );
-    overlay.style.setProperty(
-      "--ad-ext-cricket-dead-opacity",
-      String(CONFIG.colors.dead.opacity)
-    );
+    overlay.style.setProperty("--ad-ext-cricket-dead-opacity", "1");
     overlay.style.setProperty(
       "--ad-ext-cricket-inactive-fill",
-      CONFIG.colors.inactive.fill
+      rgba(CONFIG.opacity.inactive)
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-inactive-stroke",
-      CONFIG.colors.inactive.stroke
+      rgba(Math.min(1, CONFIG.opacity.inactive + 0.09))
     );
-    overlay.style.setProperty(
-      "--ad-ext-cricket-inactive-opacity",
-      String(CONFIG.colors.inactive.opacity)
-    );
+    overlay.style.setProperty("--ad-ext-cricket-inactive-opacity", "1");
     const strokeWidth = Math.max(1, radius * CONFIG.strokeWidthRatio);
     overlay.style.setProperty(
       "--ad-ext-cricket-stroke-width",
