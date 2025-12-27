@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.01
+// @version      0.02
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -66,6 +66,7 @@
       doubleInner: 0.711112,
       doubleOuter: 0.755556,
     },
+    debug: true,
   };
 
   const SEGMENT_ORDER = [
@@ -95,6 +96,14 @@
   let cachedGridRoot = null;
   let lastStateKey = null;
   let lastBoardKey = null;
+  const logPrefix = "[Autodarts Cricket Highlighter]";
+
+  function debugLog(...args) {
+    if (!CONFIG.debug) {
+      return;
+    }
+    console.log(logPrefix, ...args);
+  }
 
   /**
    * Fügt die benötigten CSS-Regeln einmalig ein.
@@ -160,9 +169,12 @@
     const variantEl = document.getElementById(CONFIG.variantElementId);
     const variant = variantEl?.textContent?.trim().toLowerCase() || "";
     if (variant.startsWith("cricket")) {
+      debugLog("Variant detected via #ad-ext-game-variant:", variant);
       return true;
     }
-    return Boolean(findCricketGridRoot());
+    const hasGrid = Boolean(findCricketGridRoot());
+    debugLog("Variant fallback via grid:", hasGrid);
+    return hasGrid;
   }
 
   /**
@@ -208,6 +220,7 @@
    */
   function findLabelNodes(scope) {
     if (!scope) {
+      debugLog("findLabelNodes: scope is null");
       return [];
     }
     const nodes = scope.querySelectorAll("div, span, p, td, th");
@@ -231,15 +244,28 @@
    */
   function findCricketGridRoot() {
     if (CONFIG.tableSelector) {
-      return document.querySelector(CONFIG.tableSelector);
+      const direct = document.querySelector(CONFIG.tableSelector);
+      debugLog(
+        "findCricketGridRoot: tableSelector",
+        CONFIG.tableSelector,
+        !!direct
+      );
+      return direct;
     }
 
     if (cachedGridRoot && cachedGridRoot.isConnected) {
+      debugLog("findCricketGridRoot: using cached root");
       return cachedGridRoot;
+    }
+
+    if (!document.body) {
+      debugLog("findCricketGridRoot: document.body not ready");
+      return null;
     }
 
     const labelNodes = findLabelNodes(document.body);
     if (labelNodes.length < 4) {
+      debugLog("findCricketGridRoot: not enough labels", labelNodes.length);
       return null;
     }
 
@@ -267,6 +293,7 @@
     });
 
     cachedGridRoot = best ? best.node : null;
+    debugLog("findCricketGridRoot: root found", !!cachedGridRoot);
     return cachedGridRoot;
   }
 
@@ -587,6 +614,7 @@
   function getCricketStates(playerCount, activeIndex) {
     const root = findCricketGridRoot();
     if (!root) {
+      debugLog("getCricketStates: no grid root");
       return null;
     }
 
@@ -615,6 +643,7 @@
     });
 
     if (!rows.size) {
+      debugLog("getCricketStates: no rows found");
       return null;
     }
 
@@ -1037,6 +1066,7 @@
       }
       lastStateKey = null;
       lastBoardKey = null;
+      debugLog("updateTargets: not cricket");
       return;
     }
 
@@ -1044,22 +1074,26 @@
     const playerCount = players.length || null;
     const stateMap = getCricketStates(playerCount, activeIndex);
     if (!stateMap || !stateMap.size) {
+      debugLog("updateTargets: no state map");
       return;
     }
 
     const board = findBoard();
     if (!board) {
+      debugLog("updateTargets: no board");
       return;
     }
 
     const boardKey = `${board.radius}:${board.group.id || "board"}`;
     const stateKey = buildStateKey(stateMap);
     if (stateKey === lastStateKey && boardKey === lastBoardKey) {
+      debugLog("updateTargets: no changes");
       return;
     }
 
     lastStateKey = stateKey;
     lastBoardKey = boardKey;
+    debugLog("updateTargets: render", stateKey);
     renderTargets(stateMap);
   }
 
