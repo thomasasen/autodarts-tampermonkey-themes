@@ -115,6 +115,12 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 
 - Blinks the checkout target segment directly on the board.
 - Supports single, double, triple, and bull targets with configurable effects.
+
+#### Autodarts Animate Cricket Target Highlighter (`Animation/Autodarts Animate Cricket Target Highlighter.user.js`)
+
+- Blendet Nicht-Cricket-Felder (1-14) ab und markiert 15-20/Bull je Spielerstatus.
+- Erkennt geschlossene, offene und „tote“ Ziele sowie Score-/Danger-Situationen.
+- Unterstützt 1 bis mehrere Spieler und liest Marks aus Icons/alt-Texten der Tabelle.
 ## Screenshots und Animationen
 
 Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bewegung.
@@ -137,6 +143,7 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Animate Checkout Board Blink | ![Animate Checkout Board Blink](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                                  |
 | Animate Turn Start Sweep    | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
 | Animate Size Strokes        | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
+| Cricket Target Highlighter  | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
 
 ## Konfiguration
 
@@ -157,6 +164,9 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
 - `Animation/Autodarts Animate Checkout Board Blink.user.js`
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
+- `Animation/Autodarts Animate Cricket Target Highlighter.user.js`
+  - `CONFIG.baseColor`, `CONFIG.opacity`, `CONFIG.highlight` steuern Ausblendung und Score/Danger-Farben.
+  - `CONFIG.tableSelector` kann gesetzt werden, falls die Cricket-Tabelle anders aufgebaut ist.
 
 ## Bugs und Feedback
 

@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.11
-// @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
+// @version      1.0
+// @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,7 +15,19 @@
 (function () {
   "use strict";
 
-  // Skript-Ziel: Cricket-Marks je Spieler lesen und offene/geschlossene Ziele als Board-Overlay markieren.
+  // Skript-Ziel: Cricket-Marks je Spieler lesen und die Zustände als Board-Overlay darstellen.
+  // Ablauf:
+  // 1) Ermittelt die Cricket-Tabelle und die Spieleranzahl (funktioniert mit 1, 2 und mehr Spielern).
+  // 2) Liest pro Zeile (15-20, Bull) die Marks aus Symbolen/Icons/alt-Texten.
+  // 3) Berechnet daraus den Status je Ziel:
+  //    - offen: Spieler hat <3 Marks und kein Gegner ist bereits geschlossen.
+  //    - geschlossen: Spieler hat 3 Marks, alle Gegner ebenfalls geschlossen.
+  //    - score: Spieler hat 3 Marks, mindestens ein Gegner ist noch offen (Punkten möglich).
+  //    - danger: Spieler ist offen, mindestens ein Gegner hat bereits geschlossen (Gegner kann punkten).
+  //    - tot: alle Spieler haben geschlossen (keine Punkte mehr möglich).
+  // 4) Rendert ein SVG-Overlay auf dem Board:
+  //    - Nicht-Cricket-Felder (1-14) werden ausgeblendet.
+  //    - Cricket-Ziele werden je Status eingefärbt (konfigurierbar am Skriptanfang).
   /**
    * Konfiguration für Selektoren und Optik.
    * @property {string} variantElementId - Element mit Spielvariante-Text.
