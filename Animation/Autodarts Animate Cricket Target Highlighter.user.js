@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      0.01
 // @description  Hebt im Cricket die offenen, geschlossenen und optional „toten“ Felder (15–20/Bull) für den aktiven Spieler direkt auf dem Board hervor.
 // @author       Thomas Asen
 // @license      MIT
@@ -207,6 +207,9 @@
    * @returns {Element[]}
    */
   function findLabelNodes(scope) {
+    if (!scope) {
+      return [];
+    }
     const nodes = scope.querySelectorAll("div, span, p, td, th");
     const labels = [];
     nodes.forEach((node) => {
@@ -314,7 +317,9 @@
    */
   function getRowCells(row, labelNode, playerCount) {
     const directChildren = Array.from(row.children);
-    const labelChild = directChildren.find((child) => child.contains(labelNode));
+    const labelChild = directChildren.find((child) =>
+      child.contains(labelNode)
+    );
 
     if (labelChild) {
       const siblings = directChildren.filter((child) => child !== labelChild);
@@ -541,11 +546,14 @@
     }
 
     const nestedAttributeTarget =
-      cell.querySelector("[data-marks], [data-mark], [data-hits], [data-hit]") ||
-      cell.querySelector("[aria-label], [title]");
+      cell.querySelector(
+        "[data-marks], [data-mark], [data-hits], [data-hit]"
+      ) || cell.querySelector("[aria-label], [title]");
 
     if (nestedAttributeTarget) {
-      const nestedAttributeMarks = getMarksFromAttributes(nestedAttributeTarget);
+      const nestedAttributeMarks = getMarksFromAttributes(
+        nestedAttributeTarget
+      );
       if (nestedAttributeMarks !== null) {
         return nestedAttributeMarks;
       }
@@ -927,7 +935,10 @@
    * @returns {void}
    */
   function applyOverlayTheme(overlay, radius) {
-    overlay.style.setProperty("--ad-ext-cricket-open-fill", CONFIG.colors.open.fill);
+    overlay.style.setProperty(
+      "--ad-ext-cricket-open-fill",
+      CONFIG.colors.open.fill
+    );
     overlay.style.setProperty(
       "--ad-ext-cricket-open-stroke",
       CONFIG.colors.open.stroke
