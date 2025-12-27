@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Blink the checkout target segment on the board.
+// @description  Markiert die Checkout-Ziele direkt auf dem Dartboard (z.B. Double/Bull) und lässt sie blinken oder pulsieren, wenn ein Checkout in X01 möglich ist.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,6 +15,22 @@
 (function () {
   "use strict";
 
+  // Script-Ziel: Checkout-Ziele auf dem Board visuell markieren (Blinken/Puls/Glow).
+  /**
+   * Konfiguration für das Markieren von Checkout-Zielen.
+   * @property {string} suggestionSelector - CSS-Selektor für die Checkout-Empfehlung, z.B. ".suggestion".
+   * @property {string} variantElementId - Element mit Spielvariante, z.B. "ad-ext-game-variant".
+   * @property {boolean} requireX01 - Nur in X01 aktivieren, z.B. true.
+   * @property {string} highlightTargets - "first" oder "all", z.B. "first".
+   * @property {string} effect - "pulse" | "blink" | "glow", z.B. "pulse".
+   * @property {string} color - Füllfarbe der Ziele, z.B. "rgba(168, 85, 247, 0.85)".
+   * @property {string} strokeColor - Rahmenfarbe der Ziele, z.B. "rgba(168, 85, 247, 0.95)".
+   * @property {number} strokeWidthRatio - Rahmenbreite relativ zum Boardradius, z.B. 0.008.
+   * @property {number} animationMs - Dauer der Animation in ms, z.B. 1000.
+   * @property {string} singleRing - "inner" | "outer" | "both", z.B. "both".
+   * @property {number} edgePaddingPx - Zusätzlicher Rand in px, z.B. 1.
+   * @property {Object} ringRatios - Ringgrenzen als Anteil des Boardradius, z.B. doubleInner: 0.711112.
+   */
   const CONFIG = {
     suggestionSelector: ".suggestion",
     variantElementId: "ad-ext-game-variant",
@@ -37,6 +53,7 @@
     },
   };
 
+  // Reihenfolge der Sektoren im Uhrzeigersinn (Standard-Dartboard).
   const SEGMENT_ORDER = [
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
   ];
@@ -51,8 +68,13 @@
     glow: "ad-ext-checkout-target--glow",
   };
 
+  // Merkt sich den zuletzt gelesenen Checkout-Text, um unnötige Updates zu vermeiden.
   let lastSuggestion = null;
 
+  /**
+   * Fügt die benötigten CSS-Regeln für Ziel-Markierungen ein.
+   * @returns {void}
+   */
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
       return;
@@ -120,6 +142,10 @@
     }
   }
 
+  /**
+   * Prüft, ob eine X01-Variante aktiv ist (z.B. 301/501).
+   * @returns {boolean}
+   */
   function isX01Variant() {
     if (!CONFIG.requireX01) {
       return true;
@@ -129,6 +155,13 @@
     return variant.includes("x01");
   }
 
+  /**
+   * Extrahiert Checkout-Ziele aus dem Vorschlagstext.
+   * @param {string} text - Text wie "T20 D10" oder "BULL".
+   * @example
+   * parseTargets("T20 D10"); // => [{ ring: "T", value: 20 }, { ring: "D", value: 10 }]
+   * @returns {Array<{ring: string, value?: number}>}
+   */
   function parseTargets(text) {
     if (!text) {
       return [];
@@ -198,6 +231,13 @@
     return filtered.map((entry) => entry.target);
   }
 
+  /**
+   * Sucht den größten Kreisradius innerhalb eines SVG-Elements.
+   * @param {Element} root - SVG oder Gruppe.
+   * @example
+   * getBoardRadius(document.querySelector("svg"));
+   * @returns {number}
+   */
   function getBoardRadius(root) {
     return [...root.querySelectorAll("circle")].reduce((max, circle) => {
       const r = Number.parseFloat(circle.getAttribute("r"));
@@ -205,6 +245,10 @@
     }, 0);
   }
 
+  /**
+   * Findet das wahrscheinlichste Dartboard-SVG anhand von Zahlen und Radius.
+   * @returns {{group: Element, radius: number} | null}
+   */
   function findBoard() {
     const svgs = [...document.querySelectorAll("svg")];
     if (!svgs.length) {
@@ -252,6 +296,11 @@
     return { group: bestGroup || best, radius };
   }
 
+  /**
+   * Stellt sicher, dass es eine Overlay-Gruppe für Ziel-Markierungen gibt.
+   * @param {Element} boardGroup - SVG-Gruppe des Boards.
+   * @returns {SVGGElement}
+   */
   function ensureOverlayGroup(boardGroup) {
     let overlay = boardGroup.querySelector(`#${OVERLAY_ID}`);
     if (!overlay) {
@@ -262,17 +311,36 @@
     return overlay;
   }
 
+  /**
+   * Entfernt alle bisherigen Ziel-Elemente aus dem Overlay.
+   * @param {Element} overlay - Overlay-Gruppe.
+   * @returns {void}
+   */
   function clearOverlay(overlay) {
     while (overlay.firstChild) {
       overlay.removeChild(overlay.firstChild);
     }
   }
 
+  /**
+   * Rechnet Polar-Koordinaten in SVG-Koordinaten um.
+   * @param {number} r - Radius, z.B. 100.
+   * @param {number} deg - Winkel in Grad, z.B. 45.
+   * @returns {{x: number, y: number}}
+   */
   function polar(r, deg) {
     const rad = (deg * Math.PI) / 180;
     return { x: r * Math.sin(rad), y: -r * Math.cos(rad) };
   }
 
+  /**
+   * Baut einen Keil (Segment) als SVG-Pfad zwischen zwei Radien.
+   * @param {number} rInner - Innenradius, z.B. 60.
+   * @param {number} rOuter - Außenradius, z.B. 70.
+   * @param {number} startDeg - Startwinkel in Grad, z.B. 36.
+   * @param {number} endDeg - Endwinkel in Grad, z.B. 54.
+   * @returns {string} - SVG-Pfadbeschreibung.
+   */
   function wedgePath(rInner, rOuter, startDeg, endDeg) {
     const p0 = polar(rOuter, startDeg);
     const p1 = polar(rOuter, endDeg);
@@ -288,6 +356,12 @@
     ].join(" ");
   }
 
+  /**
+   * Baut einen Ring (Donut) als SVG-Pfad zwischen zwei Radien.
+   * @param {number} rInner - Innenradius, z.B. 10.
+   * @param {number} rOuter - Außenradius, z.B. 20.
+   * @returns {string} - SVG-Pfadbeschreibung.
+   */
   function ringPath(rInner, rOuter) {
     const outer = [
       `M 0 ${-rOuter}`,
@@ -304,6 +378,11 @@
     return `${outer} ${inner}`;
   }
 
+  /**
+   * Berechnet die Winkelgrenzen für ein Nummernsegment.
+   * @param {number} value - Segmentwert 1..20, z.B. 20.
+   * @returns {{start: number, end: number} | null}
+   */
   function segmentAngles(value) {
     const index = SEGMENT_ORDER.indexOf(value);
     if (index === -1) {
@@ -313,6 +392,12 @@
     return { start: center - 9, end: center + 9 };
   }
 
+  /**
+   * Setzt CSS-Klassen und Variablen für Optik und Animation.
+   * @param {SVGElement} element - Ziel-Shape im Overlay.
+   * @param {number} radius - Boardradius, z.B. 200.
+   * @returns {void}
+   */
   function applyTargetStyles(element, radius) {
     element.classList.add(TARGET_CLASS);
     const effectClass = EFFECT_CLASSES[CONFIG.effect] || EFFECT_CLASSES.pulse;
@@ -334,6 +419,15 @@
     }
   }
 
+  /**
+   * Erzeugt ein Keil-Element für ein Ringsegment.
+   * @param {number} radius - Boardradius, z.B. 200.
+   * @param {number} innerRatio - Innenanteil, z.B. 0.43.
+   * @param {number} outerRatio - Außenanteil, z.B. 0.48.
+   * @param {number} startDeg - Startwinkel.
+   * @param {number} endDeg - Endwinkel.
+   * @returns {SVGPathElement}
+   */
   function createWedge(radius, innerRatio, outerRatio, startDeg, endDeg) {
     const path = document.createElementNS(SVG_NS, "path");
     const padding = CONFIG.edgePaddingPx || 0;
@@ -343,6 +437,14 @@
     return path;
   }
 
+  /**
+   * Erzeugt Bull/Outer-Bull als Kreis oder Ring.
+   * @param {number} radius - Boardradius.
+   * @param {number} innerRatio - Innenanteil für Ring.
+   * @param {number} outerRatio - Außenanteil für Ring.
+   * @param {boolean} solid - true für gefüllten Kreis.
+   * @returns {SVGCircleElement|SVGPathElement}
+   */
   function createBull(radius, innerRatio, outerRatio, solid) {
     const padding = CONFIG.edgePaddingPx || 0;
     if (solid) {
@@ -361,6 +463,12 @@
     return ring;
   }
 
+  /**
+   * Baut die passenden Shapes (Keil/Ring/Kreis) für ein Ziel.
+   * @param {number} radius - Boardradius, z.B. 200.
+   * @param {{ring: string, value?: number}} target - Ziel, z.B. { ring: "D", value: 20 }.
+   * @returns {SVGElement[]}
+   */
   function buildTargetShapes(radius, target) {
     const ratios = CONFIG.ringRatios;
     const shapes = [];
@@ -437,6 +545,10 @@
     return shapes;
   }
 
+  /**
+   * Haupt-Update: Liest Checkout-Vorschlag und zeichnet Ziele aufs Board.
+   * @returns {void}
+   */
   function updateTargets() {
     const suggestionEl = document.querySelector(CONFIG.suggestionSelector);
     const text = suggestionEl?.textContent?.trim() || "";
@@ -480,6 +592,10 @@
   }
 
   let scheduled = false;
+  /**
+   * Fasst viele DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * @returns {void}
+   */
   function scheduleUpdate() {
     if (scheduled) {
       return;
@@ -494,6 +610,7 @@
   ensureStyle();
   updateTargets();
 
+  // Beobachtet Text- und DOM-Änderungen, um Checkout-Ziele zu aktualisieren.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

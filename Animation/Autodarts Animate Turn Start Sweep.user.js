@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Turn Start Sweep
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Show a light sweep when the active player changes.
+// @description  Beim Wechsel des aktiven Spielers läuft ein kurzer Lichtstreifen über dessen Zeile/Karte, damit du den Zugstart sofort erkennst.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,6 +15,16 @@
 (function () {
   "use strict";
 
+  // Script-Ziel: Beim Spielerwechsel eine kurze Licht-Sweep-Animation anzeigen.
+  /**
+   * Konfiguration der Sweep-Animation.
+   * @property {string} activeSelector - CSS-Selektor für den aktiven Spieler, z.B. ".ad-ext-player-active".
+   * @property {string} sweepClass - Klasse, die die Animation triggert, z.B. "ad-ext-turn-sweep".
+   * @property {number} sweepDurationMs - Dauer der Animation in ms, z.B. 420.
+   * @property {number} sweepDelayMs - Verzögerung vor Start in ms, z.B. 0.
+   * @property {string} sweepWidth - Breite des Lichtstreifens, z.B. "45%".
+   * @property {string} sweepColor - Farbe des Lichtstreifens, z.B. "rgba(255, 255, 255, 0.35)".
+   */
   const CONFIG = {
     activeSelector: ".ad-ext-player-active",
     sweepClass: "ad-ext-turn-sweep",
@@ -28,6 +38,10 @@
   const timeouts = new WeakMap();
   let lastActive = null;
 
+  /**
+   * Fügt die benötigten CSS-Regeln einmalig in die Seite ein.
+   * @returns {void}
+   */
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
       return;
@@ -78,6 +92,13 @@
     }
   }
 
+  /**
+   * Startet die Sweep-Animation für ein Element.
+   * @param {Element|null} node - Ziel-Element, z.B. die aktive Spielerzeile.
+   * @example
+   * runSweep(document.querySelector(".ad-ext-player-active"));
+   * @returns {void}
+   */
   function runSweep(node) {
     if (!node) {
       return;
@@ -96,6 +117,10 @@
     timeouts.set(node, timeout);
   }
 
+  /**
+   * Ermittelt den aktiven Spieler und startet bei Wechsel die Animation.
+   * @returns {void}
+   */
   function updateActive() {
     const current = document.querySelector(CONFIG.activeSelector);
     if (current === lastActive) {
@@ -108,6 +133,10 @@
   }
 
   let scheduled = false;
+  /**
+   * Fasst viele DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * @returns {void}
+   */
   function scheduleUpdate() {
     if (scheduled) {
       return;
@@ -122,6 +151,7 @@
   ensureStyle();
   updateActive();
 
+  // Beobachtet Klassenwechsel, damit der aktive Spieler erkannt wird.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

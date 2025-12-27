@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple, Double and Bull Hits
 // @version      1.0
-// @description  Animate Triple, Double and Bull hits
+// @description  Hebt Treffer auf Triple, Double oder Bull in der Wurfliste mit einer auffälligen Farb-Animation hervor, damit besondere Treffer sofort ins Auge fallen.
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
@@ -15,10 +15,20 @@
 (function () {
   "use strict";
 
+  // Script-Ziel: Treffer auf Triple/Double/Bull in der Wurfliste hervorheben.
+  // Standardwerte 1..20 für gültige Segmente.
   const SEGMENT_VALUES = [
     20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
   ];
 
+  /**
+   * Konfiguration für Trefferarten und Darstellung.
+   * @property {number} pollIntervalMs - Fallback-Intervall in ms, z.B. 3000.
+   * @property {Object} selectors - CSS-Selektoren für Wurfliste und Text.
+   * @property {string[]} defaultGradientStops - Standard-Gradientfarben.
+   * @property {Array} hitTypes - Trefferarten (T/D) mit Farben und Gradients.
+   * @property {Object} bull - Konfiguration für BULL (ein/aus).
+   */
   const CONFIG = {
     pollIntervalMs: 3000,
     selectors: {
@@ -52,6 +62,11 @@
     },
   };
 
+  /**
+   * Erweitert Treffer-Typen um abgeleitete Eigenschaften.
+   * @param {Object} type - Treffer-Typ, z.B. { key: "triple", prefix: "T" }.
+   * @returns {Object}
+   */
   const withDerivedProps = (type) => ({
     ...type,
     valuesSet: Array.isArray(type.values) ? new Set(type.values) : null,
@@ -60,6 +75,7 @@
     labelUpper: type.label ? type.label.toUpperCase() : undefined,
   });
 
+  // Vorberechnete Lookup-Tabellen und Klassen für schnelle Zuordnung.
   const HIT_TYPES = CONFIG.hitTypes.map(withDerivedProps);
   const TYPE_BY_PREFIX = HIT_TYPES.reduce((map, type) => {
     map[type.prefix.toUpperCase()] = type;
@@ -72,6 +88,11 @@
   let stylesInjected = false;
   let initialized = false;
 
+  /**
+   * Erzeugt einen CSS-Gradient-String für die Trefferkarte.
+   * @param {string[]} stops - Farbwerte wie ["#ff6b6b", "#ffd166"].
+   * @returns {string}
+   */
   function gradientValue(stops) {
     const palette =
       Array.isArray(stops) && stops.length
@@ -80,6 +101,10 @@
     return `linear-gradient(135deg, ${palette.join(", ")})`;
   }
 
+  /**
+   * Baut die komplette CSS-Definition für Highlights und Animationen.
+   * @returns {string}
+   */
   function buildStyles() {
     const highlightBlocks = DECORATABLE_TYPES.map(
       (type) =>
@@ -100,6 +125,10 @@
     )});\n            background-size: 250% 250%;\n            filter: blur(3px);\n            opacity: 0.9;\n            animation: glow-flow 6s linear infinite;\n            z-index: -2;\n        }\n\n        .animate-hit::after {\n            content: \"\";\n            position: absolute;\n            inset: 1px;\n            border-radius: inherit;\n            background: rgba(5, 7, 16, 0.85);\n            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);\n            animation: panel-pulse 3s ease-in-out infinite;\n            z-index: -1;\n        }\n\n        .animate-hit:hover {\n            transform: translateY(-1px);\n            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);\n        }\n\n${gradientBlocks}\n        @keyframes glow-flow {\n            0% {\n                background-position: 0% 50%;\n            }\n            50% {\n                background-position: 100% 50%;\n            }\n            100% {\n                background-position: 0% 50%;\n            }\n        }\n\n        @keyframes panel-pulse {\n            0% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n            50% {\n                opacity: 1;\n                transform: translateY(-1px);\n            }\n            100% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n        }\n    `;
   }
 
+  /**
+   * Fügt die CSS-Styles einmalig in den Head ein.
+   * @returns {void}
+   */
   function injectCSS() {
     if (stylesInjected) {
       return;
@@ -112,6 +141,13 @@
     stylesInjected = true;
   }
 
+  /**
+   * Prüft, ob ein Text ein Treffer-Typ ist (T/D/BULL) und liefert Metadaten.
+   * @param {HTMLElement} pElement - Textknoten der Wurfanzeige.
+   * @example
+   * getHitMeta({ textContent: "T20" });
+   * @returns {{type: Object, prefixChar: string} | null}
+   */
   function getHitMeta(pElement) {
     const rawText = pElement.textContent.trim();
     if (!rawText) {
@@ -140,6 +176,13 @@
     return null;
   }
 
+  /**
+   * Wendet Klassen und markierten Text für einen Treffer an.
+   * @param {HTMLElement} pElement - Text-Element der Wurfanzeige.
+   * @param {Object} meta - Treffer-Metadaten.
+   * @param {string} prefixChar - Prefix wie "T" oder "D" (oder "").
+   * @returns {void}
+   */
   function decorateHit(pElement, meta, prefixChar) {
     const throwRow = pElement.closest(CONFIG.selectors.throwRow);
     if (!throwRow) {
@@ -166,6 +209,10 @@
     }
   }
 
+  /**
+   * Sucht alle Wurftexte und dekoriert Trefferarten.
+   * @returns {void}
+   */
   function animateHits() {
     document
       .querySelectorAll(CONFIG.selectors.throwText)
@@ -177,6 +224,11 @@
       });
   }
 
+  /**
+   * Prüft, ob eine Mutation die Wurfanzeige betrifft.
+   * @param {MutationRecord} mutation - Mutation aus dem Observer.
+   * @returns {boolean}
+   */
   function mutationTouchesThrowText(mutation) {
     if (mutation.type === "characterData") {
       const parent = mutation.target.parentElement;
@@ -191,12 +243,17 @@
     );
   }
 
+  // Beobachtet DOM-Änderungen an der Wurfliste.
   const observer = new MutationObserver((mutationsList) => {
     if (mutationsList.some(mutationTouchesThrowText)) {
       animateHits();
     }
   });
 
+  /**
+   * Initialisiert Styles und startet Observer/Intervalle.
+   * @returns {void}
+   */
   function start() {
     if (initialized) {
       return;

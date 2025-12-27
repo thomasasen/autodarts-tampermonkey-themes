@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Pulse remaining score when a checkout is available in X01.
+// @description  Lässt die Restpunktzahl des aktiven Spielers sanft aufleuchten, sobald in X01 ein Checkout möglich ist.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,6 +15,17 @@
 (function () {
   "use strict";
 
+  // Script-Ziel: Restpunktzahl hervorheben, wenn Checkout in X01 möglich ist.
+  /**
+   * Selektoren und CSS-Klassen für die Checkout-Hervorhebung.
+   * @property {string} STYLE_ID - ID für das Style-Element, z.B. "autodarts-animate-checkout-style".
+   * @property {string} HIGHLIGHT_CLASS - Klasse für Puls-Effekt, z.B. "ad-ext-checkout-possible".
+   * @property {string} SCORE_SELECTOR - Alle Score-Elemente, z.B. "p.ad-ext-player-score".
+   * @property {string} ACTIVE_SCORE_SELECTOR - Aktiver Spieler, z.B. ".ad-ext-player-active p.ad-ext-player-score".
+   * @property {string} SUGGESTION_SELECTOR - Checkout-Vorschlag, z.B. ".suggestion".
+   * @property {string} VARIANT_ELEMENT_ID - Element mit Spielvariante, z.B. "ad-ext-game-variant".
+   * @property {string} PULSE_COLOR - RGB ohne Alpha, z.B. "159, 219, 88".
+   */
   const STYLE_ID = "autodarts-animate-checkout-style";
   const HIGHLIGHT_CLASS = "ad-ext-checkout-possible";
   const SCORE_SELECTOR = "p.ad-ext-player-score";
@@ -25,6 +36,10 @@
   const VARIANT_ELEMENT_ID = "ad-ext-game-variant";
   const PULSE_COLOR = "159, 219, 88";
 
+  /**
+   * Fügt die CSS-Animation für den Puls-Effekt einmalig ein.
+   * @returns {void}
+   */
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
       return;
@@ -67,12 +82,20 @@
     }
   }
 
+  /**
+   * Prüft, ob eine X01-Variante aktiv ist (z.B. 301/501).
+   * @returns {boolean}
+   */
   function isX01Variant() {
     const variantEl = document.getElementById(VARIANT_ELEMENT_ID);
     const variant = variantEl?.textContent?.trim().toLowerCase() || "";
     return variant.includes("x01");
   }
 
+  /**
+   * Prüft, ob der Checkout-Vorschlag ein Double/Bull enthält.
+   * @returns {boolean}
+   */
   function hasCheckoutSuggestion() {
     const suggestion = document.querySelector(SUGGESTION_SELECTOR);
     if (!suggestion) {
@@ -86,6 +109,10 @@
     return /D\d+|DB|BULL/.test(normalized);
   }
 
+  /**
+   * Liefert Score-Elemente. Bevorzugt wird der aktive Spieler.
+   * @returns {NodeListOf<Element>}
+   */
   function getScoreNodes() {
     const activeScores = document.querySelectorAll(ACTIVE_SCORE_SELECTOR);
     if (activeScores.length) {
@@ -94,6 +121,10 @@
     return document.querySelectorAll(SCORE_SELECTOR);
   }
 
+  /**
+   * Setzt oder entfernt die Puls-Klasse basierend auf Checkout-Zustand.
+   * @returns {void}
+   */
   function updateScoreHighlights() {
     const shouldHighlight = isX01Variant() && hasCheckoutSuggestion();
     const scoreNodes = getScoreNodes();
@@ -103,6 +134,10 @@
   }
 
   let scheduled = false;
+  /**
+   * Fasst DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * @returns {void}
+   */
   function scheduleUpdate() {
     if (scheduled) {
       return;
@@ -117,6 +152,7 @@
   ensureStyle();
   updateScoreHighlights();
 
+  // Beobachtet Änderungen an Text/DOM, um den Checkout-Status zu aktualisieren.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

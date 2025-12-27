@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Score Delta Slide
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Animate turn-point changes with a count-up tween.
+// @description  Animiert die angezeigten Punkte der aktuellen Aufnahme, indem die Zahl kurz hoch- oder runterzählt, statt sofort zu springen.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,15 +15,31 @@
 (function () {
   "use strict";
 
+  // Script-Ziel: Punktzahl der Aufnahme weich hoch/runter zählen statt springen.
+  /**
+   * Konfiguration für die Punkte-Animation.
+   * @property {string} scoreSelector - Anzeige der Wurf-Punkte, z.B. "p.ad-ext-turn-points".
+   * @property {number} animationMs - Dauer der Zähltween-Animation, z.B. 416.
+   */
   const CONFIG = {
     scoreSelector: "p.ad-ext-turn-points",
     animationMs: 416,
   };
 
+  // Speichert den letzten bekannten Wert pro Element.
   const lastValues = new WeakMap();
+  // Merkt sich laufende Animationen, um sie abbrechen zu können.
   const activeAnimations = new WeakMap();
+  // Schützt Elemente vor parallelen Updates.
   const animatingNodes = new WeakSet();
 
+  /**
+   * Liest eine Zahl aus einem Text, z.B. "-60" oder "100".
+   * @param {string|null} text - Textinhalt der Punkteanzeige.
+   * @example
+   * parseScore("-60"); // => -60
+   * @returns {number|null}
+   */
   function parseScore(text) {
     if (!text) {
       return null;
@@ -35,10 +51,24 @@
     return Number(match[0]);
   }
 
+  /**
+   * Easing-Funktion für weiches Ausklingen.
+   * @param {number} t - Fortschritt 0..1.
+   * @example
+   * easeOutCubic(0.5); // => 0.875
+   * @returns {number}
+   */
   function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
   }
 
+  /**
+   * Animiert den Wert in der Anzeige von fromValue nach toValue.
+   * @param {Element} element - Ziel-Element für die Anzeige.
+   * @param {number} fromValue - Startwert, z.B. 0.
+   * @param {number} toValue - Zielwert, z.B. 60.
+   * @returns {void}
+   */
   function animateValue(element, fromValue, toValue) {
     const start = performance.now();
     animatingNodes.add(element);
@@ -67,6 +97,10 @@
     requestAnimationFrame(step);
   }
 
+  /**
+   * Vergleicht aktuelle Werte mit dem letzten Stand und startet bei Änderung.
+   * @returns {void}
+   */
   function updateScores() {
     const nodes = document.querySelectorAll(CONFIG.scoreSelector);
     nodes.forEach((node) => {
@@ -89,6 +123,10 @@
   }
 
   let scheduled = false;
+  /**
+   * Fasst DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * @returns {void}
+   */
   function scheduleUpdate() {
     if (scheduled) {
       return;
@@ -102,6 +140,7 @@
 
   updateScores();
 
+  // Beobachtet Änderungen an Text/DOM, um neue Punkte zu erkennen.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

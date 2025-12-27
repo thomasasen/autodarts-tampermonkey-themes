@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Size Strokes
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Adjust dart marker size, fill, and effects.
+// @description  Passt Größe und Farbe der Dart-Markierungen auf dem Board an und kann einen leichten Glow/Puls hinzufügen, damit Treffer besser sichtbar sind.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,7 +15,13 @@
 (function () {
   "use strict";
 
-  // Marker options.
+  // Script-Ziel: Dart-Markierungen größer/farbiger machen und optional animieren.
+  /**
+   * Marker-Optionen für Größe, Farbe und Effekt.
+   * @property {number} MARKER_RADIUS - Radius in px, z.B. 6.
+   * @property {string} MARKER_FILL - Füllfarbe, z.B. "rgb(49, 130, 206)".
+   * @property {string} EFFECT - "pulse" | "glow" | "none", z.B. "glow".
+   */
   const MARKER_RADIUS = 6;
   const MARKER_FILL = "rgb(49, 130, 206)";
   const EFFECT = "glow"; // "pulse" | "glow" | "none"
@@ -29,6 +35,10 @@
     glow: "ad-ext-dart-marker--glow",
   };
 
+  /**
+   * Fügt CSS-Regeln für die Marker-Effekte ein.
+   * @returns {void}
+   */
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
       return;
@@ -81,6 +91,13 @@
     }
   }
 
+  /**
+   * Wendet Größe, Farbe und Effekt auf einen Marker an.
+   * @param {SVGCircleElement} marker - Dart-Markierung als SVG-Kreis.
+   * @example
+   * applyMarkerStyles(document.querySelector("circle"));
+   * @returns {void}
+   */
   function applyMarkerStyles(marker) {
     marker.setAttribute("r", String(MARKER_RADIUS));
     marker.style.fill = MARKER_FILL;
@@ -93,12 +110,20 @@
     }
   }
 
+  /**
+   * Sucht alle Marker im DOM und aktualisiert deren Darstellung.
+   * @returns {void}
+   */
   function updateMarkers() {
     const markers = document.querySelectorAll(MARKER_SELECTOR);
     markers.forEach(applyMarkerStyles);
   }
 
   let scheduled = false;
+  /**
+   * Fasst DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * @returns {void}
+   */
   function scheduleUpdate() {
     if (scheduled) {
       return;
@@ -113,6 +138,7 @@
   ensureStyle();
   updateMarkers();
 
+  // Beobachtet Änderungen am Board, um neue Marker zu stylen.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (
