@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      1.3.1
 // @description  Pulse remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -28,7 +28,7 @@
 
   // Effekt fuer den aktiven Checkout-Score: "pulse" | "glow" | "scale" | "blink"
   // pulse = skaliert + Licht, glow = nur Leuchten, scale = nur Groesse, blink = Ein/Aus
-  const EFFECT = "pulse";
+  const EFFECT = "scale";
   const EFFECT_CLASSES = {
     pulse: "ad-ext-checkout-possible--pulse",
     glow: "ad-ext-checkout-possible--glow",
