@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Pulse remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -24,6 +24,7 @@
   const SUGGESTION_SELECTOR = ".suggestion";
   const VARIANT_ELEMENT_ID = "ad-ext-game-variant";
   const PULSE_COLOR = "159, 219, 88";
+  const IMPOSSIBLE_CHECKOUTS = new Set([169, 168, 166, 165, 163, 162, 159]);
 
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
@@ -69,21 +70,68 @@
 
   function isX01Variant() {
     const variantEl = document.getElementById(VARIANT_ELEMENT_ID);
+    if (!variantEl) {
+      return true;
+    }
     const variant = variantEl?.textContent?.trim().toLowerCase() || "";
     return variant.includes("x01");
   }
 
-  function hasCheckoutSuggestion() {
+  function parseScore(text) {
+    if (!text) {
+      return null;
+    }
+    const match = text.match(/\d+/);
+    if (!match) {
+      return null;
+    }
+    const value = Number(match[0]);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function getActiveScoreValue() {
+    const node =
+      document.querySelector(ACTIVE_SCORE_SELECTOR) ||
+      document.querySelector(SCORE_SELECTOR);
+    return parseScore(node?.textContent || "");
+  }
+
+  function isCheckoutPossibleFromScore(score) {
+    if (!Number.isFinite(score)) {
+      return false;
+    }
+    if (score <= 1 || score > 170) {
+      return false;
+    }
+    return !IMPOSSIBLE_CHECKOUTS.has(score);
+  }
+
+  function getCheckoutSuggestionState() {
     const suggestion = document.querySelector(SUGGESTION_SELECTOR);
     if (!suggestion) {
-      return false;
+      return null;
     }
     const text = suggestion.textContent || "";
-    if (!text.trim()) {
+    const normalized = text.replace(/\s+/g, " ").trim().toUpperCase();
+    if (!normalized) {
+      return null;
+    }
+    if (/NO\s*(OUT|CHECKOUT|SHOT)/.test(normalized)) {
       return false;
     }
-    const normalized = text.toUpperCase();
-    return /D\d+|DB|BULL/.test(normalized);
+    if (/BUST/.test(normalized)) {
+      return false;
+    }
+    if (/D\s*[-:]?\s*\d+/.test(normalized)) {
+      return true;
+    }
+    if (/DOUBLE\s*\d+/.test(normalized)) {
+      return true;
+    }
+    if (/DB|BULLSEYE|BULL/.test(normalized)) {
+      return true;
+    }
+    return false;
   }
 
   function getScoreNodes() {
@@ -95,7 +143,13 @@
   }
 
   function updateScoreHighlights() {
-    const shouldHighlight = isX01Variant() && hasCheckoutSuggestion();
+    const isX01 = isX01Variant();
+    const suggestionState = getCheckoutSuggestionState();
+    const shouldHighlight = isX01
+      ? suggestionState !== null
+        ? suggestionState
+        : isCheckoutPossibleFromScore(getActiveScoreValue())
+      : false;
     const scoreNodes = getScoreNodes();
     scoreNodes.forEach((node) => {
       node.classList.toggle(HIGHLIGHT_CLASS, shouldHighlight);
