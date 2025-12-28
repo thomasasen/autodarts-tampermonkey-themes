@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Pulse remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -74,7 +74,13 @@
       return true;
     }
     const variant = variantEl?.textContent?.trim().toLowerCase() || "";
-    return variant.includes("x01");
+    if (!variant) {
+      return true;
+    }
+    if (variant.includes("x01")) {
+      return true;
+    }
+    return /\b\d+01\b/.test(variant);
   }
 
   function parseScore(text) {
@@ -131,7 +137,7 @@
     if (/DB|BULLSEYE|BULL/.test(normalized)) {
       return true;
     }
-    return false;
+    return null;
   }
 
   function getScoreNodes() {
