@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Lässt die Restpunktzahl des aktiven Spielers sanft aufleuchten, sobald in X01 ein Checkout möglich ist.
 // @author       Thomas Asen
 // @license      MIT
@@ -50,18 +50,35 @@
     style.textContent = `
 @keyframes ad-ext-checkout-pulse {
   0% {
+    transform: scale(1);
     text-shadow: 0 0 0 rgba(${PULSE_COLOR}, 0);
+    filter: drop-shadow(0 0 0 rgba(${PULSE_COLOR}, 0));
   }
   50% {
-    text-shadow: 0 0 14px rgba(${PULSE_COLOR}, 0.75);
+    transform: scale(1.06);
+    text-shadow: 0 0 16px rgba(${PULSE_COLOR}, 0.85);
+    filter: drop-shadow(0 0 8px rgba(${PULSE_COLOR}, 0.6));
   }
   100% {
+    transform: scale(1);
     text-shadow: 0 0 0 rgba(${PULSE_COLOR}, 0);
+    filter: drop-shadow(0 0 0 rgba(${PULSE_COLOR}, 0));
   }
 }
 
 .${HIGHLIGHT_CLASS} {
-  animation: ad-ext-checkout-pulse 1.6s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform, text-shadow, filter;
+  animation: ad-ext-checkout-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .${HIGHLIGHT_CLASS} {
+    animation: none;
+    text-shadow: 0 0 8px rgba(${PULSE_COLOR}, 0.6);
+    filter: drop-shadow(0 0 6px rgba(${PULSE_COLOR}, 0.4));
+  }
 }
 `;
 
