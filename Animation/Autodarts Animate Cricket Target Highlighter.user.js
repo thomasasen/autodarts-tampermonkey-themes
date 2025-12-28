@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
 // @author       Thomas Asen
 // @license      MIT
@@ -55,11 +55,11 @@
     showDeadTargets: true,
     strokeWidthRatio: 0.006,
     edgePaddingPx: 0.8,
-    baseColor: { r: 90, g: 90, b: 90 },
+    baseColor: { r: 33, g: 33, b: 33 },
     opacity: {
-      closed: 0.9,
-      dead: 0.98,
-      inactive: 0.92,
+      closed: 0.2,
+      dead: 0.2,
+      inactive: 0.2,
     },
     highlight: {
       score: { r: 0, g: 178, b: 135, opacity: 0.45, strokeBoost: 0.2 },
@@ -1229,7 +1229,7 @@
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-closed-stroke",
-      rgba(Math.min(1, CONFIG.opacity.closed + 0.11))
+      rgba(CONFIG.opacity.closed)
     );
     overlay.style.setProperty("--ad-ext-cricket-closed-opacity", "1");
     overlay.style.setProperty(
@@ -1238,7 +1238,7 @@
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-stroke",
-      rgba(Math.min(1, CONFIG.opacity.dead + 0.09))
+      rgba(CONFIG.opacity.dead)
     );
     overlay.style.setProperty("--ad-ext-cricket-dead-opacity", "1");
     overlay.style.setProperty(
@@ -1247,7 +1247,7 @@
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-inactive-stroke",
-      rgba(Math.min(1, CONFIG.opacity.inactive + 0.09))
+      rgba(CONFIG.opacity.inactive)
     );
     overlay.style.setProperty("--ad-ext-cricket-inactive-opacity", "1");
     overlay.style.setProperty(
