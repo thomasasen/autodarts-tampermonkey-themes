@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.1.1
 // @description  Markiert die Checkout-Ziele direkt auf dem Dartboard (z.B. Double/Bull) und lässt sie blinken oder pulsieren, wenn ein Checkout in X01 möglich ist.
 // @author       Thomas Asen
 // @license      MIT
@@ -62,6 +62,7 @@
   const STYLE_ID = "ad-ext-checkout-board-style";
   const OVERLAY_ID = "ad-ext-checkout-targets";
   const TARGET_CLASS = "ad-ext-checkout-target";
+  const OUTLINE_CLASS = "ad-ext-checkout-target-outline";
   const EFFECT_CLASSES = {
     pulse: "ad-ext-checkout-target--pulse",
     blink: "ad-ext-checkout-target--blink",
@@ -91,6 +92,15 @@
   transform-origin: center;
   opacity: 0.9;
   pointer-events: none;
+}
+
+.${OUTLINE_CLASS} {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: var(--ad-ext-target-outline-width);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: ad-ext-checkout-outline-pulse var(--ad-ext-target-duration) ease-in-out infinite;
 }
 
 .${EFFECT_CLASSES.pulse} {
@@ -133,15 +143,15 @@
 @keyframes ad-ext-checkout-outline-pulse {
   0% {
     stroke-opacity: 0.35;
-    stroke-width: calc(var(--ad-ext-target-stroke-width) - 0.5px);
+    stroke-width: calc(var(--ad-ext-target-outline-width) - 0.5px);
   }
   50% {
     stroke-opacity: 1;
-    stroke-width: calc(var(--ad-ext-target-stroke-width) + 1.5px);
+    stroke-width: calc(var(--ad-ext-target-outline-width) + 1.5px);
   }
   100% {
     stroke-opacity: 0.35;
-    stroke-width: calc(var(--ad-ext-target-stroke-width) - 0.5px);
+    stroke-width: calc(var(--ad-ext-target-outline-width) - 0.5px);
   }
 }
 `;
@@ -431,6 +441,10 @@
       `${strokeWidth}px`
     );
     element.style.setProperty(
+      "--ad-ext-target-outline-width",
+      `${strokeWidth + 1.5}px`
+    );
+    element.style.setProperty(
       "--ad-ext-target-duration",
       `${CONFIG.animationMs}ms`
     );
@@ -438,6 +452,38 @@
       element.style.stroke = "none";
       element.style.strokeWidth = "0";
     }
+  }
+
+  /**
+   * Erstellt eine weiße Outline-Shape basierend auf dem Ziel-Element.
+   * @param {SVGElement} shape - Originales Ziel-Element.
+   * @returns {SVGElement}
+   */
+  function createOutlineShape(shape) {
+    const outline = document.createElementNS(SVG_NS, shape.tagName);
+    for (const attr of shape.attributes) {
+      outline.setAttribute(attr.name, attr.value);
+    }
+    return outline;
+  }
+
+  /**
+   * Setzt die Styles für die pulsierende weiße Umrahmung.
+   * @param {SVGElement} element - Outline-Shape im Overlay.
+   * @param {number} radius - Boardradius, z.B. 200.
+   * @returns {void}
+   */
+  function applyOutlineStyles(element, radius) {
+    element.classList.add(OUTLINE_CLASS);
+    const strokeWidth = Math.max(1, radius * CONFIG.strokeWidthRatio);
+    element.style.setProperty(
+      "--ad-ext-target-outline-width",
+      `${strokeWidth + 1.5}px`
+    );
+    element.style.setProperty(
+      "--ad-ext-target-duration",
+      `${CONFIG.animationMs}ms`
+    );
   }
 
   /**
@@ -608,6 +654,9 @@
       shapes.forEach((shape) => {
         applyTargetStyles(shape, board.radius);
         overlay.appendChild(shape);
+        const outline = createOutlineShape(shape);
+        applyOutlineStyles(outline, board.radius);
+        overlay.appendChild(outline);
       });
     });
   }
