@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Blink
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Markiert die Checkout-Ziele direkt auf dem Dartboard (z.B. Double/Bull) und lässt sie blinken oder pulsieren, wenn ein Checkout in X01 möglich ist.
 // @author       Thomas Asen
 // @license      MIT
@@ -94,15 +94,21 @@
 }
 
 .${EFFECT_CLASSES.pulse} {
-  animation: ad-ext-checkout-pulse var(--ad-ext-target-duration) ease-in-out infinite;
+  animation:
+    ad-ext-checkout-pulse var(--ad-ext-target-duration) ease-in-out infinite,
+    ad-ext-checkout-outline-pulse var(--ad-ext-target-duration) ease-in-out infinite;
 }
 
 .${EFFECT_CLASSES.blink} {
-  animation: ad-ext-checkout-blink var(--ad-ext-target-duration) steps(2, end) infinite;
+  animation:
+    ad-ext-checkout-blink var(--ad-ext-target-duration) steps(2, end) infinite,
+    ad-ext-checkout-outline-pulse var(--ad-ext-target-duration) ease-in-out infinite;
 }
 
 .${EFFECT_CLASSES.glow} {
-  animation: ad-ext-checkout-glow var(--ad-ext-target-duration) ease-in-out infinite;
+  animation:
+    ad-ext-checkout-glow var(--ad-ext-target-duration) ease-in-out infinite,
+    ad-ext-checkout-outline-pulse var(--ad-ext-target-duration) ease-in-out infinite;
   filter: drop-shadow(0 0 12px var(--ad-ext-target-color));
 }
 
@@ -122,6 +128,21 @@
   0% { opacity: 0.5; }
   50% { opacity: 1; }
   100% { opacity: 0.5; }
+}
+
+@keyframes ad-ext-checkout-outline-pulse {
+  0% {
+    stroke-opacity: 0.35;
+    stroke-width: calc(var(--ad-ext-target-stroke-width) - 0.5px);
+  }
+  50% {
+    stroke-opacity: 1;
+    stroke-width: calc(var(--ad-ext-target-stroke-width) + 1.5px);
+  }
+  100% {
+    stroke-opacity: 0.35;
+    stroke-width: calc(var(--ad-ext-target-stroke-width) - 0.5px);
+  }
 }
 `;
 
