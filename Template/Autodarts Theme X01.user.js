@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Autodarts Theme X01
 // @author       Thomas Asen
 // @license      MIT
@@ -102,6 +102,12 @@ button.chakra-tabs__tab.css-1pjn7in { color: #9fdb58; }
 .ad-ext-player:not(.ad-ext-player-active):not(.ad-ext-player-winner) > div > p {
     font-size: 3em !important;
     color: gray !important;
+}
+
+.ad-ext-player.ad-ext-player-inactive p.chakra-text.ad-ext-player-score,
+.ad-ext-player.ad-ext-player-inactive .ad-ext_winner-score-wrapper > p {
+  font-size: 3em !important;
+  color: gray !important;
 }
 
 .ad-ext-player-inactive .chakra-stack.css-37hv00 {
