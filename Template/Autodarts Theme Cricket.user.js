@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Autodarts Theme Cricket
 // @author       Thomas Asen
 // @license      MIT
@@ -46,6 +46,30 @@ font-size: 1.2rem !important;
 
 div.ad-ext-player.ad-ext-player-active.css-1en42kf p.chakra-text.css-11cuipc{
 font-size: 1.8rem !important;
+}
+
+/* Inactive player (X01 selectors) */
+.ad-ext-player:not(.ad-ext-player-active):not(.ad-ext-player-winner) > div > p {
+  font-size: 3em !important;
+  color: gray !important;
+}
+
+.ad-ext-player.ad-ext-player-inactive p.chakra-text.ad-ext-player-score,
+.ad-ext-player.ad-ext-player-inactive .ad-ext_winner-score-wrapper > p {
+  font-size: 3em !important;
+  color: gray !important;
+}
+
+.ad-ext-player-inactive .chakra-stack.css-37hv00 {
+  height: 20px !important;
+}
+
+.ad-ext-player.ad-ext-player-inactive.css-1en42kf{
+  display: ruby-text !important;
+}
+
+.ad-ext-player-inactive .chakra-text.css-11cuipc {
+  font-size: x-large !important;
 }
 
 * {
