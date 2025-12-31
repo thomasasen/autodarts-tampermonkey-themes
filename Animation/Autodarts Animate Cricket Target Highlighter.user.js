@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1.8
+// @version      1.1.9
 // @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
 // @author       Thomas Asen
 // @license      MIT
@@ -1234,11 +1234,11 @@
     overlay.style.setProperty("--ad-ext-cricket-closed-opacity", "1");
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-fill",
-      rgba(CONFIG.opacity.dead)
+      rgba(CONFIG.opacity.inactive, { r: 33, g: 33, b: 33 })
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-stroke",
-      rgba(Math.min(1, CONFIG.opacity.dead + 0.09))
+      rgba(0, { r: 33, g: 33, b: 33 })
     );
     overlay.style.setProperty("--ad-ext-cricket-dead-opacity", "1");
     overlay.style.setProperty(
