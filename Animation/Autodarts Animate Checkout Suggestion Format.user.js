@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Suggestion Format
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.2
+// @version      1.3
 // @description  Format checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -112,9 +112,9 @@
 }
 
 .${STYLE_CLASSES.ribbon}::before {
-  top: -14px;
+  top: 6px;
   left: 8px;
-  transform: rotate(-10deg);
+  transform: rotate(-6deg);
   transform-origin: left center;
 }
 
