@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Suggestion Format
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Format checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -74,19 +74,21 @@
 .${BASE_CLASS}::before {
   content: attr(data-ad-ext-label);
   position: absolute;
-  top: -6px;
-  left: 10px;
-  padding: 4px 10px;
+  top: 6px;
+  left: 8px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: var(--ad-ext-label-bg);
   color: var(--ad-ext-label-color);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  border: 1px solid rgba(15, 12, 5, 0.55);
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 2px 10px rgba(0, 0, 0, 0.45),
     0 0 0 2px rgba(15, 12, 5, 0.6);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
   pointer-events: none;
   z-index: 2;
 }
@@ -97,7 +99,7 @@
 
 .${STYLE_CLASSES.badge} {
   outline: 2px dashed var(--ad-ext-accent);
-  outline-offset: -2px;
+  outline-offset: -6px;
   background: var(--ad-ext-accent-soft);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
@@ -177,7 +179,7 @@
 
 .${STYLE_CLASSES.outline} {
   outline: 3px solid var(--ad-ext-accent);
-  outline-offset: -2px;
+  outline-offset: -6px;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.25) inset,
     0 12px 24px rgba(0, 0, 0, 0.2);
