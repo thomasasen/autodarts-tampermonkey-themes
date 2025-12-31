@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Suggestion Format
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Format checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -74,17 +74,19 @@
 .${BASE_CLASS}::before {
   content: attr(data-ad-ext-label);
   position: absolute;
-  top: -12px;
-  left: 12px;
-  padding: 2px 8px;
+  top: -6px;
+  left: 10px;
+  padding: 4px 10px;
   border-radius: 999px;
   background: var(--ad-ext-label-bg);
   color: var(--ad-ext-label-color);
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 0 0 2px rgba(15, 12, 5, 0.6);
   pointer-events: none;
   z-index: 2;
 }
@@ -95,7 +97,7 @@
 
 .${STYLE_CLASSES.badge} {
   outline: 2px dashed var(--ad-ext-accent);
-  outline-offset: 4px;
+  outline-offset: -2px;
   background: var(--ad-ext-accent-soft);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
@@ -175,7 +177,7 @@
 
 .${STYLE_CLASSES.outline} {
   outline: 3px solid var(--ad-ext-accent);
-  outline-offset: 6px;
+  outline-offset: -2px;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.25) inset,
     0 12px 24px rgba(0, 0, 0, 0.2);
@@ -231,13 +233,13 @@
   function applyElementConfig(element) {
     element.style.setProperty("--ad-ext-accent", CONFIG.accentColor);
     element.style.setProperty("--ad-ext-accent-soft", CONFIG.accentSoftColor);
-    element.style.setProperty("--ad-ext-accent-strong", CONFIG.accentStrongColor);
+    element.style.setProperty(
+      "--ad-ext-accent-strong",
+      CONFIG.accentStrongColor
+    );
     element.style.setProperty("--ad-ext-label-bg", CONFIG.labelBackground);
     element.style.setProperty("--ad-ext-label-color", CONFIG.labelTextColor);
-    element.style.setProperty(
-      "--ad-ext-radius",
-      `${CONFIG.borderRadiusPx}px`
-    );
+    element.style.setProperty("--ad-ext-radius", `${CONFIG.borderRadiusPx}px`);
     element.style.setProperty(
       "--ad-ext-stripe-opacity",
       String(CONFIG.stripeOpacity)
