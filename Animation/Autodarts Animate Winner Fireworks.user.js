@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
-// @description  Zeigt ein vollflaechiges Feuerwerk, wenn ein Gewinner erscheint. Ein Klick blendet es aus.
+// @version      1.2
+// @description  Gewinner-Effekt (Feuerwerk-Ring, Konfetti, Aurora oder Puls). Klick blendet aus.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -16,13 +16,12 @@
   "use strict";
 
   /**
-   * Konfiguration fuer das Feuerwerk.
+   * Konfiguration fuer Gewinner-Effekte.
    * effect:
-   * - "classic": Runder Standard-Burst mit klaren Trails und hellem Center-Flash.
-   * - "ring": Zwei saubere Ringe mit dichtem Kreis und kurzem Nachgluehen.
-   * - "cascade": Willow-Stil mit langen, fallenden Trails und Glitter-Funken.
-   * - "spiral": Pinwheel-Spirale mit rotierenden Speichen und weichem Verlauf.
-   * - "sparkle": Dichte Strobe-Explosion mit vielen kurzen Funkenspitzen.
+   * - "ring": Feuerwerk-Ring mit Doppelkranz, Glitter und hellem Flash.
+   * - "confetti": Bunter Konfetti-Regen mit leichter Drift.
+   * - "aurora": Weiche Leuchtbaender mit Sternfunkeln.
+   * - "pulse": Neon-Pulsringe, die ueber den Screen wandern.
    * @property {string} winnerSelector - CSS-Selektor fuer den Gewinner-Bereich.
    * @property {string} overlayId - ID fuer das Overlay.
    * @property {string} styleId - ID fuer das Style-Tag.
@@ -40,26 +39,34 @@
    * @property {number} particleLifeMaxMs - Maximale Lebensdauer der Partikel.
    * @property {number} gravity - Schwerkraft pro Frame.
    * @property {number} friction - Reibung pro Frame.
-   * @property {string[]} colors - Farbpalette fuer Explosionen.
+   * @property {number} confettiCount - Anzahl der Konfetti-Elemente.
+   * @property {number} auroraBandCount - Anzahl der Aurora-Baender.
+   * @property {number} auroraStarCount - Anzahl der Sterne fuer Aurora.
+   * @property {number} pulseIntervalMs - Abstand zwischen Pulsringen.
+   * @property {string[]} colors - Farbpalette fuer Effekte.
    */
   const CONFIG = {
     winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
     overlayId: "ad-ext-winner-fireworks",
     styleId: "ad-ext-winner-fireworks-style",
-    effect: "classic",
-    rocketIntervalMs: 420,
-    maxRockets: 6,
-    maxParticles: 420,
-    burstParticlesMin: 28,
-    burstParticlesMax: 52,
-    rocketSpeedMin: 6.2,
-    rocketSpeedMax: 8.8,
-    burstSpeedMin: 1.4,
-    burstSpeedMax: 4.6,
-    particleLifeMinMs: 900,
-    particleLifeMaxMs: 1500,
+    effect: "ring",
+    rocketIntervalMs: 360,
+    maxRockets: 7,
+    maxParticles: 480,
+    burstParticlesMin: 36,
+    burstParticlesMax: 60,
+    rocketSpeedMin: 6.6,
+    rocketSpeedMax: 9.4,
+    burstSpeedMin: 1.6,
+    burstSpeedMax: 4.9,
+    particleLifeMinMs: 1000,
+    particleLifeMaxMs: 1700,
     gravity: 0.06,
     friction: 0.985,
+    confettiCount: 150,
+    auroraBandCount: 3,
+    auroraStarCount: 80,
+    pulseIntervalMs: 520,
     colors: [
       "#FCE38A",
       "#F38181",
@@ -90,8 +97,14 @@
   let rockets = [];
   let particles = [];
   let flashes = [];
+  let confettiPieces = [];
+  let auroraBands = [];
+  let auroraStars = [];
+  let pulseRings = [];
+  let activeEffect = null;
   let dismissHandler = null;
   let resizeHandler = null;
+  let lastPulseTime = 0;
 
   function ensureStyle() {
     if (document.getElementById(CONFIG.styleId)) {
@@ -210,7 +223,7 @@
     flashes.push({
       x,
       y,
-      radius: randomBetween(140, 260),
+      radius: randomBetween(150, 280),
       ageMs: 0,
       lifeMs,
       intensity,
@@ -250,87 +263,64 @@
     if (rockets.length >= CONFIG.maxRockets) {
       return;
     }
-    const x = randomBetween(viewportWidth * 0.1, viewportWidth * 0.9);
+    const x = randomBetween(viewportWidth * 0.12, viewportWidth * 0.88);
     const y = viewportHeight + 16;
     rockets.push({
       x,
       y,
       prevX: x,
       prevY: y,
-      vx: randomBetween(-0.35, 0.35),
+      vx: randomBetween(-0.4, 0.4),
       vy: -randomBetween(CONFIG.rocketSpeedMin, CONFIG.rocketSpeedMax),
-      targetY: randomBetween(viewportHeight * 0.18, viewportHeight * 0.55),
+      targetY: randomBetween(viewportHeight * 0.18, viewportHeight * 0.58),
       color: pickColor(),
     });
   }
 
   function spawnRocketTrail(rocket) {
-    if (Math.random() > 0.65) {
+    if (Math.random() > 0.55) {
       return;
     }
     pushParticle({
       x: rocket.x + randomSpread(2),
       y: rocket.y + randomSpread(2),
       vx: randomBetween(-0.4, 0.4),
-      vy: randomBetween(0.4, 1.4),
+      vy: randomBetween(0.6, 1.6),
       color: rocket.color,
-      lifeMs: randomBetween(280, 520),
+      lifeMs: randomBetween(260, 520),
       size: randomBetween(0.9, 1.8),
       gravity: CONFIG.gravity * 0.6,
       friction: 0.9,
       fadePower: 2,
       twinkleSpeed: randomBetween(12, 18),
       twinklePhase: randomBetween(0, Math.PI * 2),
-      glow: 1.8,
+      glow: 1.9,
     });
   }
 
-  function spawnEffectClassic(rocket) {
-    const burstCount = Math.floor(
-      randomBetween(CONFIG.burstParticlesMin, CONFIG.burstParticlesMax)
-    );
-    for (let i = 0; i < burstCount; i += 1) {
-      const angle = randomBetween(0, Math.PI * 2);
-      const speed = randomBetween(CONFIG.burstSpeedMin, CONFIG.burstSpeedMax);
-      pushParticle({
-        x: rocket.x,
-        y: rocket.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color: rocket.color,
-        fadePower: 1.1,
-        glow: 2.6,
-      });
-    }
-    addFlash(rocket.x, rocket.y, rocket.color, 0.6, 260);
-  }
-
   function spawnEffectRing(rocket) {
-    const ringCount = Math.floor(randomBetween(26, 42));
-    const innerCount = Math.floor(ringCount * 0.65);
-    const ringSpeed = randomBetween(
-      CONFIG.burstSpeedMax * 0.75,
-      CONFIG.burstSpeedMax * 1.05
-    );
-    const innerSpeed = ringSpeed * 0.65;
+    const ringCount = Math.floor(randomBetween(34, 48));
+    const innerCount = Math.floor(ringCount * 0.7);
+    const ringSpeed = randomBetween(3.4, 5.2);
+    const innerSpeed = ringSpeed * 0.62;
 
     for (let i = 0; i < ringCount; i += 1) {
       const angle = (i / ringCount) * Math.PI * 2 + randomSpread(0.08);
-      const speed = ringSpeed + randomSpread(0.3);
+      const speed = ringSpeed + randomSpread(0.35);
       pushParticle({
         x: rocket.x,
         y: rocket.y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: rocket.color,
-        size: randomBetween(2.1, 3.4),
-        fadePower: 1.2,
+        size: randomBetween(2.2, 3.6),
+        fadePower: 1.12,
         glow: 3.2,
       });
     }
 
     for (let i = 0; i < innerCount; i += 1) {
-      const angle = (i / innerCount) * Math.PI * 2 + randomSpread(0.1);
+      const angle = (i / innerCount) * Math.PI * 2 + randomSpread(0.12);
       const speed = innerSpeed + randomSpread(0.25);
       pushParticle({
         x: rocket.x,
@@ -338,132 +328,34 @@
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: "#ffffff",
-        size: randomBetween(1.3, 2.4),
+        size: randomBetween(1.4, 2.4),
         fadePower: 1.35,
-        glow: 2.2,
+        glow: 2.3,
       });
     }
-    addFlash(rocket.x, rocket.y, rocket.color, 0.7, 300);
-  }
 
-  function spawnEffectCascade(rocket) {
-    const burstCount = Math.floor(randomBetween(30, 54));
-    for (let i = 0; i < burstCount; i += 1) {
+    const sparkleCount = Math.floor(ringCount * 0.35);
+    for (let i = 0; i < sparkleCount; i += 1) {
       const angle = randomBetween(0, Math.PI * 2);
-      const speed = randomBetween(1.1, 3.1);
+      const speed = randomBetween(0.6, 1.6);
       pushParticle({
         x: rocket.x,
         y: rocket.y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        color: rocket.color,
-        lifeMs: randomBetween(1400, 2200),
-        size: randomBetween(2.2, 3.8),
-        gravity: CONFIG.gravity * 1.15,
-        friction: 0.988,
-        fadePower: 1.5,
-        glow: 2.6,
-      });
-
-      if (Math.random() < 0.35) {
-        pushParticle({
-          x: rocket.x + randomSpread(6),
-          y: rocket.y + randomSpread(6),
-          vx: randomBetween(-0.6, 0.6),
-          vy: randomBetween(-0.4, 0.8),
-          color: "#ffffff",
-          lifeMs: randomBetween(700, 1100),
-          size: randomBetween(0.9, 1.6),
-          gravity: CONFIG.gravity * 0.9,
-          friction: 0.9,
-          fadePower: 1.8,
-          twinkleSpeed: randomBetween(16, 24),
-          twinklePhase: randomBetween(0, Math.PI * 2),
-          glow: 2.2,
-        });
-      }
-    }
-    addFlash(rocket.x, rocket.y, rocket.color, 0.55, 340);
-  }
-
-  function spawnEffectSpiral(rocket) {
-    const burstCount = Math.floor(randomBetween(32, 58));
-    const baseSpeed = randomBetween(2.4, 4.6);
-    const spin = randomBetween(0.55, 0.95);
-    for (let i = 0; i < burstCount; i += 1) {
-      const angle = (i / burstCount) * Math.PI * 2 + randomSpread(0.12);
-      const radial = baseSpeed + randomSpread(0.6);
-      const tangential = radial * spin;
-      const vx = Math.cos(angle) * radial - Math.sin(angle) * tangential;
-      const vy = Math.sin(angle) * radial + Math.cos(angle) * tangential;
-      pushParticle({
-        x: rocket.x,
-        y: rocket.y,
-        vx,
-        vy,
-        color: rocket.color,
-        lifeMs: randomBetween(950, 1500),
-        size: randomBetween(1.6, 2.8),
-        gravity: CONFIG.gravity * 0.9,
-        friction: 0.985,
-        fadePower: 1.15,
-        glow: 2.8,
-      });
-    }
-    addFlash(rocket.x, rocket.y, rocket.color, 0.6, 280);
-  }
-
-  function spawnEffectSparkle(rocket) {
-    const burstCount = Math.floor(randomBetween(44, 74));
-    for (let i = 0; i < burstCount; i += 1) {
-      const angle = randomBetween(0, Math.PI * 2);
-      const speed = randomBetween(1.8, 5.4);
-      pushParticle({
-        x: rocket.x,
-        y: rocket.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color: rocket.color,
-        lifeMs: randomBetween(720, 1200),
-        size: randomBetween(0.9, 2.1),
-        gravity: CONFIG.gravity * 0.8,
-        friction: 0.96,
-        fadePower: 1.7,
-        twinkleSpeed: randomBetween(18, 28),
+        color: "#ffffff",
+        lifeMs: randomBetween(620, 900),
+        size: randomBetween(0.9, 1.6),
+        gravity: CONFIG.gravity * 0.7,
+        friction: 0.92,
+        fadePower: 1.8,
+        twinkleSpeed: randomBetween(18, 26),
         twinklePhase: randomBetween(0, Math.PI * 2),
-        glow: 3.4,
+        glow: 2.4,
       });
-
-      if (Math.random() < 0.18) {
-        pushParticle({
-          x: rocket.x,
-          y: rocket.y,
-          vx: Math.cos(angle) * (speed * 0.45),
-          vy: Math.sin(angle) * (speed * 0.45),
-          color: "#ffffff",
-          lifeMs: randomBetween(420, 720),
-          size: randomBetween(2.2, 3.4),
-          gravity: CONFIG.gravity * 0.5,
-          friction: 0.92,
-          fadePower: 2.1,
-          glow: 4.2,
-        });
-      }
     }
-    addFlash(rocket.x, rocket.y, rocket.color, 0.8, 240);
-  }
 
-  const EFFECTS = {
-    classic: spawnEffectClassic,
-    ring: spawnEffectRing,
-    cascade: spawnEffectCascade,
-    spiral: spawnEffectSpiral,
-    sparkle: spawnEffectSparkle,
-  };
-
-  function explodeRocket(rocket) {
-    const effect = EFFECTS[CONFIG.effect] ? CONFIG.effect : "classic";
-    EFFECTS[effect](rocket);
+    addFlash(rocket.x, rocket.y, rocket.color, 0.65, 300);
   }
 
   function updateRockets(step) {
@@ -477,7 +369,7 @@
       spawnRocketTrail(rocket);
 
       if (rocket.y <= rocket.targetY || rocket.vy >= 0) {
-        explodeRocket(rocket);
+        spawnEffectRing(rocket);
         rockets.splice(i, 1);
       }
     }
@@ -600,7 +492,26 @@
     }
   }
 
-  function render() {
+  function initRingEffect() {
+    rockets = [];
+    particles = [];
+    flashes = [];
+    lastLaunchTime = performance.now() - CONFIG.rocketIntervalMs;
+  }
+
+  function updateRingEffect(step, dt, now) {
+    if (now - lastLaunchTime >= CONFIG.rocketIntervalMs) {
+      if (particles.length < CONFIG.maxParticles) {
+        spawnRocket();
+      }
+      lastLaunchTime = now;
+    }
+    updateRockets(step);
+    updateParticles(step, dt);
+    updateFlashes(dt);
+  }
+
+  function renderRingEffect() {
     if (!ctx) {
       return;
     }
@@ -613,6 +524,241 @@
     ctx.restore();
   }
 
+  function resetConfettiPiece(piece, spawnTop) {
+    const size = randomBetween(6, 12);
+    piece.x = randomBetween(0, viewportWidth);
+    piece.y = spawnTop
+      ? randomBetween(-viewportHeight, 0)
+      : randomBetween(0, viewportHeight);
+    piece.vx = randomBetween(-0.35, 0.35);
+    piece.vy = randomBetween(1.1, 2.3);
+    piece.rotation = randomBetween(0, Math.PI * 2);
+    piece.spin = randomBetween(-0.12, 0.12);
+    piece.width = size * randomBetween(0.4, 0.9);
+    piece.height = size * randomBetween(0.8, 1.6);
+    piece.color = pickColor();
+    piece.swaySpeed = randomBetween(0.8, 1.6);
+    piece.swayOffset = randomBetween(0, Math.PI * 2);
+  }
+
+  function initConfettiEffect() {
+    confettiPieces = [];
+    for (let i = 0; i < CONFIG.confettiCount; i += 1) {
+      const piece = {};
+      resetConfettiPiece(piece, true);
+      confettiPieces.push(piece);
+    }
+  }
+
+  function updateConfettiEffect(step) {
+    for (const piece of confettiPieces) {
+      piece.rotation += piece.spin * step;
+      piece.y += piece.vy * step;
+      piece.x +=
+        piece.vx * step +
+        Math.sin(piece.swayOffset + piece.y * 0.02) * piece.swaySpeed;
+      if (
+        piece.y > viewportHeight + 20 ||
+        piece.x < -40 ||
+        piece.x > viewportWidth + 40
+      ) {
+        resetConfettiPiece(piece, true);
+      }
+    }
+  }
+
+  function renderConfettiEffect() {
+    if (!ctx) {
+      return;
+    }
+    ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    for (const piece of confettiPieces) {
+      const flip = Math.abs(Math.cos(piece.rotation));
+      ctx.globalAlpha = 0.65 + flip * 0.35;
+      ctx.fillStyle = piece.color;
+      ctx.save();
+      ctx.translate(piece.x, piece.y);
+      ctx.rotate(piece.rotation);
+      ctx.fillRect(
+        -piece.width / 2,
+        -piece.height / 2,
+        piece.width,
+        piece.height
+      );
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function initAuroraEffect() {
+    auroraBands = [];
+    auroraStars = [];
+    for (let i = 0; i < CONFIG.auroraBandCount; i += 1) {
+      auroraBands.push({
+        baseY: randomBetween(viewportHeight * 0.2, viewportHeight * 0.7),
+        amplitude: randomBetween(40, 120),
+        thickness: randomBetween(28, 60),
+        speed: randomBetween(0.2, 0.45),
+        phase: randomBetween(0, Math.PI * 2),
+        color: pickColor(),
+        alpha: randomBetween(0.15, 0.25),
+      });
+    }
+    for (let i = 0; i < CONFIG.auroraStarCount; i += 1) {
+      auroraStars.push({
+        x: randomBetween(0, viewportWidth),
+        y: randomBetween(0, viewportHeight),
+        size: randomBetween(0.8, 1.8),
+        alpha: randomBetween(0.2, 0.6),
+        twinkleSpeed: randomBetween(1.2, 2.4),
+        phase: randomBetween(0, Math.PI * 2),
+      });
+    }
+  }
+
+  function updateAuroraEffect(step, dt) {
+    const drift = dt * 0.001;
+    for (const band of auroraBands) {
+      band.phase += band.speed * drift;
+    }
+    for (const star of auroraStars) {
+      star.phase += star.twinkleSpeed * drift;
+    }
+  }
+
+  function renderAuroraEffect() {
+    if (!ctx) {
+      return;
+    }
+    ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#ffffff";
+    for (const star of auroraStars) {
+      const twinkle = 0.5 + 0.5 * Math.sin(star.phase);
+      ctx.globalAlpha = star.alpha * twinkle;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    for (const band of auroraBands) {
+      ctx.globalAlpha = band.alpha;
+      ctx.strokeStyle = band.color;
+      ctx.lineWidth = band.thickness;
+      ctx.shadowBlur = band.thickness * 0.7;
+      ctx.shadowColor = band.color;
+      ctx.beginPath();
+      for (let x = -80; x <= viewportWidth + 80; x += 80) {
+        const y =
+          band.baseY + Math.sin(x * 0.004 + band.phase) * band.amplitude;
+        if (x === -80) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function spawnPulse() {
+    const minSide = Math.min(viewportWidth, viewportHeight);
+    pulseRings.push({
+      x: randomBetween(viewportWidth * 0.28, viewportWidth * 0.72),
+      y: randomBetween(viewportHeight * 0.22, viewportHeight * 0.72),
+      ageMs: 0,
+      lifeMs: randomBetween(1200, 1700),
+      maxRadius: minSide * randomBetween(0.35, 0.55),
+      color: pickColor(),
+      thickness: randomBetween(2.2, 5),
+    });
+  }
+
+  function initPulseEffect() {
+    pulseRings = [];
+    lastPulseTime = performance.now() - CONFIG.pulseIntervalMs;
+  }
+
+  function updatePulseEffect(step, dt, now) {
+    if (now - lastPulseTime >= CONFIG.pulseIntervalMs) {
+      spawnPulse();
+      lastPulseTime = now;
+    }
+    for (let i = pulseRings.length - 1; i >= 0; i -= 1) {
+      const pulse = pulseRings[i];
+      pulse.ageMs += dt;
+      if (pulse.ageMs >= pulse.lifeMs) {
+        pulseRings.splice(i, 1);
+      }
+    }
+  }
+
+  function renderPulseEffect() {
+    if (!ctx) {
+      return;
+    }
+    ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const pulse of pulseRings) {
+      const progress = Math.min(pulse.ageMs / pulse.lifeMs, 1);
+      const radius = pulse.maxRadius * progress;
+      const alpha = Math.max(1 - progress, 0);
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.strokeStyle = pulse.color;
+      ctx.lineWidth = pulse.thickness + progress * 2;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = pulse.color;
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = alpha * 0.35;
+      ctx.lineWidth = pulse.thickness + 7;
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, radius * 0.86, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  const EFFECTS = {
+    ring: {
+      start: initRingEffect,
+      update: updateRingEffect,
+      render: renderRingEffect,
+    },
+    confetti: {
+      start: initConfettiEffect,
+      update: updateConfettiEffect,
+      render: renderConfettiEffect,
+      resize: initConfettiEffect,
+    },
+    aurora: {
+      start: initAuroraEffect,
+      update: updateAuroraEffect,
+      render: renderAuroraEffect,
+      resize: initAuroraEffect,
+    },
+    pulse: {
+      start: initPulseEffect,
+      update: updatePulseEffect,
+      render: renderPulseEffect,
+    },
+  };
+
+  function resolveEffectKey() {
+    return EFFECTS[CONFIG.effect] ? CONFIG.effect : "ring";
+  }
+
   function animate(now) {
     if (!running) {
       return;
@@ -621,21 +767,23 @@
     lastFrameTime = now;
     const step = dt / 16.67;
 
-    if (now - lastLaunchTime >= CONFIG.rocketIntervalMs) {
-      if (particles.length < CONFIG.maxParticles) {
-        spawnRocket();
-      }
-      lastLaunchTime = now;
+    if (activeEffect && activeEffect.update) {
+      activeEffect.update(step, dt, now);
     }
-
-    updateRockets(step);
-    updateParticles(step, dt);
-    updateFlashes(dt);
-    render();
+    if (activeEffect && activeEffect.render) {
+      activeEffect.render();
+    }
     animationHandle = requestAnimationFrame(animate);
   }
 
-  function showFireworks() {
+  function handleResize() {
+    resizeCanvas();
+    if (activeEffect && activeEffect.resize) {
+      activeEffect.resize();
+    }
+  }
+
+  function showEffect() {
     if (running || dismissedForCurrentWin) {
       return;
     }
@@ -644,20 +792,21 @@
       return;
     }
     running = true;
-    rockets = [];
-    particles = [];
-    lastLaunchTime = performance.now() - CONFIG.rocketIntervalMs;
+    activeEffect = EFFECTS[resolveEffectKey()];
+    if (activeEffect && activeEffect.start) {
+      activeEffect.start();
+    }
     lastFrameTime = performance.now();
 
     if (!dismissHandler) {
       dismissHandler = () => {
         dismissedForCurrentWin = true;
-        hideFireworks();
+        hideEffect();
       };
     }
     if (!resizeHandler) {
       resizeHandler = () => {
-        resizeCanvas();
+        handleResize();
       };
     }
     document.addEventListener("pointerdown", dismissHandler, {
@@ -668,7 +817,7 @@
     animationHandle = requestAnimationFrame(animate);
   }
 
-  function hideFireworks() {
+  function hideEffect() {
     if (!running) {
       return;
     }
@@ -686,6 +835,12 @@
     destroyOverlay();
     rockets = [];
     particles = [];
+    flashes = [];
+    confettiPieces = [];
+    auroraBands = [];
+    auroraStars = [];
+    pulseRings = [];
+    activeEffect = null;
   }
 
   function isWinnerVisible() {
@@ -700,10 +855,10 @@
     const visible = isWinnerVisible();
     if (visible && !lastWinnerVisible) {
       dismissedForCurrentWin = false;
-      showFireworks();
+      showEffect();
     } else if (!visible && lastWinnerVisible) {
       dismissedForCurrentWin = false;
-      hideFireworks();
+      hideEffect();
     }
     lastWinnerVisible = visible;
   }

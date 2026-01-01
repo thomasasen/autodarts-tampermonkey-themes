@@ -107,7 +107,7 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 #### Autodarts Animate Winner Fireworks (`Animation/Autodarts Animate Winner Fireworks.user.js`)
 
-- Vollflaechiges Feuerwerk, sobald die Gewinner-Animation erscheint.
+- Gewinner-Effekt mit Auswahl: Feuerwerk-Ring, Konfetti, Aurora oder Puls.
 - Ein Klick blendet das Overlay sofort aus.
 
 #### Autodarts Animate Size Strokes (`Animation/Autodarts Animate Size Strokes.user.js`)
@@ -181,7 +181,8 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `CONFIG.sweepWidth` und `CONFIG.sweepColor` steuern Breite und Farbe.
 - `Animation/Autodarts Animate Winner Fireworks.user.js`
   - `CONFIG.winnerSelector` steuert, wie der Gewinner erkannt wird.
-  - `CONFIG.rocketIntervalMs`, `CONFIG.maxRockets` und `CONFIG.maxParticles` steuern die Dichte.
+  - `CONFIG.effect` waehlt `ring`, `confetti`, `aurora` oder `pulse`.
+  - `CONFIG.rocketIntervalMs`, `CONFIG.maxRockets` und `CONFIG.maxParticles` steuern die Ring-Dichte.
 - `Animation/Autodarts Animate Checkout.user.js`
 - `Animation/Autodarts Animate Checkout Board Blink.user.js`
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
