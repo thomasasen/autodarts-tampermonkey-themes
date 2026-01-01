@@ -1,26 +1,26 @@
-﻿# Autodarts Tampermonkey Themes & Effekte
+# Autodarts Tampermonkey Themes & Effekte
 
 Reine Visual-Tampermonkey-Skripte für https://play.autodarts.io.
-Sie verändern keine Spiel-Logik, Scores oder Erkennung.
+Sie verändern keine Spiellogik, Scores oder Erkennung.
 
 ## Funktionen
 
-- Theme-Skripte, die sich je Spielvariante automatisch aktivieren
-- Gemeinsamer Layout/Theme-Helper für konsistentes Styling
-- Optionale Animations-/Effekt-Skripte für bessere Lesbarkeit
-- MutationObserver-basierte Updates für dynamische DOM-Änderungen
+- Theme-Skripte, die sich je Spielvariante automatisch aktivieren.
+- Gemeinsamer Layout-/Theme-Helfer für konsistentes Styling.
+- Optionale Animations- und Effekt-Skripte für bessere Lesbarkeit.
+- MutationObserver-basierte Updates für dynamische DOM-Änderungen.
 
 ## Inhaltsverzeichnis
 
 - [Installation](#installation)
-- [Updates](#updates)
-- [Gemeinsamer Helper](#gemeinsamer-helper)
+- [Aktualisierungen](#aktualisierungen)
+- [Gemeinsamer Helfer](#gemeinsamer-helfer)
 - [Skripte](#skripte)
 - [Screenshots und Animationen](#screenshots-und-animationen)
 - [Konfiguration](#konfiguration)
-- [Bugs und Feedback](#bugs-und-feedback)
+- [Fehler und Feedback](#fehler-und-feedback)
 - [Hinweis zur Nutzung und Testumgebung](#hinweis-zur-nutzung-und-testumgebung)
-- [Credits und Upstream-Lizenz](#credits-und-upstream-lizenz)
+- [Danksagung und Upstream-Lizenz](#danksagung-und-upstream-lizenz)
 - [Lizenz](#lizenz)
 - [Haftungsausschluss](#haftungsausschluss)
 
@@ -29,17 +29,17 @@ Sie verändern keine Spiel-Logik, Scores oder Erkennung.
 1. Installiere die Tampermonkey-Erweiterung.
 2. Öffne die Raw-Datei des gewünschten Skripts im Ordner `Template/` oder `Animation/`.
 3. Tampermonkey erkennt das Userscript automatisch.
-4. Installiere es und lasse Auto-Updates aktiviert.
+4. Installiere es und lasse automatische Updates aktiviert.
 
-### Updates
+### Aktualisierungen
 
-- Tampermonkey aktualisiert installierte Skripte automatisch, wenn die `@updateURL`/`@downloadURL` erreichbar ist.
+- Tampermonkey aktualisiert installierte Skripte automatisch, wenn `@updateURL`/`@downloadURL` erreichbar sind.
 - Für ein manuelles Update: Skript in Tampermonkey öffnen und auf "Nach Updates suchen" klicken.
 - Wenn du ein lokales Skript nutzt, aktualisiere die Datei und speichere sie erneut in Tampermonkey.
 
-## Gemeinsamer Helper
+## Gemeinsamer Helfer
 
-Die Theme-Skripte laden einen gemeinsamen Helper via `@require`:
+Die Theme-Skripte laden einen gemeinsamen Helfer per `@require`:
 
 ```
 https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/autodarts-theme-shared.js
@@ -49,7 +49,7 @@ Wenn du das Repo forkst oder lokale Dateien nutzt, passe die `@require`-URL ents
 
 ## Skripte
 
-Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
+Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 ### Themes
 
@@ -63,13 +63,13 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 
 - Gemeinsames Theme plus Grid-Layout für Shanghai.
 - Aktiviert sich automatisch bei der Variante Shanghai.
-- Nutzt den gemeinsamen Helper für konsistente Updates.
+- Nutzt den gemeinsamen Helfer für konsistente Updates.
 
 #### Autodarts Theme Bermuda (`Template/Autodarts Theme Bermuda.user.js`)
 
 - Gemeinsames Theme plus Grid-Layout für Bermuda.
 - Aktiviert sich automatisch, wenn die Variante Bermuda enthält.
-- Nutzt den gemeinsamen Helper für konsistente Updates.
+- Nutzt den gemeinsamen Helfer für konsistente Updates.
 
 #### Autodarts Theme Cricket (`Template/Autodarts Theme Cricket.user.js`)
 
@@ -87,7 +87,7 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 
 - Pulsiert den aktiven Score, wenn ein Checkout möglich ist.
 - Nutzt den In-Game-Vorschlagsbereich als Trigger.
-- Auf X01-Matches begrenzt.
+- Auf X01-Partien begrenzt.
 
 #### Autodarts Animate Score Delta Slide (`Animation/Autodarts Animate Score Delta Slide.user.js`)
 
@@ -96,7 +96,7 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 
 #### Autodarts Animate Average Trend Arrow (`Animation/Autodarts Animate Average Trend Arrow.user.js`)
 
-- Zeigt einen kleinen Auf/Ab-Pfeil neben AVG, wenn es sich ändert.
+- Zeigt einen kleinen Auf/Ab-Pfeil neben dem AVG, wenn sich dieser ändert.
 - Kurze Bounce-Animation zur Trend-Richtung.
 
 #### Autodarts Animate Turn Start Sweep (`Animation/Autodarts Animate Turn Start Sweep.user.js`)
@@ -110,23 +110,23 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 - Passt Marker-Größe und Füllfarbe der Darts auf dem Board an.
 - Optionaler Pulse/Glow-Effekt für bessere Sichtbarkeit.
 
-
 #### Autodarts Animate Checkout Board Blink (`Animation/Autodarts Animate Checkout Board Blink.user.js`)
 
-- Blinks the checkout target segment directly on the board.
-- Supports single, double, triple, and bull targets with configurable effects.
+- Lässt das Checkout-Ziel direkt auf dem Board blinken.
+- Unterstützt Single-, Double-, Triple- und Bull-Ziele mit konfigurierbaren Effekten.
 
 #### Autodarts Animate Checkout Suggestion Format (`Animation/Autodarts Animate Checkout Suggestion Format.user.js`)
 
-- Formatiert die Checkout-Vorschlaege als klare Empfehlung, damit sie nicht mit geworfenen Feldern verwechselt werden.
-- Aktiv nur in X01 (Erkennung ueber die Spielvariante).
+- Formatiert die Checkout-Vorschläge als klare Empfehlung, damit sie nicht mit geworfenen Feldern verwechselt werden.
+- Aktiv nur in X01 (Erkennung über die Spielvariante).
 - Bietet mehrere Stil-Varianten wie Badge, Ribbon, Stripe, Ticket oder Outline und ein frei konfigurierbares Label.
 
 #### Autodarts Animate Cricket Target Highlighter (`Animation/Autodarts Animate Cricket Target Highlighter.user.js`)
 
 - Blendet Nicht-Cricket-Felder (1-14) ab und markiert 15-20/Bull je Spielerstatus.
-- Erkennt geschlossene, offene und „tote“ Ziele sowie Score-/Danger-Situationen.
+- Erkennt geschlossene, offene und "tote" Ziele sowie Score-/Danger-Situationen.
 - Unterstützt 1 bis mehrere Spieler und liest Marks aus Icons/alt-Texten der Tabelle.
+
 ## Screenshots und Animationen
 
 Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bewegung.
@@ -142,18 +142,18 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 
 ### Animationen und Effekte
 
-| Skript                      | Vorschau                                                                       | Detail/Vorher                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Animate Score Delta Slide   | ![Animate Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
-| Animate Average Trend Arrow | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
-| Animate Checkout Board Blink | ![Animate Checkout Board Blink](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                                  |
-| Animate Turn Start Sweep    | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
-| Animate Size Strokes        | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
-| Cricket Target Highlighter  | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
+| Skript                       | Vorschau                                                                       | Detail/Vorher                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Animate Score Delta Slide    | ![Animate Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
+| Animate Average Trend Arrow  | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
+| Animate Checkout Board Blink | ![Animate Checkout Board Blink](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                                |
+| Animate Turn Start Sweep     | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
+| Animate Size Strokes         | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
+| Cricket Target Highlighter   | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
 
 #### Checkout Suggestion Format
 
-Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreifen der anderen Styles.
+Das Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreifen der anderen Stile.
 
 | Vollbild (Ribbon) | Varianten (Badge, Stripe, Ticket, Outline) |
 | --- | --- |
@@ -169,7 +169,7 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
 - `Animation/Autodarts Animate Size Strokes.user.js`
   - `MARKER_RADIUS`, `MARKER_FILL` und `EFFECT` steuern Größe, Farbe und Effekt.
 - `Animation/Autodarts Animate Average Trend Arrow.user.js`
-  - `ANIMATION_MS` steuert die Dauer der Arrow-Bounce-Animation.
+  - `ANIMATION_MS` steuert die Dauer der Pfeil-Bounce-Animation.
 - `Animation/Autodarts Animate Turn Start Sweep.user.js`
   - `CONFIG.sweepDurationMs` steuert die Sweep-Dauer.
   - `CONFIG.sweepDelayMs` steuert die Verzögerung vor dem Sweep.
@@ -179,33 +179,33 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
 - `Animation/Autodarts Animate Checkout Suggestion Format.user.js`
-  - `CONFIG.formatStyle` waehlt den Stil (`badge`, `ribbon`, `stripe`, `ticket`, `outline`).
+  - `CONFIG.formatStyle` wählt den Stil (`badge`, `ribbon`, `stripe`, `ticket`, `outline`).
   - `CONFIG.labelText` definiert den sichtbaren Label-Text (leer lassen, um das Badge zu verstecken).
   - `CONFIG.accentColor`, `CONFIG.accentSoftColor`, `CONFIG.accentStrongColor` steuern Akzent- und Hintergrundfarben.
   - `CONFIG.labelBackground`, `CONFIG.labelTextColor`, `CONFIG.borderRadiusPx` passen Badge-Optik und Rundung an.
-  - `CONFIG.stripeOpacity` steuert die Streifen-Deckkraft fuer den Stripe-Style.
+  - `CONFIG.stripeOpacity` steuert die Streifen-Deckkraft für den Stripe-Style.
 - `Animation/Autodarts Animate Cricket Target Highlighter.user.js`
   - `CONFIG.baseColor`, `CONFIG.opacity`, `CONFIG.highlight` steuern Ausblendung und Score/Danger-Farben.
   - `CONFIG.tableSelector` kann gesetzt werden, falls die Cricket-Tabelle anders aufgebaut ist.
 
-## Bugs und Feedback
+## Fehler und Feedback
 
-- Bugs bitte über GitHub Issues melden:
+- Fehler bitte über GitHub-Issues melden:
   https://github.com/thomasasen/autodarts-tampermonkey-themes/issues
-- Direkt zum Bug-Formular:
+- Direkt zum Fehlerformular:
   https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%90%9E-bug-melden.md
 - Feature-Wünsche bitte über das Feature-Formular:
   https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%92%A1-feature-vorschlagen.md
-- Fragen und allgemeines Feedback bitte über Discussions:
+- Fragen und allgemeines Feedback bitte über GitHub Discussions:
   https://github.com/thomasasen/autodarts-tampermonkey-themes/discussions
 
-Unvollständige Bugmeldungen ohne Versionen oder Reproduktionsschritte können geschlossen werden.
+Unvollständige Fehlermeldungen ohne Versionen oder Reproduktionsschritte können geschlossen werden.
 
 ## Hinweis zur Nutzung und Testumgebung
 
-Ich mache das als Hobby, und jeder ist eingeladen, die Skripte zu verwenden, Bugs zu melden oder Kommentare zu schreiben.
+Ich mache das als Hobby, und jeder ist eingeladen, die Skripte zu verwenden, Fehler zu melden oder Kommentare zu schreiben.
 
-Ich teste in meiner Umgebung mit installierten Autodarts Tools:
+Ich teste in meiner Umgebung mit installierten Autodarts-Tools:
 https://github.com/creazy231/tools-for-autodarts
 
 Das kann ggf. Einfluss auf die Funktionen meiner Skripte haben.
@@ -230,19 +230,19 @@ Folgende Einstellungen habe ich unter Matches aktiv:
 | QUICK CORRECTION | <span style="color:#16a34a;">On</span> |
 | INSTANT REPLAY | <span style="color:#6b7280;">Off</span> |
 
-## Credits und Upstream-Lizenz
+## Danksagung und Upstream-Lizenz
 
-Die Themes basieren auf der inventwo Stylebot-Sammlung:
+Die Themes basieren auf der inventwo-Stylebot-Sammlung:
 https://github.com/inventwo/Script-Sammlung/tree/main/CSS
 
 Ich habe diese Stylebot-Themes als Basis genommen, für Tampermonkey umgeschrieben
 und diverse Anpassungen vorgenommen.
 
-Upstream (inventwo): MIT License. Copyright (c) 2025 jkvarel und skvarel von inventwo.
+Upstream (inventwo): MIT-Lizenz. Copyright (c) 2025 jkvarel und skvarel von inventwo.
 
 ## Lizenz
 
-MIT License
+MIT-Lizenz
 
 ## Haftungsausschluss
 
