@@ -116,6 +116,12 @@ Die Design-Templates liegen in `Template/`, die Animationen in `Animation/`.
 - Blinks the checkout target segment directly on the board.
 - Supports single, double, triple, and bull targets with configurable effects.
 
+#### Autodarts Animate Checkout Suggestion Format (`Animation/Autodarts Animate Checkout Suggestion Format.user.js`)
+
+- Formatiert die Checkout-Vorschlaege als klare Empfehlung, damit sie nicht mit geworfenen Feldern verwechselt werden.
+- Aktiv nur in X01 (Erkennung ueber die Spielvariante).
+- Bietet mehrere Stil-Varianten wie Badge, Ribbon, Stripe, Ticket oder Outline und ein frei konfigurierbares Label.
+
 #### Autodarts Animate Cricket Target Highlighter (`Animation/Autodarts Animate Cricket Target Highlighter.user.js`)
 
 - Blendet Nicht-Cricket-Felder (1-14) ab und markiert 15-20/Bull je Spielerstatus.
@@ -145,6 +151,14 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Animate Size Strokes        | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
 | Cricket Target Highlighter  | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
 
+#### Checkout Suggestion Format
+
+Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreifen der anderen Styles.
+
+| Vollbild (Ribbon) | Varianten (Badge, Stripe, Ticket, Outline) |
+| --- | --- |
+| ![Checkout Suggestion Format Ribbon](assets/screenshots/Checkout%20Suggestion%20Format%2000%20ribbon.png) | ![Checkout Suggestion Format Badge](assets/screenshots/Checkout%20Suggestion%20Format%2001%20badge.png)<br>![Checkout Suggestion Format Stripe](assets/screenshots/Checkout%20Suggestion%20Format%2002%20stripe.png)<br>![Checkout Suggestion Format Ticket](assets/screenshots/Checkout%20Suggestion%20Format%2003%20ticket.png)<br>![Checkout Suggestion Format Outline](assets/screenshots/Checkout%20Suggestion%20Format%2004%20outline.png) |
+
 ## Konfiguration
 
 Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
@@ -164,6 +178,12 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
 - `Animation/Autodarts Animate Checkout Board Blink.user.js`
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
+- `Animation/Autodarts Animate Checkout Suggestion Format.user.js`
+  - `CONFIG.formatStyle` waehlt den Stil (`badge`, `ribbon`, `stripe`, `ticket`, `outline`).
+  - `CONFIG.labelText` definiert den sichtbaren Label-Text (leer lassen, um das Badge zu verstecken).
+  - `CONFIG.accentColor`, `CONFIG.accentSoftColor`, `CONFIG.accentStrongColor` steuern Akzent- und Hintergrundfarben.
+  - `CONFIG.labelBackground`, `CONFIG.labelTextColor`, `CONFIG.borderRadiusPx` passen Badge-Optik und Rundung an.
+  - `CONFIG.stripeOpacity` steuert die Streifen-Deckkraft fuer den Stripe-Style.
 - `Animation/Autodarts Animate Cricket Target Highlighter.user.js`
   - `CONFIG.baseColor`, `CONFIG.opacity`, `CONFIG.highlight` steuern Ausblendung und Score/Danger-Farben.
   - `CONFIG.tableSelector` kann gesetzt werden, falls die Cricket-Tabelle anders aufgebaut ist.
