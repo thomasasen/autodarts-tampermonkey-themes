@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Suggestion Format
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.4
+// @version      1.5
 // @description  Format checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -27,7 +27,7 @@
     suggestionSelector: ".suggestion",
     variantElementId: "ad-ext-game-variant",
     requireX01: true,
-    formatStyle: "badge",
+    formatStyle: "ribbon",
     labelText: "CHECKOUT",
     accentColor: "#f59e0b",
     accentSoftColor: "rgba(245, 158, 11, 0.16)",
