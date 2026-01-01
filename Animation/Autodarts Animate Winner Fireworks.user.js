@@ -18,7 +18,7 @@
   /**
    * Konfiguration fuer Gewinner-Effekte.
    * effect:
-   * - "ring": Feuerwerk-Ring mit Doppelkranz, Glitter und hellem Flash.
+   * - "firework": Feuerwerk-Ring mit Doppelkranz, Glitter und hellem Flash.
    * - "confetti": Bunter Konfetti-Regen mit leichter Drift.
    * - "aurora": Weiche Leuchtbaender mit Sternfunkeln.
    * - "pulse": Neon-Pulsringe, die ueber den Screen wandern.
@@ -49,7 +49,7 @@
     winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
     overlayId: "ad-ext-winner-fireworks",
     styleId: "ad-ext-winner-fireworks-style",
-    effect: "ring",
+    effect: "firework",
     rocketIntervalMs: 360,
     maxRockets: 7,
     maxParticles: 480,
@@ -492,14 +492,14 @@
     }
   }
 
-  function initRingEffect() {
+  function initFireworkEffect() {
     rockets = [];
     particles = [];
     flashes = [];
     lastLaunchTime = performance.now() - CONFIG.rocketIntervalMs;
   }
 
-  function updateRingEffect(step, dt, now) {
+  function updateFireworkEffect(step, dt, now) {
     if (now - lastLaunchTime >= CONFIG.rocketIntervalMs) {
       if (particles.length < CONFIG.maxParticles) {
         spawnRocket();
@@ -511,7 +511,7 @@
     updateFlashes(dt);
   }
 
-  function renderRingEffect() {
+  function renderFireworkEffect() {
     if (!ctx) {
       return;
     }
@@ -731,10 +731,10 @@
   }
 
   const EFFECTS = {
-    ring: {
-      start: initRingEffect,
-      update: updateRingEffect,
-      render: renderRingEffect,
+    firework: {
+      start: initFireworkEffect,
+      update: updateFireworkEffect,
+      render: renderFireworkEffect,
     },
     confetti: {
       start: initConfettiEffect,
@@ -756,7 +756,7 @@
   };
 
   function resolveEffectKey() {
-    return EFFECTS[CONFIG.effect] ? CONFIG.effect : "ring";
+    return EFFECTS[CONFIG.effect] ? CONFIG.effect : "firework";
   }
 
   function animate(now) {
