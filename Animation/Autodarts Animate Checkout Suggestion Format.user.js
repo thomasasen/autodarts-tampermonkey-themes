@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Suggestion Format
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      1.4
 // @description  Format checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
@@ -161,8 +161,9 @@
 }
 
 .${STYLE_CLASSES.ticket}::before {
-  left: 50%;
-  transform: translateX(-50%);
+  top: 4px;
+  left: 12px;
+  transform: none;
 }
 
 .${STYLE_CLASSES.ticket}::after {
