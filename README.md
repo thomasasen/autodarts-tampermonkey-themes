@@ -105,6 +105,11 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 - Nutzt eine MutationObserver-Erkennung auf die aktive Klasse.
 - CSS-Pseudo-Element sorgt für den Sweep ohne Layout-Shift.
 
+#### Autodarts Animate Winner Fireworks (`Animation/Autodarts Animate Winner Fireworks.user.js`)
+
+- Vollflaechiges Feuerwerk, sobald die Gewinner-Animation erscheint.
+- Ein Klick blendet das Overlay sofort aus.
+
 #### Autodarts Animate Size Strokes (`Animation/Autodarts Animate Size Strokes.user.js`)
 
 - Passt Marker-Größe und Füllfarbe der Darts auf dem Board an.
@@ -174,6 +179,9 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `CONFIG.sweepDurationMs` steuert die Sweep-Dauer.
   - `CONFIG.sweepDelayMs` steuert die Verzögerung vor dem Sweep.
   - `CONFIG.sweepWidth` und `CONFIG.sweepColor` steuern Breite und Farbe.
+- `Animation/Autodarts Animate Winner Fireworks.user.js`
+  - `CONFIG.winnerSelector` steuert, wie der Gewinner erkannt wird.
+  - `CONFIG.rocketIntervalMs`, `CONFIG.maxRockets` und `CONFIG.maxParticles` steuern die Dichte.
 - `Animation/Autodarts Animate Checkout.user.js`
 - `Animation/Autodarts Animate Checkout Board Blink.user.js`
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
