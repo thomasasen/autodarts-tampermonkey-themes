@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Animate Checkout Suggestion Format
+// @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.5
 // @description  Format checkout suggestions so they read as recommendations in X01.
@@ -8,8 +8,8 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Suggestion%20Format.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Suggestion%20Format.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js
 // ==/UserScript==
 
 (function () {

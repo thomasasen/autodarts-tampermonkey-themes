@@ -78,18 +78,18 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 ### Animationen und Effekte
 
-#### Autodarts Animate Triple (`Animation/Autodarts Animate Triple.user.js`)
+#### Autodarts Animate Triple Double Bull Hits (`Animation/Autodarts Animate Triple Double Bull Hits.user.js`)
 
 - Hebt Triple-, Double- und Bull-Hits mit animierten Farbverläufen hervor.
 - Unterschiedliche Farbsets je Hit-Typ für schnelle Erkennung.
 
-#### Autodarts Animate Checkout (`Animation/Autodarts Animate Checkout.user.js`)
+#### Autodarts Animate Checkout Score Pulse (`Animation/Autodarts Animate Checkout Score Pulse.user.js`)
 
 - Pulsiert den aktiven Score, wenn ein Checkout möglich ist.
 - Nutzt den In-Game-Vorschlagsbereich als Trigger.
 - Auf X01-Partien begrenzt.
 
-#### Autodarts Animate Score Delta Slide (`Animation/Autodarts Animate Score Delta Slide.user.js`)
+#### Autodarts Animate Turn Points Count (`Animation/Autodarts Animate Turn Points Count.user.js`)
 
 - Animiert Turn-Punkte mit einem kurzen Count-up-Tween.
 - Verbessert die Lesbarkeit der Score-Änderungen während eines Turns.
@@ -110,17 +110,17 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 - Gewinner-Effekt mit Auswahl: Feuerwerk, Konfetti, Aurora oder Puls.
 - Ein Klick blendet das Overlay sofort aus.
 
-#### Autodarts Animate Size Strokes (`Animation/Autodarts Animate Size Strokes.user.js`)
+#### Autodarts Animate Dart Marker Emphasis (`Animation/Autodarts Animate Dart Marker Emphasis.user.js`)
 
 - Passt Marker-Größe und Füllfarbe der Darts auf dem Board an.
 - Optionaler Pulse/Glow-Effekt für bessere Sichtbarkeit.
 
-#### Autodarts Animate Checkout Board Blink (`Animation/Autodarts Animate Checkout Board Blink.user.js`)
+#### Autodarts Animate Checkout Board Targets (`Animation/Autodarts Animate Checkout Board Targets.user.js`)
 
 - Lässt das Checkout-Ziel direkt auf dem Board blinken.
 - Unterstützt Single-, Double-, Triple- und Bull-Ziele mit konfigurierbaren Effekten.
 
-#### Autodarts Animate Checkout Suggestion Format (`Animation/Autodarts Animate Checkout Suggestion Format.user.js`)
+#### Autodarts Style Checkout Suggestions (`Animation/Autodarts Style Checkout Suggestions.user.js`)
 
 - Formatiert die Checkout-Vorschläge als klare Empfehlung, damit sie nicht mit geworfenen Feldern verwechselt werden.
 - Aktiv nur in X01 (Erkennung über die Spielvariante).
@@ -149,14 +149,14 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 
 | Skript                       | Vorschau                                                                       | Detail/Vorher                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Animate Score Delta Slide    | ![Animate Score Delta Slide](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
+| Animate Turn Points Count    | ![Animate Turn Points Count](assets/screenshots/Score%20Delta%20Slide.gif)     | ![Score Delta Slide detail](assets/screenshots/Score%20Delta%20Slide%20detail.gif) |
 | Animate Average Trend Arrow  | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
-| Animate Checkout Board Blink | ![Animate Checkout Board Blink](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                                |
+| Animate Checkout Board Targets | ![Animate Checkout Board Targets](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                              |
 | Animate Turn Start Sweep     | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
-| Animate Size Strokes         | ![Animate Size Strokes](assets/screenshots/Size%20Strokes.gif)                 | -                                                                                  |
+| Animate Dart Marker Emphasis | ![Animate Dart Marker Emphasis](assets/screenshots/Size%20Strokes.gif)         | -                                                                                  |
 | Cricket Target Highlighter   | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
 
-#### Checkout Suggestion Format
+#### Checkout Suggestion Styles
 
 Das Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreifen der anderen Stile.
 
@@ -168,10 +168,10 @@ Das Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreife
 
 Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
 
-- `Animation/Autodarts Animate Score Delta Slide.user.js`
+- `Animation/Autodarts Animate Turn Points Count.user.js`
   - `CONFIG.animationMs` steuert die Tween-Dauer.
   - `CONFIG.scoreSelector` steuert, welche Score-Nodes animiert werden.
-- `Animation/Autodarts Animate Size Strokes.user.js`
+- `Animation/Autodarts Animate Dart Marker Emphasis.user.js`
   - `MARKER_RADIUS`, `MARKER_FILL` und `EFFECT` steuern Größe, Farbe und Effekt.
 - `Animation/Autodarts Animate Average Trend Arrow.user.js`
   - `ANIMATION_MS` steuert die Dauer der Pfeil-Bounce-Animation.
@@ -183,11 +183,11 @@ Jedes Skript hat einen kleinen Konfigurationsblock nahe am Dateianfang.
   - `CONFIG.winnerSelector` steuert, wie der Gewinner erkannt wird.
   - `CONFIG.effect` waehlt `firework`, `confetti`, `aurora` oder `pulse`.
   - `CONFIG.rocketIntervalMs`, `CONFIG.maxRockets` und `CONFIG.maxParticles` steuern die Ring-Dichte.
-- `Animation/Autodarts Animate Checkout.user.js`
-- `Animation/Autodarts Animate Checkout Board Blink.user.js`
+- `Animation/Autodarts Animate Checkout Score Pulse.user.js`
+- `Animation/Autodarts Animate Checkout Board Targets.user.js`
   - `CONFIG.effect`, `CONFIG.color`, `CONFIG.highlightTargets`, `CONFIG.singleRing`.
   - Selektoren und Highlight-Farbe sind am Dateianfang anpassbar.
-- `Animation/Autodarts Animate Checkout Suggestion Format.user.js`
+- `Animation/Autodarts Style Checkout Suggestions.user.js`
   - `CONFIG.formatStyle` wählt den Stil (`badge`, `ribbon`, `stripe`, `ticket`, `outline`).
   - `CONFIG.labelText` definiert den sichtbaren Label-Text (leer lassen, um das Badge zu verstecken).
   - `CONFIG.accentColor`, `CONFIG.accentSoftColor`, `CONFIG.accentStrongColor` steuern Akzent- und Hintergrundfarben.

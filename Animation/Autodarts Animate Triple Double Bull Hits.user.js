@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Autodarts Animate Triple, Double and Bull Hits
+// @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.0
 // @description  Hebt Treffer auf Triple, Double oder Bull in der Wurfliste mit einer auffälligen Farb-Animation hervor, damit besondere Treffer sofort ins Auge fallen.
 // @author       Thomas Asen
@@ -8,8 +8,8 @@
 // @run-at       document-start
 // @license      MIT
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple.user.js
-// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple.user.js
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple%20Double%20Bull%20Hits.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple%20Double%20Bull%20Hits.user.js
 // ==/UserScript==
 
 (function () {
