@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.3.1
-// @description  Pulse remaining score when a checkout is available in X01.
+// @description  Highlight the remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -26,8 +26,8 @@
   const PULSE_COLOR = "159, 219, 88";
   const IMPOSSIBLE_CHECKOUTS = new Set([169, 168, 166, 165, 163, 162, 159]);
 
-  // Effekt fuer den aktiven Checkout-Score: "pulse" | "glow" | "scale" | "blink"
-  // pulse = skaliert + Licht, glow = nur Leuchten, scale = nur Groesse, blink = Ein/Aus
+  // Effect for the highlighted checkout score: "pulse" | "glow" | "scale" | "blink"
+  // pulse = scale + glow, glow = glow only, scale = scale only, blink = on/off
   const EFFECT = "scale";
   const EFFECT_CLASSES = {
     pulse: "ad-ext-checkout-possible--pulse",
@@ -217,6 +217,7 @@
     return document.querySelectorAll(SCORE_SELECTOR);
   }
 
+  // Prefer the checkout suggestion text; fall back to score math in X01.
   function updateScoreHighlights() {
     const isX01 = isX01Variant();
     const suggestionState = getCheckoutSuggestionState();

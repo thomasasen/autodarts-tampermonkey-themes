@@ -2,7 +2,7 @@
 // @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.5
-// @description  Format checkout suggestions so they read as recommendations in X01.
+// @description  Style checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -16,7 +16,7 @@
   "use strict";
 
   /**
-   * Format options:
+   * Style options:
    * - "badge"  : label + dashed outline (default)
    * - "ribbon" : angled ribbon + glow
    * - "stripe" : diagonal stripe overlay

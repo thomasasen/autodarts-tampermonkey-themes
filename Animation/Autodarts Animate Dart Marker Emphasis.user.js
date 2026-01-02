@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Dart Marker Emphasis
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Passt Größe und Farbe der Dart-Markierungen auf dem Board an und kann einen leichten Glow/Puls hinzufügen, damit Treffer besser sichtbar sind.
+// @description  Adjusts size and color of dart markers on the board and can add a subtle glow or pulse so hits stand out.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,18 +15,19 @@
 (function () {
   "use strict";
 
-  // Script-Ziel: Dart-Markierungen größer/farbiger machen und optional animieren.
+  // Script goal: make dart markers larger/more visible and optionally animate them.
   /**
-   * Marker-Optionen für Größe, Farbe und Effekt.
-   * @property {number} MARKER_RADIUS - Radius in px, z.B. 6.
-   * @property {string} MARKER_FILL - Füllfarbe, z.B. "rgb(49, 130, 206)".
-   * @property {string} EFFECT - "pulse" | "glow" | "none", z.B. "glow".
+   * Marker options for size, color, and effect.
+   * @property {number} MARKER_RADIUS - Radius in px, e.g. 6.
+   * @property {string} MARKER_FILL - Fill color, e.g. "rgb(49, 130, 206)".
+   * @property {string} EFFECT - "pulse" | "glow" | "none".
    */
   const MARKER_RADIUS = 6;
   const MARKER_FILL = "rgb(49, 130, 206)";
   const EFFECT = "glow"; // "pulse" | "glow" | "none"
 
   const STYLE_ID = "autodarts-size-strokes-style";
+  // Matches board hit markers rendered with the shadow filter.
   const MARKER_SELECTOR =
     'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]';
   const BASE_CLASS = "ad-ext-dart-marker";
@@ -36,7 +37,7 @@
   };
 
   /**
-   * Fügt CSS-Regeln für die Marker-Effekte ein.
+   * Injects CSS rules for the marker effects.
    * @returns {void}
    */
   function ensureStyle() {
@@ -92,7 +93,7 @@
   }
 
   /**
-   * Wendet Größe, Farbe und Effekt auf einen Marker an.
+   * Applies size, color, and effect to a marker.
    * @param {SVGCircleElement} marker - Dart-Markierung als SVG-Kreis.
    * @example
    * applyMarkerStyles(document.querySelector("circle"));
@@ -111,7 +112,7 @@
   }
 
   /**
-   * Sucht alle Marker im DOM und aktualisiert deren Darstellung.
+   * Finds all markers in the DOM and updates their styles.
    * @returns {void}
    */
   function updateMarkers() {
@@ -121,7 +122,7 @@
 
   let scheduled = false;
   /**
-   * Fasst DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * Coalesces DOM changes into a single update per frame.
    * @returns {void}
    */
   function scheduleUpdate() {
@@ -138,7 +139,7 @@
   ensureStyle();
   updateMarkers();
 
-  // Beobachtet Änderungen am Board, um neue Marker zu stylen.
+  // Observes board changes to restyle new markers.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

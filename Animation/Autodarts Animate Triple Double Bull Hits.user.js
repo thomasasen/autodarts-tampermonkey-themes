@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.0
-// @description  Hebt Treffer auf Triple, Double oder Bull in der Wurfliste mit einer auffälligen Farb-Animation hervor, damit besondere Treffer sofort ins Auge fallen.
+// @description  Highlight triple, double, and bull hits in the throw list with animated gradients so special hits stand out.
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
@@ -15,19 +15,19 @@
 (function () {
   "use strict";
 
-  // Script-Ziel: Treffer auf Triple/Double/Bull in der Wurfliste hervorheben.
-  // Standardwerte 1..20 für gültige Segmente.
+  // Script goal: highlight triple/double/bull hits in the throw list.
+  // Default values 1..20 for valid segments.
   const SEGMENT_VALUES = [
     20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
   ];
 
   /**
-   * Konfiguration für Trefferarten und Darstellung.
-   * @property {number} pollIntervalMs - Fallback-Intervall in ms, z.B. 3000.
-   * @property {Object} selectors - CSS-Selektoren für Wurfliste und Text.
-   * @property {string[]} defaultGradientStops - Standard-Gradientfarben.
-   * @property {Array} hitTypes - Trefferarten (T/D) mit Farben und Gradients.
-   * @property {Object} bull - Konfiguration für BULL (ein/aus).
+   * Configuration for hit types and visuals.
+   * @property {number} pollIntervalMs - Fallback interval in ms, e.g. 3000.
+   * @property {Object} selectors - CSS selectors for the throw list and text.
+   * @property {string[]} defaultGradientStops - Default gradient colors.
+   * @property {Array} hitTypes - Hit types (T/D) with colors and gradients.
+   * @property {Object} bull - Configuration for BULL (on/off).
    */
   const CONFIG = {
     pollIntervalMs: 3000,
@@ -63,8 +63,8 @@
   };
 
   /**
-   * Erweitert Treffer-Typen um abgeleitete Eigenschaften.
-   * @param {Object} type - Treffer-Typ, z.B. { key: "triple", prefix: "T" }.
+   * Expands hit types with derived properties.
+   * @param {Object} type - Hit type, e.g. { key: "triple", prefix: "T" }.
    * @returns {Object}
    */
   const withDerivedProps = (type) => ({
@@ -75,7 +75,7 @@
     labelUpper: type.label ? type.label.toUpperCase() : undefined,
   });
 
-  // Vorberechnete Lookup-Tabellen und Klassen für schnelle Zuordnung.
+  // Precomputed lookup tables and classes for fast matching.
   const HIT_TYPES = CONFIG.hitTypes.map(withDerivedProps);
   const TYPE_BY_PREFIX = HIT_TYPES.reduce((map, type) => {
     map[type.prefix.toUpperCase()] = type;
@@ -89,8 +89,8 @@
   let initialized = false;
 
   /**
-   * Erzeugt einen CSS-Gradient-String für die Trefferkarte.
-   * @param {string[]} stops - Farbwerte wie ["#ff6b6b", "#ffd166"].
+   * Builds a CSS gradient string for a hit card.
+   * @param {string[]} stops - Color stops like ["#ff6b6b", "#ffd166"].
    * @returns {string}
    */
   function gradientValue(stops) {
@@ -102,7 +102,7 @@
   }
 
   /**
-   * Baut die komplette CSS-Definition für Highlights und Animationen.
+   * Builds the full CSS definition for highlights and animations.
    * @returns {string}
    */
   function buildStyles() {
@@ -126,7 +126,7 @@
   }
 
   /**
-   * Fügt die CSS-Styles einmalig in den Head ein.
+   * Injects the CSS styles into the document head once.
    * @returns {void}
    */
   function injectCSS() {
@@ -142,8 +142,8 @@
   }
 
   /**
-   * Prüft, ob ein Text ein Treffer-Typ ist (T/D/BULL) und liefert Metadaten.
-   * @param {HTMLElement} pElement - Textknoten der Wurfanzeige.
+   * Checks whether a text is a hit type (T/D/BULL) and returns metadata.
+   * @param {HTMLElement} pElement - Text node of the throw display.
    * @example
    * getHitMeta({ textContent: "T20" });
    * @returns {{type: Object, prefixChar: string} | null}
@@ -177,10 +177,10 @@
   }
 
   /**
-   * Wendet Klassen und markierten Text für einen Treffer an.
-   * @param {HTMLElement} pElement - Text-Element der Wurfanzeige.
-   * @param {Object} meta - Treffer-Metadaten.
-   * @param {string} prefixChar - Prefix wie "T" oder "D" (oder "").
+   * Applies classes and highlighted text for a hit.
+   * @param {HTMLElement} pElement - Text element of the throw display.
+   * @param {Object} meta - Hit metadata.
+   * @param {string} prefixChar - Prefix like "T" or "D" (or empty).
    * @returns {void}
    */
   function decorateHit(pElement, meta, prefixChar) {
@@ -210,7 +210,7 @@
   }
 
   /**
-   * Sucht alle Wurftexte und dekoriert Trefferarten.
+   * Finds all throw texts and decorates hit types.
    * @returns {void}
    */
   function animateHits() {
@@ -225,8 +225,8 @@
   }
 
   /**
-   * Prüft, ob eine Mutation die Wurfanzeige betrifft.
-   * @param {MutationRecord} mutation - Mutation aus dem Observer.
+   * Checks whether a mutation touches the throw display.
+   * @param {MutationRecord} mutation - Mutation from the observer.
    * @returns {boolean}
    */
   function mutationTouchesThrowText(mutation) {
@@ -243,7 +243,7 @@
     );
   }
 
-  // Beobachtet DOM-Änderungen an der Wurfliste.
+  // Observes DOM changes in the throw list.
   const observer = new MutationObserver((mutationsList) => {
     if (mutationsList.some(mutationTouchesThrowText)) {
       animateHits();
@@ -251,7 +251,7 @@
   });
 
   /**
-   * Initialisiert Styles und startet Observer/Intervalle.
+   * Initializes styles and starts observers/intervals.
    * @returns {void}
    */
   function start() {

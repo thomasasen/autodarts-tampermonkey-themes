@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0
-// @description  Animiert die angezeigten Punkte der aktuellen Aufnahme, indem die Zahl kurz hoch- oder runterzählt, statt sofort zu springen.
+// @description  Animates the turn points by counting up or down briefly instead of jumping.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,27 +15,27 @@
 (function () {
   "use strict";
 
-  // Script-Ziel: Punktzahl der Aufnahme weich hoch/runter zählen statt springen.
+  // Script goal: count turn points up/down smoothly instead of jumping.
   /**
-   * Konfiguration für die Punkte-Animation.
-   * @property {string} scoreSelector - Anzeige der Wurf-Punkte, z.B. "p.ad-ext-turn-points".
-   * @property {number} animationMs - Dauer der Zähltween-Animation, z.B. 416.
+   * Configuration for the point counter animation.
+   * @property {string} scoreSelector - Selector for turn points, e.g. "p.ad-ext-turn-points".
+   * @property {number} animationMs - Count animation duration in ms, e.g. 416.
    */
   const CONFIG = {
     scoreSelector: "p.ad-ext-turn-points",
     animationMs: 416,
   };
 
-  // Speichert den letzten bekannten Wert pro Element.
+  // Stores the last known value per element.
   const lastValues = new WeakMap();
-  // Merkt sich laufende Animationen, um sie abbrechen zu können.
+  // Tracks active animations so they can be canceled.
   const activeAnimations = new WeakMap();
-  // Schützt Elemente vor parallelen Updates.
+  // Prevents overlapping updates while an element animates.
   const animatingNodes = new WeakSet();
 
   /**
-   * Liest eine Zahl aus einem Text, z.B. "-60" oder "100".
-   * @param {string|null} text - Textinhalt der Punkteanzeige.
+   * Reads a number from text, e.g. "-60" or "100".
+   * @param {string|null} text - Text content of the turn points element.
    * @example
    * parseScore("-60"); // => -60
    * @returns {number|null}
@@ -52,7 +52,7 @@
   }
 
   /**
-   * Easing-Funktion für weiches Ausklingen.
+   * Easing function for smooth decay.
    * @param {number} t - Fortschritt 0..1.
    * @example
    * easeOutCubic(0.5); // => 0.875
@@ -63,10 +63,10 @@
   }
 
   /**
-   * Animiert den Wert in der Anzeige von fromValue nach toValue.
-   * @param {Element} element - Ziel-Element für die Anzeige.
-   * @param {number} fromValue - Startwert, z.B. 0.
-   * @param {number} toValue - Zielwert, z.B. 60.
+   * Animates the display value from fromValue to toValue.
+   * @param {Element} element - Target element for the display.
+   * @param {number} fromValue - Starting value, e.g. 0.
+   * @param {number} toValue - Target value, e.g. 60.
    * @returns {void}
    */
   function animateValue(element, fromValue, toValue) {
@@ -98,7 +98,7 @@
   }
 
   /**
-   * Vergleicht aktuelle Werte mit dem letzten Stand und startet bei Änderung.
+   * Compares current values with the last state and animates on change.
    * @returns {void}
    */
   function updateScores() {
@@ -124,7 +124,7 @@
 
   let scheduled = false;
   /**
-   * Fasst DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * Coalesces DOM changes into a single update per frame.
    * @returns {void}
    */
   function scheduleUpdate() {
@@ -140,7 +140,7 @@
 
   updateScores();
 
-  // Beobachtet Änderungen an Text/DOM, um neue Punkte zu erkennen.
+  // Observes text/DOM changes to detect new turn points.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

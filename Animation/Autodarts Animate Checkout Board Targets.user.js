@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.1.1
-// @description  Markiert die Checkout-Ziele direkt auf dem Dartboard (z.B. Double/Bull) und lässt sie blinken oder pulsieren, wenn ein Checkout in X01 möglich ist.
+// @description  Highlights checkout targets on the dartboard (e.g. doubles/bull) and animates them with blink, pulse, or glow when a checkout is possible in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -15,21 +15,21 @@
 (function () {
   "use strict";
 
-  // Script-Ziel: Checkout-Ziele auf dem Board visuell markieren (Blinken/Puls/Glow).
+  // Script goal: visualize checkout targets on the board (blink/pulse/glow).
   /**
-   * Konfiguration für das Markieren von Checkout-Zielen.
-   * @property {string} suggestionSelector - CSS-Selektor für die Checkout-Empfehlung, z.B. ".suggestion".
-   * @property {string} variantElementId - Element mit Spielvariante, z.B. "ad-ext-game-variant".
-   * @property {boolean} requireX01 - Nur in X01 aktivieren, z.B. true.
-   * @property {string} highlightTargets - "first" oder "all", z.B. "first".
-   * @property {string} effect - "pulse" | "blink" | "glow", z.B. "pulse".
-   * @property {string} color - Füllfarbe der Ziele, z.B. "rgba(168, 85, 247, 0.85)".
-   * @property {string} strokeColor - Rahmenfarbe der Ziele, z.B. "rgba(168, 85, 247, 0.95)".
-   * @property {number} strokeWidthRatio - Rahmenbreite relativ zum Boardradius, z.B. 0.008.
-   * @property {number} animationMs - Dauer der Animation in ms, z.B. 1000.
-   * @property {string} singleRing - "inner" | "outer" | "both", z.B. "both".
-   * @property {number} edgePaddingPx - Zusätzlicher Rand in px, z.B. 1.
-   * @property {Object} ringRatios - Ringgrenzen als Anteil des Boardradius, z.B. doubleInner: 0.711112.
+   * Configuration for checkout target highlighting.
+   * @property {string} suggestionSelector - CSS selector for the checkout suggestion, e.g. ".suggestion".
+   * @property {string} variantElementId - Element id that holds the game variant text.
+   * @property {boolean} requireX01 - Only enable in X01, e.g. true.
+   * @property {string} highlightTargets - "first" or "all", e.g. "first".
+   * @property {string} effect - "pulse" | "blink" | "glow".
+   * @property {string} color - Fill color for targets, e.g. "rgba(168, 85, 247, 0.85)".
+   * @property {string} strokeColor - Stroke color for targets, e.g. "rgba(168, 85, 247, 0.95)".
+   * @property {number} strokeWidthRatio - Stroke width relative to the board radius.
+   * @property {number} animationMs - Animation duration in ms.
+   * @property {string} singleRing - "inner" | "outer" | "both".
+   * @property {number} edgePaddingPx - Extra padding in px.
+   * @property {Object} ringRatios - Ring boundaries as a fraction of the board radius.
    */
   const CONFIG = {
     suggestionSelector: ".suggestion",
@@ -53,7 +53,7 @@
     },
   };
 
-  // Reihenfolge der Sektoren im Uhrzeigersinn (Standard-Dartboard).
+  // Segment order clockwise (standard dartboard).
   const SEGMENT_ORDER = [
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
   ];
@@ -69,11 +69,11 @@
     glow: "ad-ext-checkout-target--glow",
   };
 
-  // Merkt sich den zuletzt gelesenen Checkout-Text, um unnötige Updates zu vermeiden.
+  // Cache the last suggestion text to avoid unnecessary redraws.
   let lastSuggestion = null;
 
   /**
-   * Fügt die benötigten CSS-Regeln für Ziel-Markierungen ein.
+   * Injects the required CSS rules once.
    * @returns {void}
    */
   function ensureStyle() {
@@ -174,7 +174,7 @@
   }
 
   /**
-   * Prüft, ob eine X01-Variante aktiv ist (z.B. 301/501).
+   * Returns true when an X01 variant is active (e.g. 301/501).
    * @returns {boolean}
    */
   function isX01Variant() {
@@ -187,8 +187,8 @@
   }
 
   /**
-   * Extrahiert Checkout-Ziele aus dem Vorschlagstext.
-   * @param {string} text - Text wie "T20 D10" oder "BULL".
+   * Parses checkout targets from the suggestion text.
+   * @param {string} text - Text like "T20 D10" or "BULL".
    * @example
    * parseTargets("T20 D10"); // => [{ ring: "T", value: 20 }, { ring: "D", value: 10 }]
    * @returns {Array<{ring: string, value?: number}>}
@@ -263,7 +263,7 @@
   }
 
   /**
-   * Sucht den größten Kreisradius innerhalb eines SVG-Elements.
+   * Finds the largest circle radius inside an SVG element.
    * @param {Element} root - SVG oder Gruppe.
    * @example
    * getBoardRadius(document.querySelector("svg"));
@@ -277,7 +277,7 @@
   }
 
   /**
-   * Findet das wahrscheinlichste Dartboard-SVG anhand von Zahlen und Radius.
+   * Finds the most likely dartboard SVG using numbers and radius.
    * @returns {{group: Element, radius: number} | null}
    */
   function findBoard() {
@@ -328,7 +328,7 @@
   }
 
   /**
-   * Stellt sicher, dass es eine Overlay-Gruppe für Ziel-Markierungen gibt.
+   * Ensures an overlay group exists for target markers.
    * @param {Element} boardGroup - SVG-Gruppe des Boards.
    * @returns {SVGGElement}
    */
@@ -343,7 +343,7 @@
   }
 
   /**
-   * Entfernt alle bisherigen Ziel-Elemente aus dem Overlay.
+   * Clears all existing target elements from the overlay.
    * @param {Element} overlay - Overlay-Gruppe.
    * @returns {void}
    */
@@ -354,9 +354,9 @@
   }
 
   /**
-   * Rechnet Polar-Koordinaten in SVG-Koordinaten um.
-   * @param {number} r - Radius, z.B. 100.
-   * @param {number} deg - Winkel in Grad, z.B. 45.
+   * Converts polar coordinates to SVG coordinates.
+   * @param {number} r - Radius, e.g. 100.
+   * @param {number} deg - Angle in degrees, e.g. 45.
    * @returns {{x: number, y: number}}
    */
   function polar(r, deg) {
@@ -365,12 +365,12 @@
   }
 
   /**
-   * Baut einen Keil (Segment) als SVG-Pfad zwischen zwei Radien.
-   * @param {number} rInner - Innenradius, z.B. 60.
-   * @param {number} rOuter - Außenradius, z.B. 70.
-   * @param {number} startDeg - Startwinkel in Grad, z.B. 36.
-   * @param {number} endDeg - Endwinkel in Grad, z.B. 54.
-   * @returns {string} - SVG-Pfadbeschreibung.
+   * Builds a wedge path between two radii.
+   * @param {number} rInner - Inner radius, e.g. 60.
+   * @param {number} rOuter - Outer radius, e.g. 70.
+   * @param {number} startDeg - Start angle in degrees, e.g. 36.
+   * @param {number} endDeg - End angle in degrees, e.g. 54.
+   * @returns {string} - SVG path description.
    */
   function wedgePath(rInner, rOuter, startDeg, endDeg) {
     const p0 = polar(rOuter, startDeg);
@@ -388,10 +388,10 @@
   }
 
   /**
-   * Baut einen Ring (Donut) als SVG-Pfad zwischen zwei Radien.
-   * @param {number} rInner - Innenradius, z.B. 10.
-   * @param {number} rOuter - Außenradius, z.B. 20.
-   * @returns {string} - SVG-Pfadbeschreibung.
+   * Builds a ring (donut) path between two radii.
+   * @param {number} rInner - Inner radius, e.g. 10.
+   * @param {number} rOuter - Outer radius, e.g. 20.
+   * @returns {string} - SVG path description.
    */
   function ringPath(rInner, rOuter) {
     const outer = [
@@ -410,8 +410,8 @@
   }
 
   /**
-   * Berechnet die Winkelgrenzen für ein Nummernsegment.
-   * @param {number} value - Segmentwert 1..20, z.B. 20.
+   * Calculates the angle bounds for a number segment.
+   * @param {number} value - Segment value 1..20, e.g. 20.
    * @returns {{start: number, end: number} | null}
    */
   function segmentAngles(value) {
@@ -424,9 +424,9 @@
   }
 
   /**
-   * Setzt CSS-Klassen und Variablen für Optik und Animation.
-   * @param {SVGElement} element - Ziel-Shape im Overlay.
-   * @param {number} radius - Boardradius, z.B. 200.
+   * Applies CSS classes and variables for styling and animation.
+   * @param {SVGElement} element - Target shape in the overlay.
+   * @param {number} radius - Board radius, e.g. 200.
    * @returns {void}
    */
   function applyTargetStyles(element, radius) {
@@ -455,8 +455,8 @@
   }
 
   /**
-   * Erstellt eine weiße Outline-Shape basierend auf dem Ziel-Element.
-   * @param {SVGElement} shape - Originales Ziel-Element.
+   * Creates a white outline shape based on the target element.
+   * @param {SVGElement} shape - Original target element.
    * @returns {SVGElement}
    */
   function createOutlineShape(shape) {
@@ -468,9 +468,9 @@
   }
 
   /**
-   * Setzt die Styles für die pulsierende weiße Umrahmung.
+   * Applies styles for the pulsing white outline.
    * @param {SVGElement} element - Outline-Shape im Overlay.
-   * @param {number} radius - Boardradius, z.B. 200.
+   * @param {number} radius - Board radius, e.g. 200.
    * @returns {void}
    */
   function applyOutlineStyles(element, radius) {
@@ -487,12 +487,12 @@
   }
 
   /**
-   * Erzeugt ein Keil-Element für ein Ringsegment.
-   * @param {number} radius - Boardradius, z.B. 200.
-   * @param {number} innerRatio - Innenanteil, z.B. 0.43.
-   * @param {number} outerRatio - Außenanteil, z.B. 0.48.
-   * @param {number} startDeg - Startwinkel.
-   * @param {number} endDeg - Endwinkel.
+   * Creates a wedge element for a ring segment.
+   * @param {number} radius - Board radius, e.g. 200.
+   * @param {number} innerRatio - Inner ratio, e.g. 0.43.
+   * @param {number} outerRatio - Outer ratio, e.g. 0.48.
+   * @param {number} startDeg - Start angle in degrees.
+   * @param {number} endDeg - End angle in degrees.
    * @returns {SVGPathElement}
    */
   function createWedge(radius, innerRatio, outerRatio, startDeg, endDeg) {
@@ -505,11 +505,11 @@
   }
 
   /**
-   * Erzeugt Bull/Outer-Bull als Kreis oder Ring.
-   * @param {number} radius - Boardradius.
-   * @param {number} innerRatio - Innenanteil für Ring.
-   * @param {number} outerRatio - Außenanteil für Ring.
-   * @param {boolean} solid - true für gefüllten Kreis.
+   * Creates bull/outer-bull shapes as a circle or ring.
+   * @param {number} radius - Board radius.
+   * @param {number} innerRatio - Inner ratio for the ring.
+   * @param {number} outerRatio - Outer ratio for the ring.
+   * @param {boolean} solid - True for a filled circle.
    * @returns {SVGCircleElement|SVGPathElement}
    */
   function createBull(radius, innerRatio, outerRatio, solid) {
@@ -531,9 +531,9 @@
   }
 
   /**
-   * Baut die passenden Shapes (Keil/Ring/Kreis) für ein Ziel.
-   * @param {number} radius - Boardradius, z.B. 200.
-   * @param {{ring: string, value?: number}} target - Ziel, z.B. { ring: "D", value: 20 }.
+   * Builds the shapes (wedge/ring/circle) for a target.
+   * @param {number} radius - Board radius, e.g. 200.
+   * @param {{ring: string, value?: number}} target - Target, e.g. { ring: "D", value: 20 }.
    * @returns {SVGElement[]}
    */
   function buildTargetShapes(radius, target) {
@@ -613,7 +613,7 @@
   }
 
   /**
-   * Haupt-Update: Liest Checkout-Vorschlag und zeichnet Ziele aufs Board.
+   * Main update: parse the checkout suggestion and draw targets on the board.
    * @returns {void}
    */
   function updateTargets() {
@@ -663,7 +663,7 @@
 
   let scheduled = false;
   /**
-   * Fasst viele DOM-Änderungen zusammen, um nur einmal pro Frame zu reagieren.
+   * Coalesces DOM changes into a single update per frame.
    * @returns {void}
    */
   function scheduleUpdate() {
@@ -680,7 +680,7 @@
   ensureStyle();
   updateTargets();
 
-  // Beobachtet Text- und DOM-Änderungen, um Checkout-Ziele zu aktualisieren.
+  // Observes text and DOM changes to update checkout targets.
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (
