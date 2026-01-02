@@ -174,8 +174,15 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Animate Average Trend Arrow  | ![Animate Average Trend Arrow](assets/screenshots/Average%20Trend%20Arrow.png) | -                                                                                  |
 | Animate Checkout Board Targets | ![Animate Checkout Board Targets](assets/screenshots/Checkout%20Board%20Blink.gif) | -                                                                              |
 | Animate Turn Start Sweep     | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)       | -                                                                                  |
+| Animate Winner Fireworks     | ![Animate Winner Fireworks](assets/screenshots/Winner%20Fireworks_firework.gif) | Varianten siehe unten                                                             |
 | Animate Dart Marker Emphasis | ![Animate Dart Marker Emphasis](assets/screenshots/Size%20Strokes.gif)         | -                                                                                  |
 | Cricket Target Highlighter   | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                              |
+
+#### Winner Fireworks Varianten
+
+| Aurora | Confetti | Firework | Pulse |
+| --- | --- | --- | --- |
+| ![Winner Fireworks Aurora](assets/screenshots/Winner%20Fireworks_aurora.gif) | ![Winner Fireworks Confetti](assets/screenshots/Winner%20Fireworks_confetti.gif) | ![Winner Fireworks Firework](assets/screenshots/Winner%20Fireworks_firework.gif) | ![Winner Fireworks Pulse](assets/screenshots/Winner%20Fireworks_pulse.gif) |
 
 #### Checkout Suggestion Styles
 
