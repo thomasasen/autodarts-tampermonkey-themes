@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Plays a configurable sound when a single bull (25/BULL) is thrown in the throw list.
 // @author       Thomas Asen
 // @license      MIT
@@ -23,6 +23,7 @@
    * @property {number} targetPoints - Points value for single bull.
    * @property {string} targetLabel - Label text to match (case-insensitive).
    * @property {Object} selectors - CSS selectors for throw rows/text.
+   * @property {number} cooldownMs - Minimum gap between plays per row.
    * @property {number} pollIntervalMs - Optional polling interval (0 disables).
    */
   const CONFIG = {
@@ -32,13 +33,17 @@
     targetLabel: "BULL",
     selectors: {
       throwRow: ".ad-ext-turn-throw",
-      throwText: "p.chakra-text",
+      throwText: ".chakra-text",
     },
+    cooldownMs: 700,
     pollIntervalMs: 0,
   };
 
   const targetLabelUpper = CONFIG.targetLabel.toUpperCase();
   const lastKeys = new WeakMap();
+  const lastPlayedAt = new WeakMap();
+  const observedRoots = new WeakSet();
+  const pendingRows = new Set();
 
   const audio = new Audio(CONFIG.soundUrl);
   audio.preload = "auto";
@@ -52,6 +57,50 @@
    */
   function normalizeText(text) {
     return String(text || "").replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Collects DOM roots (document + open shadow roots).
+   * @returns {Array<Document | ShadowRoot>}
+   */
+  function collectRoots() {
+    const roots = [document];
+    const rootNode = document.documentElement;
+    if (rootNode) {
+      const walker = document.createTreeWalker(
+        rootNode,
+        NodeFilter.SHOW_ELEMENT
+      );
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node.shadowRoot) {
+          roots.push(node.shadowRoot);
+        }
+      }
+    }
+    return roots;
+  }
+
+  /**
+   * Observes a root once to catch DOM updates.
+   * @param {Document | ShadowRoot} root - Root node to observe.
+   * @returns {void}
+   */
+  function observeRoot(root) {
+    if (!root || observedRoots.has(root)) {
+      return;
+    }
+    const target = root.nodeType === Node.DOCUMENT_NODE ? root.documentElement : root;
+    if (!target) {
+      return;
+    }
+    observer.observe(target, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+    });
+    observedRoots.add(root);
   }
 
   /**
@@ -70,7 +119,16 @@
    */
   function getThrowText(row) {
     const textNode = row.querySelector(CONFIG.selectors.throwText);
-    return normalizeText((textNode || row).textContent);
+    const sources = [];
+    if (textNode) {
+      sources.push(textNode.textContent);
+    }
+    sources.push(row.textContent);
+    const ariaLabel = row.getAttribute("aria-label");
+    if (ariaLabel) {
+      sources.push(ariaLabel);
+    }
+    return normalizeText(sources.filter(Boolean).join(" "));
   }
 
   /**
@@ -94,6 +152,26 @@
       return false;
     }
     return Number(pointsToken) === CONFIG.targetPoints;
+  }
+
+  /**
+   * Checks whether a throw row represents a single bull.
+   * @param {Element} row - Throw row element.
+   * @returns {boolean}
+   */
+  function isSingleBullRow(row) {
+    const text = getThrowText(row);
+    if (isSingleBull(text)) {
+      return true;
+    }
+    const blockTexts = Array.from(row.querySelectorAll("div")).map((node) =>
+      normalizeText(node.textContent)
+    );
+    const hasValue = blockTexts.includes(String(CONFIG.targetPoints));
+    const hasLabel = blockTexts.some(
+      (part) => part.toUpperCase() === targetLabelUpper
+    );
+    return hasValue && hasLabel;
   }
 
   /**
@@ -141,18 +219,36 @@
    * @returns {void}
    */
   function scanThrows(silent) {
-    const rows = document.querySelectorAll(CONFIG.selectors.throwRow);
+    const roots = collectRoots();
+    let rows = [];
+    if (pendingRows.size) {
+      rows = Array.from(pendingRows);
+    } else {
+      roots.forEach((root) => {
+        rows = rows.concat(
+          Array.from(root.querySelectorAll(CONFIG.selectors.throwRow))
+        );
+      });
+    }
+    pendingRows.clear();
+    roots.forEach((root) => observeRoot(root));
+    const now = performance.now();
     rows.forEach((row) => {
       const normalized = getThrowText(row);
       const key = normalized || "__empty__";
       const previousKey = lastKeys.get(row);
-      if (previousKey === key) {
+      if (previousKey !== key) {
+        lastKeys.set(row, key);
+      }
+      if (silent || !isSingleBullRow(row)) {
         return;
       }
-      lastKeys.set(row, key);
-      if (!silent && isSingleBull(normalized)) {
-        playSound();
+      const lastPlayed = lastPlayedAt.get(row) || 0;
+      if (now - lastPlayed < CONFIG.cooldownMs) {
+        return;
       }
+      playSound();
+      lastPlayedAt.set(row, now);
     });
   }
 
@@ -172,7 +268,30 @@
     });
   }
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === "characterData") {
+        const row = mutation.target.parentElement?.closest(
+          CONFIG.selectors.throwRow
+        );
+        if (row) {
+          pendingRows.add(row);
+        }
+        return;
+      }
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return;
+        }
+        if (node.matches(CONFIG.selectors.throwRow)) {
+          pendingRows.add(node);
+          return;
+        }
+        node
+          .querySelectorAll(CONFIG.selectors.throwRow)
+          .forEach((row) => pendingRows.add(row));
+      });
+    });
     scheduleScan();
   });
 
@@ -187,12 +306,7 @@
     });
     window.addEventListener("keydown", primeAudio, { once: true, capture: true });
     scanThrows(true);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-    });
+    observeRoot(document);
 
     if (CONFIG.pollIntervalMs > 0) {
       setInterval(() => scanThrows(false), CONFIG.pollIntervalMs);
