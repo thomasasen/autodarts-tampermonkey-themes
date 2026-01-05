@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Plays a configurable sound when a single bull (25/BULL) is thrown in the throw list.
 // @author       Thomas Asen
 // @license      MIT
@@ -22,7 +22,7 @@
    * @property {number} volume - Audio volume 0..1.
    * @property {number} targetPoints - Points value for single bull.
    * @property {string} targetLabel - Label text to match (case-insensitive).
-   * @property {Object} selectors - CSS selectors for throw rows.
+   * @property {Object} selectors - CSS selectors for throw rows/text.
    * @property {number} pollIntervalMs - Optional polling interval (0 disables).
    */
   const CONFIG = {
@@ -32,6 +32,7 @@
     targetLabel: "BULL",
     selectors: {
       throwRow: ".ad-ext-turn-throw",
+      throwText: "p.chakra-text",
     },
     pollIntervalMs: 0,
   };
@@ -42,6 +43,7 @@
   const audio = new Audio(CONFIG.soundUrl);
   audio.preload = "auto";
   audio.volume = CONFIG.volume;
+  let audioPrimed = false;
 
   /**
    * Normalizes text content into a single line.
@@ -53,6 +55,25 @@
   }
 
   /**
+   * Tokenizes a string into number and word chunks.
+   * @param {string} text - Normalized throw text.
+   * @returns {string[]}
+   */
+  function tokenize(text) {
+    return text.match(/[A-Za-z]+|\d+/g) || [];
+  }
+
+  /**
+   * Reads the text for a single throw row.
+   * @param {Element} row - Throw row element.
+   * @returns {string}
+   */
+  function getThrowText(row) {
+    const textNode = row.querySelector(CONFIG.selectors.throwText);
+    return normalizeText((textNode || row).textContent);
+  }
+
+  /**
    * Checks whether the text matches a single bull entry.
    * @param {string} text - Normalized throw text.
    * @returns {boolean}
@@ -61,15 +82,39 @@
     if (!text) {
       return false;
     }
-    const upper = text.toUpperCase();
-    if (!upper.includes(targetLabelUpper)) {
+    const tokens = tokenize(text);
+    const labelMatch = tokens.some(
+      (token) => token.toUpperCase() === targetLabelUpper
+    );
+    if (!labelMatch) {
       return false;
     }
-    const pointsMatch = text.match(/\d+/);
-    if (!pointsMatch) {
+    const pointsToken = tokens.find((token) => /^\d+$/.test(token));
+    if (!pointsToken) {
       return false;
     }
-    return Number(pointsMatch[0]) === CONFIG.targetPoints;
+    return Number(pointsToken) === CONFIG.targetPoints;
+  }
+
+  /**
+   * Tries to unlock audio playback after user interaction.
+   * @returns {void}
+   */
+  function primeAudio() {
+    if (audioPrimed) {
+      return;
+    }
+    audioPrimed = true;
+    try {
+      const probe = audio.cloneNode(true);
+      probe.muted = true;
+      const result = probe.play();
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {});
+      }
+    } catch (error) {
+      // Ignore autoplay restriction errors.
+    }
   }
 
   /**
@@ -78,8 +123,10 @@
    */
   function playSound() {
     try {
-      audio.currentTime = 0;
-      const result = audio.play();
+      const sound = audio.cloneNode(true);
+      sound.volume = CONFIG.volume;
+      sound.currentTime = 0;
+      const result = sound.play();
       if (result && typeof result.catch === "function") {
         result.catch(() => {});
       }
@@ -96,7 +143,7 @@
   function scanThrows(silent) {
     const rows = document.querySelectorAll(CONFIG.selectors.throwRow);
     rows.forEach((row) => {
-      const normalized = normalizeText(row.textContent);
+      const normalized = getThrowText(row);
       const key = normalized || "__empty__";
       const previousKey = lastKeys.get(row);
       if (previousKey === key) {
@@ -125,31 +172,8 @@
     });
   }
 
-  /**
-   * Checks whether a mutation touches the throw list rows.
-   * @param {MutationRecord} mutation - Mutation from the observer.
-   * @returns {boolean}
-   */
-  function mutationTouchesThrowRow(mutation) {
-    if (mutation.type === "characterData") {
-      const parent = mutation.target.parentElement;
-      return Boolean(parent && parent.closest(CONFIG.selectors.throwRow));
-    }
-    return Array.from(mutation.addedNodes).some((node) => {
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return false;
-      }
-      return (
-        node.matches(CONFIG.selectors.throwRow) ||
-        node.querySelector(CONFIG.selectors.throwRow)
-      );
-    });
-  }
-
-  const observer = new MutationObserver((mutations) => {
-    if (mutations.some(mutationTouchesThrowRow)) {
-      scheduleScan();
-    }
+  const observer = new MutationObserver(() => {
+    scheduleScan();
   });
 
   /**
@@ -157,11 +181,17 @@
    * @returns {void}
    */
   function start() {
+    window.addEventListener("pointerdown", primeAudio, {
+      once: true,
+      capture: true,
+    });
+    window.addEventListener("keydown", primeAudio, { once: true, capture: true });
     scanThrows(true);
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
     });
 
     if (CONFIG.pollIntervalMs > 0) {
