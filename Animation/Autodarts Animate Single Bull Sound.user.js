@@ -237,10 +237,11 @@
       const normalized = getThrowText(row);
       const key = normalized || "__empty__";
       const previousKey = lastKeys.get(row);
-      if (previousKey !== key) {
+      const isNewKey = previousKey !== key;
+      if (isNewKey) {
         lastKeys.set(row, key);
       }
-      if (silent || !isSingleBullRow(row)) {
+      if (!isNewKey || silent || !isSingleBullRow(row)) {
         return;
       }
       const lastPlayed = lastPlayedAt.get(row) || 0;
