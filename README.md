@@ -26,10 +26,12 @@ Sie verändern keine Spiellogik, Scores oder Erkennung.
 
 ## Installation
 
-1. Installiere die Tampermonkey-Erweiterung.
+1. Installiere die Tampermonkey-Erweiterung: https://www.tampermonkey.net/index.php?browser=chrome
 2. Öffne die Raw-Datei des gewünschten Skripts im Ordner `Template/` oder `Animation/`.
 3. Tampermonkey erkennt das Userscript automatisch.
 4. Installiere es und lasse automatische Updates aktiviert.
+
+Hinweis: Die Skriptpfade in den Beschreibungen unten verweisen auf die Raw-Dateien. Beim Öffnen zeigt Tampermonkey den Installationsdialog. Wenn kein Dialog erscheint, ist Tampermonkey nicht installiert.
 
 ### Aktualisierungen
 
@@ -53,28 +55,28 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 ### Themes
 
-#### Autodarts Theme X01 (`Template/Autodarts Theme X01.user.js`)
+#### Autodarts Theme X01 ([`Template/Autodarts Theme X01.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20X01.user.js))
 
 - Zweck: Vollstaendiges Layout- und Farb-Theme fuer X01 (Board, Player-Karten, Navigation).
 - Aktivierung: Variante `x01` (liest `#ad-ext-game-variant` ueber den Shared Helper).
 - Aenderungen: setzt CSS-Variablen, Layout-Grid und Schriftgroessen fuer X01.
 - Konfiguration: passe `fallbackThemeCss`, `fallbackLayoutCss` oder `navigationOverride` im Script an.
 
-#### Autodarts Theme Shanghai (`Template/Autodarts Theme Shanghai.user.js`)
+#### Autodarts Theme Shanghai ([`Template/Autodarts Theme Shanghai.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Shanghai.user.js))
 
 - Zweck: Gemeinsames Theme plus Grid-Layout fuer Shanghai.
 - Aktivierung: Variante `shanghai` (via `#ad-ext-game-variant`).
 - Aenderungen: nutzt `commonThemeCss` und `commonLayoutCss` aus `Template/autodarts-theme-shared.js`.
 - Konfiguration: Farben/Layout im Shared Helper anpassen.
 
-#### Autodarts Theme Bermuda (`Template/Autodarts Theme Bermuda.user.js`)
+#### Autodarts Theme Bermuda ([`Template/Autodarts Theme Bermuda.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Bermuda.user.js))
 
 - Zweck: Gemeinsames Theme plus Grid-Layout fuer Bermuda.
 - Aktivierung: Variante enthaelt `bermuda` (matchMode "includes").
 - Aenderungen: nutzt `commonThemeCss` und `commonLayoutCss`.
 - Konfiguration: Farben/Layout im Shared Helper anpassen.
 
-#### Autodarts Theme Cricket (`Template/Autodarts Theme Cricket.user.js`)
+#### Autodarts Theme Cricket ([`Template/Autodarts Theme Cricket.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js))
 
 - Zweck: Leichtgewichtiges Farb-Theme fuer Cricket ohne Grid-Layout-Aenderungen.
 - Aktivierung: Variante `cricket`.
@@ -83,77 +85,77 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 ### Animationen und Effekte
 
-#### Autodarts Animate Triple Double Bull Hits (`Animation/Autodarts Animate Triple Double Bull Hits.user.js`)
+#### Autodarts Animate Triple Double Bull Hits ([`Animation/Autodarts Animate Triple Double Bull Hits.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple%20Double%20Bull%20Hits.user.js))
 
 - Zweck: hebt Triple/Double/Bull-Treffer in der Wurfliste hervor (Gradient + Highlight).
 - Trigger/Erkennung: liest Wurfzeilen via `CONFIG.selectors.throwText`, erkennt `Txx`, `Dxx` oder `BULL`; MutationObserver plus optionales Polling.
 - Aenderungen: setzt Klassen auf der Wurfzeile und markiert den Text per `<span>`.
 - Konfiguration: `CONFIG.pollIntervalMs`, `CONFIG.selectors`, `CONFIG.hitTypes`, `CONFIG.bull`, `CONFIG.defaultGradientStops`.
 
-#### Autodarts Animate Single Bull Sound (`Animation/Autodarts Animate Single Bull Sound.user.js`)
+#### Autodarts Animate Single Bull Sound ([`Animation/Autodarts Animate Single Bull Sound.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Single%20Bull%20Sound.user.js))
 
 - Zweck: spielt einen Sound, wenn ein Single Bull (25/BULL) in der Wurfliste erscheint.
 - Trigger/Erkennung: beobachtet `.ad-ext-turn-throw` und erkennt 25+BULL im Text/DOM.
 - Hinweis: In den "Tools für Autodarts" gibt es keinen zuverlässigen Trigger für "Single Bull" (S25). Es wird in der Dokumentation beschrieben, feuert im Spiel aber nicht. Dieses Skript erkennt Single Bull direkt in der Wurfliste und funktioniert damit.
 - Konfiguration: `CONFIG.soundUrl` (URL zur Sounddatei), `CONFIG.volume`, `CONFIG.cooldownMs`, `CONFIG.pollIntervalMs`.
 
-#### Autodarts Animate Checkout Score Pulse (`Animation/Autodarts Animate Checkout Score Pulse.user.js`)
+#### Autodarts Animate Checkout Score Pulse ([`Animation/Autodarts Animate Checkout Score Pulse.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Score%20Pulse.user.js))
 
 - Zweck: hebt den aktiven Restscore hervor, wenn ein Checkout moeglich ist (X01).
 - Trigger/Erkennung: bevorzugt `.suggestion`-Text, faellt auf Score-Logik zurueck; Variante via `#ad-ext-game-variant`.
 - Aenderungen: setzt Klassen am Score-Element und animiert per CSS.
 - Konfiguration: `EFFECT`, `PULSE_COLOR`, `IMPOSSIBLE_CHECKOUTS`, `SUGGESTION_SELECTOR`, `SCORE_SELECTOR`.
 
-#### Autodarts Animate Turn Points Count (`Animation/Autodarts Animate Turn Points Count.user.js`)
+#### Autodarts Animate Turn Points Count ([`Animation/Autodarts Animate Turn Points Count.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Points%20Count.user.js))
 
 - Zweck: animiert die Turn-Punkte als kurzes Count-up/down.
 - Trigger/Erkennung: Textaenderung an `CONFIG.scoreSelector`.
 - Aenderungen: schreibt waehrend der Animation Zwischenwerte in die Anzeige.
 - Konfiguration: `CONFIG.scoreSelector`, `CONFIG.animationMs`.
 
-#### Autodarts Animate Average Trend Arrow (`Animation/Autodarts Animate Average Trend Arrow.user.js`)
+#### Autodarts Animate Average Trend Arrow ([`Animation/Autodarts Animate Average Trend Arrow.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Average%20Trend%20Arrow.user.js))
 
 - Zweck: zeigt einen Auf/Ab-Pfeil neben dem AVG bei Aenderung.
 - Trigger/Erkennung: beobachtet `AVG_SELECTOR` (AVG-Text).
 - Aenderungen: fuegt Pfeil-Span ein und toggelt Klassen/Animation.
 - Konfiguration: `AVG_SELECTOR`, `ANIMATION_MS`.
 
-#### Autodarts Animate Turn Start Sweep (`Animation/Autodarts Animate Turn Start Sweep.user.js`)
+#### Autodarts Animate Turn Start Sweep ([`Animation/Autodarts Animate Turn Start Sweep.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Start%20Sweep.user.js))
 
 - Zweck: kurzer Licht-Sweep beim Wechsel des aktiven Spielers.
 - Trigger/Erkennung: Klassenwechsel an `.ad-ext-player-active`.
 - Aenderungen: fuegt eine Sweep-Klasse am aktiven Player-Block hinzu (Pseudo-Element).
 - Konfiguration: `CONFIG.activeSelector`, `CONFIG.sweepDurationMs`, `CONFIG.sweepDelayMs`, `CONFIG.sweepWidth`, `CONFIG.sweepColor`.
 
-#### Autodarts Animate Winner Fireworks (`Animation/Autodarts Animate Winner Fireworks.user.js`)
+#### Autodarts Animate Winner Fireworks ([`Animation/Autodarts Animate Winner Fireworks.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js))
 
 - Zweck: Overlay-Effekt bei Gewinner (Firework, Confetti, Aurora oder Pulse).
 - Trigger/Erkennung: Sichtbarkeit von `CONFIG.winnerSelector`.
 - Aenderungen: Fullscreen-Canvas-Overlay, Klick blendet aus.
 - Konfiguration: `CONFIG.effect`, `CONFIG.winnerSelector`, `CONFIG.colors` sowie Timing/Particle-Parameter.
 
-#### Autodarts Animate Dart Marker Emphasis (`Animation/Autodarts Animate Dart Marker Emphasis.user.js`)
+#### Autodarts Animate Dart Marker Emphasis ([`Animation/Autodarts Animate Dart Marker Emphasis.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Emphasis.user.js))
 
 - Zweck: Dart-Marker am Board groesser/faerben, optional glow/pulse.
 - Trigger/Erkennung: SVG-Marker via `MARKER_SELECTOR`.
 - Aenderungen: setzt `r`, `fill` und Klassen auf Marker.
 - Konfiguration: `MARKER_RADIUS`, `MARKER_FILL`, `EFFECT`, `MARKER_SELECTOR`.
 
-#### Autodarts Animate Checkout Board Targets (`Animation/Autodarts Animate Checkout Board Targets.user.js`)
+#### Autodarts Animate Checkout Board Targets ([`Animation/Autodarts Animate Checkout Board Targets.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js))
 
 - Zweck: markiert Checkout-Ziele auf dem Board (blink/pulse/glow).
 - Trigger/Erkennung: parst `.suggestion` in X01, Variantencheck via `CONFIG.requireX01`.
 - Aenderungen: legt ein Overlay-SVG mit Ziel-Segmenten an.
 - Konfiguration: `CONFIG.effect`, `CONFIG.highlightTargets`, `CONFIG.singleRing`, `CONFIG.color`, `CONFIG.strokeColor`, `CONFIG.animationMs`.
 
-#### Autodarts Style Checkout Suggestions (`Animation/Autodarts Style Checkout Suggestions.user.js`)
+#### Autodarts Style Checkout Suggestions ([`Animation/Autodarts Style Checkout Suggestions.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js))
 
 - Zweck: stylt Checkout-Vorschlaege als Empfehlung (Badge/Ribbon/Stripe/Ticket/Outline).
 - Trigger/Erkennung: `.suggestion`, X01.
 - Aenderungen: setzt Klassen und CSS-Variablen am Vorschlags-Element.
 - Konfiguration: `CONFIG.formatStyle`, `CONFIG.labelText`, `CONFIG.accent*`, `CONFIG.label*`, `CONFIG.borderRadiusPx`, `CONFIG.stripeOpacity`.
 
-#### Autodarts Animate Cricket Target Highlighter (`Animation/Autodarts Animate Cricket Target Highlighter.user.js`)
+#### Autodarts Animate Cricket Target Highlighter ([`Animation/Autodarts Animate Cricket Target Highlighter.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js))
 
 - Zweck: blendet Nicht-Cricket-Felder aus und markiert 15-20/BULL nach Status.
 - Trigger/Erkennung: Variante `cricket`, liest Cricket-Tabelle (Marks via Icons/Attribute/Text).
