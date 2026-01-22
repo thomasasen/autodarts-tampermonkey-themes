@@ -9,6 +9,7 @@ Sie verändern keine Spiellogik, Scores oder Erkennung.
 - Gemeinsamer Layout-/Theme-Helfer für konsistentes Styling.
 - Optionale Animations- und Effekt-Skripte für bessere Lesbarkeit.
 - MutationObserver-basierte Updates für dynamische DOM-Änderungen.
+- DartsZoom-Vorschau optional unter den Wuerfen; Platz wird nur reserviert, wenn die Vorschau sichtbar ist.
 
 ## Inhaltsverzeichnis
 
@@ -175,6 +176,13 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Bermuda Theme  | ![Theme Bermuda](assets/screenshots/Theme%20Bermuda.png)   |
 | Cricket Theme  | ![Theme Cricket](assets/screenshots/Theme%20Cricket.png)   |
 
+### DartsZoom Vorschau
+
+| Modus             | Vorschau                                                              |
+| ----------------- | --------------------------------------------------------------------- |
+| Standard          | ![DartsZoom Standard](assets/screenshots/DartsZoom_Standard.png)      |
+| Unter den Wuerfen | ![DartsZoom Under Throws](assets/screenshots/DartsZoom_under-throws.png) |
+
 ### Animationen und Effekte
 
 | Skript                         | Vorschau                                                                             | Detail/Vorher                                                                      |
@@ -205,42 +213,60 @@ Das Vollbild zeigt die Ribbon-Variante, die restlichen Bilder sind Detailstreife
 
 Jedes Skript hat seinen Konfigurationsblock nahe am Dateianfang. Aendere nur die Variablen im jeweiligen Script und lade es in Tampermonkey neu. Die Tabellen erklaeren, was sich bei einer Aenderung auswirkt.
 
+DartsZoom-Hinweis: Wenn die Vorschau in den "Tools fuer Autodarts" deaktiviert ist, wird kein Platz reserviert.
+
 ### Template/Autodarts Theme X01.user.js
 
-| Variable             | Standard                     | Wirkung                                                               |
-| -------------------- | ---------------------------- | --------------------------------------------------------------------- |
-| `STYLE_ID`           | `autodarts-x01-custom-style` | Eindeutige Style-ID; bei Aenderung bleiben alte Styles ggf. bestehen. |
-| `VARIANT_NAME`       | `x01`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`.       |
-| `fallbackThemeCss`   | CSS-Block                    | Fallback-Farben/Typografie, falls der Shared Helper fehlt.            |
-| `fallbackLayoutCss`  | CSS-Block                    | Fallback-Layout fuer X01.                                             |
-| `navigationOverride` | CSS-Block                    | Erzwingt die dunkle Navigation in X01.                                |
+| Variable              | Standard                         | Wirkung                                                               |
+| --------------------- | -------------------------------- | --------------------------------------------------------------------- |
+| `STYLE_ID`            | `autodarts-x01-custom-style`     | Eindeutige Style-ID; bei Aenderung bleiben alte Styles ggf. bestehen. |
+| `VARIANT_NAME`        | `x01`                            | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`.       |
+| `PREVIEW_PLACEMENT`   | `under-throws`                   | `standard` fuer die Standard-Position, `under-throws` fuer unter den Wuerfen. |
+| `PREVIEW_HEIGHT_PX`   | `128`                            | Hoehe der DartsZoom-Vorschau in Pixeln.                               |
+| `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                      |
+| `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klassenname fuer den reservierten Platz.                          |
+| `fallbackThemeCss`    | CSS-Block                        | Fallback-Farben/Typografie, falls der Shared Helper fehlt.            |
+| `fallbackLayoutCss`   | CSS-Block                        | Fallback-Layout fuer X01.                                             |
+| `navigationOverride`  | CSS-Block                        | Erzwingt die dunkle Navigation in X01.                                |
 
 ### Template/Autodarts Theme Shanghai.user.js
 
-| Variable            | Standard                          | Wirkung                                                         |
-| ------------------- | --------------------------------- | --------------------------------------------------------------- |
-| `STYLE_ID`          | `autodarts-shanghai-custom-style` | Eindeutige Style-ID fuer das Theme.                             |
-| `VARIANT_NAME`      | `shanghai`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`. |
-| `fallbackThemeCss`  | `commonThemeCss`                  | Farben aus dem Shared Helper als Fallback.                      |
-| `fallbackLayoutCss` | `commonLayoutCss`                 | Layout-Grid aus dem Shared Helper als Fallback.                 |
+| Variable              | Standard                          | Wirkung                                                         |
+| --------------------- | --------------------------------- | --------------------------------------------------------------- |
+| `STYLE_ID`            | `autodarts-shanghai-custom-style` | Eindeutige Style-ID fuer das Theme.                             |
+| `VARIANT_NAME`        | `shanghai`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`. |
+| `PREVIEW_PLACEMENT`   | `under-throws`                    | `standard` fuer die Standard-Position, `under-throws` fuer unter den Wuerfen. |
+| `PREVIEW_HEIGHT_PX`   | `128`                             | Hoehe der DartsZoom-Vorschau in Pixeln.                         |
+| `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                |
+| `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`       | CSS-Klassenname fuer den reservierten Platz.                    |
+| `fallbackThemeCss`    | `commonThemeCss`                  | Farben aus dem Shared Helper als Fallback.                      |
+| `fallbackLayoutCss`   | `commonLayoutCss`                 | Layout-Grid aus dem Shared Helper als Fallback.                 |
 
 ### Template/Autodarts Theme Bermuda.user.js
 
-| Variable            | Standard                         | Wirkung                                                          |
-| ------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| `STYLE_ID`          | `autodarts-bermuda-custom-style` | Eindeutige Style-ID fuer das Theme.                              |
-| `VARIANT_NAME`      | `bermuda`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`.  |
-| `matchMode`         | `includes`                       | Aktiviert das Theme, wenn der Varianten-Text `bermuda` enthaelt. |
-| `fallbackThemeCss`  | `commonThemeCss`                 | Farben aus dem Shared Helper als Fallback.                       |
-| `fallbackLayoutCss` | `commonLayoutCss`                | Layout-Grid aus dem Shared Helper als Fallback.                  |
+| Variable              | Standard                         | Wirkung                                                          |
+| --------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `STYLE_ID`            | `autodarts-bermuda-custom-style` | Eindeutige Style-ID fuer das Theme.                              |
+| `VARIANT_NAME`        | `bermuda`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`.  |
+| `PREVIEW_PLACEMENT`   | `under-throws`                   | `standard` fuer die Standard-Position, `under-throws` fuer unter den Wuerfen. |
+| `PREVIEW_HEIGHT_PX`   | `128`                            | Hoehe der DartsZoom-Vorschau in Pixeln.                          |
+| `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                 |
+| `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klassenname fuer den reservierten Platz.                     |
+| `matchMode`           | `includes`                       | Aktiviert das Theme, wenn der Varianten-Text `bermuda` enthaelt. |
+| `fallbackThemeCss`    | `commonThemeCss`                 | Farben aus dem Shared Helper als Fallback.                       |
+| `fallbackLayoutCss`   | `commonLayoutCss`                | Layout-Grid aus dem Shared Helper als Fallback.                  |
 
 ### Template/Autodarts Theme Cricket.user.js
 
-| Variable       | Standard                         | Wirkung                                                         |
-| -------------- | -------------------------------- | --------------------------------------------------------------- |
-| `STYLE_ID`     | `autodarts-cricket-custom-style` | Eindeutige Style-ID fuer das Theme.                             |
-| `VARIANT_NAME` | `cricket`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`. |
-| `customCss`    | CSS-Block                        | Farben/Abstaende speziell fuer Cricket.                         |
+| Variable              | Standard                         | Wirkung                                                         |
+| --------------------- | -------------------------------- | --------------------------------------------------------------- |
+| `STYLE_ID`            | `autodarts-cricket-custom-style` | Eindeutige Style-ID fuer das Theme.                             |
+| `VARIANT_NAME`        | `cricket`                        | Aktivierung ueber den Varianten-Text in `#ad-ext-game-variant`. |
+| `PREVIEW_PLACEMENT`   | `under-throws`                   | `standard` fuer die Standard-Position, `under-throws` fuer unter den Wuerfen. |
+| `PREVIEW_HEIGHT_PX`   | `128`                            | Hoehe der DartsZoom-Vorschau in Pixeln.                         |
+| `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                |
+| `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klassenname fuer den reservierten Platz.                    |
+| `customCss`           | CSS-Block                        | Farben/Abstaende speziell fuer Cricket.                         |
 
 ### Animation/Autodarts Animate Triple Double Bull Hits.user.js
 
