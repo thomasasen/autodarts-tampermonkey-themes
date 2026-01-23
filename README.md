@@ -200,6 +200,7 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Animate Turn Start Sweep       | ![Animate Turn Start Sweep](assets/screenshots/Turn%20Start%20Sweep.gif)             | -                                                                                  |
 | Animate Winner Fireworks       | ![Animate Winner Fireworks](assets/screenshots/Winner%20Fireworks_firework.gif)      | Varianten siehe unten                                                              |
 | Animate Dart Marker Emphasis   | ![Animate Dart Marker Emphasis](assets/screenshots/Size%20Strokes.gif)               | -                                                                                  |
+| Animate Dart Marker Darts      | ![Animate Dart Marker Darts](assets/screenshots/Dart%20Marker%20Darts.png)           | -                                                                                  |
 | Cricket Target Highlighter     | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                                  |
 
 #### Winner Fireworks Varianten

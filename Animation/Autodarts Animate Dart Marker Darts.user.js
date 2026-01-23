@@ -27,19 +27,20 @@
    */
   const CONFIG = {
     dartImageUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/dart.png",
-    dartLengthRatio: 0.32,
+    dartLengthRatio: 0.416,
     dartAspectRatio: 472 / 198,
-    tipOffsetXRatio: 0.04,
-    tipOffsetYRatio: 0.5,
+    tipOffsetXRatio: 0,
+    tipOffsetYRatio: 130 / 198,
     rotateToCenter: true,
     baseAngleDeg: 180,
-    hideMarkers: true,
+    hideMarkers: false,
     markerSelector:
       'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]',
   };
 
   const STYLE_ID = "ad-ext-dart-image-style";
   const OVERLAY_ID = "ad-ext-dart-image-overlay";
+  const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
   const DART_CLASS = "ad-ext-dart-image";
   const SVG_NS = "http://www.w3.org/2000/svg";
   const XLINK_NS = "http://www.w3.org/1999/xlink";
@@ -53,6 +54,13 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
+.${OVERLAY_CLASS} {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 5;
+}
+
 .${DART_CLASS} {
   pointer-events: none;
   user-select: none;
@@ -83,6 +91,19 @@
     }, 0);
   }
 
+  function getSvgScale(svg) {
+    const matrix = svg.getScreenCTM();
+    if (!matrix) {
+      return 1;
+    }
+    const scaleX = Math.hypot(matrix.a, matrix.b);
+    const scaleY = Math.hypot(matrix.c, matrix.d);
+    if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+      return 1;
+    }
+    return Math.min(scaleX, scaleY);
+  }
+
   function findBoard() {
     const svgs = [...document.querySelectorAll("svg")];
     if (!svgs.length) {
@@ -111,31 +132,27 @@
       return null;
     }
 
-    let bestGroup = null;
-    let bestRadius = 0;
-
-    for (const group of best.querySelectorAll("g")) {
-      const radius = getBoardRadius(group);
-      if (radius > bestRadius) {
-        bestRadius = radius;
-        bestGroup = group;
-      }
-    }
-
-    const radius = bestRadius || getBoardRadius(best);
+    const radius = getBoardRadius(best);
     if (!radius) {
       return null;
     }
 
-    return { svg: best, group: bestGroup || best, radius };
+    return { svg: best, radius };
   }
 
-  function ensureOverlayGroup(boardGroup) {
-    let overlay = boardGroup.querySelector(`#${OVERLAY_ID}`);
+  function ensureOverlaySvg() {
+    let overlay = document.getElementById(OVERLAY_ID);
+    if (overlay && overlay.tagName.toLowerCase() !== "svg") {
+      overlay.remove();
+      overlay = null;
+    }
     if (!overlay) {
-      overlay = document.createElementNS(SVG_NS, "g");
+      overlay = document.createElementNS(SVG_NS, "svg");
       overlay.id = OVERLAY_ID;
-      boardGroup.appendChild(overlay);
+      overlay.classList.add(OVERLAY_CLASS);
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.setAttribute("focusable", "false");
+      (document.body || document.documentElement).appendChild(overlay);
     }
     return overlay;
   }
@@ -146,10 +163,32 @@
     }
   }
 
-  function getDartSize(radius) {
-    const length = Math.max(1, radius * CONFIG.dartLengthRatio);
+  function getDartSize(radiusPx) {
+    const length = Math.max(1, radiusPx * CONFIG.dartLengthRatio);
     const height = Math.max(1, length / CONFIG.dartAspectRatio);
     return { width: length, height };
+  }
+
+  function getOverlayPadding(size) {
+    const tailRatio = Math.max(0, 1 - CONFIG.tipOffsetXRatio);
+    return Math.max(16, size.width * tailRatio);
+  }
+
+  function updateOverlayLayout(overlay, boardRect, paddingPx) {
+    const width = boardRect.width + paddingPx * 2;
+    const height = boardRect.height + paddingPx * 2;
+    const left = boardRect.left + window.scrollX - paddingPx;
+    const top = boardRect.top + window.scrollY - paddingPx;
+
+    overlay.style.left = `${left}px`;
+    overlay.style.top = `${top}px`;
+    overlay.style.width = `${width}px`;
+    overlay.style.height = `${height}px`;
+    overlay.setAttribute("width", String(width));
+    overlay.setAttribute("height", String(height));
+    overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+    return overlay.getBoundingClientRect();
   }
 
   function setMarkerHidden(marker, hidden) {
@@ -169,7 +208,7 @@
     }
   }
 
-  function getMarkerCenter(marker, boardGroup) {
+  function getMarkerScreenPoint(marker) {
     const svg = marker.ownerSVGElement;
     if (!svg || typeof svg.createSVGPoint !== "function") {
       return null;
@@ -188,25 +227,16 @@
     point.x = x;
     point.y = y;
 
-    const markerMatrix = marker.getCTM();
-    const boardMatrix = boardGroup.getCTM();
-
-    if (!markerMatrix || !boardMatrix) {
+    const matrix = marker.getScreenCTM();
+    if (!matrix) {
       return { x, y };
     }
 
-    const globalPoint = point.matrixTransform(markerMatrix);
-    let inverse = null;
-    try {
-      inverse = boardMatrix.inverse();
-    } catch (err) {
-      return { x, y };
-    }
-    const boardPoint = globalPoint.matrixTransform(inverse);
-    return { x: boardPoint.x, y: boardPoint.y };
+    const screenPoint = point.matrixTransform(matrix);
+    return { x: screenPoint.x, y: screenPoint.y };
   }
 
-  function createDartImage(center, size) {
+  function createDartImage(center, size, boardCenter) {
     const image = document.createElementNS(SVG_NS, "image");
     image.classList.add(DART_CLASS);
     image.setAttribute("href", CONFIG.dartImageUrl);
@@ -221,9 +251,10 @@
     image.setAttribute("x", String(x));
     image.setAttribute("y", String(y));
 
-    if (CONFIG.rotateToCenter) {
-      const angleToCenter =
-        (Math.atan2(-center.y, -center.x) * 180) / Math.PI;
+    if (CONFIG.rotateToCenter && boardCenter) {
+      const dx = boardCenter.x - center.x;
+      const dy = boardCenter.y - center.y;
+      const angleToCenter = (Math.atan2(dy, dx) * 180) / Math.PI;
       const rotation = angleToCenter - CONFIG.baseAngleDeg;
       image.setAttribute(
         "transform",
@@ -240,13 +271,19 @@
       return;
     }
 
-    const overlay = ensureOverlayGroup(board.group);
-    clearOverlay(overlay);
+    const boardRect = board.svg.getBoundingClientRect();
+    if (!boardRect.width || !boardRect.height) {
+      return;
+    }
 
     const markers = Array.from(
       board.svg.querySelectorAll(CONFIG.markerSelector)
     );
     if (!markers.length) {
+      const existingOverlay = document.getElementById(OVERLAY_ID);
+      if (existingOverlay) {
+        clearOverlay(existingOverlay);
+      }
       return;
     }
 
@@ -257,18 +294,38 @@
     }
 
     if (!CONFIG.dartImageUrl) {
+      const existingOverlay = document.getElementById(OVERLAY_ID);
+      if (existingOverlay) {
+        clearOverlay(existingOverlay);
+      }
       return;
     }
 
-    const size = getDartSize(board.radius);
+    const scale = getSvgScale(board.svg);
+    const radiusPx = board.radius * scale;
+    const size = getDartSize(radiusPx);
+    const paddingPx = getOverlayPadding(size);
+    const overlay = ensureOverlaySvg();
+    const overlayRect = updateOverlayLayout(overlay, boardRect, paddingPx);
+    clearOverlay(overlay);
+
+    const boardCenter = {
+      x: boardRect.width / 2 + paddingPx,
+      y: boardRect.height / 2 + paddingPx,
+    };
 
     markers.forEach((marker) => {
-      const center = getMarkerCenter(marker, board.group);
-      if (!center) {
+      const screenPoint = getMarkerScreenPoint(marker);
+      if (!screenPoint) {
         return;
       }
 
-      const dart = createDartImage(center, size);
+      const center = {
+        x: screenPoint.x - overlayRect.left,
+        y: screenPoint.y - overlayRect.top,
+      };
+
+      const dart = createDartImage(center, size, boardCenter);
       overlay.appendChild(dart);
 
       if (shouldHideMarkers) {
@@ -311,4 +368,7 @@
     characterData: true,
     attributes: true,
   });
+
+  window.addEventListener("resize", scheduleUpdate);
+  window.addEventListener("scroll", scheduleUpdate, true);
 })();
