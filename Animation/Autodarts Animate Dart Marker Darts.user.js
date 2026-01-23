@@ -55,7 +55,7 @@
     style.id = STYLE_ID;
     style.textContent = `
 .${OVERLAY_CLASS} {
-  position: absolute;
+  position: fixed;
   overflow: visible;
   pointer-events: none;
   z-index: 5;
@@ -177,8 +177,8 @@
   function updateOverlayLayout(overlay, boardRect, paddingPx) {
     const width = boardRect.width + paddingPx * 2;
     const height = boardRect.height + paddingPx * 2;
-    const left = boardRect.left + window.scrollX - paddingPx;
-    const top = boardRect.top + window.scrollY - paddingPx;
+    const left = boardRect.left - paddingPx;
+    const top = boardRect.top - paddingPx;
 
     overlay.style.left = `${left}px`;
     overlay.style.top = `${top}px`;
