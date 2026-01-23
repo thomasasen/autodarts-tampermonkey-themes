@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -13,9 +13,9 @@
 // ==/UserScript==
 
 (function () {
-  "use strict";
+	"use strict";
 
-  /**
+	/**
    * Configuration for dart image placement.
    * - dartImageUrl: set to your PNG URL or data URI.
    * - dartLengthRatio: length relative to the board radius.
@@ -25,35 +25,34 @@
    * - baseAngleDeg: angle of the PNG tip direction (left = 180, right = 0).
    * - hideMarkers: hide the original hit markers when darts are shown.
    */
-  const CONFIG = {
-    dartImageUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/dart.png",
-    dartLengthRatio: 0.416,
-    dartAspectRatio: 472 / 198,
-    tipOffsetXRatio: 0,
-    tipOffsetYRatio: 130 / 198,
-    rotateToCenter: true,
-    baseAngleDeg: 180,
-    hideMarkers: false,
-    markerSelector:
-      'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]',
-  };
+	const CONFIG = {
+		dartImageUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/dart.png",
+		dartLengthRatio: 0.416,
+		dartAspectRatio: 472 / 198,
+		tipOffsetXRatio: 0,
+		tipOffsetYRatio: 130 / 198,
+		rotateToCenter: true,
+		baseAngleDeg: 180,
+		hideMarkers: false,
+		markerSelector: 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]'
+	};
 
-  const STYLE_ID = "ad-ext-dart-image-style";
-  const OVERLAY_ID = "ad-ext-dart-image-overlay";
-  const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
-  const DART_CLASS = "ad-ext-dart-image";
-  const SVG_NS = "http://www.w3.org/2000/svg";
-  const XLINK_NS = "http://www.w3.org/1999/xlink";
-  const MARKER_OPACITY_KEY = "adExtOriginalOpacity";
+	const STYLE_ID = "ad-ext-dart-image-style";
+	const OVERLAY_ID = "ad-ext-dart-image-overlay";
+	const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
+	const DART_CLASS = "ad-ext-dart-image";
+	const SVG_NS = "http://www.w3.org/2000/svg";
+	const XLINK_NS = "http://www.w3.org/1999/xlink";
+	const MARKER_OPACITY_KEY = "adExtOriginalOpacity";
 
-  function ensureStyle() {
-    if (document.getElementById(STYLE_ID)) {
-      return;
-    }
+	function ensureStyle() {
+		if (document.getElementById(STYLE_ID)) {
+			return;
+		}
 
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = `
+		const style = document.createElement("style");
+		style.id = STYLE_ID;
+		style.textContent = `
 .${OVERLAY_CLASS} {
   position: fixed;
   overflow: visible;
@@ -67,128 +66,155 @@
 }
 `;
 
-    const target = document.head || document.documentElement;
-    if (target) {
-      target.appendChild(style);
-    } else {
-      document.addEventListener(
-        "DOMContentLoaded",
-        () => {
-          const fallbackTarget = document.head || document.documentElement;
-          if (fallbackTarget && !document.getElementById(STYLE_ID)) {
-            fallbackTarget.appendChild(style);
-          }
-        },
-        { once: true }
-      );
+		const target = document.head || document.documentElement;
+		if (target) {
+			target.appendChild(style);
+		} else {
+			document.addEventListener("DOMContentLoaded", () => {
+				const fallbackTarget = document.head || document.documentElement;
+				if (fallbackTarget && !document.getElementById(STYLE_ID)) {
+					fallbackTarget.appendChild(style);
+				}
+			}, {once: true});
+		}
+	}
+
+	function getBoardRadius(root) {
+		return [... root.querySelectorAll("circle")].reduce((max, circle) => {
+			const r = Number.parseFloat(circle.getAttribute("r"));
+			return Number.isFinite(r) && r > max ? r : max;
+		}, 0);
+	}
+
+	function getSvgScale(svg) {
+		const matrix = svg.getScreenCTM();
+		if (! matrix) {
+			return 1;
+		}
+		const scaleX = Math.hypot(matrix.a, matrix.b);
+		const scaleY = Math.hypot(matrix.c, matrix.d);
+		if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+			return 1;
+		}
+		return Math.min(scaleX, scaleY);
+	}
+
+	function findBoard() {
+		const svgs = [...document.querySelectorAll("svg")];
+		if (! svgs.length) {
+			return null;
+		}
+
+		let best = null;
+		let bestScore = -1;
+
+		for (const svg of svgs) {
+			const numbers = new Set([... svg.querySelectorAll("text")].map((text) => Number.parseInt(text.textContent, 10)).filter((value) => value >= 1 && value <= 20));
+			const numberScore = numbers.size;
+			const radius = getBoardRadius(svg);
+			const score = numberScore * 1000 + radius;
+			if (score > bestScore) {
+				best = svg;
+				bestScore = score;
+			}
+		}
+
+		if (! best) {
+			return null;
+		}
+
+		const radius = getBoardRadius(best);
+		if (! radius) {
+			return null;
+		}
+
+		return {svg: best, radius};
+	}
+
+	function ensureOverlaySvg() {
+		let overlay = document.getElementById(OVERLAY_ID);
+		if (overlay && overlay.tagName.toLowerCase() !== "svg") {
+			overlay.remove();
+			overlay = null;
+		}
+		if (! overlay) {
+			overlay = document.createElementNS(SVG_NS, "svg");
+			overlay.id = OVERLAY_ID;
+			overlay.classList.add(OVERLAY_CLASS);
+			overlay.setAttribute("aria-hidden", "true");
+			overlay.setAttribute("focusable", "false");
+			(document.body || document.documentElement).appendChild(overlay);
+		}
+		return overlay;
+	}
+
+	function clearOverlay(overlay) {
+		while (overlay.firstChild) {
+			overlay.removeChild(overlay.firstChild);
+		}
+	}
+
+	function removeOverlay() {
+		const overlay = document.getElementById(OVERLAY_ID);
+		if (overlay) {
+			overlay.remove();
+		}
+	}
+
+	function resetMarkers() {
+		document.querySelectorAll(CONFIG.markerSelector).forEach((marker) => setMarkerHidden(marker, false));
+	}
+
+	function getDartSize(radiusPx) {
+		const length = Math.max(1, radiusPx * CONFIG.dartLengthRatio);
+		const height = Math.max(1, length / CONFIG.dartAspectRatio);
+		return {width: length, height};
+	}
+
+	function getOverlayPadding(size) {
+		const tailRatio = Math.max(0, 1 - CONFIG.tipOffsetXRatio);
+		return Math.max(16, size.width * tailRatio);
+	}
+
+	function updateOverlayLayout(overlay, boardRect, paddingPx) {
+		const width = boardRect.width + paddingPx * 2;
+		const height = boardRect.height + paddingPx * 2;
+		const left = boardRect.left - paddingPx;
+		const top = boardRect.top - paddingPx;
+
+		overlay.style.left = `${left}px`;
+		overlay.style.top = `${top}px`;
+		overlay.style.width = `${width}px`;
+		overlay.style.height = `${height}px`;
+		overlay.setAttribute("width", String(width));
+		overlay.setAttribute("height", String(height));
+		overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+		return overlay.getBoundingClientRect();
+	}
+
+	function isBoardVisible(svg, rect) {
+		if (! svg || ! svg.isConnected) {
+			return false;
+		}
+		if (! rect || rect.width<= 1 || rect.height <= 1) {
+      return false;
     }
-  }
-
-  function getBoardRadius(root) {
-    return [...root.querySelectorAll("circle")].reduce((max, circle) => {
-      const r = Number.parseFloat(circle.getAttribute("r"));
-      return Number.isFinite(r) && r > max ? r : max;
-    }, 0);
-  }
-
-  function getSvgScale(svg) {
-    const matrix = svg.getScreenCTM();
-    if (!matrix) {
-      return 1;
+    const style = window.getComputedStyle(svg);
+    if (!style) {
+      return true;
     }
-    const scaleX = Math.hypot(matrix.a, matrix.b);
-    const scaleY = Math.hypot(matrix.c, matrix.d);
-    if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
-      return 1;
+    if (style.display === "none") {
+      return false;
     }
-    return Math.min(scaleX, scaleY);
-  }
-
-  function findBoard() {
-    const svgs = [...document.querySelectorAll("svg")];
-    if (!svgs.length) {
-      return null;
+    if (style.visibility === "hidden" || style.visibility === "collapse") {
+      return false;
     }
-
-    let best = null;
-    let bestScore = -1;
-
-    for (const svg of svgs) {
-      const numbers = new Set(
-        [...svg.querySelectorAll("text")]
-          .map((text) => Number.parseInt(text.textContent, 10))
-          .filter((value) => value >= 1 && value <= 20)
-      );
-      const numberScore = numbers.size;
-      const radius = getBoardRadius(svg);
-      const score = numberScore * 1000 + radius;
-      if (score > bestScore) {
-        best = svg;
-        bestScore = score;
-      }
+    const opacity = Number.parseFloat(style.opacity);
+    if (Number.isFinite(opacity) && opacity <= 0) {
+      return false;
     }
-
-    if (!best) {
-      return null;
-    }
-
-    const radius = getBoardRadius(best);
-    if (!radius) {
-      return null;
-    }
-
-    return { svg: best, radius };
-  }
-
-  function ensureOverlaySvg() {
-    let overlay = document.getElementById(OVERLAY_ID);
-    if (overlay && overlay.tagName.toLowerCase() !== "svg") {
-      overlay.remove();
-      overlay = null;
-    }
-    if (!overlay) {
-      overlay = document.createElementNS(SVG_NS, "svg");
-      overlay.id = OVERLAY_ID;
-      overlay.classList.add(OVERLAY_CLASS);
-      overlay.setAttribute("aria-hidden", "true");
-      overlay.setAttribute("focusable", "false");
-      (document.body || document.documentElement).appendChild(overlay);
-    }
-    return overlay;
-  }
-
-  function clearOverlay(overlay) {
-    while (overlay.firstChild) {
-      overlay.removeChild(overlay.firstChild);
-    }
-  }
-
-  function getDartSize(radiusPx) {
-    const length = Math.max(1, radiusPx * CONFIG.dartLengthRatio);
-    const height = Math.max(1, length / CONFIG.dartAspectRatio);
-    return { width: length, height };
-  }
-
-  function getOverlayPadding(size) {
-    const tailRatio = Math.max(0, 1 - CONFIG.tipOffsetXRatio);
-    return Math.max(16, size.width * tailRatio);
-  }
-
-  function updateOverlayLayout(overlay, boardRect, paddingPx) {
-    const width = boardRect.width + paddingPx * 2;
-    const height = boardRect.height + paddingPx * 2;
-    const left = boardRect.left - paddingPx;
-    const top = boardRect.top - paddingPx;
-
-    overlay.style.left = `${left}px`;
-    overlay.style.top = `${top}px`;
-    overlay.style.width = `${width}px`;
-    overlay.style.height = `${height}px`;
-    overlay.setAttribute("width", String(width));
-    overlay.setAttribute("height", String(height));
-    overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-    return overlay.getBoundingClientRect();
+    return true;
   }
 
   function setMarkerHidden(marker, hidden) {
@@ -257,8 +283,7 @@
       const angleToCenter = (Math.atan2(dy, dx) * 180) / Math.PI;
       const rotation = angleToCenter - CONFIG.baseAngleDeg;
       image.setAttribute(
-        "transform",
-        `rotate(${rotation} ${center.x} ${center.y})`
+        "transform", `rotate(${rotation} ${center.x} ${center.y})`
       );
     }
 
@@ -268,11 +293,15 @@
   function updateDarts() {
     const board = findBoard();
     if (!board) {
+      removeOverlay();
+      resetMarkers();
       return;
     }
 
     const boardRect = board.svg.getBoundingClientRect();
-    if (!boardRect.width || !boardRect.height) {
+    if (!isBoardVisible(board.svg, boardRect)) {
+      removeOverlay();
+      resetMarkers();
       return;
     }
 
@@ -310,9 +339,7 @@
     clearOverlay(overlay);
 
     const boardCenter = {
-      x: boardRect.width / 2 + paddingPx,
-      y: boardRect.height / 2 + paddingPx,
-    };
+      x: boardRect.width / 2 + paddingPx, y: boardRect.height / 2 + paddingPx, };
 
     markers.forEach((marker) => {
       const screenPoint = getMarkerScreenPoint(marker);
@@ -321,9 +348,7 @@
       }
 
       const center = {
-        x: screenPoint.x - overlayRect.left,
-        y: screenPoint.y - overlayRect.top,
-      };
+        x: screenPoint.x - overlayRect.left, y: screenPoint.y - overlayRect.top, };
 
       const dart = createDartImage(center, size, boardCenter);
       overlay.appendChild(dart);
@@ -341,34 +366,61 @@
     }
     scheduled = true;
     requestAnimationFrame(() => {
-      scheduled = false;
-      updateDarts();
-    });
-  }
+			scheduled = false;
+			updateDarts();
+		}) 
+		
+	}
 
-  ensureStyle();
-  updateDarts();
+	let lastUrl = location.href;
+	function handleLocationChange() {
+		if (location.href === lastUrl) {
+			return;
+		}
+		lastUrl = location.href;
+		removeOverlay();
+		resetMarkers();
+		scheduleUpdate();
+	}
 
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (
-        mutation.type === "childList" ||
-        mutation.type === "characterData" ||
-        mutation.type === "attributes"
-      ) {
-        scheduleUpdate();
-        break;
-      }
-    }
-  });
+	function watchLocationChanges() {
+		const originalPushState = history.pushState;
+		const originalReplaceState = history.replaceState;
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-    attributes: true,
-  });
+		history.pushState = function (...args) {
+			originalPushState.apply(this, args);
+			handleLocationChange();
+		};
+		history.replaceState = function (...args) {
+			originalReplaceState.apply(this, args);
+			handleLocationChange();
+		};
 
-  window.addEventListener("resize", scheduleUpdate);
-  window.addEventListener("scroll", scheduleUpdate, true);
+		window.addEventListener("popstate", handleLocationChange);
+		window.addEventListener("hashchange", handleLocationChange);
+		setInterval(handleLocationChange, 500);
+	}
+
+	ensureStyle();
+	updateDarts();
+
+	const observer = new MutationObserver((mutations) => {
+		for (const mutation of mutations) {
+			if (mutation.type === "childList" || mutation.type === "characterData" || mutation.type === "attributes") {
+				scheduleUpdate();
+				break;
+			}
+		}
+	});
+
+	observer.observe(document.documentElement, {
+		childList: true,
+		subtree: true,
+		characterData: true,
+		attributes: true
+	});
+
+	window.addEventListener("resize", scheduleUpdate);
+	window.addEventListener("scroll", scheduleUpdate, true);
+	watchLocationChanges();
 })();
