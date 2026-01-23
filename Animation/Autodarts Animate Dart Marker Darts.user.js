@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -15,6 +15,14 @@
 (function () {
 	"use strict";
 
+	// Dart design options (set DART_DESIGN to one of these):
+	// Dart_autodarts.png, Dart_blackblue.png, Dart_blackgreen.png, Dart_blackred.png,
+	// Dart_blue.png, Dart_camoflage.png, Dart_green.png, Dart_pride.png,
+	// Dart_red.png, Dart_white.png, Dart_whitetrible.png, Dart_yellow.png,
+	// Dart_yellowscull.png
+	const DART_DESIGN = "Dart_autodarts.png";
+	const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/";
+
 	/**
    * Configuration for dart image placement.
    * - dartImageUrl: set to your PNG URL or data URI.
@@ -26,7 +34,7 @@
    * - hideMarkers: hide the original hit markers when darts are shown.
    */
 	const CONFIG = {
-		dartImageUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/dart.png",
+		dartImageUrl: `${DART_BASE_URL}${DART_DESIGN}`,
 		dartLengthRatio: 0.416,
 		dartAspectRatio: 472 / 198,
 		tipOffsetXRatio: 0,
@@ -369,7 +377,9 @@
 			scheduled = false;
 			updateDarts();
 		}) 
+
 		
+
 	}
 
 	let lastUrl = location.href;

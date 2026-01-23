@@ -147,7 +147,8 @@ Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 - Zweck: ersetzt die Trefferpunkte am Board durch ein Dart-PNG, dessen Spitze auf dem Treffer sitzt.
 - Trigger/Erkennung: SVG-Marker via `CONFIG.markerSelector`.
 - Aenderungen: legt ein SVG-Overlay mit `<image>`-Darts an, optional Rotation zur Boardmitte.
-- Konfiguration: `CONFIG.dartImageUrl`, `CONFIG.dartLengthRatio`, `CONFIG.dartAspectRatio`, `CONFIG.tipOffsetXRatio`, `CONFIG.tipOffsetYRatio`, `CONFIG.rotateToCenter`, `CONFIG.baseAngleDeg`, `CONFIG.hideMarkers`, `CONFIG.markerSelector`.
+- Design-Auswahl: `DART_DESIGN` (siehe Abschnitt "Dart Designs (Animate Dart Marker Darts)").
+- Konfiguration: `DART_DESIGN`, `DART_BASE_URL`, `CONFIG.dartImageUrl`, `CONFIG.dartLengthRatio`, `CONFIG.dartAspectRatio`, `CONFIG.tipOffsetXRatio`, `CONFIG.tipOffsetYRatio`, `CONFIG.rotateToCenter`, `CONFIG.baseAngleDeg`, `CONFIG.hideMarkers`, `CONFIG.markerSelector`.
 
 #### Autodarts Animate Checkout Board Targets ([`Animation/Autodarts Animate Checkout Board Targets.user.js`](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js))
 
@@ -202,6 +203,27 @@ Alle Medien liegen in `assets/screenshots/`. PNGs sind statisch, GIFs zeigen Bew
 | Animate Dart Marker Emphasis   | ![Animate Dart Marker Emphasis](assets/screenshots/Size%20Strokes.gif)               | -                                                                                  |
 | Animate Dart Marker Darts      | ![Animate Dart Marker Darts](assets/screenshots/Dart%20Marker%20Darts.png)           | -                                                                                  |
 | Cricket Target Highlighter     | ![Cricket Target Highlighter](assets/screenshots/Cricket%20Target%20Highlighter.png) | -                                                                                  |
+
+#### Dart Designs (Animate Dart Marker Darts)
+
+Die folgenden Dart-Designs gehoeren zum Skript `Animation/Autodarts Animate Dart Marker Darts.user.js`.
+Setze `DART_DESIGN` im Skript auf den Dateinamen aus der Liste.
+
+| Design | Vorschau |
+| ------ | -------- |
+| `Dart_autodarts.png`   | <img src="assets/screenshots/Dart_autodarts.png" alt="Dart_autodarts" width="160"> |
+| `Dart_blackblue.png`   | <img src="assets/screenshots/Dart_blackblue.png" alt="Dart_blackblue" width="160"> |
+| `Dart_blackgreen.png`  | <img src="assets/screenshots/Dart_blackgreen.png" alt="Dart_blackgreen" width="160"> |
+| `Dart_blackred.png`    | <img src="assets/screenshots/Dart_blackred.png" alt="Dart_blackred" width="160"> |
+| `Dart_blue.png`        | <img src="assets/screenshots/Dart_blue.png" alt="Dart_blue" width="160"> |
+| `Dart_camoflage.png`   | <img src="assets/screenshots/Dart_camoflage.png" alt="Dart_camoflage" width="160"> |
+| `Dart_green.png`       | <img src="assets/screenshots/Dart_green.png" alt="Dart_green" width="160"> |
+| `Dart_pride.png`       | <img src="assets/screenshots/Dart_pride.png" alt="Dart_pride" width="160"> |
+| `Dart_red.png`         | <img src="assets/screenshots/Dart_red.png" alt="Dart_red" width="160"> |
+| `Dart_white.png`       | <img src="assets/screenshots/Dart_white.png" alt="Dart_white" width="160"> |
+| `Dart_whitetrible.png` | <img src="assets/screenshots/Dart_whitetrible.png" alt="Dart_whitetrible" width="160"> |
+| `Dart_yellow.png`      | <img src="assets/screenshots/Dart_yellow.png" alt="Dart_yellow" width="160"> |
+| `Dart_yellowscull.png` | <img src="assets/screenshots/Dart_yellowscull.png" alt="Dart_yellowscull" width="160"> |
 
 #### Winner Fireworks Varianten
 
@@ -373,14 +395,16 @@ DartsZoom-Hinweis: Wenn die Vorschau in den "Tools fuer Autodarts" deaktiviert i
 
 | Variable                  | Standard                                                    | Wirkung                                                     |
 | ------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
-| `CONFIG.dartImageUrl`     | ``                                                          | PNG-URL oder Data-URI fuer den Dart (leer = deaktiviert).   |
-| `CONFIG.dartLengthRatio`  | `0.32`                                                      | Laenge relativ zum Board-Radius.                            |
-| `CONFIG.dartAspectRatio`  | `2.15`                                                      | Breite/Hohe des PNG (Aspect Ratio).                         |
-| `CONFIG.tipOffsetXRatio`  | `0.04`                                                      | X-Offset der Spitze relativ zur Bildbreite.                 |
-| `CONFIG.tipOffsetYRatio`  | `0.5`                                                       | Y-Offset der Spitze relativ zur Bildhoehe.                  |
+| `DART_DESIGN`             | `Dart_autodarts.png`                                        | Dateiname des Dart-Designs (siehe Liste im Design-Abschnitt). |
+| `DART_BASE_URL`           | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/` | Basis-URL fuer die Dart-Designs. |
+| `CONFIG.dartImageUrl`     | `DART_BASE_URL + DART_DESIGN`                               | PNG-URL fuer den Dart (leer = deaktiviert).                 |
+| `CONFIG.dartLengthRatio`  | `0.416`                                                     | Laenge relativ zum Board-Radius.                            |
+| `CONFIG.dartAspectRatio`  | `472 / 198`                                                 | Breite/Hohe des PNG (Aspect Ratio).                         |
+| `CONFIG.tipOffsetXRatio`  | `0`                                                        | X-Offset der Spitze relativ zur Bildbreite.                 |
+| `CONFIG.tipOffsetYRatio`  | `130 / 198`                                                 | Y-Offset der Spitze relativ zur Bildhoehe.                  |
 | `CONFIG.rotateToCenter`   | `true`                                                      | Darts zur Boardmitte ausrichten.                            |
 | `CONFIG.baseAngleDeg`     | `180`                                                       | Grundausrichtung des PNG (links=180, rechts=0).             |
-| `CONFIG.hideMarkers`      | `true`                                                      | Originale Trefferpunkte ausblenden.                         |
+| `CONFIG.hideMarkers`      | `false`                                                     | Originale Trefferpunkte ausblenden.                         |
 | `CONFIG.markerSelector`   | `circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]` | Selector fuer Board-Marker.                                 |
 
 ### Animation/Autodarts Animate Checkout Board Targets.user.js
