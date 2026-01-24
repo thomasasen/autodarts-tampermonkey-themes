@@ -91,6 +91,10 @@ Hinweis zur Konfiguration: Jedes Skript hat seinen Konfigurationsblock nahe am D
 Ändere nur die Variablen im jeweiligen Skript, speichere es in Tampermonkey und lade die Autodarts-Seite neu.
 Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
+Kennzeichnung: Jede Skriptsektion enthält einen Block **Einfache Variablen (Beispiele)**.
+Diese Werte kannst du ohne technisches Vorwissen ändern; alle anderen Variablen richten sich an technisch Versierte.
+Beispiele zeigen die echten Werte (z.B. `true`/`false`, `"ribbon"`).
+
 Medien-Hinweis: Alle Bilder/GIFs und Sounds liegen in `assets/`. PNGs sind statisch, GIFs zeigen Bewegung.
 Kleine Variantenbilder sind klickbar und öffnen das große Bild.
 
@@ -116,6 +120,11 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 - Aktivierung: Variante `x01` (liest `#ad-ext-game-variant` über den Shared Helper).
 - Änderungen: setzt CSS-Variablen, Grid-Layout und Typografie, passt Größen/Abstände sowie die DartsZoom-Platzierung an.
 - Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
+
+✅ **Einfache Variablen (Beispiele)**
+- `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
+- `PREVIEW_HEIGHT_PX = 128`
+- `PREVIEW_GAP_PX = 8`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable              | Standard                         | Wirkung                                                               |
@@ -154,6 +163,11 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Änderungen: nutzt `commonThemeCss` und `commonLayoutCss` aus `Template/autodarts-theme-shared.js`.
 - Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
 
+✅ **Einfache Variablen (Beispiele)**
+- `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
+- `PREVIEW_HEIGHT_PX = 128`
+- `PREVIEW_GAP_PX = 8`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable              | Standard                          | Wirkung                                                         |
 | --------------------- | --------------------------------- | --------------------------------------------------------------- |
@@ -184,6 +198,11 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Aktivierung: Variante enthält `bermuda` (matchMode `includes`).
 - Änderungen: nutzt `commonThemeCss` und `commonLayoutCss`.
 - Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
+
+✅ **Einfache Variablen (Beispiele)**
+- `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
+- `PREVIEW_HEIGHT_PX = 128`
+- `PREVIEW_GAP_PX = 8`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable              | Standard                         | Wirkung                                                          |
@@ -218,6 +237,11 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Änderungen: setzt Farben und kleine UI-Anpassungen (z.B. Kontraste und Hervorhebungen).
 - Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
 
+✅ **Einfache Variablen (Beispiele)**
+- `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
+- `PREVIEW_HEIGHT_PX = 128`
+- `PREVIEW_GAP_PX = 8`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable              | Standard                         | Wirkung                                                         |
 | --------------------- | -------------------------------- | --------------------------------------------------------------- |
@@ -249,6 +273,9 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Trigger/Erkennung: liest Wurfzeilen via `CONFIG.selectors.throwText`, erkennt `Txx`, `Dxx` oder `BULL`; MutationObserver plus optionales Polling.
 - Änderungen: setzt Klassen auf der Wurfzeile, formatiert den Treffertext per `<span>` und macht wichtige Würfe schneller sichtbar.
 
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.pollIntervalMs = 0` oder `3000`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable                      | Standard                           | Wirkung                                             |
 | ----------------------------- | ---------------------------------- | --------------------------------------------------- |
@@ -279,6 +306,11 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Trigger/Erkennung: beobachtet `.ad-ext-turn-throw` und erkennt 25+BULL im Text/DOM.
 - Ergebnis: akustisches Feedback für Single Bull, auch wenn die Tools keinen Event liefern.
 
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.soundUrl = "https://example.com/bull.mp3"`
+- `CONFIG.volume = 0.9` oder `0.5`
+- `CONFIG.cooldownMs = 700` oder `1000`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable                | Standard | Wirkung                                      |
 | ----------------------- | -------- | -------------------------------------------- |
@@ -305,6 +337,10 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Zweck: hebt den aktiven Restscore hervor, wenn ein Checkout möglich ist (X01).
 - Trigger/Erkennung: bevorzugt `.suggestion`-Text, fällt auf Score-Logik zurück; Variante via `#ad-ext-game-variant`.
 - Änderungen: setzt Klassen am Score-Element und animiert per CSS, damit Checkout-Situationen sofort ins Auge fallen.
+
+✅ **Einfache Variablen (Beispiele)**
+- `EFFECT = "pulse"` oder `"glow"` oder `"scale"` oder `"blink"`
+- `PULSE_COLOR = "159, 219, 88"`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                | Standard                                      | Wirkung                                    |
@@ -335,6 +371,9 @@ Keine Screenshots vorhanden.
 - Trigger/Erkennung: Textänderung an `CONFIG.scoreSelector`.
 - Änderungen: schreibt während der Animation Zwischenwerte in die Anzeige, damit der Punktewechsel flüssig wirkt.
 
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.animationMs = 416` oder `600`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable               | Standard               | Wirkung                          |
 | ---------------------- | ---------------------- | -------------------------------- |
@@ -361,6 +400,9 @@ Keine Screenshots vorhanden.
 - Trigger/Erkennung: beobachtet `AVG_SELECTOR` (AVG-Text).
 - Änderungen: fügt einen Pfeil-Span ein, toggelt Klassen/Animation und macht Trendwechsel sichtbar.
 
+✅ **Einfache Variablen (Beispiele)**
+- `ANIMATION_MS = 320` oder `500`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable       | Standard                        | Wirkung                             |
 | -------------- | ------------------------------- | ----------------------------------- |
@@ -386,6 +428,12 @@ Keine Screenshots vorhanden.
 - Zweck: kurzer Licht-Sweep beim Wechsel des aktiven Spielers.
 - Trigger/Erkennung: Klassenwechsel an `.ad-ext-player-active`.
 - Änderungen: fügt eine Sweep-Klasse am aktiven Player-Block hinzu (Pseudo-Element).
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.sweepDurationMs = 420` oder `700`
+- `CONFIG.sweepDelayMs = 0` oder `150`
+- `CONFIG.sweepWidth = "45%"`
+- `CONFIG.sweepColor = "rgba(255, 255, 255, 0.35)"`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                 | Standard                    | Wirkung                                   |
@@ -414,6 +462,13 @@ Keine Screenshots vorhanden.
 - Zweck: Overlay-Effekt bei Gewinner (Firework, Confetti, Aurora oder Pulse).
 - Trigger/Erkennung: Sichtbarkeit von `CONFIG.winnerSelector`.
 - Änderungen: Fullscreen-Canvas-Overlay, Klick blendet aus; sorgt für einen klaren „Win“-Moment.
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.effect = "firework"` oder `"confetti"` oder `"aurora"` oder `"pulse"`
+- `CONFIG.rocketIntervalMs = 360` oder `600`
+- `CONFIG.maxRockets = 7` oder `4`
+- `CONFIG.maxParticles = 480` oder `200`
+- `CONFIG.confettiCount = 150` oder `80`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                   | Standard                                          | Wirkung                                            |
@@ -463,6 +518,11 @@ Varianten:
 - Trigger/Erkennung: SVG-Marker via `MARKER_SELECTOR`.
 - Änderungen: setzt `r`, `fill` und Klassen auf Marker, damit Treffer besser zu sehen sind.
 
+✅ **Einfache Variablen (Beispiele)**
+- `MARKER_RADIUS = 6` oder `10`
+- `MARKER_FILL = "rgb(49, 130, 206)"` oder `"red"`
+- `EFFECT = "glow"` oder `"pulse"` oder `"none"`
+
 ⚙️ **Konfiguration (Variablen)**
 | Variable          | Standard                                                    | Wirkung                          |
 | ----------------- | ----------------------------------------------------------- | -------------------------------- |
@@ -486,14 +546,22 @@ Varianten:
 
 📝 **Beschreibung**
 - Zweck: ersetzt die Trefferpunkte am Board durch ein Dart-PNG, dessen Spitze genau auf dem Treffer sitzt.
+- Animation: optionaler Flug mit leichtem Gravity-Bogen und kurzem Einschlag-Wobble.
 - Trigger/Erkennung: SVG-Marker via `CONFIG.markerSelector`.
 - Änderungen: legt ein SVG-Overlay mit `<image>`-Darts an, optional Rotation zur Boardmitte für bessere Ausrichtung.
+
+✅ **Einfache Variablen (Beispiele)**
+- `DART_DESIGN = "Dart_red.png"`
+- `ANIMATE_DARTS = true` oder `false`
+- `CONFIG.hideMarkers = true` oder `false`
+- `CONFIG.animationStyle = "arc"` oder `"linear"`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                  | Standard                                                    | Wirkung                                                     |
 | ------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
 | `DART_DESIGN`             | `Dart_autodarts.png`                                        | Dateiname des Dart-Designs (siehe Liste unten).             |
 | `DART_BASE_URL`           | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/` | Basis-URL für die Dart-Designs (bei Fork/Lokal anpassen). |
+| `ANIMATE_DARTS`           | `true`                                                      | Schaltet die Flug-/Impact-Animation global an/aus.          |
 | `CONFIG.dartImageUrl`     | `DART_BASE_URL + DART_DESIGN`                               | Komplette PNG-URL; leer = deaktiviert oder eigene URL setzen. |
 | `CONFIG.dartLengthRatio`  | `0.416`                                                     | Länge relativ zum Board-Radius; steuert die Größe des Darts. |
 | `CONFIG.dartAspectRatio`  | `472 / 198`                                                 | Seitenverhältnis des PNG; falsche Werte verzerren das Bild. |
@@ -502,6 +570,18 @@ Varianten:
 | `CONFIG.rotateToCenter`   | `true`                                                     | Darts zur Boardmitte drehen (`true` empfohlen).             |
 | `CONFIG.baseAngleDeg`     | `180`                                                      | Grundausrichtung des PNG; je nach Bild anpassen.            |
 | `CONFIG.hideMarkers`      | `false`                                                    | Originale Trefferpunkte ausblenden.                         |
+| `CONFIG.animateDarts`     | `ANIMATE_DARTS`                                             | Aktiviert die Animation pro Dart.                           |
+| `CONFIG.animationStyle`   | `arc`                                                      | Flugstil: `arc` (Gravity-Bogen) oder `linear`.              |
+| `CONFIG.flightDurationMs` | `320`                                                      | Flugzeit in Millisekunden.                                  |
+| `CONFIG.flightDistanceRatio` | `1.2`                                                   | Start-Entfernung relativ zur Dart-Länge.                    |
+| `CONFIG.arcHeightRatio`   | `0.18`                                                     | Höhe des Bogens relativ zur Dart-Länge.                     |
+| `CONFIG.flightEasing`     | `cubic-bezier(0.15, 0.7, 0.2, 1)`                           | Timing-Funktion für den Flug.                               |
+| `CONFIG.wobbleDurationMs` | `280`                                                      | Dauer des Einschlag-Wobble.                                 |
+| `CONFIG.wobbleAngleDeg`   | `4`                                                        | Maximaler Wobble-Winkel in Grad.                            |
+| `CONFIG.wobbleEasing`     | `cubic-bezier(0.2, 0.6, 0.2, 1)`                            | Timing-Funktion für den Wobble.                             |
+| `CONFIG.blurPx`           | `2`                                                        | Bewegungsunschärfe während des Flugs.                       |
+| `CONFIG.scaleFrom`        | `0.94`                                                     | Start-Scale während des Flugs.                              |
+| `CONFIG.fadeFrom`         | `0.2`                                                      | Start-Opacity während des Flugs.                            |
 | `CONFIG.markerSelector`   | `circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]` | Selector für Board-Marker; bei SVG-Änderungen anpassen.     |
 
 🖼️ **Beispiele/Screenshots**
@@ -520,6 +600,7 @@ Designs (DART_DESIGN):
 
 ℹ️ **Weitere Hinweise**
 - Wähle dein Dart-Design über `DART_DESIGN` im Skript.
+- Animation komplett deaktivieren: `ANIMATE_DARTS = false`.
 ---
 
 #### Animation: Autodarts Animate Checkout Board Targets
@@ -532,6 +613,15 @@ Designs (DART_DESIGN):
 - Zweck: markiert Checkout-Ziele auf dem Board (blink/pulse/glow), damit der nächste Wurf schneller erkannt wird.
 - Trigger/Erkennung: parst `.suggestion` in X01, Variantencheck via `CONFIG.requireX01`.
 - Änderungen: legt ein Overlay-SVG mit Ziel-Segmenten an und hebt passende Felder hervor.
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.requireX01 = true` oder `false`
+- `CONFIG.highlightTargets = "first"` oder `"all"`
+- `CONFIG.effect = "pulse"` oder `"blink"` oder `"glow"`
+- `CONFIG.color = "rgba(168, 85, 247, 0.85)"`
+- `CONFIG.strokeColor = "rgba(168, 85, 247, 0.95)"`
+- `CONFIG.animationMs = 1000` oder `600`
+- `CONFIG.singleRing = "inner"` oder `"outer"` oder `"both"`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                    | Standard                   | Wirkung                                         |
@@ -567,6 +657,16 @@ Designs (DART_DESIGN):
 - Zweck: stylt Checkout-Vorschläge als Empfehlung (Badge/Ribbon/Stripe/Ticket/Outline).
 - Trigger/Erkennung: `.suggestion`, X01.
 - Änderungen: setzt Klassen und CSS-Variablen am Vorschlags-Element, um Hinweise klarer hervorzuheben.
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.requireX01 = true` oder `false`
+- `CONFIG.formatStyle = "ribbon"` oder `"badge"` oder `"stripe"` oder `"ticket"` oder `"outline"`
+- `CONFIG.labelText = "CHECKOUT"` oder `""`
+- `CONFIG.accentColor = "#f59e0b"`
+- `CONFIG.labelBackground = "#fcd34d"`
+- `CONFIG.labelTextColor = "#1f1300"`
+- `CONFIG.borderRadiusPx = 14` oder `8`
+- `CONFIG.stripeOpacity = 0.35` oder `0.2`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                    | Standard                   | Wirkung                                                 |
@@ -605,6 +705,9 @@ Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen
 - Zweck: blendet Nicht-Cricket-Felder aus und markiert 15–20/BULL nach Status.
 - Trigger/Erkennung: Variante `cricket`, liest Cricket-Tabelle (Marks via Icons/Attribute/Text).
 - Änderungen: Overlay-SVG mit Statusfarben (open/closed/score/danger/dead) für bessere Entscheidungen.
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.showDeadTargets = true` oder `false`
 
 ⚙️ **Konfiguration (Variablen)**
 | Variable                      | Standard                  | Wirkung                                                 |
