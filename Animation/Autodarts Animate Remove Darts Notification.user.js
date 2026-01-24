@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Replaces the "Removing Darts" notice with TakeOut.png and a subtle pulse animation.
 // @author       Thomas Asen
 // @license      MIT
@@ -20,6 +20,9 @@
    * @property {string} noticeSelector - Selector for the "Removing Darts" notice element.
    * @property {string} imageUrl - URL to the TakeOut.png asset.
    * @property {string} imageAlt - Alt text for the replacement image.
+   * @property {string[]} fallbackTexts - Text matches used if the selector changes.
+   * @property {boolean} searchShadowRoots - Also search open shadow roots for the notice.
+   * @property {number} fallbackScanMs - Minimum delay between text fallback scans.
    * @property {number} pulseDurationMs - Duration of the pulse animation.
    * @property {number} pulseScale - Max scale for the pulse animation.
    */
@@ -28,6 +31,9 @@
     imageUrl:
       "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/TakeOut.png",
     imageAlt: "Removing darts",
+    fallbackTexts: ["Removing Darts", "Darts entfernen"],
+    searchShadowRoots: true,
+    fallbackScanMs: 900,
     pulseDurationMs: 1400,
     pulseScale: 1.04,
   };
@@ -35,7 +41,10 @@
   const STYLE_ID = "ad-ext-takeout-style";
   const CARD_CLASS = "ad-ext-takeout-card";
   const IMAGE_CLASS = "ad-ext-takeout-image";
-  const DATA_KEY = "adExtTakeoutApplied";
+  const fallbackTextMatches = (CONFIG.fallbackTexts || [])
+    .map((text) => String(text || "").trim().toLowerCase())
+    .filter(Boolean);
+  let lastFallbackScan = 0;
 
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) {
@@ -104,26 +113,117 @@
     return image;
   }
 
+  function getSearchRoots() {
+    const roots = [document];
+    if (!CONFIG.searchShadowRoots) {
+      return roots;
+    }
+    document.querySelectorAll("*").forEach((element) => {
+      if (element.shadowRoot) {
+        roots.push(element.shadowRoot);
+      }
+    });
+    return roots;
+  }
+
+  function collectBySelector(roots, selector) {
+    const results = new Set();
+    roots.forEach((root) => {
+      if (!root || typeof root.querySelectorAll !== "function") {
+        return;
+      }
+      root.querySelectorAll(selector).forEach((node) => results.add(node));
+    });
+    return Array.from(results);
+  }
+
+  function collectByText(roots) {
+    if (!fallbackTextMatches.length) {
+      return [];
+    }
+    const matches = new Set();
+    roots.forEach((root) => {
+      if (!root) {
+        return;
+      }
+      const walker = document.createTreeWalker(
+        root,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      let node = walker.nextNode();
+      while (node) {
+        const value = node.nodeValue;
+        const normalized = value ? value.trim().toLowerCase() : "";
+        if (normalized) {
+          for (const match of fallbackTextMatches) {
+            if (normalized.includes(match)) {
+              if (node.parentElement) {
+                matches.add(node.parentElement);
+              }
+              break;
+            }
+          }
+        }
+        node = walker.nextNode();
+      }
+    });
+    return Array.from(matches);
+  }
+
+  function shouldRunFallback() {
+    if (!CONFIG.searchShadowRoots && !fallbackTextMatches.length) {
+      return false;
+    }
+    const now = Date.now();
+    if (now - lastFallbackScan < CONFIG.fallbackScanMs) {
+      return false;
+    }
+    lastFallbackScan = now;
+    return true;
+  }
+
+  function findNotices() {
+    const primary = collectBySelector([document], CONFIG.noticeSelector);
+    if (primary.length) {
+      return primary;
+    }
+    if (!shouldRunFallback()) {
+      return [];
+    }
+    const roots = getSearchRoots();
+    const deep = collectBySelector(roots, CONFIG.noticeSelector);
+    if (deep.length) {
+      return deep;
+    }
+    return collectByText(roots);
+  }
+
   function applyReplacement(notice) {
     if (!notice || notice.nodeType !== Node.ELEMENT_NODE) {
       return;
     }
-    if (notice.dataset[DATA_KEY] === "1") {
-      return;
-    }
-
-    notice.dataset[DATA_KEY] = "1";
     const card = notice.parentElement || notice;
     card.classList.add(CARD_CLASS);
 
-    notice.textContent = "";
-    if (!notice.querySelector(`.${IMAGE_CLASS}`)) {
-      notice.appendChild(buildImage());
+    let image = notice.querySelector(`.${IMAGE_CLASS}`);
+    if (!image) {
+      image = buildImage();
+      notice.appendChild(image);
+    } else {
+      image.src = CONFIG.imageUrl;
+      image.alt = CONFIG.imageAlt;
     }
+
+    Array.from(notice.childNodes).forEach((child) => {
+      if (child !== image) {
+        child.remove();
+      }
+    });
   }
 
   function updateNotices() {
-    document.querySelectorAll(CONFIG.noticeSelector).forEach((notice) => {
+    findNotices().forEach((notice) => {
       applyReplacement(notice);
     });
   }
