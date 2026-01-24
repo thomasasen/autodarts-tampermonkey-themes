@@ -1,4 +1,4 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.1
@@ -27,7 +27,7 @@
    * @property {number} pollIntervalMs - Optional polling interval (0 disables).
    */
 	const CONFIG = {
-		soundUrl: "https://gifs.thomasasen.goip.de/sound/singlebull.mp3",
+		soundUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/singlebull.mp3",
 		volume: 0.9,
 		targetPoints: 25,
 		targetLabel: "BULL",
@@ -305,3 +305,4 @@
 		start();
 	}
 })();
+

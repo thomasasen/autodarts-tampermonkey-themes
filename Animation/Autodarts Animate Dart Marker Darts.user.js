@@ -1,4 +1,4 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.2
@@ -21,7 +21,7 @@
 	// Dart_red.png, Dart_white.png, Dart_whitetrible.png, Dart_yellow.png,
 	// Dart_yellowscull.png
 	const DART_DESIGN = "Dart_autodarts.png";
-	const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/screenshots/";
+	const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/";
 
 	/**
    * Configuration for dart image placement.
@@ -434,3 +434,4 @@
 	window.addEventListener("scroll", scheduleUpdate, true);
 	watchLocationChanges();
 })();
+
