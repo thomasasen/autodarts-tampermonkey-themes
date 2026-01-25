@@ -14,23 +14,32 @@
 // ==/UserScript==
 
 (function () {
-  "use strict";
+	"use strict";
 
-  const { attachTheme, createCssBuilder, getVariantName } =
-    window.autodartsThemeShared;
+	const {attachTheme, createCssBuilder, getVariantName} = window.autodartsThemeShared;
 
-  // Style tag identifier and expected variant name.
-  const STYLE_ID = "autodarts-x01-custom-style";
-  const VARIANT_NAME = "x01";
+	// Style tag identifier and expected variant name.
+	const STYLE_ID = "autodarts-x01-custom-style";
+	const VARIANT_NAME = "x01";
 
-  // Preview placement: "standard" or "under-throws".
-  const PREVIEW_PLACEMENT = "under-throws";
-  const PREVIEW_HEIGHT_PX = 128;
-  const PREVIEW_GAP_PX = 8;
-  const PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
+	// Preview placement: "standard" or "under-throws".
+	const PREVIEW_PLACEMENT = "under-throws";
+	const PREVIEW_HEIGHT_PX = 128;
+	const PREVIEW_GAP_PX = 8;
+	const PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
 
-  // Basisthema, falls autodartsdesign.js nicht verfuegbar ist.
-  const fallbackThemeCss = `
+	// Stat sizing (px). Adjust to taste.
+	const STAT_AVG_FONT_SIZE_PX = 36;
+	const STAT_LEG_FONT_SIZE_PX = 38;
+	const STAT_AVG_LINE_HEIGHT = 1.15;
+	const STAT_AVG_ARROW_WIDTH_PX = 12;
+	const STAT_AVG_ARROW_HEIGHT_PX = 23;
+	const STAT_AVG_ARROW_MARGIN_LEFT_PX = 8;
+	const INACTIVE_STAT_SCALE = 0.6;
+
+
+	// Basisthema, falls autodartsdesign.js nicht verfuegbar ist.
+	const fallbackThemeCss = `
 :root{
   --theme-bg: #000000;
   --theme-background: #000000;
@@ -73,8 +82,8 @@ span.chakra-switch__track.css-v4l15v { background-color: #38761d; }
 button.chakra-tabs__tab.css-1pjn7in { color: #9fdb58; }
 `;
 
-  // Layout-Grundgeruest als Fallback (Grid, Header/Footer, Spieler/Board).
-  const fallbackLayoutCss = `
+	// Layout-Grundgeruest als Fallback (Grid, Header/Footer, Spieler/Board).
+	const fallbackLayoutCss = `
 /* Main layout: header, footer, then content */
 .css-tkevr6 > .chakra-stack{
   display: grid !important;
@@ -255,8 +264,8 @@ div.css-y3hfdd > .ad-ext_winner-score-wrapper > p{
 .css-1emway5 { grid-column: 1 / 3; }
 `;
 
-  // X01 nutzt dunkle Navigation unabhaengig vom Helper.
-  const navigationOverride = `
+	// X01 nutzt dunkle Navigation unabhaengig vom Helper.
+	const navigationOverride = `
 div.chakra-stack.navigation.css-19ml6yu,
 div.chakra-stack.navigation.css-ege71s,
 .chakra-stack.navigation {
@@ -264,225 +273,276 @@ div.chakra-stack.navigation.css-ege71s,
 }
 `;
 
-  const previewPlacementCss =
-    PREVIEW_PLACEMENT === "under-throws"
-      ? `
+	const previewPlacementCss = PREVIEW_PLACEMENT === "under-throws" ? `
 #ad-ext-turn.${PREVIEW_SPACE_CLASS}{
-  padding-bottom: ${PREVIEW_HEIGHT_PX + PREVIEW_GAP_PX}px;
+  padding-bottom: ${
+		PREVIEW_HEIGHT_PX + PREVIEW_GAP_PX
+	}px;
 }
-`
-      : "";
+` : "";
 
-  const buildCss = createCssBuilder({
-    fallbackThemeCss,
-    fallbackLayoutCss,
-    extraCss: navigationOverride + previewPlacementCss,
-  });
+	const statsSizingCss = `
+.ad-ext-player {
+  --ad-ext-stat-scale: 1;
+}
 
-  attachTheme({
-    styleId: STYLE_ID,
-    variantName: VARIANT_NAME,
-    buildCss,
-  });
+.ad-ext-player.ad-ext-player-inactive {
+  --ad-ext-stat-scale: ${INACTIVE_STAT_SCALE};
+}
 
-  if (PREVIEW_PLACEMENT === "under-throws") {
-    initPreviewPlacement();
-  }
+p.chakra-text.css-1j0bqop {
+  font-size: calc(${STAT_AVG_FONT_SIZE_PX}px * var(--ad-ext-stat-scale));
+  line-height: ${STAT_AVG_LINE_HEIGHT};
+}
 
-  function initPreviewPlacement() {
-    let scheduled = false;
-    let observedShadowRoot = null;
-    let shadowObserver = null;
-    const cardOverrides = new WeakMap();
-    let lastCards = [];
+span.css-3fr5p8 > p,
+span.chakra-badge.css-n2903v,
+span.chakra-badge.css-1j1ty0z,
+span.chakra-badge.css-1c4630i {
+  font-size: calc(${STAT_LEG_FONT_SIZE_PX}px * var(--ad-ext-stat-scale));
+}
 
-    function scheduleUpdate() {
-      if (scheduled) return;
-      scheduled = true;
-      requestAnimationFrame(() => {
-        scheduled = false;
-        updatePlacement();
-      });
-    }
+.ad-ext-avg-trend-arrow {
+  margin-left: calc(${STAT_AVG_ARROW_MARGIN_LEFT_PX}px * var(--ad-ext-stat-scale));
+}
 
-    function isX01Active() {
-      return getVariantName() === VARIANT_NAME;
-    }
+.ad-ext-avg-trend-arrow.ad-ext-avg-trend-up {
+  border-left: calc(${STAT_AVG_ARROW_WIDTH_PX}px * var(--ad-ext-stat-scale)) solid transparent;
+  border-right: calc(${STAT_AVG_ARROW_WIDTH_PX}px * var(--ad-ext-stat-scale)) solid transparent;
+  border-bottom: calc(${STAT_AVG_ARROW_HEIGHT_PX}px * var(--ad-ext-stat-scale)) solid #9fdb58;
+}
 
-    function observeShadowRoot(root) {
-      if (!root || root === observedShadowRoot) return;
-      if (shadowObserver) shadowObserver.disconnect();
-      observedShadowRoot = root;
-      shadowObserver = new MutationObserver(scheduleUpdate);
-      shadowObserver.observe(root, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: true,
-      });
-    }
+.ad-ext-avg-trend-arrow.ad-ext-avg-trend-down {
+  border-left: calc(${STAT_AVG_ARROW_WIDTH_PX}px * var(--ad-ext-stat-scale)) solid transparent;
+  border-right: calc(${STAT_AVG_ARROW_WIDTH_PX}px * var(--ad-ext-stat-scale)) solid transparent;
+  border-top: calc(${STAT_AVG_ARROW_HEIGHT_PX}px * var(--ad-ext-stat-scale)) solid #f87171;
+}
+`;
 
-    function rememberCardStyle(card) {
-      if (cardOverrides.has(card)) return;
-      cardOverrides.set(card, {
-        position: card.style.position,
-        left: card.style.left,
-        top: card.style.top,
-        width: card.style.width,
-        height: card.style.height,
-        margin: card.style.margin,
-        pointerEvents: card.style.pointerEvents,
-        zIndex: card.style.zIndex,
-      });
-    }
+	const buildCss = createCssBuilder({
+		fallbackThemeCss,
+		fallbackLayoutCss,
+		extraCss: navigationOverride + previewPlacementCss + statsSizingCss
+	});
 
-    function restoreCardStyle(card) {
-      const original = cardOverrides.get(card);
-      if (!original) return;
-      card.style.position = original.position;
-      card.style.left = original.left;
-      card.style.top = original.top;
-      card.style.width = original.width;
-      card.style.height = original.height;
-      card.style.margin = original.margin;
-      card.style.pointerEvents = original.pointerEvents;
-      card.style.zIndex = original.zIndex;
-    }
+	attachTheme({styleId: STYLE_ID, variantName: VARIANT_NAME, buildCss});
 
-    function resetPlacement() {
-      for (const card of lastCards) {
-        restoreCardStyle(card);
-      }
-      lastCards = [];
-      setPreviewSpace(false);
-    }
+	if (PREVIEW_PLACEMENT === "under-throws") {
+		initPreviewPlacement();
+	}
 
-    function setPreviewSpace(enabled) {
-      const turnEl = document.getElementById("ad-ext-turn");
-      if (!turnEl) return;
-      turnEl.classList.toggle(PREVIEW_SPACE_CLASS, enabled);
-    }
+	function initPreviewPlacement() {
+		let scheduled = false;
+		let observedShadowRoot = null;
+		let shadowObserver = null;
+		const cardOverrides = new WeakMap();
+		let lastCards = [];
 
-    function isEffectivelyHidden(node) {
-      let current = node;
-      while (current) {
-        if (current.nodeType === 11) {
-          current = current.host || null;
-          continue;
-        }
-        if (current.nodeType !== 1) {
-          current = current.parentNode || null;
-          continue;
-        }
-        const style = window.getComputedStyle(current);
-        if (style.display === "none" || style.visibility === "hidden") {
-          return true;
-        }
-        const opacity = parseFloat(style.opacity);
-        if (!Number.isNaN(opacity) && opacity === 0) {
-          return true;
-        }
-        current = current.parentNode || null;
-      }
-      return false;
-    }
+		function scheduleUpdate() {
+			if (scheduled) 
+				return;
+			
+			scheduled = true;
+			requestAnimationFrame(() => {
+				scheduled = false;
+				updatePlacement();
+			});
+		}
 
-    function getPreviewCards(root) {
-      const images = Array.from(
-        root.querySelectorAll("img[src*=\"/images/board.png\"]")
-      );
-      const cards = [];
-      for (const img of images) {
-        const wrapper = img.closest("div");
-        const card = wrapper?.parentElement;
-        if (!wrapper || !card) continue;
-        if (window.getComputedStyle(wrapper).position !== "relative") continue;
-        if (window.getComputedStyle(card).overflow !== "hidden") continue;
-        if (!cards.includes(card)) {
-          cards.push(card);
-        }
-      }
-      return cards;
-    }
+		function isX01Active() {
+			return getVariantName() === VARIANT_NAME;
+		}
 
-    function positionCard(card, rect) {
-      rememberCardStyle(card);
-      card.style.position = "fixed";
-      card.style.left = `${rect.left}px`;
-      card.style.top = `${rect.bottom + PREVIEW_GAP_PX}px`;
-      card.style.width = `${rect.width}px`;
-      card.style.height = `${PREVIEW_HEIGHT_PX}px`;
-      card.style.margin = "0";
-      card.style.pointerEvents = "none";
-      card.style.zIndex = "200";
-    }
+		function observeShadowRoot(root) {
+			if (! root || root === observedShadowRoot) 
+				return;
+			
+			if (shadowObserver) 
+				shadowObserver.disconnect();
+			
+			observedShadowRoot = root;
+			shadowObserver = new MutationObserver(scheduleUpdate);
+			shadowObserver.observe(root, {
+				childList: true,
+				subtree: true,
+				attributes: true,
+				characterData: true
+			});
+		}
 
-    function updatePlacement() {
-      if (!isX01Active()) {
-        resetPlacement();
-        return;
-      }
+		function rememberCardStyle(card) {
+			if (cardOverrides.has(card)) 
+				return;
+			
+			cardOverrides.set(card, {
+				position: card.style.position,
+				left: card.style.left,
+				top: card.style.top,
+				width: card.style.width,
+				height: card.style.height,
+				margin: card.style.margin,
+				pointerEvents: card.style.pointerEvents,
+				zIndex: card.style.zIndex
+			});
+		}
 
-      const zoomEl = document.querySelector("autodarts-tools-zoom");
-      if (!zoomEl || isEffectivelyHidden(zoomEl)) {
-        resetPlacement();
-        return;
-      }
-      const shadowRoot = zoomEl.shadowRoot;
-      if (!shadowRoot) {
-        resetPlacement();
-        return;
-      }
-      observeShadowRoot(shadowRoot);
+		function restoreCardStyle(card) {
+			const original = cardOverrides.get(card);
+			if (! original) 
+				return;
+			
+			card.style.position = original.position;
+			card.style.left = original.left;
+			card.style.top = original.top;
+			card.style.width = original.width;
+			card.style.height = original.height;
+			card.style.margin = original.margin;
+			card.style.pointerEvents = original.pointerEvents;
+			card.style.zIndex = original.zIndex;
+		}
 
-      const throwEls = Array.from(
-        document.querySelectorAll("#ad-ext-turn .ad-ext-turn-throw")
-      );
-      if (!throwEls.length) {
-        resetPlacement();
-        return;
-      }
+		function resetPlacement() {
+			for (const card of lastCards) {
+				restoreCardStyle(card);
+			}
+			lastCards = [];
+			setPreviewSpace(false);
+		}
 
-      const cards = getPreviewCards(shadowRoot);
-      if (!cards.length) {
-        resetPlacement();
-        return;
-      }
-      const hasVisibleCard = cards.some(
-        (card) => !isEffectivelyHidden(card)
-      );
-      if (!hasVisibleCard) {
-        resetPlacement();
-        return;
-      }
+		function setPreviewSpace(enabled) {
+			const turnEl = document.getElementById("ad-ext-turn");
+			if (! turnEl) 
+				return;
+			
+			turnEl.classList.toggle(PREVIEW_SPACE_CLASS, enabled);
+		}
 
-      setPreviewSpace(true);
-      lastCards = cards;
-      const count = Math.min(cards.length, throwEls.length);
-      for (let i = 0; i < count; i += 1) {
-        positionCard(cards[i], throwEls[i].getBoundingClientRect());
-      }
-      for (let i = count; i < cards.length; i += 1) {
-        positionCard(cards[i], {
-          left: -9999,
-          top: -9999,
-          bottom: -9999,
-          width: 0,
-        });
-      }
-    }
+		function isEffectivelyHidden(node) {
+			let current = node;
+			while (current) {
+				if (current.nodeType === 11) {
+					current = current.host || null;
+					continue;
+				}
+				if (current.nodeType !== 1) {
+					current = current.parentNode || null;
+					continue;
+				}
+				const style = window.getComputedStyle(current);
+				if (style.display === "none" || style.visibility === "hidden") {
+					return true;
+				}
+				const opacity = parseFloat(style.opacity);
+				if (!Number.isNaN(opacity) && opacity === 0) {
+					return true;
+				}
+				current = current.parentNode || null;
+			}
+			return false;
+		}
 
-    const documentObserver = new MutationObserver(scheduleUpdate);
-    documentObserver.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true,
-    });
+		function getPreviewCards(root) {
+			const images = Array.from(root.querySelectorAll("img[src*=\"/images/board.png\"]"));
+			const cards = [];
+			for (const img of images) {
+				const wrapper = img.closest("div");
+				const card = wrapper ?. parentElement;
+				if (! wrapper || ! card) 
+					continue;
+				
+				if (window.getComputedStyle(wrapper).position !== "relative") 
+					continue;
+				
+				if (window.getComputedStyle(card).overflow !== "hidden") 
+					continue;
+				
+				if (! cards.includes(card)) {
+					cards.push(card);
+				}
+			}
+			return cards;
+		}
 
-    window.addEventListener("resize", scheduleUpdate);
-    window.addEventListener("scroll", scheduleUpdate, true);
+		function positionCard(card, rect) {
+			rememberCardStyle(card);
+			card.style.position = "fixed";
+			card.style.left = `${
+				rect.left
+			}px`;
+			card.style.top = `${
+				rect.bottom + PREVIEW_GAP_PX
+			}px`;
+			card.style.width = `${
+				rect.width
+			}px`;
+			card.style.height = `${PREVIEW_HEIGHT_PX}px`;
+			card.style.margin = "0";
+			card.style.pointerEvents = "none";
+			card.style.zIndex = "200";
+		}
 
-    scheduleUpdate();
-  }
+		function updatePlacement() {
+			if (! isX01Active()) {
+				resetPlacement();
+				return;
+			}
+
+			const zoomEl = document.querySelector("autodarts-tools-zoom");
+			if (! zoomEl || isEffectivelyHidden(zoomEl)) {
+				resetPlacement();
+				return;
+			}
+			const shadowRoot = zoomEl.shadowRoot;
+			if (! shadowRoot) {
+				resetPlacement();
+				return;
+			}
+			observeShadowRoot(shadowRoot);
+
+			const throwEls = Array.from(document.querySelectorAll("#ad-ext-turn .ad-ext-turn-throw"));
+			if (! throwEls.length) {
+				resetPlacement();
+				return;
+			}
+
+			const cards = getPreviewCards(shadowRoot);
+			if (! cards.length) {
+				resetPlacement();
+				return;
+			}
+			const hasVisibleCard = cards.some((card) => ! isEffectivelyHidden(card));
+			if (! hasVisibleCard) {
+				resetPlacement();
+				return;
+			}
+
+			setPreviewSpace(true);
+			lastCards = cards;
+			const count = Math.min(cards.length, throwEls.length);
+			for (let i = 0; i < count; i += 1) {
+				positionCard(cards[i], throwEls[i].getBoundingClientRect());
+			}
+			for (let i = count; i < cards.length; i += 1) {
+				positionCard(cards[i], {
+					left: -9999,
+					top: -9999,
+					bottom: -9999,
+					width: 0
+				});
+			}
+		}
+
+		const documentObserver = new MutationObserver(scheduleUpdate);
+		documentObserver.observe(document.documentElement, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			characterData: true
+		});
+
+		window.addEventListener("resize", scheduleUpdate);
+		window.addEventListener("scroll", scheduleUpdate, true);
+
+		scheduleUpdate();
+	}
 })();
