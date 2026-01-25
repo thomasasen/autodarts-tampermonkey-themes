@@ -1,6 +1,6 @@
 ﻿// ==UserScript==// @name         Autodarts Animate Dart Marker Darts
 	// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      1.5.2
+	// @version      1.5.3
 	// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 	// @author       Thomas Asen
 	// @license      MIT
@@ -631,6 +631,7 @@ function updateDarts () {
 	};
 
 	const markerSet = new Set(markers);
+	let removedAny = false;
 	for (const [marker, entry] of dartByMarker.entries()) {
 		if (! markerSet.has(marker) || !marker.isConnected) {
 			if (entry.container && entry.container.parentNode) {
@@ -638,6 +639,7 @@ function updateDarts () {
 			}
 			dartByMarker.delete(marker);
 			setMarkerHidden(marker, false);
+			removedAny = true;
 		}
 	}
 
@@ -645,7 +647,9 @@ function updateDarts () {
 	const now = nowMs();
 	const settleDurationMs = Math.max(220, CONFIG.flightDurationMs + 160);
 	const flightTimeoutMs = Math.max(240, CONFIG.flightDurationMs + 180);
+	const retryDelayMs = Math.max(60, Math.min(140, Math.round(CONFIG.flightDurationMs / 3)));
 
+	let createdAny = false;
 	let needsRetry = false;
 	const markerEntries = [];
 
@@ -667,6 +671,7 @@ function updateDarts () {
 			entry.settleUntil = now + settleDurationMs;
 			overlay.appendChild(entry.container);
 			dartByMarker.set(marker, entry);
+			createdAny = true;
 			if (shouldAnimate) {
 				animateDart(entry, center, boardCenter, size);
 			}
@@ -692,22 +697,24 @@ function updateDarts () {
 		markerEntries.push({entry, center, index});
 	});
 
-	markerEntries.sort((a, b) => {
-		const deltaY = a.center.y - b.center.y;
-		if (Math.abs(deltaY) > 0.001) {
-			return deltaY;
-		}
-		return a.index - b.index;
-	});
+	if (createdAny || removedAny) {
+		markerEntries.sort((a, b) => {
+			const deltaY = a.center.y - b.center.y;
+			if (Math.abs(deltaY) > 0.001) {
+				return deltaY;
+			}
+			return a.index - b.index;
+		});
 
-	for (const item of markerEntries) {
-		if (item.entry && item.entry.container) {
-			overlay.appendChild(item.entry.container);
+		for (const item of markerEntries) {
+			if (item.entry && item.entry.container) {
+				overlay.appendChild(item.entry.container);
+			}
 		}
 	}
 
 	if (needsRetry) {
-		scheduleUpdate();
+		scheduleRetry(retryDelayMs);
 	}
 }
 
@@ -723,6 +730,17 @@ function scheduleUpdate () {
 	})
 
 
+}
+
+let retryTimer = 0;
+function scheduleRetry (delayMs) {
+	if (retryTimer) {
+		return;
+	}
+	retryTimer = window.setTimeout(() => {
+		retryTimer = 0;
+		scheduleUpdate();
+	}, Math.max(0, delayMs));
 }
 
 let lastUrl = location.href;
