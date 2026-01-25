@@ -45,6 +45,7 @@ Kurzübersicht:
     - [Animation: Autodarts Animate Turn Points Count](#animation-autodarts-animate-turn-points-count)
     - [Animation: Autodarts Animate Average Trend Arrow](#animation-autodarts-animate-average-trend-arrow)
     - [Animation: Autodarts Animate Turn Start Sweep](#animation-autodarts-animate-turn-start-sweep)
+    - [Animation: Autodarts Animate Remove Darts Notification](#animation-autodarts-animate-remove-darts-notification)
     - [Animation: Autodarts Animate Winner Fireworks](#animation-autodarts-animate-winner-fireworks)
     - [Animation: Autodarts Animate Dart Marker Emphasis](#animation-autodarts-animate-dart-marker-emphasis)
     - [Animation: Autodarts Animate Dart Marker Darts](#animation-autodarts-animate-dart-marker-darts)
@@ -450,6 +451,45 @@ Keine Screenshots vorhanden.
 
 ℹ️ **Weitere Hinweise**
 - Für einen subtileren Effekt: Breite/Farbe über `CONFIG.sweepWidth` und `CONFIG.sweepColor` anpassen.
+---
+
+#### Animation: Autodarts Animate Remove Darts Notification
+
+- Bezeichnung: Autodarts Animate Remove Darts Notification
+- Datei: `Animation/Autodarts Animate Remove Darts Notification.user.js`
+[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Remove%20Darts%20Notification.user.js)
+
+📝 **Beschreibung**
+- Zweck: ersetzt die "Removing Darts" / "Darts entfernen"-Notification über dem Board durch `TakeOut.png` und lässt sie leicht pulsieren.
+- Trigger/Erkennung: findet `.adt-remove` (mit Text-Fallbacks und optionalem Shadow-DOM-Scan).
+- Änderungen: entfernt den gelben Hintergrund der Notification und rendert das Bild in größerer Darstellung.
+- Hinweis: funktioniert nur, wenn in den Autodarts Tools die Option "Takeout Notification" aktiviert ist.
+
+✅ **Einfache Variablen (Beispiele)**
+- `CONFIG.imageMaxWidthRem = 30` oder `36`
+- `CONFIG.imageMaxWidthVw = 90` oder `95`
+- `CONFIG.pulseDurationMs = 1400` oder `1000`
+- `CONFIG.pulseScale = 1.04` oder `1.08`
+
+⚙️ **Konfiguration (Variablen)**
+| Variable                      | Standard                                                                 | Wirkung                                                        |
+| ----------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `CONFIG.noticeSelector`       | `.adt-remove`                                                            | Selector für die Takeout-Notification.                         |
+| `CONFIG.imageUrl`             | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/TakeOut.png` | Bildquelle für die Ersetzung. |
+| `CONFIG.imageMaxWidthRem`     | `30`                                                                     | Maximale Breite in rem (Desktop).                              |
+| `CONFIG.imageMaxWidthVw`      | `90`                                                                     | Maximale Breite in vw (Mobile).                                |
+| `CONFIG.pulseDurationMs`      | `1400`                                                                   | Pulsdauer in ms.                                               |
+| `CONFIG.pulseScale`           | `1.04`                                                                   | Maximaler Scale beim Puls.                                     |
+| `CONFIG.fallbackTexts`        | `["Removing Darts", "Darts entfernen"]`                                 | Text-Fallbacks, falls sich die Klasse ändert.                  |
+| `CONFIG.searchShadowRoots`    | `true`                                                                   | Sucht zusätzlich in offenen Shadow Roots.                      |
+| `CONFIG.fallbackScanMs`       | `900`                                                                    | Mindestabstand zwischen Text-Scans (Performance).              |
+
+🖼️ **Beispiele/Screenshots**
+<img src="assets/TakeOut.png" alt="Remove Darts Notification" width="200px">
+
+ℹ️ **Weitere Hinweise**
+- Die Option "Takeout Notification" in den Autodarts Tools muss aktiv sein.
+
 ---
 
 #### Animation: Autodarts Animate Winner Fireworks
