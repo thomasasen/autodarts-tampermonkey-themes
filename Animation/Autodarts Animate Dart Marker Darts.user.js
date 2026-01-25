@@ -32,6 +32,7 @@
    * - tipOffsetXRatio/YRatio: tip position within the image as a ratio (0..1).
    * - rotateToCenter: rotate darts so the tip points toward board center.
    * - baseAngleDeg: angle of the PNG tip direction (left = 180, right = 0).
+   * - dartTransparency: transparency of the dart image (0 = opaque, 1 = fully transparent).
    * - hideMarkers: hide the original hit markers when darts are shown.
    * - animateDarts: enable flight + impact animation.
    * - animationStyle: "arc" or "linear".
@@ -54,6 +55,7 @@
 			tipOffsetYRatio: 130 / 198,
 			rotateToCenter: true,
 			baseAngleDeg: 180,
+			dartTransparency: 0,
 			hideMarkers: false,
 			animateDarts: ANIMATE_DARTS,
 			animationStyle: "arc",
@@ -341,6 +343,14 @@
     };
   }
 
+  function getDartOpacity() {
+    const transparency = Number.parseFloat(CONFIG.dartTransparency);
+    if (!Number.isFinite(transparency)) {
+      return 1;
+    }
+    return Math.min(1, Math.max(0, 1 - transparency));
+  }
+
   function createDartElements(center, size, boardCenter) {
     const flightGroup = document.createElementNS(SVG_NS, "g");
     flightGroup.classList.add(DART_FLIGHT_CLASS);
@@ -379,6 +389,8 @@
     } else {
       image.style.transformOrigin = "";
     }
+
+    image.style.opacity = String(getDartOpacity());
 
     if (CONFIG.rotateToCenter && boardCenter) {
       const dx = boardCenter.x - center.x;
@@ -578,7 +590,9 @@ function updateDarts () {
 
 	const shouldAnimate = canAnimateDarts();
 
-	markers.forEach((marker) => {
+	const markerEntries = [];
+
+	markers.forEach((marker, index) => {
 		const screenPoint = getMarkerScreenPoint(marker);
 		if (! screenPoint) {
 			return;
@@ -604,7 +618,23 @@ function updateDarts () {
 		if (shouldHideMarkers) {
 			setMarkerHidden(marker, true);
 		}
+
+		markerEntries.push({entry, center, index});
 	});
+
+	markerEntries.sort((a, b) => {
+		const deltaY = a.center.y - b.center.y;
+		if (Math.abs(deltaY) > 0.001) {
+			return deltaY;
+		}
+		return a.index - b.index;
+	});
+
+	for (const item of markerEntries) {
+		if (item.entry && item.entry.container) {
+			overlay.appendChild(item.entry.container);
+		}
+	}
 }
 
 let scheduled = false;

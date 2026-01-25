@@ -594,6 +594,7 @@ Varianten:
 - `DART_DESIGN = "Dart_red.png"`
 - `ANIMATE_DARTS = true` oder `false`
 - `CONFIG.hideMarkers = true` oder `false`
+- `CONFIG.dartTransparency = 0` oder `0.3`
 - `CONFIG.animationStyle = "arc"` oder `"linear"`
 
 ⚙️ **Konfiguration (Variablen)**
@@ -609,6 +610,7 @@ Varianten:
 | `CONFIG.tipOffsetYRatio`  | `130 / 198`                                                 | Y-Offset der Spitze relativ zur Bildhöhe (Ausrichtung).     |
 | `CONFIG.rotateToCenter`   | `true`                                                     | Darts zur Boardmitte drehen (`true` empfohlen).             |
 | `CONFIG.baseAngleDeg`     | `180`                                                      | Grundausrichtung des PNG; je nach Bild anpassen.            |
+| `CONFIG.dartTransparency` | `0`                                                        | Transparenz der Darts (0 = deckend, 1 = unsichtbar).        |
 | `CONFIG.hideMarkers`      | `false`                                                    | Originale Trefferpunkte ausblenden.                         |
 | `CONFIG.animateDarts`     | `ANIMATE_DARTS`                                             | Aktiviert die Animation pro Dart.                           |
 | `CONFIG.animationStyle`   | `arc`                                                      | Flugstil: `arc` (Gravity-Bogen) oder `linear`.              |
@@ -835,4 +837,3 @@ Upstream (inventwo): MIT-Lizenz. Copyright (c) 2025 jkvarel und skvarel von inve
 
 Dieses Projekt ist nicht mit Autodarts verbunden.
 Änderungen an play.autodarts.io können Skript-Updates erforderlich machen.
-
