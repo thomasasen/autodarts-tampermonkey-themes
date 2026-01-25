@@ -1,6 +1,6 @@
 ﻿// ==UserScript==// @name         Autodarts Animate Dart Marker Darts
 	// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      1.5.1
+	// @version      1.5.2
 	// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 	// @author       Thomas Asen
 	// @license      MIT
@@ -371,6 +371,13 @@
     return Math.min(1, Math.max(0, 1 - transparency));
   }
 
+  function nowMs() {
+    if (typeof performance !== "undefined" && typeof performance.now === "function") {
+      return performance.now();
+    }
+    return Date.now();
+  }
+
   function createDartElements(center, size, boardCenter) {
     const flightGroup = document.createElementNS(SVG_NS, "g");
     flightGroup.classList.add(DART_FLIGHT_CLASS);
@@ -382,7 +389,14 @@
     flightGroup.appendChild(rotateGroup);
 
     const entry = {
-      container: flightGroup, rotateGroup, image, animated: false
+      container: flightGroup,
+      rotateGroup,
+      image,
+      animated: false,
+      flightAnimation: null,
+      flightStartedAt: 0,
+      wobbleAnimation: null,
+      settleUntil: 0
     };
 
     updateDartElement(entry, center, size, boardCenter);
@@ -469,6 +483,7 @@ function animateDart (entry, center, boardCenter, size) {
 
 	entry.animated = true;
 
+	const startTime = nowMs();
 	const flightGroup = entry.container;
 	const image = entry.image;
 	const flightDuration = Math.max(0, CONFIG.flightDurationMs);
@@ -512,11 +527,22 @@ function animateDart (entry, center, boardCenter, size) {
 		fill: "both"
 	});
 
-	flightAnimation.onfinish = () => {
+	entry.flightAnimation = flightAnimation;
+	entry.flightStartedAt = startTime;
+	entry.settleUntil = Math.max(entry.settleUntil || 0, startTime + flightDuration + 140);
+
+	const cleanupFlight = () => {
+		if (entry.flightAnimation !== flightAnimation) {
+			return;
+		}
+		entry.flightAnimation = null;
+		entry.flightStartedAt = 0;
 		flightGroup.style.transform = "";
 		flightGroup.style.opacity = "";
 		flightGroup.style.filter = "";
 	};
+	flightAnimation.onfinish = cleanupFlight;
+	flightAnimation.oncancel = cleanupFlight;
 
 	if (wobbleDuration > 0 && wobbleAngle > 0) {
 		const wobbleKeyframes = [
@@ -547,9 +573,16 @@ function animateDart (entry, center, boardCenter, size) {
 			fill: "both"
 		});
 
-		wobbleAnimation.onfinish = () => {
+		entry.wobbleAnimation = wobbleAnimation;
+		const cleanupWobble = () => {
+			if (entry.wobbleAnimation !== wobbleAnimation) {
+				return;
+			}
+			entry.wobbleAnimation = null;
 			image.style.transform = "";
 		};
+		wobbleAnimation.onfinish = cleanupWobble;
+		wobbleAnimation.oncancel = cleanupWobble;
 	}
 }
 
@@ -609,6 +642,9 @@ function updateDarts () {
 	}
 
 	const shouldAnimate = canAnimateDarts();
+	const now = nowMs();
+	const settleDurationMs = Math.max(220, CONFIG.flightDurationMs + 160);
+	const flightTimeoutMs = Math.max(240, CONFIG.flightDurationMs + 180);
 
 	let needsRetry = false;
 	const markerEntries = [];
@@ -628,17 +664,29 @@ function updateDarts () {
 		let entry = dartByMarker.get(marker);
 		if (! entry) {
 			entry = createDartElements(center, size, boardCenter);
+			entry.settleUntil = now + settleDurationMs;
 			overlay.appendChild(entry.container);
 			dartByMarker.set(marker, entry);
 			if (shouldAnimate) {
 				animateDart(entry, center, boardCenter, size);
 			}
 		} else {
+			if (entry.flightAnimation && entry.flightStartedAt && now - entry.flightStartedAt > flightTimeoutMs) {
+				try {
+					entry.flightAnimation.finish();
+				} catch (error) {
+					entry.flightAnimation.cancel();
+				}
+			}
 			updateDartElement(entry, center, size, boardCenter);
 		}
 
 		if (shouldHideMarkers) {
 			setMarkerHidden(marker, true);
+		}
+
+		if (entry.settleUntil && now < entry.settleUntil) {
+			needsRetry = true;
 		}
 
 		markerEntries.push({entry, center, index});
