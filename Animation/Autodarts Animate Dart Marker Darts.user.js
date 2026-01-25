@@ -1,6 +1,6 @@
 ﻿// ==UserScript==// @name         Autodarts Animate Dart Marker Darts
 	// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      1.5
+	// @version      1.5.1
 	// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 	// @author       Thomas Asen
 	// @license      MIT
@@ -294,6 +294,23 @@
   }
 
   function getMarkerScreenPoint(marker) {
+    if (!marker || typeof marker.getBoundingClientRect !== "function") {
+      return null;
+    }
+
+    const rect = marker.getBoundingClientRect();
+    if (
+      Number.isFinite(rect.width)
+      && Number.isFinite(rect.height)
+      && rect.width > 0
+      && rect.height > 0
+    ) {
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+
     const svg = marker.ownerSVGElement;
     if (!svg || typeof svg.createSVGPoint !== "function") {
       return null;
@@ -314,10 +331,13 @@
 
     const matrix = marker.getScreenCTM();
     if (!matrix) {
-      return { x, y };
+      return null;
     }
 
     const screenPoint = point.matrixTransform(matrix);
+    if (!Number.isFinite(screenPoint.x) || !Number.isFinite(screenPoint.y)) {
+      return null;
+    }
     return { x: screenPoint.x, y: screenPoint.y };
   }
 
@@ -590,11 +610,13 @@ function updateDarts () {
 
 	const shouldAnimate = canAnimateDarts();
 
+	let needsRetry = false;
 	const markerEntries = [];
 
 	markers.forEach((marker, index) => {
 		const screenPoint = getMarkerScreenPoint(marker);
 		if (! screenPoint) {
+			needsRetry = true;
 			return;
 		}
 
@@ -634,6 +656,10 @@ function updateDarts () {
 		if (item.entry && item.entry.container) {
 			overlay.appendChild(item.entry.container);
 		}
+	}
+
+	if (needsRetry) {
+		scheduleUpdate();
 	}
 }
 
