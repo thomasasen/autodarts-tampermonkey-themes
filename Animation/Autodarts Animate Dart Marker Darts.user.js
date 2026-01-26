@@ -1,30 +1,30 @@
 ﻿// ==UserScript==// @name         Autodarts Animate Dart Marker Darts
-	// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      1.5.3
-	// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
-	// @author       Thomas Asen
-	// @license      MIT
-	// @match        *://play.autodarts.io/*
-	// @run-at       document-start
-	// @grant        none
-	// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js
-	// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js
-	// ==/UserScript==
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @version      1.6
+// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
+// @author       Thomas Asen
+// @license      MIT
+// @match        *://play.autodarts.io/*
+// @run-at       document-start
+// @grant        none
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js
+// ==/UserScript==
 
-	(function () {
-		"use strict";
+(function () {
+	"use strict";
 
-		// Dart design options (set DART_DESIGN to one of these):
-		// Dart_autodarts.png, Dart_blackblue.png, Dart_blackgreen.png, Dart_blackred.png,
-		// Dart_blue.png, Dart_camoflage.png, Dart_green.png, Dart_pride.png,
-		// Dart_red.png, Dart_white.png, Dart_whitetrible.png, Dart_yellow.png,
-		// Dart_yellowscull.png
-		const DART_DESIGN = "Dart_autodarts.png";
-		const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/";
-		// Toggle dart flight animation on/off.
-		const ANIMATE_DARTS = true;
+	// Dart design options (set DART_DESIGN to one of these):
+	// Dart_autodarts.png, Dart_blackblue.png, Dart_blackgreen.png, Dart_blackred.png,
+	// Dart_blue.png, Dart_camoflage.png, Dart_green.png, Dart_pride.png,
+	// Dart_red.png, Dart_white.png, Dart_whitetrible.png, Dart_yellow.png,
+	// Dart_yellowscull.png
+	const DART_DESIGN = "Dart_autodarts.png";
+	const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/";
+	// Toggle dart flight animation on/off.
+	const ANIMATE_DARTS = true;
 
-		/**
+	/**
    * Configuration for dart image placement (toggle ANIMATE_DARTS above).
    * - dartImageUrl: set to your PNG URL or data URI.
    * - dartLengthRatio: length relative to the board radius.
@@ -39,6 +39,8 @@
    * - flightDurationMs: duration of the flight animation.
    * - flightDistanceRatio: how far the dart starts from impact (relative to dart length).
    * - arcHeightRatio: arc height relative to dart length.
+   * - variationArcRatio: random arc height variation (0.1 = +/-10%).
+   * - variationDurationRatio: random flight duration variation (0.1 = +/-10%).
    * - flightEasing: easing for flight animation.
    * - wobbleDurationMs: duration of the impact wobble.
    * - wobbleAngleDeg: max wobble rotation in degrees.
@@ -47,50 +49,52 @@
    * - scaleFrom: starting scale during flight.
    * - fadeFrom: starting opacity during flight.
    */
-		const CONFIG = {
-			dartImageUrl: `${DART_BASE_URL}${DART_DESIGN}`,
-			dartLengthRatio: 0.416,
-			dartAspectRatio: 472 / 198,
-			tipOffsetXRatio: 0,
-			tipOffsetYRatio: 130 / 198,
-			rotateToCenter: true,
-			baseAngleDeg: 180,
-			dartTransparency: 0,
-			hideMarkers: false,
-			animateDarts: ANIMATE_DARTS,
-			animationStyle: "arc",
-			flightDurationMs: 320,
-			flightDistanceRatio: 1.2,
-			arcHeightRatio: 0.18,
-			flightEasing: "cubic-bezier(0.15, 0.7, 0.2, 1)",
-			wobbleDurationMs: 280,
-			wobbleAngleDeg: 4,
-			wobbleEasing: "cubic-bezier(0.2, 0.6, 0.2, 1)",
-			blurPx: 2,
-			scaleFrom: 0.94,
-			fadeFrom: 0.2,
-			markerSelector: 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]'
-		};
+	const CONFIG = {
+		dartImageUrl: `${DART_BASE_URL}${DART_DESIGN}`,
+		dartLengthRatio: 0.416,
+		dartAspectRatio: 472 / 198,
+		tipOffsetXRatio: 0,
+		tipOffsetYRatio: 130 / 198,
+		rotateToCenter: true,
+		baseAngleDeg: 180,
+		dartTransparency: 0,
+		hideMarkers: false,
+		animateDarts: ANIMATE_DARTS,
+		animationStyle: "arc",
+		flightDurationMs: 320,
+		flightDistanceRatio: 1.2,
+		arcHeightRatio: 0.16,
+		variationArcRatio: 0.1,
+		variationDurationRatio: 0.06,
+		flightEasing: "cubic-bezier(0.15, 0.7, 0.2, 1)",
+		wobbleDurationMs: 280,
+		wobbleAngleDeg: 4,
+		wobbleEasing: "cubic-bezier(0.2, 0.6, 0.2, 1)",
+		blurPx: 2,
+		scaleFrom: 0.94,
+		fadeFrom: 0.2,
+		markerSelector: 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]'
+	};
 
-		const STYLE_ID = "ad-ext-dart-image-style";
-		const OVERLAY_ID = "ad-ext-dart-image-overlay";
-		const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
-		const DART_CLASS = "ad-ext-dart-image";
-		const DART_FLIGHT_CLASS = "ad-ext-dart-flight";
-		const DART_WOBBLE_CLASS = "ad-ext-dart-wobble";
-		const SVG_NS = "http://www.w3.org/2000/svg";
-		const XLINK_NS = "http://www.w3.org/1999/xlink";
-		const MARKER_OPACITY_KEY = "adExtOriginalOpacity";
-		const dartByMarker = new Map();
+	const STYLE_ID = "ad-ext-dart-image-style";
+	const OVERLAY_ID = "ad-ext-dart-image-overlay";
+	const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
+	const DART_CLASS = "ad-ext-dart-image";
+	const DART_FLIGHT_CLASS = "ad-ext-dart-flight";
+	const DART_WOBBLE_CLASS = "ad-ext-dart-wobble";
+	const SVG_NS = "http://www.w3.org/2000/svg";
+	const XLINK_NS = "http://www.w3.org/1999/xlink";
+	const MARKER_OPACITY_KEY = "adExtOriginalOpacity";
+	const dartByMarker = new Map();
 
-		function ensureStyle() {
-			if (document.getElementById(STYLE_ID)) {
-				return;
-			}
+	function ensureStyle() {
+		if (document.getElementById(STYLE_ID)) {
+			return;
+		}
 
-			const style = document.createElement("style");
-			style.id = STYLE_ID;
-			style.textContent = `
+		const style = document.createElement("style");
+		style.id = STYLE_ID;
+		style.textContent = `
 .${OVERLAY_CLASS} {
   position: fixed;
   overflow: visible;
@@ -110,153 +114,153 @@
 }
 `;
 
-			const target = document.head || document.documentElement;
-			if (target) {
-				target.appendChild(style);
-			} else {
-				document.addEventListener("DOMContentLoaded", () => {
-					const fallbackTarget = document.head || document.documentElement;
-					if (fallbackTarget && !document.getElementById(STYLE_ID)) {
-						fallbackTarget.appendChild(style);
-					}
-				}, {once: true});
-			}
-		}
-
-		function getBoardRadius(root) {
-			return [... root.querySelectorAll("circle")].reduce((max, circle) => {
-				const r = Number.parseFloat(circle.getAttribute("r"));
-				return Number.isFinite(r) && r > max ? r : max;
-			}, 0);
-		}
-
-		function getSvgScale(svg) {
-			const matrix = svg.getScreenCTM();
-			if (! matrix) {
-				return 1;
-			}
-			const scaleX = Math.hypot(matrix.a, matrix.b);
-			const scaleY = Math.hypot(matrix.c, matrix.d);
-			if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
-				return 1;
-			}
-			return Math.min(scaleX, scaleY);
-		}
-
-		function findBoard() {
-			const svgs = [...document.querySelectorAll("svg")];
-			if (! svgs.length) {
-				return null;
-			}
-
-			let best = null;
-			let bestScore = -1;
-
-			for (const svg of svgs) {
-				const numbers = new Set([... svg.querySelectorAll("text")].map((text) => Number.parseInt(text.textContent, 10)).filter((value) => value >= 1 && value <= 20));
-				const numberScore = numbers.size;
-				const radius = getBoardRadius(svg);
-				const score = numberScore * 1000 + radius;
-				if (score > bestScore) {
-					best = svg;
-					bestScore = score;
+		const target = document.head || document.documentElement;
+		if (target) {
+			target.appendChild(style);
+		} else {
+			document.addEventListener("DOMContentLoaded", () => {
+				const fallbackTarget = document.head || document.documentElement;
+				if (fallbackTarget && !document.getElementById(STYLE_ID)) {
+					fallbackTarget.appendChild(style);
 				}
-			}
+			}, {once: true});
+		}
+	}
 
-			if (! best) {
-				return null;
-			}
+	function getBoardRadius(root) {
+		return [... root.querySelectorAll("circle")].reduce((max, circle) => {
+			const r = Number.parseFloat(circle.getAttribute("r"));
+			return Number.isFinite(r) && r > max ? r : max;
+		}, 0);
+	}
 
-			const radius = getBoardRadius(best);
-			if (! radius) {
-				return null;
-			}
+	function getSvgScale(svg) {
+		const matrix = svg.getScreenCTM();
+		if (! matrix) {
+			return 1;
+		}
+		const scaleX = Math.hypot(matrix.a, matrix.b);
+		const scaleY = Math.hypot(matrix.c, matrix.d);
+		if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+			return 1;
+		}
+		return Math.min(scaleX, scaleY);
+	}
 
-			return {svg: best, radius};
+	function findBoard() {
+		const svgs = [...document.querySelectorAll("svg")];
+		if (! svgs.length) {
+			return null;
 		}
 
-		function ensureOverlaySvg() {
-			let overlay = document.getElementById(OVERLAY_ID);
-			if (overlay && overlay.tagName.toLowerCase() !== "svg") {
-				overlay.remove();
-				overlay = null;
-			}
-			if (! overlay) {
-				overlay = document.createElementNS(SVG_NS, "svg");
-				overlay.id = OVERLAY_ID;
-				overlay.classList.add(OVERLAY_CLASS);
-				overlay.setAttribute("aria-hidden", "true");
-				overlay.setAttribute("focusable", "false");
-				(document.body || document.documentElement).appendChild(overlay);
-			}
-			return overlay;
-		}
+		let best = null;
+		let bestScore = -1;
 
-		function clearOverlay(overlay) {
-			while (overlay.firstChild) {
-				overlay.removeChild(overlay.firstChild);
+		for (const svg of svgs) {
+			const numbers = new Set([... svg.querySelectorAll("text")].map((text) => Number.parseInt(text.textContent, 10)).filter((value) => value >= 1 && value <= 20));
+			const numberScore = numbers.size;
+			const radius = getBoardRadius(svg);
+			const score = numberScore * 1000 + radius;
+			if (score > bestScore) {
+				best = svg;
+				bestScore = score;
 			}
 		}
 
-		function removeOverlay() {
-			const overlay = document.getElementById(OVERLAY_ID);
-			if (overlay) {
-				overlay.remove();
-			}
-			dartByMarker.clear();
+		if (! best) {
+			return null;
 		}
 
-		function clearDarts() {
-			const overlay = document.getElementById(OVERLAY_ID);
-			if (overlay) {
-				clearOverlay(overlay);
-			}
-			dartByMarker.clear();
+		const radius = getBoardRadius(best);
+		if (! radius) {
+			return null;
 		}
 
-		function resetMarkers() {
-			document.querySelectorAll(CONFIG.markerSelector).forEach((marker) => setMarkerHidden(marker, false));
+		return {svg: best, radius};
+	}
+
+	function ensureOverlaySvg() {
+		let overlay = document.getElementById(OVERLAY_ID);
+		if (overlay && overlay.tagName.toLowerCase() !== "svg") {
+			overlay.remove();
+			overlay = null;
 		}
-
-		function getDartSize(radiusPx) {
-			const length = Math.max(1, radiusPx * CONFIG.dartLengthRatio);
-			const height = Math.max(1, length / CONFIG.dartAspectRatio);
-			return {width: length, height};
+		if (! overlay) {
+			overlay = document.createElementNS(SVG_NS, "svg");
+			overlay.id = OVERLAY_ID;
+			overlay.classList.add(OVERLAY_CLASS);
+			overlay.setAttribute("aria-hidden", "true");
+			overlay.setAttribute("focusable", "false");
+			(document.body || document.documentElement).appendChild(overlay);
 		}
+		return overlay;
+	}
 
-		function getOverlayPadding(size) {
-			const tailRatio = Math.max(0, 1 - CONFIG.tipOffsetXRatio);
-			let padding = Math.max(16, size.width * tailRatio);
-			if (CONFIG.animateDarts) {
-				const arcExtra = CONFIG.animationStyle === "arc" ? CONFIG.arcHeightRatio : 0;
-				const flightPadding = size.width * (CONFIG.flightDistanceRatio + arcExtra);
-				padding = Math.max(padding, flightPadding);
-			}
-			return padding;
+	function clearOverlay(overlay) {
+		while (overlay.firstChild) {
+			overlay.removeChild(overlay.firstChild);
 		}
+	}
 
-		function updateOverlayLayout(overlay, boardRect, paddingPx) {
-			const width = boardRect.width + paddingPx * 2;
-			const height = boardRect.height + paddingPx * 2;
-			const left = boardRect.left - paddingPx;
-			const top = boardRect.top - paddingPx;
-
-			overlay.style.left = `${left}px`;
-			overlay.style.top = `${top}px`;
-			overlay.style.width = `${width}px`;
-			overlay.style.height = `${height}px`;
-			overlay.setAttribute("width", String(width));
-			overlay.setAttribute("height", String(height));
-			overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-			return overlay.getBoundingClientRect();
+	function removeOverlay() {
+		const overlay = document.getElementById(OVERLAY_ID);
+		if (overlay) {
+			overlay.remove();
 		}
+		dartByMarker.clear();
+	}
 
-		function isBoardVisible(svg, rect) {
-			if (! svg || ! svg.isConnected) {
-				return false;
-			}
-			if (! rect || rect.width<= 1 || rect.height <= 1) {
+	function clearDarts() {
+		const overlay = document.getElementById(OVERLAY_ID);
+		if (overlay) {
+			clearOverlay(overlay);
+		}
+		dartByMarker.clear();
+	}
+
+	function resetMarkers() {
+		document.querySelectorAll(CONFIG.markerSelector).forEach((marker) => setMarkerHidden(marker, false));
+	}
+
+	function getDartSize(radiusPx) {
+		const length = Math.max(1, radiusPx * CONFIG.dartLengthRatio);
+		const height = Math.max(1, length / CONFIG.dartAspectRatio);
+		return {width: length, height};
+	}
+
+	function getOverlayPadding(size) {
+		const tailRatio = Math.max(0, 1 - CONFIG.tipOffsetXRatio);
+		let padding = Math.max(16, size.width * tailRatio);
+		if (CONFIG.animateDarts) {
+			const arcExtra = CONFIG.animationStyle === "arc" ? CONFIG.arcHeightRatio : 0;
+			const flightPadding = size.width * (CONFIG.flightDistanceRatio + arcExtra);
+			padding = Math.max(padding, flightPadding);
+		}
+		return padding;
+	}
+
+	function updateOverlayLayout(overlay, boardRect, paddingPx) {
+		const width = boardRect.width + paddingPx * 2;
+		const height = boardRect.height + paddingPx * 2;
+		const left = boardRect.left - paddingPx;
+		const top = boardRect.top - paddingPx;
+
+		overlay.style.left = `${left}px`;
+		overlay.style.top = `${top}px`;
+		overlay.style.width = `${width}px`;
+		overlay.style.height = `${height}px`;
+		overlay.setAttribute("width", String(width));
+		overlay.setAttribute("height", String(height));
+		overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+		return overlay.getBoundingClientRect();
+	}
+
+	function isBoardVisible(svg, rect) {
+		if (! svg || ! svg.isConnected) {
+			return false;
+		}
+		if (! rect || rect.width<= 1 || rect.height <= 1) {
       return false;
     }
     const style = window.getComputedStyle(svg);
@@ -306,8 +310,7 @@
       && rect.height > 0
     ) {
       return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
+        x: rect.left + rect.width / 2, y: rect.top + rect.height / 2
       };
     }
 
@@ -378,6 +381,18 @@
     return Date.now();
   }
 
+  function createMotionProfile() {
+    const arcVar = Number.parseFloat(CONFIG.variationArcRatio);
+    const durationVar = Number.parseFloat(CONFIG.variationDurationRatio);
+    const arcDelta = Number.isFinite(arcVar) ? arcVar : 0;
+    const durationDelta = Number.isFinite(durationVar) ? durationVar : 0;
+
+    const arcScale = Math.max(0, 1 + (Math.random() * 2 - 1) * arcDelta);
+    const durationScale = Math.max(0.6, 1 + (Math.random() * 2 - 1) * durationDelta);
+
+    return {arcScale, durationScale};
+  }
+
   function createDartElements(center, size, boardCenter) {
     const flightGroup = document.createElementNS(SVG_NS, "g");
     flightGroup.classList.add(DART_FLIGHT_CLASS);
@@ -389,14 +404,7 @@
     flightGroup.appendChild(rotateGroup);
 
     const entry = {
-      container: flightGroup,
-      rotateGroup,
-      image,
-      animated: false,
-      flightAnimation: null,
-      flightStartedAt: 0,
-      wobbleAnimation: null,
-      settleUntil: 0
+      container: flightGroup, rotateGroup, image, animated: false, motion: createMotionProfile(), flightAnimation: null, flightStartedAt: 0, wobbleAnimation: null, settleUntil: 0
     };
 
     updateDartElement(entry, center, size, boardCenter);
@@ -416,381 +424,388 @@
     image.setAttribute("x", String(x));
     image.setAttribute("y", String(y));
 
-    if (size.width > 0 && size.height > 0) {
-      const originX = Math.min(100, Math.max(0, (offsets.offsetX / size.width) * 100));
-      const originY = Math.min(100, Math.max(0, (offsets.offsetY / size.height) * 100));
-      image.style.transformOrigin = `${originX}% ${originY}%`;
-    } else {
-      image.style.transformOrigin = "";
-    }
+    if (size.width> 0 && size.height > 0) {
+			const originX = Math.min(100, Math.max(0, (offsets.offsetX / size.width) * 100));
+			const originY = Math.min(100, Math.max(0, (offsets.offsetY / size.height) * 100));
+			image.style.transformOrigin = `${originX}% ${originY}%`;
+		} else {
+			image.style.transformOrigin = "";
+		}
 
-    image.style.opacity = String(getDartOpacity());
+		image.style.opacity = String(getDartOpacity());
 
-    if (CONFIG.rotateToCenter && boardCenter) {
-      const dx = boardCenter.x - center.x;
-      const dy = boardCenter.y - center.y;
-      const angleToCenter = (Math.atan2(dy, dx) * 180) / Math.PI;
-      const rotation = angleToCenter - CONFIG.baseAngleDeg;
-      entry.rotateGroup.setAttribute(
-        "transform", `rotate(${rotation} ${center.x} ${center.y})`
-      );
-    } else {
-      entry.rotateGroup.removeAttribute("transform");
-    }
-  }
+		if (CONFIG.rotateToCenter && boardCenter) {
+			const dx = boardCenter.x - center.x;
+			const dy = boardCenter.y - center.y;
+			const angleToCenter = (Math.atan2(dy, dx) * 180) / Math.PI;
+			const rotation = angleToCenter - CONFIG.baseAngleDeg;
+			entry.rotateGroup.setAttribute("transform", `rotate(${rotation} ${
+				center.x
+			} ${
+				center.y
+			})`);
+		} else {
+			entry.rotateGroup.removeAttribute("transform");
+		}
+	}
 
-  function getFlightOffsets(center, boardCenter, size) {
-    let dx = center.x - boardCenter.x;
-    let dy = center.y - boardCenter.y;
-    let length = Math.hypot(dx, dy);
-    if (!Number.isFinite(length) || length < 0.001) {
-      dx = 1;
-      dy = 0;
-      length = 1;
-    }
+	function getFlightOffsets(center, boardCenter, size, arcHeightRatio) {
+		let dx = center.x - boardCenter.x;
+		let dy = center.y - boardCenter.y;
+		let length = Math.hypot(dx, dy);
+		if (!Number.isFinite(length) || length < 0.001) {
+			dx = 1;
+			dy = 0;
+			length = 1;
+		}
 
-    const dirX = dx / length;
-    const dirY = dy / length;
-    const startDistance = size.width * CONFIG.flightDistanceRatio;
-    const start = { x: dirX * startDistance, y: dirY * startDistance };
-    const mid = { x: start.x * 0.5, y: start.y * 0.5 };
+		const dirX = dx / length;
+		const dirY = dy / length;
+		const startDistance = size.width * CONFIG.flightDistanceRatio;
+		const start = {
+			x: dirX * startDistance,
+			y: dirY * startDistance
+		};
+		const mid = {
+			x: start.x * 0.5,
+			y: start.y * 0.5
+		};
 
-    if (CONFIG.animationStyle === "arc") {
-      const arcHeight = size.width * CONFIG.arcHeightRatio;
-      if (arcHeight > 0) {
-        const gravityX = 0;
-        const gravityY = 1;
-        const dot = gravityX * dirX + gravityY * dirY;
-        let perpX = gravityX - dot * dirX;
-        let perpY = gravityY - dot * dirY;
-        const perpLength = Math.hypot(perpX, perpY);
-        if (perpLength> 0.001) {
-				perpX /= perpLength;
-				perpY /= perpLength;
-				mid.x += perpX * arcHeight;
-				mid.y += perpY * arcHeight;
+		if (CONFIG.animationStyle === "arc") {
+			const arcRatio = Number.isFinite(arcHeightRatio) ? arcHeightRatio : CONFIG.arcHeightRatio;
+			const arcHeight = size.width * arcRatio;
+			if (arcHeight > 0) {
+				const gravityScale = 0.35 + 0.65 * Math.abs(dirY);
+				mid.y += arcHeight * gravityScale;
 			}
 		}
+
+		return {start, mid};
 	}
 
-	return {start, mid};
-}
-
-function animateDart (entry, center, boardCenter, size) {
-	if (entry.animated || !canAnimateDarts()) {
-		return;
-	}
-
-	entry.animated = true;
-
-	const startTime = nowMs();
-	const flightGroup = entry.container;
-	const image = entry.image;
-	const flightDuration = Math.max(0, CONFIG.flightDurationMs);
-	const wobbleDuration = Math.max(0, CONFIG.wobbleDurationMs);
-	const blurFrom = Math.max(0, CONFIG.blurPx);
-	const fadeFrom = Math.min(1, Math.max(0, CONFIG.fadeFrom));
-	const scaleFrom = Math.max(0.1, CONFIG.scaleFrom);
-	const scaleMid = Math.min(1, (scaleFrom + 1) / 2);
-	const fadeMid = Math.min(1, fadeFrom + 0.7);
-	const blurMid = blurFrom * 0.4;
-	const wobbleAngle = Math.max(0, CONFIG.wobbleAngleDeg);
-
-	const offsets = getFlightOffsets(center, boardCenter, size);
-	const flightKeyframes = [
-		{
-			transform: `translate(${
-				offsets.start.x
-			}px, ${
-				offsets.start.y
-			}px) scale(${scaleFrom})`,
-			opacity: fadeFrom,
-			filter: `blur(${blurFrom}px)`
-		}, {
-			transform: `translate(${
-				offsets.mid.x
-			}px, ${
-				offsets.mid.y
-			}px) scale(${scaleMid})`,
-			opacity: fadeMid,
-			filter: `blur(${blurMid}px)`
-		}, {
-			transform: "translate(0px, 0px) scale(1)",
-			opacity: 1,
-			filter: "blur(0px)"
-		}
-	];
-
-	const flightAnimation = flightGroup.animate(flightKeyframes, {
-		duration: flightDuration,
-		easing: CONFIG.flightEasing,
-		fill: "both"
-	});
-
-	entry.flightAnimation = flightAnimation;
-	entry.flightStartedAt = startTime;
-	entry.settleUntil = Math.max(entry.settleUntil || 0, startTime + flightDuration + 140);
-
-	const cleanupFlight = () => {
-		if (entry.flightAnimation !== flightAnimation) {
+	function animateDart(entry, center, boardCenter, size) {
+		if (entry.animated || !canAnimateDarts()) {
 			return;
 		}
-		entry.flightAnimation = null;
-		entry.flightStartedAt = 0;
-		flightGroup.style.transform = "";
-		flightGroup.style.opacity = "";
-		flightGroup.style.filter = "";
-	};
-	flightAnimation.onfinish = cleanupFlight;
-	flightAnimation.oncancel = cleanupFlight;
 
-	if (wobbleDuration > 0 && wobbleAngle > 0) {
-		const wobbleKeyframes = [
+		entry.animated = true;
+
+		const motion = entry.motion || createMotionProfile();
+		entry.motion = motion;
+		const arcHeightRatio = Math.max(0, CONFIG.arcHeightRatio * motion.arcScale);
+
+		const startTime = nowMs();
+		const flightGroup = entry.container;
+		const image = entry.image;
+		const flightDuration = Math.max(0, CONFIG.flightDurationMs * motion.durationScale);
+		const wobbleDuration = Math.max(0, CONFIG.wobbleDurationMs);
+		const blurFrom = Math.max(0, CONFIG.blurPx);
+		const fadeFrom = Math.min(1, Math.max(0, CONFIG.fadeFrom));
+		const scaleFrom = Math.max(0.1, CONFIG.scaleFrom);
+		const scaleMid = Math.min(1, (scaleFrom + 1) / 2);
+		const fadeMid = Math.min(1, fadeFrom + 0.7);
+		const blurMid = blurFrom * 0.4;
+		const wobbleAngle = Math.max(0, CONFIG.wobbleAngleDeg);
+
+		const offsets = getFlightOffsets(center, boardCenter, size, arcHeightRatio);
+		const flightKeyframes = [
 			{
-				transform: "rotate(0deg)"
-			},
-			{
-				transform: `rotate(${ - wobbleAngle
-				}deg)`
-			},
-			{
-				transform: `rotate(${
-					wobbleAngle * 0.6
-				}deg)`
-			},
-			{
-				transform: `rotate(${ - wobbleAngle * 0.35
-				}deg)`
+				transform: `translate(${
+					offsets.start.x
+				}px, ${
+					offsets.start.y
+				}px) scale(${scaleFrom})`,
+				opacity: fadeFrom,
+				filter: `blur(${blurFrom}px)`
 			}, {
-				transform: "rotate(0deg)"
+				transform: `translate(${
+					offsets.mid.x
+				}px, ${
+					offsets.mid.y
+				}px) scale(${scaleMid})`,
+				opacity: fadeMid,
+				filter: `blur(${blurMid}px)`
+			}, {
+				transform: "translate(0px, 0px) scale(1)",
+				opacity: 1,
+				filter: "blur(0px)"
 			}
 		];
 
-		const wobbleAnimation = image.animate(wobbleKeyframes, {
-			duration: wobbleDuration,
-			delay: flightDuration,
-			easing: CONFIG.wobbleEasing,
+		const flightAnimation = flightGroup.animate(flightKeyframes, {
+			duration: flightDuration,
+			easing: CONFIG.flightEasing,
 			fill: "both"
 		});
 
-		entry.wobbleAnimation = wobbleAnimation;
-		const cleanupWobble = () => {
-			if (entry.wobbleAnimation !== wobbleAnimation) {
+		entry.flightAnimation = flightAnimation;
+		entry.flightStartedAt = startTime;
+		entry.settleUntil = Math.max(entry.settleUntil || 0, startTime + flightDuration + 140);
+
+		const cleanupFlight = () => {
+			if (entry.flightAnimation !== flightAnimation) {
 				return;
 			}
-			entry.wobbleAnimation = null;
-			image.style.transform = "";
+			entry.flightAnimation = null;
+			entry.flightStartedAt = 0;
+			flightGroup.style.transform = "";
+			flightGroup.style.opacity = "";
+			flightGroup.style.filter = "";
 		};
-		wobbleAnimation.onfinish = cleanupWobble;
-		wobbleAnimation.oncancel = cleanupWobble;
-	}
-}
+		flightAnimation.onfinish = cleanupFlight;
+		flightAnimation.oncancel = cleanupFlight;
 
-function updateDarts () {
-	const board = findBoard();
-	if (! board) {
-		removeOverlay();
-		resetMarkers();
-		return;
-	}
+		if (wobbleDuration > 0 && wobbleAngle > 0) {
+			const wobbleKeyframes = [
+				{
+					transform: "rotate(0deg)"
+				},
+				{
+					transform: `rotate(${ - wobbleAngle
+					}deg)`
+				},
+				{
+					transform: `rotate(${
+						wobbleAngle * 0.6
+					}deg)`
+				},
+				{
+					transform: `rotate(${ - wobbleAngle * 0.35
+					}deg)`
+				}, {
+					transform: "rotate(0deg)"
+				}
+			];
 
-	const boardRect = board.svg.getBoundingClientRect();
-	if (!isBoardVisible(board.svg, boardRect)) {
-		removeOverlay();
-		resetMarkers();
-		return;
-	}
+			const wobbleAnimation = image.animate(wobbleKeyframes, {
+				duration: wobbleDuration,
+				delay: flightDuration,
+				easing: CONFIG.wobbleEasing,
+				fill: "both"
+			});
 
-	const markers = Array.from(board.svg.querySelectorAll(CONFIG.markerSelector));
-	if (! markers.length) {
-		clearDarts();
-		return;
-	}
-
-	const shouldHideMarkers = CONFIG.hideMarkers && Boolean(CONFIG.dartImageUrl);
-
-	if (! shouldHideMarkers) {
-		markers.forEach((marker) => setMarkerHidden(marker, false));
-	}
-
-	if (!CONFIG.dartImageUrl) {
-		clearDarts();
-		return;
-	}
-
-	const scale = getSvgScale(board.svg);
-	const radiusPx = board.radius * scale;
-	const size = getDartSize(radiusPx);
-	const paddingPx = getOverlayPadding(size);
-	const overlay = ensureOverlaySvg();
-	const overlayRect = updateOverlayLayout(overlay, boardRect, paddingPx);
-
-	const boardCenter = {
-		x: boardRect.width / 2 + paddingPx,
-		y: boardRect.height / 2 + paddingPx
-	};
-
-	const markerSet = new Set(markers);
-	let removedAny = false;
-	for (const [marker, entry] of dartByMarker.entries()) {
-		if (! markerSet.has(marker) || !marker.isConnected) {
-			if (entry.container && entry.container.parentNode) {
-				entry.container.remove();
-			}
-			dartByMarker.delete(marker);
-			setMarkerHidden(marker, false);
-			removedAny = true;
+			entry.wobbleAnimation = wobbleAnimation;
+			const cleanupWobble = () => {
+				if (entry.wobbleAnimation !== wobbleAnimation) {
+					return;
+				}
+				entry.wobbleAnimation = null;
+				image.style.transform = "";
+			};
+			wobbleAnimation.onfinish = cleanupWobble;
+			wobbleAnimation.oncancel = cleanupWobble;
 		}
 	}
 
-	const shouldAnimate = canAnimateDarts();
-	const now = nowMs();
-	const settleDurationMs = Math.max(220, CONFIG.flightDurationMs + 160);
-	const flightTimeoutMs = Math.max(240, CONFIG.flightDurationMs + 180);
-	const retryDelayMs = Math.max(60, Math.min(140, Math.round(CONFIG.flightDurationMs / 3)));
-
-	let createdAny = false;
-	let needsRetry = false;
-	const markerEntries = [];
-
-	markers.forEach((marker, index) => {
-		const screenPoint = getMarkerScreenPoint(marker);
-		if (! screenPoint) {
-			needsRetry = true;
+	function updateDarts() {
+		const board = findBoard();
+		if (! board) {
+			removeOverlay();
+			resetMarkers();
 			return;
 		}
 
-		const center = {
-			x: screenPoint.x - overlayRect.left,
-			y: screenPoint.y - overlayRect.top
+		const boardRect = board.svg.getBoundingClientRect();
+		if (! isBoardVisible(board.svg, boardRect)) {
+			removeOverlay();
+			resetMarkers();
+			return;
+		}
+
+		const markers = Array.from(board.svg.querySelectorAll(CONFIG.markerSelector));
+		if (! markers.length) {
+			clearDarts();
+			return;
+		}
+
+		const shouldHideMarkers = CONFIG.hideMarkers && Boolean(CONFIG.dartImageUrl);
+
+		if (! shouldHideMarkers) {
+			markers.forEach((marker) => setMarkerHidden(marker, false));
+		}
+
+		if (! CONFIG.dartImageUrl) {
+			clearDarts();
+			return;
+		}
+
+		const scale = getSvgScale(board.svg);
+		const radiusPx = board.radius * scale;
+		const size = getDartSize(radiusPx);
+		const paddingPx = getOverlayPadding(size);
+		const overlay = ensureOverlaySvg();
+		const overlayRect = updateOverlayLayout(overlay, boardRect, paddingPx);
+
+		const boardCenter = {
+			x: boardRect.width / 2 + paddingPx,
+			y: boardRect.height / 2 + paddingPx
 		};
 
-		let entry = dartByMarker.get(marker);
-		if (! entry) {
-			entry = createDartElements(center, size, boardCenter);
-			entry.settleUntil = now + settleDurationMs;
-			overlay.appendChild(entry.container);
-			dartByMarker.set(marker, entry);
-			createdAny = true;
-			if (shouldAnimate) {
-				animateDart(entry, center, boardCenter, size);
-			}
-		} else {
-			if (entry.flightAnimation && entry.flightStartedAt && now - entry.flightStartedAt > flightTimeoutMs) {
-				try {
-					entry.flightAnimation.finish();
-				} catch (error) {
-					entry.flightAnimation.cancel();
+		const markerSet = new Set(markers);
+		let removedAny = false;
+		for (const [marker, entry] of dartByMarker.entries()) {
+			if (! markerSet.has(marker) || !marker.isConnected) {
+				if (entry.container && entry.container.parentNode) {
+					entry.container.remove();
 				}
+				dartByMarker.delete(marker);
+				setMarkerHidden(marker, false);
+				removedAny = true;
 			}
-			updateDartElement(entry, center, size, boardCenter);
 		}
 
-		if (shouldHideMarkers) {
-			setMarkerHidden(marker, true);
-		}
+		const shouldAnimate = canAnimateDarts();
+		const now = nowMs();
+		const durationVar = Number.parseFloat(CONFIG.variationDurationRatio);
+		const durationScaleMax = 1 + (Number.isFinite(durationVar) ? Math.abs(durationVar) : 0);
+		const flightDurationBaseMs = CONFIG.flightDurationMs * durationScaleMax;
+		const settleDurationMs = Math.max(220, flightDurationBaseMs + 160);
+		const flightTimeoutMs = Math.max(240, flightDurationBaseMs + 180);
+		const retryDelayMs = Math.max(60, Math.min(140, Math.round(flightDurationBaseMs / 3)));
 
-		if (entry.settleUntil && now < entry.settleUntil) {
-			needsRetry = true;
-		}
+		let createdAny = false;
+		let needsRetry = false;
+		const markerEntries = [];
 
-		markerEntries.push({entry, center, index});
-	});
-
-	if (createdAny || removedAny) {
-		markerEntries.sort((a, b) => {
-			const deltaY = a.center.y - b.center.y;
-			if (Math.abs(deltaY) > 0.001) {
-				return deltaY;
+		markers.forEach((marker, index) => {
+			const screenPoint = getMarkerScreenPoint(marker);
+			if (! screenPoint) {
+				needsRetry = true;
+				return;
 			}
-			return a.index - b.index;
+
+			const center = {
+				x: screenPoint.x - overlayRect.left,
+				y: screenPoint.y - overlayRect.top
+			};
+
+			let entry = dartByMarker.get(marker);
+			if (! entry) {
+				entry = createDartElements(center, size, boardCenter);
+				entry.settleUntil = now + settleDurationMs;
+				overlay.appendChild(entry.container);
+				dartByMarker.set(marker, entry);
+				createdAny = true;
+				if (shouldAnimate) {
+					animateDart(entry, center, boardCenter, size);
+				}
+			} else {
+				if (entry.flightAnimation && entry.flightStartedAt && now - entry.flightStartedAt > flightTimeoutMs) {
+					try {
+						entry.flightAnimation.finish();
+					} catch (error) {
+						entry.flightAnimation.cancel();
+					}
+				}
+				updateDartElement(entry, center, size, boardCenter);
+			}
+
+			if (shouldHideMarkers) {
+				setMarkerHidden(marker, true);
+			}
+
+			if (entry.settleUntil && now < entry.settleUntil) {
+				needsRetry = true;
+			}
+
+			markerEntries.push({entry, center, index});
 		});
 
-		for (const item of markerEntries) {
-			if (item.entry && item.entry.container) {
-				overlay.appendChild(item.entry.container);
+		if (createdAny || removedAny) {
+			markerEntries.sort((a, b) => {
+				const deltaY = a.center.y - b.center.y;
+				if (Math.abs(deltaY) > 0.001) {
+					return deltaY;
+				}
+				return a.index - b.index;
+			});
+
+			for (const item of markerEntries) {
+				if (item.entry && item.entry.container) {
+					overlay.appendChild(item.entry.container);
+				}
 			}
 		}
-	}
 
-	if (needsRetry) {
-		scheduleRetry(retryDelayMs);
-	}
-}
-
-let scheduled = false;
-function scheduleUpdate () {
-	if (scheduled) {
-		return;
-	}
-	scheduled = true;
-	requestAnimationFrame(() => {
-		scheduled = false;
-		updateDarts();
-	})
-
-
-}
-
-let retryTimer = 0;
-function scheduleRetry (delayMs) {
-	if (retryTimer) {
-		return;
-	}
-	retryTimer = window.setTimeout(() => {
-		retryTimer = 0;
-		scheduleUpdate();
-	}, Math.max(0, delayMs));
-}
-
-let lastUrl = location.href;
-function handleLocationChange () {
-	if (location.href === lastUrl) {
-		return;
-	}
-	lastUrl = location.href;
-	removeOverlay();
-	resetMarkers();
-	scheduleUpdate();
-}
-
-function watchLocationChanges () {
-	const originalPushState = history.pushState;
-	const originalReplaceState = history.replaceState;
-
-	history.pushState = function (...args) {
-		originalPushState.apply(this, args);
-		handleLocationChange();
-	};
-	history.replaceState = function (...args) {
-		originalReplaceState.apply(this, args);
-		handleLocationChange();
-	};
-
-	window.addEventListener("popstate", handleLocationChange);
-	window.addEventListener("hashchange", handleLocationChange);
-	setInterval(handleLocationChange, 500);
-}
-
-ensureStyle();
-updateDarts();
-
-const observer = new MutationObserver((mutations) => {
-	for (const mutation of mutations) {
-		if (mutation.type === "childList" || mutation.type === "characterData" || mutation.type === "attributes") {
-			scheduleUpdate();
-			break;
+		if (needsRetry) {
+			scheduleRetry(retryDelayMs);
 		}
 	}
-});
 
-observer.observe(document.documentElement, {
-	childList: true,
-	subtree: true,
-	characterData: true,
-	attributes: true
-});
+	let scheduled = false;
+	function scheduleUpdate() {
+		if (scheduled) {
+			return;
+		}
+		scheduled = true;
+		requestAnimationFrame(() => {
+			scheduled = false;
+			updateDarts();
+		})
 
-window.addEventListener("resize", scheduleUpdate);
-window.addEventListener("scroll", scheduleUpdate, true);
-watchLocationChanges();})();
+
+	}
+
+	let retryTimer = 0;
+	function scheduleRetry(delayMs) {
+		if (retryTimer) {
+			return;
+		}
+		retryTimer = window.setTimeout(() => {
+			retryTimer = 0;
+			scheduleUpdate();
+		}, Math.max(0, delayMs));
+	}
+
+	let lastUrl = location.href;
+	function handleLocationChange() {
+		if (location.href === lastUrl) {
+			return;
+		}
+		lastUrl = location.href;
+		removeOverlay();
+		resetMarkers();
+		scheduleUpdate();
+	}
+
+	function watchLocationChanges() {
+		const originalPushState = history.pushState;
+		const originalReplaceState = history.replaceState;
+
+		history.pushState = function (...args) {
+			originalPushState.apply(this, args);
+			handleLocationChange();
+		};
+		history.replaceState = function (...args) {
+			originalReplaceState.apply(this, args);
+			handleLocationChange();
+		};
+
+		window.addEventListener("popstate", handleLocationChange);
+		window.addEventListener("hashchange", handleLocationChange);
+		setInterval(handleLocationChange, 500);
+	}
+
+	ensureStyle();
+	updateDarts();
+
+	const observer = new MutationObserver((mutations) => {
+		for (const mutation of mutations) {
+			if (mutation.type === "childList" || mutation.type === "characterData" || mutation.type === "attributes") {
+				scheduleUpdate();
+				break;
+			}
+		}
+	});
+
+	observer.observe(document.documentElement, {
+		childList: true,
+		subtree: true,
+		characterData: true,
+		attributes: true
+	});
+
+	window.addEventListener("resize", scheduleUpdate);
+	window.addEventListener("scroll", scheduleUpdate, true);
+	watchLocationChanges();
+})();
