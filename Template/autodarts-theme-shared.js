@@ -6,9 +6,9 @@
   // The theme scripts load this file via @require; you do not install it
   // separately in Tampermonkey. Only update the @require URL if you fork.
 
-  // Gemeinsamer Helfer für die Theme-Userscripts in Template/.
-  // Er bündelt gängige CSS und Tools, damit jedes Theme vom Umfang klein bleiben kann und das Design durchgängig.
-  // Die Theme-Skripte laden diese Datei über @require; Sie müssen sie nicht separat in Tampermonkey installiert werden.
+  // Gemeinsamer Helfer fuer die Theme-Userscripts in Template/.
+  // Er buendelt gaengige CSS und Tools, damit jedes Theme vom Umfang klein bleiben kann und das Design durchgaengig bleibt.
+  // Die Theme-Skripte laden diese Datei ueber @require; sie muessen sie nicht separat in Tampermonkey installiert werden.
   // Aktualisieren Sie die @require-URL nur, wenn Sie einen Fork erstellen.
 
   // Gemeinsame Farbwerte fuer die Themes (X01, Shanghai, Bermuda, etc.).
@@ -292,6 +292,216 @@ div.css-y3hfdd > .css-1igwmid{
     };
   }
 
+  function initPreviewPlacement(options = {}) {
+    const {
+      variantName,
+      matchMode = "equals",
+      previewHeightPx = 128,
+      previewGapPx = 8,
+      previewSpaceClass = "ad-ext-turn-preview-space",
+    } = options;
+
+    if (!variantName) {
+      return;
+    }
+
+    let scheduled = false;
+    let observedShadowRoot = null;
+    let shadowObserver = null;
+    const cardOverrides = new WeakMap();
+    let lastCards = [];
+    const normalizedVariant = variantName.trim().toLowerCase();
+
+    function scheduleUpdate() {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        updatePlacement();
+      });
+    }
+
+    function isVariantActive() {
+      const current = getVariantName();
+      return matchMode === "includes"
+        ? current.includes(normalizedVariant)
+        : current === normalizedVariant;
+    }
+
+    function observeShadowRoot(root) {
+      if (!root || root === observedShadowRoot) return;
+      if (shadowObserver) shadowObserver.disconnect();
+      observedShadowRoot = root;
+      shadowObserver = new MutationObserver(scheduleUpdate);
+      shadowObserver.observe(root, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true,
+      });
+    }
+
+    function rememberCardStyle(card) {
+      if (cardOverrides.has(card)) return;
+      cardOverrides.set(card, {
+        position: card.style.position,
+        left: card.style.left,
+        top: card.style.top,
+        width: card.style.width,
+        height: card.style.height,
+        margin: card.style.margin,
+        pointerEvents: card.style.pointerEvents,
+        zIndex: card.style.zIndex,
+      });
+    }
+
+    function restoreCardStyle(card) {
+      const original = cardOverrides.get(card);
+      if (!original) return;
+      card.style.position = original.position;
+      card.style.left = original.left;
+      card.style.top = original.top;
+      card.style.width = original.width;
+      card.style.height = original.height;
+      card.style.margin = original.margin;
+      card.style.pointerEvents = original.pointerEvents;
+      card.style.zIndex = original.zIndex;
+    }
+
+    function resetPlacement() {
+      for (const card of lastCards) {
+        restoreCardStyle(card);
+      }
+      lastCards = [];
+      setPreviewSpace(false);
+    }
+
+    function setPreviewSpace(enabled) {
+      const turnEl = document.getElementById("ad-ext-turn");
+      if (!turnEl) return;
+      turnEl.classList.toggle(previewSpaceClass, enabled);
+    }
+
+    function isEffectivelyHidden(node) {
+      let current = node;
+      while (current) {
+        if (current.nodeType === 11) {
+          current = current.host || null;
+          continue;
+        }
+        if (current.nodeType !== 1) {
+          current = current.parentNode || null;
+          continue;
+        }
+        const style = window.getComputedStyle(current);
+        if (style.display === "none" || style.visibility === "hidden") {
+          return true;
+        }
+        const opacity = parseFloat(style.opacity);
+        if (!Number.isNaN(opacity) && opacity === 0) {
+          return true;
+        }
+        current = current.parentNode || null;
+      }
+      return false;
+    }
+
+    function getPreviewCards(root) {
+      const images = Array.from(
+        root.querySelectorAll("img[src*=\"/images/board.png\"]")
+      );
+      const cards = [];
+      for (const img of images) {
+        const wrapper = img.closest("div");
+        const card = wrapper?.parentElement;
+        if (!wrapper || !card) continue;
+        if (window.getComputedStyle(wrapper).position !== "relative") continue;
+        if (window.getComputedStyle(card).overflow !== "hidden") continue;
+        if (!cards.includes(card)) {
+          cards.push(card);
+        }
+      }
+      return cards;
+    }
+
+    function positionCard(card, rect) {
+      rememberCardStyle(card);
+      card.style.position = "fixed";
+      card.style.left = `${rect.left}px`;
+      card.style.top = `${rect.bottom + previewGapPx}px`;
+      card.style.width = `${rect.width}px`;
+      card.style.height = `${previewHeightPx}px`;
+      card.style.margin = "0";
+      card.style.pointerEvents = "none";
+      card.style.zIndex = "200";
+    }
+
+    function updatePlacement() {
+      if (!isVariantActive()) {
+        resetPlacement();
+        return;
+      }
+
+      const zoomEl = document.querySelector("autodarts-tools-zoom");
+      if (!zoomEl || isEffectivelyHidden(zoomEl)) {
+        resetPlacement();
+        return;
+      }
+      const shadowRoot = zoomEl.shadowRoot;
+      if (!shadowRoot) {
+        resetPlacement();
+        return;
+      }
+      observeShadowRoot(shadowRoot);
+
+      const throwEls = Array.from(
+        document.querySelectorAll("#ad-ext-turn .ad-ext-turn-throw")
+      );
+      if (!throwEls.length) {
+        resetPlacement();
+        return;
+      }
+
+      const cards = getPreviewCards(shadowRoot);
+      if (!cards.length) {
+        resetPlacement();
+        return;
+      }
+      const hasVisibleCard = cards.some((card) => !isEffectivelyHidden(card));
+      if (!hasVisibleCard) {
+        resetPlacement();
+        return;
+      }
+
+      setPreviewSpace(true);
+      lastCards = cards;
+      const count = Math.min(cards.length, throwEls.length);
+      for (let i = 0; i < count; i += 1) {
+        positionCard(cards[i], throwEls[i].getBoundingClientRect());
+      }
+      for (let i = count; i < cards.length; i += 1) {
+        positionCard(cards[i], {
+          left: -9999,
+          top: -9999,
+          bottom: -9999,
+          width: 0,
+        });
+      }
+    }
+
+    const documentObserver = new MutationObserver(scheduleUpdate);
+    documentObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+    });
+
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+
+    scheduleUpdate();
+  }
   function attachTheme(options = {}) {
     const { styleId, variantName, buildCss, matchMode = "equals" } = options;
     if (!styleId || !variantName || typeof buildCss !== "function") {
@@ -302,18 +512,32 @@ div.css-y3hfdd > .css-1igwmid{
     let scheduled = false;
     const normalizedVariant = variantName.trim().toLowerCase();
 
+    function resolveStyleContainer() {
+      return document.head || document.documentElement || null;
+    }
+
     function ensureStyle(css) {
+      const container = resolveStyleContainer();
       if (!styleTag) {
-        styleTag =
-          document.getElementById(styleId) || document.createElement("style");
+        styleTag = document.getElementById(styleId) || null;
+      }
+      if (!styleTag) {
+        if (!container) {
+          return;
+        }
+        styleTag = document.createElement("style");
         styleTag.id = styleId;
+        container.appendChild(styleTag);
+      } else if (!styleTag.isConnected && container) {
+        container.appendChild(styleTag);
+      }
+      if (document.head && styleTag.parentElement !== document.head) {
         document.head.appendChild(styleTag);
       }
-      if (styleTag.textContent !== css) {
+      if (styleTag && styleTag.textContent !== css) {
         styleTag.textContent = css;
       }
     }
-
     function removeStyle() {
       if (styleTag) {
         styleTag.remove();
@@ -395,6 +619,7 @@ div.css-y3hfdd > .css-1igwmid{
     getVariantName,
     joinCss,
     createCssBuilder,
+    initPreviewPlacement,
     attachTheme,
   };
 })(typeof window !== "undefined" ? window : globalThis);
