@@ -435,7 +435,7 @@ function updateRockets(step) {
 		rocket.y += rocket.vy * step;
 		spawnRocketTrail(rocket);
 
-		if (rocket.y<= rocket.targetY || rocket.vy> = 0) {
+    if (rocket.y <= rocket.targetY || rocket.vy >= 0) {
 			spawnEffectRing(rocket);
 			rockets.splice(i, 1);
 		}
