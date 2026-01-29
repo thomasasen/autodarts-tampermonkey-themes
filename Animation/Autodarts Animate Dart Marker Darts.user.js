@@ -1,6 +1,7 @@
-ï»¿// ==UserScript==// @name         Autodarts Animate Dart Marker Darts
+// ==UserScript==
+// @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.6.1
+// @version      1.7
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -25,10 +26,10 @@
 	const ANIMATE_DARTS = true;
 
 	/**
-   * Konfiguration fÃ¼r die Dart-Bildplatzierung (ANIMATE_DARTS oben umschalten).
+   * Konfiguration für die Dart-Bildplatzierung (ANIMATE_DARTS oben umschalten).
    * - dartImageUrl: PNG-URL oder Data-URI.
-   * - dartLengthRatio: LÃ¤nge relativ zum Board-Radius.
-   * - dartAspectRatio: Breite/HÃ¶he des PNG (zur Beibehaltung des SeitenverhÃ¤ltnisses).
+   * - dartLengthRatio: Länge relativ zum Board-Radius.
+   * - dartAspectRatio: Breite/Höhe des PNG (zur Beibehaltung des Seitenverhältnisses).
    * - tipOffsetXRatio/YRatio: Position der Spitze im Bild als Anteil (0..1).
    * - rotateToCenter: Darts drehen, so dass die Spitze zum Board-Zentrum zeigt.
    * - baseAngleDeg: Winkel der PNG-Spitzenrichtung (links=180, rechts=0).
@@ -37,23 +38,23 @@
    * - animateDarts: Flug- und Einschlagsanimation aktivieren.
    * - animationStyle: "arc" oder "linear".
    * - flightDurationMs: Dauer der Fluganimation.
-   * - flightDistanceRatio: Startabstand des Darts relativ zur Dart-LÃ¤nge.
-   * - arcHeightRatio: BogenhÃ¶he relativ zur Dart-LÃ¤nge.
-   * - variationArcRatio: Zufallsvariation der BogenhÃ¶he (0.1 = +/-10%).
+   * - flightDistanceRatio: Startabstand des Darts relativ zur Dart-Länge.
+   * - arcHeightRatio: Bogenhöhe relativ zur Dart-Länge.
+   * - variationArcRatio: Zufallsvariation der Bogenhöhe (0.1 = +/-10%).
    * - variationDurationRatio: Zufallsvariation der Flugdauer (0.1 = +/-10%).
    * - enableShadow: Weichen Schlagschatten unter dem Dart anzeigen.
-   * - shadowOpacity: Grund-OpazitÃ¤t des Schattens (0..1).
-   * - shadowBlurPx: Basis-Blur fÃ¼r den Schatten in Pixeln.
-   * - shadowOffsetXRatio/YRatio: Schatten-Offset relativ zur Dart-LÃ¤nge.
-   * - shadowImpactOpacityBoost: ZusÃ¤tzliche OpazitÃ¤t beim Einschlag.
+   * - shadowOpacity: Grund-Opazität des Schattens (0..1).
+   * - shadowBlurPx: Basis-Blur für den Schatten in Pixeln.
+   * - shadowOffsetXRatio/YRatio: Schatten-Offset relativ zur Dart-Länge.
+   * - shadowImpactOpacityBoost: Zusätzliche Opazität beim Einschlag.
    * - shadowImpactDurationMs: Dauer des Schatten-Impulses beim Einschlag.
-   * - flightEasing: Easing fÃ¼r die Fluganimation.
+   * - flightEasing: Easing für die Fluganimation.
    * - wobbleDurationMs: Dauer des Einschlag-Wackelns.
    * - wobbleAngleDeg: Maximale Wackelrotation in Grad.
-   * - wobbleEasing: Easing fÃ¼r das Wackeln.
-   * - blurPx: StÃ¤rke des Bewegungsblurs wÃ¤hrend des Flugs.
-   * - scaleFrom: Start-Skalierung wÃ¤hrend des Flugs.
-   * - fadeFrom: Start-OpazitÃ¤t wÃ¤hrend des Flugs.
+   * - wobbleEasing: Easing für das Wackeln.
+   * - blurPx: Stärke des Bewegungsblurs während des Flugs.
+   * - scaleFrom: Start-Skalierung während des Flugs.
+   * - fadeFrom: Start-Opazität während des Flugs.
    */
 	const CONFIG = {
 		dartImageUrl: `${DART_BASE_URL}${DART_DESIGN}`,
@@ -86,7 +87,7 @@
 		blurPx: 2,
 		scaleFrom: 0.94,
 		fadeFrom: 0.2,
-		markerSelector: 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]'
+		markerSelector: 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"], ' + 'circle[filter*="shadow"], circle[style*="filter"], ' + 'circle[class*="dart"], circle[class*="marker"], circle[class*="hit"], ' + 'circle[data-hit], circle[data-marker]'
 	};
 
 	const STYLE_ID = "ad-ext-dart-image-style";
@@ -103,9 +104,9 @@
 	const dartByMarker = new Map();
 
 	// Funktion: ensureStyle
-	// Zweck: FÃ¼gt die benÃ¶tigten CSS-Regeln fÃ¼r Overlay/Darts einmalig ein.
+	// Zweck: Fügt die benötigten CSS-Regeln für Overlay/Darts einmalig ein.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: STYLE_ID, OVERLAY_CLASS, DART_* Klassen, document.
 	// Wird genutzt von: Initialisierung (ensureStyle()).
 	function ensureStyle() {
@@ -155,9 +156,9 @@
 	}
 
 	// Funktion: getBoardRadius
-	// Zweck: GrÃ¶ÃŸten Kreisradius im SVG bestimmen.
+	// Zweck: Größten Kreisradius im SVG bestimmen.
 	// Parameter: root (SVG-Element).
-	// RÃ¼ckgabe: number (max r, 0 wenn keiner).
+	// Rückgabe: number (max r, 0 wenn keiner).
 	// Nutzt: root.querySelectorAll('circle').
 	// Wird genutzt von: findBoard().
 	function getBoardRadius(root) {
@@ -170,7 +171,7 @@
 	// Funktion: getSvgScale
 	// Zweck: Bildschirm-Skalierung des SVG aus der CTM ableiten.
 	// Parameter: svg (SVG-Element).
-	// RÃ¼ckgabe: number (Skalierungsfaktor, Fallback 1).
+	// Rückgabe: number (Skalierungsfaktor, Fallback 1).
 	// Nutzt: svg.getScreenCTM().
 	// Wird genutzt von: updateDarts().
 	function getSvgScale(svg) {
@@ -189,7 +190,7 @@
 	// Funktion: findBoard
 	// Zweck: Passendes Board-SVG anhand Zahlen und Radius ermitteln.
 	// Parameter: keine.
-	// RÃ¼ckgabe: {svg, radius} oder null.
+	// Rückgabe: {svg, radius} oder null.
 	// Nutzt: getBoardRadius(), DOM-Queries.
 	// Wird genutzt von: updateDarts().
 	function findBoard() {
@@ -227,7 +228,7 @@
 	// Funktion: ensureOverlaySvg
 	// Zweck: Overlay-SVG erstellen oder wiederverwenden.
 	// Parameter: keine.
-	// RÃ¼ckgabe: SVG-Element (Overlay).
+	// Rückgabe: SVG-Element (Overlay).
 	// Nutzt: OVERLAY_ID, SVG_NS, document.body.
 	// Wird genutzt von: updateDarts(), clearDarts(), removeOverlay().
 	function ensureOverlaySvg() {
@@ -248,9 +249,9 @@
 	}
 
 	// Funktion: ensureShadowFilter
-	// Zweck: Filter fÃ¼r schwarzen/grauen Schatten definieren/aktualisieren.
+	// Zweck: Filter für schwarzen/grauen Schatten definieren/aktualisieren.
 	// Parameter: overlay (SVG-Element).
-	// RÃ¼ckgabe: filter-Element oder null.
+	// Rückgabe: filter-Element oder null.
 	// Nutzt: CONFIG.enableShadow, SHADOW_FILTER_ID, SVG_NS.
 	// Wird genutzt von: updateDarts().
 	function ensureShadowFilter(overlay) {
@@ -300,9 +301,9 @@
 	}
 
 	// Funktion: clearOverlay
-	// Zweck: Overlay-Inhalt vollstÃ¤ndig entfernen.
+	// Zweck: Overlay-Inhalt vollständig entfernen.
 	// Parameter: overlay (SVG-Element).
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: removeChild().
 	// Wird genutzt von: clearDarts().
 	function clearOverlay(overlay) {
@@ -314,7 +315,7 @@
 	// Funktion: removeOverlay
 	// Zweck: Overlay entfernen und internen Zustand leeren.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: OVERLAY_ID, dartByMarker.clear().
 	// Wird genutzt von: updateDarts(), handleLocationChange().
 	function removeOverlay() {
@@ -328,7 +329,7 @@
 	// Funktion: clearDarts
 	// Zweck: Alle Darts aus dem Overlay entfernen.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: clearOverlay(), dartByMarker.clear().
 	// Wird genutzt von: updateDarts().
 	function clearDarts() {
@@ -342,17 +343,67 @@
 	// Funktion: resetMarkers
 	// Zweck: Original-Marker wieder sichtbar machen.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: CONFIG.markerSelector, setMarkerHidden().
 	// Wird genutzt von: updateDarts(), handleLocationChange().
 	function resetMarkers() {
-		document.querySelectorAll(CONFIG.markerSelector).forEach((marker) => setMarkerHidden(marker, false));
+		collectMarkersInDocument().forEach((marker) => setMarkerHidden(marker, false));
+	}
+
+	// Funktion: isMarkerCandidate
+	// Zweck: Marker-Kandidaten anhand von Attributen erkennen.
+	// Parameter: circle (SVGCircleElement).
+	// Rueckgabe: boolean.
+	// Nutzt: class/style/filter/data-* Attribute.
+	// Wird genutzt von: collectMarkers().
+	function isMarkerCandidate(circle) {
+		if (! circle || circle.tagName.toLowerCase() !== "circle") {
+			return false;
+		}
+		if (circle.hasAttribute("data-hit") || circle.hasAttribute("data-marker")) {
+			return true;
+		}
+		const className = circle.getAttribute("class") || "";
+		const style = circle.getAttribute("style") || "";
+		const filter = circle.getAttribute("filter") || "";
+		return /shadow|marker|hit|dart|drop-shadow|filter/i.test(`${className} ${style} ${filter}`);
+	}
+
+	// Funktion: collectMarkers
+	// Zweck: Marker im Board-SVG finden (Primaer-Selektor + Fallback).
+	// Parameter: svg (SVGElement).
+	// Rueckgabe: Array<SVGCircleElement>.
+	// Nutzt: CONFIG.markerSelector, isMarkerCandidate().
+	// Wird genutzt von: updateDarts(), collectMarkersInDocument().
+	function collectMarkers(svg) {
+		if (! svg) {
+			return [];
+		}
+		const primary = Array.from(svg.querySelectorAll(CONFIG.markerSelector));
+		if (primary.length) {
+			return primary;
+		}
+		return Array.from(svg.querySelectorAll("circle")).filter(isMarkerCandidate);
+	}
+
+	// Funktion: collectMarkersInDocument
+	// Zweck: Marker ueber alle SVGs sammeln.
+	// Parameter: keine.
+	// Rueckgabe: Array<SVGCircleElement>.
+	// Nutzt: collectMarkers().
+	// Wird genutzt von: resetMarkers().
+	function collectMarkersInDocument() {
+		const markers = new Set();
+		document.querySelectorAll("svg").forEach((svg) => {
+			collectMarkers(svg).forEach((marker) => markers.add(marker));
+		});
+		return Array.from(markers);
 	}
 
 	// Funktion: getDartSize
-	// Zweck: Dart-BildgrÃ¶ÃŸe aus Board-Radius ableiten.
+	// Zweck: Dart-Bildgröße aus Board-Radius ableiten.
 	// Parameter: radiusPx (number).
-	// RÃ¼ckgabe: {width, height}.
+	// Rückgabe: {width, height}.
 	// Nutzt: CONFIG.dartLengthRatio, CONFIG.dartAspectRatio.
 	// Wird genutzt von: updateDarts().
 	function getDartSize(radiusPx) {
@@ -362,9 +413,9 @@
 	}
 
 	// Funktion: getOverlayPadding
-	// Zweck: Overlay-Padding fÃ¼r Flugbahn und Bild berechnen.
+	// Zweck: Overlay-Padding für Flugbahn und Bild berechnen.
 	// Parameter: size ({width, height}).
-	// RÃ¼ckgabe: number (Padding in px).
+	// Rückgabe: number (Padding in px).
 	// Nutzt: CONFIG.tipOffsetXRatio, CONFIG.flightDistanceRatio, CONFIG.arcHeightRatio.
 	// Wird genutzt von: updateDarts().
 	function getOverlayPadding(size) {
@@ -381,7 +432,7 @@
 	// Funktion: updateOverlayLayout
 	// Zweck: Overlay-Position/Size setzen und viewBox aktualisieren.
 	// Parameter: overlay (SVG), boardRect (DOMRect), paddingPx (number).
-	// RÃ¼ckgabe: DOMRect des Overlays.
+	// Rückgabe: DOMRect des Overlays.
 	// Nutzt: overlay.style, overlay.getBoundingClientRect().
 	// Wird genutzt von: updateDarts().
 	function updateOverlayLayout(overlay, boardRect, paddingPx) {
@@ -402,9 +453,9 @@
 	}
 
 	// Funktion: isBoardVisible
-	// Zweck: Sichtbarkeit des Boards prÃ¼fen (Size/Display/Opacity).
+	// Zweck: Sichtbarkeit des Boards prüfen (Size/Display/Opacity).
 	// Parameter: svg (SVG), rect (DOMRect).
-	// RÃ¼ckgabe: boolean.
+	// Rückgabe: boolean.
 	// Nutzt: window.getComputedStyle().
 	// Wird genutzt von: updateDarts().
 	function isBoardVisible(svg, rect) {
@@ -432,9 +483,9 @@
   }
 
   // Funktion: setMarkerHidden
-  // Zweck: Marker ein-/ausblenden und Original-OpazitÃ¤t merken.
+  // Zweck: Marker ein-/ausblenden und Original-Opazität merken.
   // Parameter: marker (SVGElement), hidden (boolean).
-  // RÃ¼ckgabe: void.
+  // Rückgabe: void.
   // Nutzt: MARKER_OPACITY_KEY im dataset.
   // Wird genutzt von: resetMarkers(), updateDarts().
   function setMarkerHidden(marker, hidden) {
@@ -457,7 +508,7 @@
   // Funktion: getMarkerScreenPoint
   // Zweck: Bildschirm-Position eines Markers bestimmen.
   // Parameter: marker (SVGElement).
-  // RÃ¼ckgabe: {x, y} oder null.
+  // Rückgabe: {x, y} oder null.
   // Nutzt: getBoundingClientRect(), SVGPoint, getScreenCTM().
   // Wird genutzt von: updateDarts().
   function getMarkerScreenPoint(marker) {
@@ -510,7 +561,7 @@
   // Funktion: canAnimateDarts
   // Zweck: Animationen nur bei erlaubten Bedingungen zulassen.
   // Parameter: keine.
-  // RÃ¼ckgabe: boolean.
+  // Rückgabe: boolean.
   // Nutzt: CONFIG.animateDarts, Element.animate, matchMedia().
   // Wird genutzt von: animateDart(), updateDarts().
   function canAnimateDarts() {
@@ -532,7 +583,7 @@
   // Funktion: getDartOffsets
   // Zweck: Offset der Dart-Spitze im Bild berechnen.
   // Parameter: size ({width, height}).
-  // RÃ¼ckgabe: {offsetX, offsetY}.
+  // Rückgabe: {offsetX, offsetY}.
   // Nutzt: CONFIG.tipOffsetXRatio/YRatio.
   // Wird genutzt von: updateDartElement().
   function getDartOffsets(size) {
@@ -542,9 +593,9 @@
   }
 
   // Funktion: getDartOpacity
-  // Zweck: OpazitÃ¤t aus Transparenzwert ableiten.
+  // Zweck: Opazität aus Transparenzwert ableiten.
   // Parameter: keine.
-  // RÃ¼ckgabe: number (0..1).
+  // Rückgabe: number (0..1).
   // Nutzt: CONFIG.dartTransparency.
   // Wird genutzt von: updateDartElement(), getShadowSettings(), animateDart().
   function getDartOpacity() {
@@ -558,7 +609,7 @@
   // Funktion: getShadowSettings
   // Zweck: Schatten-Parameter aus Config berechnen.
   // Parameter: size ({width, height}), dartOpacity (number).
-  // RÃ¼ckgabe: {enabled, baseOpacity, blurPx, offsetX, offsetY}.
+  // Rückgabe: {enabled, baseOpacity, blurPx, offsetX, offsetY}.
   // Nutzt: CONFIG.shadow*.
   // Wird genutzt von: updateDartElement(), animateDart().
   function getShadowSettings(size, dartOpacity) {
@@ -576,7 +627,7 @@
   // Funktion: nowMs
   // Zweck: Zeitstempel in Millisekunden liefern.
   // Parameter: keine.
-  // RÃ¼ckgabe: number.
+  // Rückgabe: number.
   // Nutzt: performance.now() oder Date.now().
   // Wird genutzt von: animateDart(), updateDarts().
   function nowMs() {
@@ -587,9 +638,9 @@
   }
 
   // Funktion: createMotionProfile
-  // Zweck: Zufallsvariationen fÃ¼r Arc und Dauer erzeugen.
+  // Zweck: Zufallsvariationen für Arc und Dauer erzeugen.
   // Parameter: keine.
-  // RÃ¼ckgabe: {arcScale, durationScale}.
+  // Rückgabe: {arcScale, durationScale}.
   // Nutzt: CONFIG.variationArcRatio, CONFIG.variationDurationRatio.
   // Wird genutzt von: createDartElements(), animateDart().
   function createMotionProfile() {
@@ -605,9 +656,9 @@
   }
 
   // Funktion: createDartElements
-  // Zweck: SVG-Gruppen fÃ¼r Dart und Schatten erzeugen.
+  // Zweck: SVG-Gruppen für Dart und Schatten erzeugen.
   // Parameter: center ({x, y}), size, boardCenter.
-  // RÃ¼ckgabe: entry-Objekt fÃ¼r dartByMarker.
+  // Rückgabe: entry-Objekt für dartByMarker.
   // Nutzt: createMotionProfile(), updateDartElement().
   // Wird genutzt von: updateDarts().
   function createDartElements(center, size, boardCenter) {
@@ -632,9 +683,9 @@
   }
 
   // Funktion: updateDartElement
-  // Zweck: Position, GrÃ¶ÃŸe, Rotation und Schatten aktualisieren.
+  // Zweck: Position, Größe, Rotation und Schatten aktualisieren.
   // Parameter: entry, center, size, boardCenter.
-  // RÃ¼ckgabe: void.
+  // Rückgabe: void.
   // Nutzt: getDartOffsets(), getDartOpacity(), getShadowSettings().
   // Wird genutzt von: createDartElements(), updateDarts().
   function updateDartElement(entry, center, size, boardCenter) {
@@ -716,9 +767,9 @@
 	}
 
 	// Funktion: getFlightOffsets
-	// Zweck: Start- und Mid-Offsets fÃ¼r die Flugbahn berechnen.
+	// Zweck: Start- und Mid-Offsets für die Flugbahn berechnen.
 	// Parameter: center, boardCenter, size, arcHeightRatio.
-	// RÃ¼ckgabe: {start, mid}.
+	// Rückgabe: {start, mid}.
 	// Nutzt: CONFIG.flightDistanceRatio, CONFIG.animationStyle.
 	// Wird genutzt von: animateDart().
 	function getFlightOffsets(center, boardCenter, size, arcHeightRatio) {
@@ -758,7 +809,7 @@
 	// Funktion: animateDart
 	// Zweck: Flug- und Einschlag-Animationen starten.
 	// Parameter: entry, center, boardCenter, size.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: canAnimateDarts(), getFlightOffsets(), getShadowSettings(), nowMs().
 	// Wird genutzt von: updateDarts().
 	function animateDart(entry, center, boardCenter, size) {
@@ -902,7 +953,7 @@
 	// Funktion: updateDarts
 	// Zweck: Haupt-Update von Markern zu Darts inkl. Layout/Animation.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: findBoard(), getSvgScale(), getDartSize(), getOverlayPadding(), ensureOverlaySvg(), ensureShadowFilter(), updateOverlayLayout(), getMarkerScreenPoint(), createDartElements(), animateDart(), updateDartElement(), scheduleRetry().
 	// Wird genutzt von: scheduleUpdate(), Initialisierung.
 	function updateDarts() {
@@ -920,7 +971,7 @@
 			return;
 		}
 
-		const markers = Array.from(board.svg.querySelectorAll(CONFIG.markerSelector));
+		const markers = collectMarkers(board.svg);
 		if (! markers.length) {
 			clearDarts();
 			return;
@@ -1045,7 +1096,7 @@
 	// Funktion: scheduleUpdate
 	// Zweck: updateDarts per rAF takten und Duplikate vermeiden.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: requestAnimationFrame(), updateDarts().
 	// Wird genutzt von: Observer/Events/handleLocationChange().
 	function scheduleUpdate() {
@@ -1063,9 +1114,9 @@
 
 	let retryTimer = 0;
 	// Funktion: scheduleRetry
-	// Zweck: VerzÃ¶gertes Update bei instabilem Layout.
+	// Zweck: Verzögertes Update bei instabilem Layout.
 	// Parameter: delayMs (number).
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: setTimeout(), scheduleUpdate().
 	// Wird genutzt von: updateDarts().
 	function scheduleRetry(delayMs) {
@@ -1080,9 +1131,9 @@
 
 	let lastUrl = location.href;
 	// Funktion: handleLocationChange
-	// Zweck: Bei URL-Ã„nderung Overlay zurÃ¼cksetzen.
+	// Zweck: Bei URL-Änderung Overlay zurücksetzen.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: removeOverlay(), resetMarkers(), scheduleUpdate().
 	// Wird genutzt von: watchLocationChanges().
 	function handleLocationChange() {
@@ -1096,9 +1147,9 @@
 	}
 
 	// Funktion: watchLocationChanges
-	// Zweck: SPA-Navigation Ã¼ber History/Events beobachten.
+	// Zweck: SPA-Navigation über History/Events beobachten.
 	// Parameter: keine.
-	// RÃ¼ckgabe: void.
+	// Rückgabe: void.
 	// Nutzt: history.pushState/replaceState, handleLocationChange().
 	// Wird genutzt von: Initialisierung.
 	function watchLocationChanges() {

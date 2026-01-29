@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Plays a configurable sound when a single bull (25/BULL) is thrown in the throw list.
 // @author       Thomas Asen
 // @license      MIT
@@ -305,4 +305,3 @@
 		start();
 	}
 })();
-
