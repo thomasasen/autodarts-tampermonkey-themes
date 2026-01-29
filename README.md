@@ -96,6 +96,11 @@ Kennzeichnung: Jede Skriptsektion enthält einen Block **Einfache Variablen (Bei
 Diese Werte kannst du ohne technisches Vorwissen ändern; alle anderen Variablen richten sich an technisch Versierte.
 Beispiele zeigen die echten Werte (z.B. `true`/`false`, `"ribbon"`).
 
+Begriffe in den Tabellen:
+- **Selector/Selektor**: CSS-„Adresse“ eines Elements. Nur ändern, wenn Autodarts die Klassen/Struktur geändert hat.
+- **CSS-Block**: Mehrzeilige CSS-Regeln. Hier kannst du Farben, Größen und Abstände feinjustieren.
+- **RGB/RGBA**: Farbwerte; RGB = 0–255 pro Kanal, RGBA = RGB + Transparenz (0..1).
+
 Medien-Hinweis: Alle Bilder/GIFs und Sounds liegen in `assets/`. PNGs sind statisch, GIFs zeigen Bewegung.
 Kleine Variantenbilder sind klickbar und öffnen das große Bild.
 
@@ -145,6 +150,7 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 | `INACTIVE_STAT_SCALE` | `0.6`                           | Skalierung der Stats bei inaktiven Spielern.                          |
 | `fallbackThemeCss`    | CSS-Block                        | Fallback-Farben und Typografie, falls der Shared Helper nicht lädt.   |
 | `fallbackLayoutCss`   | CSS-Block                        | Fallback-Layout/Grid, falls der Shared Helper nicht lädt.             |
+| `x01LayoutOverrides`  | CSS-Block                        | X01-spezifische Layout-Regeln (z.B. Score/Player/Grid); nur ändern, wenn du das X01-Layout bewusst anpassen möchtest. |
 | `navigationOverride`  | CSS-Block                        | Erzwingt die dunkle Navigation in X01, auch wenn andere Styles aktiv sind. |
 
 🖼️ **Beispiele/Screenshots**
@@ -259,7 +265,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout. |
 | `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                |
 | `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klasse für den reservierten Platz (für eigenes Styling).     |
-| `customCss`           | CSS-Block                        | Eigene Farben/Abstände speziell für Cricket; direkt anpassbar.  |
+| `customCss`           | CSS-Block                        | CSS-Block für Cricket; oben im Block stehen `--theme-...` Variablen für Farben, darunter Layout-/Abstandsregeln. |
 
 🖼️ **Beispiele/Screenshots**
 ![Theme Cricket](assets/Theme%20Cricket.png)
@@ -291,9 +297,9 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `CONFIG.selectors.throwRow`   | `.ad-ext-turn-throw`               | Element der Wurfzeile, an das Klassen/Gradienten angehängt werden. |
 | `CONFIG.selectors.throwText`  | `.ad-ext-turn-throw p.chakra-text` | Element, aus dem der Treffertext gelesen wird.      |
 | `CONFIG.selectors.textNode`   | `p.chakra-text`                    | Filter für Textänderungen, damit nur relevante Knoten geprüft werden. |
-| `CONFIG.defaultGradientStops` | Farb-Liste                         | Standard-Gradient, wenn ein Treffer-Typ keinen eigenen Verlauf hat. |
-| `CONFIG.hitTypes`             | T/D 1..20                          | Definitionen für Trefferarten inkl. Farben und Gradienten. |
-| `CONFIG.bull`                 | `enabled: true`                    | BULL-Behandlung inkl. Ein/Aus und Farben/Gradienten. |
+| `CONFIG.defaultGradientStops` | Farb-Liste                         | Array mit CSS-Farben (z.B. `#ff6b6b`); Reihenfolge = Verlauf von links nach rechts, Fallback wenn ein Treffer-Typ keine `gradientStops` hat. |
+| `CONFIG.hitTypes`             | T/D 1..20                          | Array der Treffer-Typen (z.B. `triple`/`double`): `prefix` ist der Buchstabe im Wurftext (T/D), `values` die gültigen Zahlen (1–20); `highlightColor`/`gradientStops` steuern die Farben. |
+| `CONFIG.bull`                 | `enabled: true`                    | Objekt für Bull-Treffer mit `enabled`, `label` (Text im Wurf), `highlightColor`, `gradientStops`; `enabled=false` deaktiviert Bull-Highlights. |
 
 🖼️ **Beispiele/Screenshots**
 ![Animate Checkout Score Pulse](assets/Checkout%20Board%20Blink.gif)
@@ -359,6 +365,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 ⚙️ **Konfiguration (Variablen)**
 | Variable                | Standard                                      | Wirkung                                    |
 | ----------------------- | --------------------------------------------- | ------------------------------------------ |
+| `STYLE_ID`              | `autodarts-animate-checkout-style`            | ID des injizierten Style-Tags; bei Änderung entstehen ggf. doppelte Styles bis zum Reload. |
+| `HIGHLIGHT_CLASS`       | `ad-ext-checkout-possible`                    | CSS-Klasse, die auf den aktiven Score gesetzt wird; nützlich, wenn du eigene CSS-Regeln anhängen willst. |
 | `EFFECT`                | `scale`                                       | Art der Animation: `pulse`, `glow`, `scale` oder `blink`. |
 | `PULSE_COLOR`           | `159, 219, 88`                                | RGB-Wert für Glow/Pulse (Alpha wird intern ergänzt). |
 | `IMPOSSIBLE_CHECKOUTS`  | `169, 168, 166, 165, 163, 162, 159`           | Scores, die nie checkoutbar sind (verhindert Fehltrigger). |
@@ -423,6 +431,11 @@ Keine Screenshots vorhanden.
 | `AVG_SELECTOR` | `p.css-1j0bqop`                  | Selector für das AVG-Element; anpassen, wenn Autodarts die Klasse ändert. |
 | `ANIMATION_MS` | `320`                           | Dauer der Pfeil-Animation in ms.    |
 | `STYLE_ID`     | `autodarts-average-trend-style` | ID für das injizierte CSS, damit keine doppelten Styles entstehen. |
+| `ARROW_CLASS`  | `ad-ext-avg-trend-arrow`         | Basis-Klasse für den Pfeil-Span (Form/Abstand); nur ändern, wenn du das CSS darauf abstimmst. |
+| `VISIBLE_CLASS`| `ad-ext-avg-trend-visible`       | Schaltet die Sichtbarkeit des Pfeils (Opacity/Transition). |
+| `UP_CLASS`     | `ad-ext-avg-trend-up`            | Stil/Klasse für steigenden AVG (Pfeil nach oben). |
+| `DOWN_CLASS`   | `ad-ext-avg-trend-down`          | Stil/Klasse für fallenden AVG (Pfeil nach unten). |
+| `ANIMATE_CLASS`| `ad-ext-avg-trend-animate`       | Triggert die kurze Bounce-Animation beim AVG-Wechsel. |
 
 🖼️ **Beispiele/Screenshots**
 ![Animate Average Trend Arrow](assets/Average%20Trend%20Arrow.png)
@@ -454,6 +467,7 @@ Keine Screenshots vorhanden.
 | ------------------------ | --------------------------- | ----------------------------------------- |
 | `CONFIG.activeSelector`  | `.ad-ext-player-active`     | Selector für den aktiven Spieler-Container. |
 | `CONFIG.sweepClass`      | `ad-ext-turn-sweep`         | Klasse, die die Sweep-Animation auslöst. |
+| `STYLE_ID`               | `autodarts-turn-sweep-style` | ID des injizierten Style-Tags; ändern nur bei Konflikten oder wenn du eigenes CSS nutzt. |
 | `CONFIG.sweepDurationMs` | `420`                       | Dauer der Sweep-Animation in ms; größere Werte wirken langsamer. |
 | `CONFIG.sweepDelayMs`    | `0`                         | Verzögerung vor dem Sweep in ms; hilfreich bei schnellen Wechseln. |
 | `CONFIG.sweepWidth`      | `45%`                       | Breite des Lichtstreifens relativ zum Block; größer = breiter Sweep. |
@@ -489,6 +503,7 @@ Keine Screenshots vorhanden.
 | ----------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | `CONFIG.noticeSelector`       | `.adt-remove`                                                            | Selector für die Takeout-Notification.                         |
 | `CONFIG.imageUrl`             | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/TakeOut.png` | Bildquelle für die Ersetzung. |
+| `CONFIG.imageAlt`             | `Removing darts`                                                         | Alternativtext fürs Bild (Accessibility/Fallback, falls das Bild nicht lädt). |
 | `CONFIG.imageMaxWidthRem`     | `30`                                                                     | Maximale Breite in rem (Desktop).                              |
 | `CONFIG.imageMaxWidthVw`      | `90`                                                                     | Maximale Breite in vw (Mobile).                                |
 | `CONFIG.pulseDurationMs`      | `1400`                                                                   | Pulsdauer in ms.                                               |
@@ -532,7 +547,7 @@ Keine Screenshots vorhanden.
 | `CONFIG.effect`            | `firework`                                        | Effektart: `firework`, `confetti`, `aurora`, `pulse`. |
 | `CONFIG.autoReduceParticles` | `true`                                          | Reduziert Partikel automatisch auf schwächeren Geräten oder bei Reduced Motion. |
 | `CONFIG.minQualityScale`   | `0.45`                                            | Untergrenze für das automatische Qualitäts-Scaling. |
-| `CONFIG.colors`            | Farb-Liste                                        | Farbpalette für Partikel und Glows.                |
+| `CONFIG.colors`            | Farb-Liste                                        | Array mit CSS-Farben (Hex/RGB); steuert die Farbpalette für Partikel/Glows. Mehr Farben = abwechslungsreicher. |
 | `CONFIG.rocketIntervalMs`  | `360`                                             | Abstand zwischen Feuerwerks-Raketen; kleiner = häufiger. |
 | `CONFIG.maxRockets`        | `7`                                               | Maximale gleichzeitige Raketen (Performance-Hebel). |
 | `CONFIG.maxParticles`      | `480`                                             | Maximale Partikelanzahl insgesamt (Dichte/Performance). |
@@ -705,7 +720,7 @@ Designs (DART_DESIGN):
 | `CONFIG.animationMs`        | `1000`                     | Dauer der Animation in ms.                      |
 | `CONFIG.singleRing`         | `both`                     | `inner`, `outer` oder `both` für Single-Ringe. |
 | `CONFIG.edgePaddingPx`      | `1`                        | Zusatz-Padding für die Shapes (gegen Abschneiden). |
-| `CONFIG.ringRatios`         | Objekt                     | Definiert Innen-/Außenradien für Single/Double/Triple/Bull als Anteil des Board-Radius; nur ändern, wenn das Board-SVG abweicht. |
+| `CONFIG.ringRatios`         | Objekt                     | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Werte sind Anteile des Board-Radius, nur bei abweichendem Board-SVG ändern. |
 
 🖼️ **Beispiele/Screenshots**
 ![Animate Checkout Board Targets](assets/Checkout%20Board%20Blink.gif)
@@ -784,21 +799,29 @@ Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen
 | `CONFIG.tableSelector`        | `null`                    | Optional fixer Selector für die Cricket-Tabelle; `null` = automatische Erkennung, setze ihn wenn die Tabelle nicht gefunden wird. |
 | `CONFIG.playerSelector`       | `.ad-ext-player`          | Selector für Player-Karten.                            |
 | `CONFIG.activePlayerSelector` | `.ad-ext-player-active`   | Selector für den aktiven Player.                       |
-| `CONFIG.markElementSelector`  | komplex                   | Regeln, wie Marks pro Ziel aus Icons/Attributen/Text gelesen werden; bei UI-Änderungen anpassen. |
+| `CONFIG.markElementSelector`  | komplex                   | CSS-Selector-Liste zum Zählen der Marks (Icons/Attribute/Text); nur anpassen, wenn die Marks nicht erkannt werden. |
 | `CONFIG.showDeadTargets`      | `true`                    | Zeigt Ziele, die alle geschlossen haben.               |
 | `CONFIG.strokeWidthRatio`     | `0.006`                   | Rahmenstärke relativ zum Board-Radius.                 |
 | `CONFIG.edgePaddingPx`        | `0.8`                     | Zusatz-Padding für Shapes.                             |
-| `CONFIG.baseColor`            | `{ r: 90, g: 90, b: 90 }` | Grundfarbe für ausgeblendete Bereiche.                 |
+| `CONFIG.baseColor`            | `{ r: 90, g: 90, b: 90 }` | RGB-Grundfarbe (`r/g/b` 0..255) für ausgeblendete Bereiche. |
 | `CONFIG.opacity.closed`       | `0.8`                     | Deckkraft für geschlossene Ziele.                      |
 | `CONFIG.opacity.dead`         | `0.98`                    | Deckkraft für „dead“-Ziele.                            |
 | `CONFIG.opacity.inactive`     | `0.8`                     | Deckkraft für inaktive Bereiche.                       |
-| `CONFIG.highlight.score`      | RGB/Opacity               | Farbe für Score-Ziele (Spieler kann punkten).          |
-| `CONFIG.highlight.danger`     | RGB/Opacity               | Farbe für Danger-Ziele (Gegner kann punkten).          |
-| `CONFIG.ringRatios`           | Objekt                    | Innen-/Außenradien der Ring-Zonen als Anteil des Board-Radius; relevant bei Board-SVG-Änderungen. |
+| `CONFIG.highlight.score`      | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Score-Ziele (Spieler kann punkten) inkl. Kontur-Boost. |
+| `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele (Gegner kann punkten) inkl. Kontur-Boost. |
+| `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius. |
 | `CONFIG.debug`                | `false`                   | Aktiviert Debug-Logs in der Konsole.                   |
 
 🖼️ **Beispiele/Screenshots**
 ![Cricket Target Highlighter](assets/Cricket%20Target%20Highlighter.png)
+
+🧭 **Screenshot erklärt**
+- Das Overlay färbt nur Cricket-Ziele (15–20/Bull). Alle anderen Felder (1–14) werden dunkel/neutral ausgeblendet, damit der Fokus auf den Cricket-Zielen liegt.
+- **Grün** zeigt ein **Score-Ziel**: Du hast das Ziel bereits geschlossen (3 Marks), mindestens ein Gegner ist noch offen → dort kannst du noch Punkte holen.
+- **Orange** zeigt **Danger**: Du bist noch offen, mindestens ein Gegner hat das Ziel geschlossen → der Gegner kann dort punkten, du solltest es schließen.
+- **Neutral/hell** markiert **offene Ziele** (noch nicht geschlossen und aktuell ohne akute Gefahr).
+- **Gedämpfte/abgeschwächte Farben** stehen für **geschlossen/tot/inaktiv** (z.B. alle geschlossen, keine Punkte mehr möglich).  
+  Hinweis: Die genauen Farbtöne kannst du über `CONFIG.baseColor`, `CONFIG.highlight.score`, `CONFIG.highlight.danger` und `CONFIG.opacity.*` anpassen.
 
 ℹ️ **Weitere Hinweise**
 - Debug-Ausgaben kannst du über `CONFIG.debug` abschalten.
