@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      1.4
 // @description  Gewinner-Effekt (Feuerwerk-Ring, Konfetti, Aurora oder Puls). Klick blendet aus.
 // @author       Thomas Asen
 // @license      MIT
@@ -26,6 +26,12 @@
    * @property {string} overlayId - ID fuer das Overlay.
    * @property {string} styleId - ID fuer das Style-Tag.
    * @property {string} effect - Ausgewaehlter Effekt (siehe Liste oben).
+   * @property {boolean} dynamicFps - Aktiviert dynamische FPS-Drosselung.
+   * @property {number} fpsHigh - Oberes FPS-Ziel fuer dynamische Drosselung.
+   * @property {number} fpsLow - Unteres FPS-Ziel fuer dynamische Drosselung.
+   * @property {number} fpsDownshiftMs - Frame-Zeit in ms, ab der auf fpsLow gewechselt wird.
+   * @property {number} fpsUpshiftMs - Frame-Zeit in ms, ab der wieder auf fpsHigh gewechselt wird.
+   * @property {number} fpsAdjustCooldownMs - Mindestabstand zwischen FPS-Umschaltungen (ms).
    * @property {boolean} autoReduceParticles - Reduziert Partikel je nach Geraet (optional).
    * @property {number} minQualityScale - Minimale Skalierung bei autoReduceParticles.
    * @property {number} rocketIntervalMs - Abstand zwischen Raketen.
@@ -51,7 +57,13 @@
 		winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
 		overlayId: "ad-ext-winner-fireworks",
 		styleId: "ad-ext-winner-fireworks-style",
-		effect: "firework",
+		effect: "confetti",
+		dynamicFps: true,
+		fpsHigh: 60,
+		fpsLow: 30,
+		fpsDownshiftMs: 22,
+		fpsUpshiftMs: 18,
+		fpsAdjustCooldownMs: 900,
 		autoReduceParticles: true,
 		minQualityScale: 0.45,
 		rocketIntervalMs: 360,
@@ -93,6 +105,7 @@
 	let animationHandle = null;
 	let lastLaunchTime = 0;
 	let lastFrameTime = 0;
+	let lastRafTime = 0;
 	let viewportWidth = 0;
 	let viewportHeight = 0;
 	let running = false;
@@ -110,6 +123,10 @@
 	let resizeHandler = null;
 	let lastPulseTime = 0;
 	let qualityScale = 1;
+	let targetFps = CONFIG.fpsHigh;
+	let frameIntervalMs = 1000 / targetFps;
+	let rafDtAverage = frameIntervalMs;
+	let lastFpsAdjustTime = 0;
 	let qualityLimits = {
 		maxRockets: CONFIG.maxRockets,
 		maxParticles: CONFIG.maxParticles,
@@ -204,6 +221,41 @@
 
 	function clamp(value, min, max) {
 		return Math.min(max, Math.max(min, value));
+	}
+
+	function setTargetFps(nextFps, now) {
+		const safeFps = clamp(nextFps, 15, 120);
+		targetFps = safeFps;
+		frameIntervalMs = 1000 / targetFps;
+		lastFpsAdjustTime = now;
+	}
+
+	function resetDynamicFps() {
+		const initialFps = CONFIG.fpsHigh || 60;
+		targetFps = initialFps;
+		frameIntervalMs = 1000 / targetFps;
+		rafDtAverage = frameIntervalMs;
+		lastFpsAdjustTime = 0;
+		lastRafTime = 0;
+	}
+
+	function updateDynamicFps(now, rafDt) {
+		if (! CONFIG.dynamicFps) {
+			return;
+		}
+		const smoothing = 0.12;
+		rafDtAverage += (rafDt - rafDtAverage) * smoothing;
+		const cooldown = CONFIG.fpsAdjustCooldownMs ?? 900;
+		if (lastFpsAdjustTime && now - lastFpsAdjustTime < cooldown) {
+			return;
+		}
+		if (targetFps > CONFIG.fpsLow && rafDtAverage > CONFIG.fpsDownshiftMs) {
+			setTargetFps(CONFIG.fpsLow, now);
+			return;
+		}
+		if (targetFps < CONFIG.fpsHigh && rafDtAverage < CONFIG.fpsUpshiftMs) {
+			setTargetFps(CONFIG.fpsHigh, now);
+		}
 	}
 
 	function getQualityScale() {
@@ -788,7 +840,15 @@ function updateFireworkEffect(step, dt, now) {
     if (!running) {
       return;
     }
-    const dt = Math.min(now - lastFrameTime, 40);
+    const rafDt = lastRafTime ? now - lastRafTime : frameIntervalMs;
+    lastRafTime = now;
+    updateDynamicFps(now, rafDt);
+    const elapsed = now - lastFrameTime;
+    if (elapsed < frameIntervalMs) {
+      animationHandle = requestAnimationFrame(animate);
+      return;
+    }
+    const dt = Math.min(elapsed, 40);
     lastFrameTime = now;
     const step = dt / 16.67;
 
@@ -813,6 +873,7 @@ function updateFireworkEffect(step, dt, now) {
       return;
     }
     applyQualityScale();
+    resetDynamicFps();
     ensureStyle();
     if (!ensureOverlay()) {
       return;

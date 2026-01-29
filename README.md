@@ -532,7 +532,8 @@ Keine Screenshots vorhanden.
 - Änderungen: Fullscreen-Canvas-Overlay, Klick blendet aus; sorgt für einen klaren „Win“-Moment.
 
 ✅ **Einfache Variablen (Beispiele)**
-- `CONFIG.effect = "firework"` oder `"confetti"` oder `"aurora"` oder `"pulse"`
+- `CONFIG.effect = "confetti"` oder `"firework"` oder `"aurora"` oder `"pulse"`
+- `CONFIG.dynamicFps = true` oder `false`
 - `CONFIG.rocketIntervalMs = 360` oder `600`
 - `CONFIG.maxRockets = 7` oder `4`
 - `CONFIG.maxParticles = 480` oder `200`
@@ -544,9 +545,15 @@ Keine Screenshots vorhanden.
 | `CONFIG.winnerSelector`    | `.ad-ext_winner-animation, .ad-ext-player-winner` | Selector für den Gewinner-Block; sobald sichtbar, startet der Effekt. |
 | `CONFIG.overlayId`         | `ad-ext-winner-fireworks`                         | ID für das Overlay-Element.                        |
 | `CONFIG.styleId`           | `ad-ext-winner-fireworks-style`                   | ID für das injizierte Style-Tag.                   |
-| `CONFIG.effect`            | `firework`                                        | Effektart: `firework`, `confetti`, `aurora`, `pulse`. |
+| `CONFIG.effect`            | `confetti`                                        | Effektart: `firework`, `confetti`, `aurora`, `pulse`. |
 | `CONFIG.autoReduceParticles` | `true`                                          | Reduziert Partikel automatisch auf schwächeren Geräten oder bei Reduced Motion. |
 | `CONFIG.minQualityScale`   | `0.45`                                            | Untergrenze für das automatische Qualitäts-Scaling. |
+| `CONFIG.dynamicFps`        | `true`                                            | Passt das FPS-Ziel dynamisch an, wenn die Render-Performance schwankt. |
+| `CONFIG.fpsHigh`           | `60`                                              | Oberes FPS-Ziel für die dynamische Drosselung.      |
+| `CONFIG.fpsLow`            | `30`                                              | Unteres FPS-Ziel für die dynamische Drosselung.     |
+| `CONFIG.fpsDownshiftMs`    | `22`                                              | Durchschnittliche Frame-Zeit in ms, ab der auf `fpsLow` gewechselt wird. |
+| `CONFIG.fpsUpshiftMs`      | `18`                                              | Durchschnittliche Frame-Zeit in ms, ab der wieder auf `fpsHigh` gewechselt wird. |
+| `CONFIG.fpsAdjustCooldownMs` | `900`                                           | Mindestabstand zwischen FPS-Umschaltungen (ms).     |
 | `CONFIG.colors`            | Farb-Liste                                        | Array mit CSS-Farben (Hex/RGB); steuert die Farbpalette für Partikel/Glows. Mehr Farben = abwechslungsreicher. |
 | `CONFIG.rocketIntervalMs`  | `360`                                             | Abstand zwischen Feuerwerks-Raketen; kleiner = häufiger. |
 | `CONFIG.maxRockets`        | `7`                                               | Maximale gleichzeitige Raketen (Performance-Hebel). |
