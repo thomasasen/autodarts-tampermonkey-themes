@@ -136,6 +136,13 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.      |
 | `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                      |
 | `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klasse für den reservierten Platz (nützlich für eigenes Styling). |
+| `STAT_AVG_FONT_SIZE_PX` | `36`                           | Schriftgröße des AVG-Werts in px.                                     |
+| `STAT_LEG_FONT_SIZE_PX` | `38`                           | Schriftgröße der Leg/Stat-Badges in px.                               |
+| `STAT_AVG_LINE_HEIGHT`  | `1.15`                         | Zeilenhöhe des AVG-Texts.                                             |
+| `STAT_AVG_ARROW_WIDTH_PX` | `12`                         | Breite des AVG-Trendpfeils in px.                                     |
+| `STAT_AVG_ARROW_HEIGHT_PX` | `23`                        | Höhe des AVG-Trendpfeils in px.                                       |
+| `STAT_AVG_ARROW_MARGIN_LEFT_PX` | `8`                   | Abstand zwischen AVG-Text und Trendpfeil in px.                       |
+| `INACTIVE_STAT_SCALE` | `0.6`                           | Skalierung der Stats bei inaktiven Spielern.                          |
 | `fallbackThemeCss`    | CSS-Block                        | Fallback-Farben und Typografie, falls der Shared Helper nicht lädt.   |
 | `fallbackLayoutCss`   | CSS-Block                        | Fallback-Layout/Grid, falls der Shared Helper nicht lädt.             |
 | `navigationOverride`  | CSS-Block                        | Erzwingt die dunkle Navigation in X01, auch wenn andere Styles aktiv sind. |
@@ -310,15 +317,21 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 ✅ **Einfache Variablen (Beispiele)**
 - `CONFIG.soundUrl = "https://example.com/bull.mp3"`
 - `CONFIG.volume = 0.9` oder `0.5`
+- `CONFIG.targetPoints = 25`
+- `CONFIG.targetLabel = "BULL"`
 - `CONFIG.cooldownMs = 700` oder `1000`
 
 ⚙️ **Konfiguration (Variablen)**
-| Variable                | Standard | Wirkung                                      |
-| ----------------------- | -------- | -------------------------------------------- |
-| `CONFIG.soundUrl`       | MP3-URL  | Direkt-URL zur Sounddatei (MP3/OGG), muss öffentlich erreichbar sein. |
-| `CONFIG.volume`         | `0.9`    | Lautstärke von 0..1; `1` ist volle Lautstärke. |
-| `CONFIG.cooldownMs`     | `700`    | Mindestabstand zwischen Plays pro Wurfzeile (Schutz vor Mehrfachauslösung). |
-| `CONFIG.pollIntervalMs` | `0`      | Optionales Polling in ms; `0` deaktiviert Polling. |
+| Variable                   | Standard                                                                 | Wirkung                                      |
+| -------------------------- | ------------------------------------------------------------------------ | -------------------------------------------- |
+| `CONFIG.soundUrl`          | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/singlebull.mp3` | Direkt-URL zur Sounddatei (MP3/OGG), muss öffentlich erreichbar sein. |
+| `CONFIG.volume`            | `0.9`                                                                    | Lautstärke von 0..1; `1` ist volle Lautstärke. |
+| `CONFIG.targetPoints`      | `25`                                                                     | Punktwert für Single Bull (standardmäßig 25). |
+| `CONFIG.targetLabel`       | `BULL`                                                                   | Textlabel für Single Bull (Case-insensitive). |
+| `CONFIG.selectors.throwRow` | `.ad-ext-turn-throw`                                                    | Selector für eine Wurfzeile.                 |
+| `CONFIG.selectors.throwText` | `.chakra-text`                                                       | Selector für den Wurftext innerhalb der Zeile. |
+| `CONFIG.cooldownMs`        | `700`                                                                    | Mindestabstand zwischen Plays pro Wurfzeile (Schutz vor Mehrfachauslösung). |
+| `CONFIG.pollIntervalMs`    | `0`                                                                      | Optionales Polling in ms; `0` deaktiviert Polling. |
 
 🖼️ **Beispiele/Screenshots**
 Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
@@ -514,7 +527,11 @@ Keine Screenshots vorhanden.
 | Variable                   | Standard                                          | Wirkung                                            |
 | -------------------------- | ------------------------------------------------- | -------------------------------------------------- |
 | `CONFIG.winnerSelector`    | `.ad-ext_winner-animation, .ad-ext-player-winner` | Selector für den Gewinner-Block; sobald sichtbar, startet der Effekt. |
+| `CONFIG.overlayId`         | `ad-ext-winner-fireworks`                         | ID für das Overlay-Element.                        |
+| `CONFIG.styleId`           | `ad-ext-winner-fireworks-style`                   | ID für das injizierte Style-Tag.                   |
 | `CONFIG.effect`            | `firework`                                        | Effektart: `firework`, `confetti`, `aurora`, `pulse`. |
+| `CONFIG.autoReduceParticles` | `true`                                          | Reduziert Partikel automatisch auf schwächeren Geräten oder bei Reduced Motion. |
+| `CONFIG.minQualityScale`   | `0.45`                                            | Untergrenze für das automatische Qualitäts-Scaling. |
 | `CONFIG.colors`            | Farb-Liste                                        | Farbpalette für Partikel und Glows.                |
 | `CONFIG.rocketIntervalMs`  | `360`                                             | Abstand zwischen Feuerwerks-Raketen; kleiner = häufiger. |
 | `CONFIG.maxRockets`        | `7`                                               | Maximale gleichzeitige Raketen (Performance-Hebel). |
@@ -616,7 +633,16 @@ Varianten:
 | `CONFIG.animationStyle`   | `arc`                                                      | Flugstil: `arc` (Gravity-Bogen) oder `linear`.              |
 | `CONFIG.flightDurationMs` | `320`                                                      | Flugzeit in Millisekunden.                                  |
 | `CONFIG.flightDistanceRatio` | `1.2`                                                   | Start-Entfernung relativ zur Dart-Länge.                    |
-| `CONFIG.arcHeightRatio`   | `0.18`                                                     | Höhe des Bogens relativ zur Dart-Länge.                     |
+| `CONFIG.arcHeightRatio`   | `0.16`                                                     | Höhe des Bogens relativ zur Dart-Länge.                     |
+| `CONFIG.variationArcRatio` | `0.1`                                                    | Zufallsvariation der Bogenhöhe (0.1 = +/-10%).              |
+| `CONFIG.variationDurationRatio` | `0.06`                                             | Zufallsvariation der Flugdauer (0.1 = +/-10%).              |
+| `CONFIG.enableShadow`     | `true`                                                     | Weichen Schatten unter dem Dart aktivieren.                 |
+| `CONFIG.shadowOpacity`    | `0.28`                                                     | Grund-Opazität des Schattens.                               |
+| `CONFIG.shadowBlurPx`     | `2`                                                        | Blur-Stärke des Schattens in px.                            |
+| `CONFIG.shadowOffsetXRatio` | `0.06`                                                   | X-Offset des Schattens relativ zur Dart-Länge.              |
+| `CONFIG.shadowOffsetYRatio` | `0.08`                                                   | Y-Offset des Schattens relativ zur Dart-Länge.              |
+| `CONFIG.shadowImpactOpacityBoost` | `0.12`                                            | Zusätzliche Opazität beim Einschlag.                        |
+| `CONFIG.shadowImpactDurationMs` | `160`                                               | Dauer des Schatten-Impulses beim Einschlag in ms.           |
 | `CONFIG.flightEasing`     | `cubic-bezier(0.15, 0.7, 0.2, 1)`                           | Timing-Funktion für den Flug.                               |
 | `CONFIG.wobbleDurationMs` | `280`                                                      | Dauer des Einschlag-Wobble.                                 |
 | `CONFIG.wobbleAngleDeg`   | `4`                                                        | Maximaler Wobble-Winkel in Grad.                            |
@@ -624,7 +650,7 @@ Varianten:
 | `CONFIG.blurPx`           | `2`                                                        | Bewegungsunschärfe während des Flugs.                       |
 | `CONFIG.scaleFrom`        | `0.94`                                                     | Start-Scale während des Flugs.                              |
 | `CONFIG.fadeFrom`         | `0.2`                                                      | Start-Opacity während des Flugs.                            |
-| `CONFIG.markerSelector`   | `circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]` | Selector für Board-Marker; bei SVG-Änderungen anpassen.     |
+| `CONFIG.markerSelector`   | `circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"], circle[filter*="shadow"], circle[style*="filter"], circle[class*="dart"], circle[class*="marker"], circle[class*="hit"], circle[data-hit], circle[data-marker]` | Selector für Board-Marker; bei SVG-Änderungen anpassen.     |
 
 🖼️ **Beispiele/Screenshots**
 ![Animate Dart Marker Darts](assets/Dart%20Marker%20Darts.png)
@@ -769,7 +795,7 @@ Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen
 | `CONFIG.highlight.score`      | RGB/Opacity               | Farbe für Score-Ziele (Spieler kann punkten).          |
 | `CONFIG.highlight.danger`     | RGB/Opacity               | Farbe für Danger-Ziele (Gegner kann punkten).          |
 | `CONFIG.ringRatios`           | Objekt                    | Innen-/Außenradien der Ring-Zonen als Anteil des Board-Radius; relevant bei Board-SVG-Änderungen. |
-| `CONFIG.debug`                | `true`                    | Aktiviert Debug-Logs in der Konsole.                   |
+| `CONFIG.debug`                | `false`                   | Aktiviert Debug-Logs in der Konsole.                   |
 
 🖼️ **Beispiele/Screenshots**
 ![Cricket Target Highlighter](assets/Cricket%20Target%20Highlighter.png)
