@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.4
+// @version      2.0
 // @description  Gewinner-Effekt (Feuerwerk-Ring, Konfetti, Aurora oder Puls). Klick blendet aus.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js
@@ -14,6 +15,8 @@
 
 (function () {
 	"use strict";
+
+	const {ensureStyle} = window.autodartsAnimationShared;
 
 	/**
    * Konfiguration fuer Gewinner-Effekte.
@@ -136,16 +139,10 @@
 		auroraStarCount: CONFIG.auroraStarCount
 	};
 
-	function ensureStyle() {
-		if (document.getElementById(CONFIG.styleId)) {
-			return;
-		}
-		const style = document.createElement("style");
-		style.id = CONFIG.styleId;
-		style.textContent = `
+	const STYLE_TEXT = `
 #${
-			CONFIG.overlayId
-		} {
+		CONFIG.overlayId
+	} {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -155,18 +152,13 @@
 }
 
 #${
-			CONFIG.overlayId
-		} canvas {
+		CONFIG.overlayId
+	} canvas {
   width: 100%;
   height: 100%;
   display: block;
 }
 `;
-		const target = document.head || document.documentElement;
-		if (target) {
-			target.appendChild(style);
-		}
-	}
 
 	function ensureOverlay() {
 		if (overlay && canvas && ctx) {
@@ -317,6 +309,7 @@
         .split("")
         .map((part) => part + part) .join("");
 		
+
 	}
 	if (value.length !== 6) {
 		return null;
@@ -487,7 +480,7 @@ function updateRockets(step) {
 		rocket.y += rocket.vy * step;
 		spawnRocketTrail(rocket);
 
-    if (rocket.y <= rocket.targetY || rocket.vy >= 0) {
+		if (rocket.y <= rocket.targetY || rocket.vy >= 0) {
 			spawnEffectRing(rocket);
 			rockets.splice(i, 1);
 		}
@@ -874,7 +867,7 @@ function updateFireworkEffect(step, dt, now) {
     }
     applyQualityScale();
     resetDynamicFps();
-    ensureStyle();
+    ensureStyle(CONFIG.styleId, STYLE_TEXT);
     if (!ensureOverlay()) {
       return;
     }
@@ -993,4 +986,5 @@ if (observeTarget) {
 			});
 		}
 	}, {once: true});
-}})();
+}
+})();

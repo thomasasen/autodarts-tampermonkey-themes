@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      2.0
 // @description  Replaces the "Removing Darts" notice with TakeOut.png and a subtle pulse animation.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Remove%20Darts%20Notification.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Remove%20Darts%20Notification.user.js
@@ -14,6 +15,8 @@
 
 (function () {
 	"use strict";
+
+	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
 	/**
    * Configuration for the takeout notification replacement.
@@ -49,14 +52,7 @@
 	const fallbackTextMatches = (CONFIG.fallbackTexts || []).map((text) => String(text || "").trim().toLowerCase()).filter(Boolean);
 	let lastFallbackScan = 0;
 
-	function ensureStyle() {
-		if (document.getElementById(STYLE_ID)) {
-			return;
-		}
-
-		const style = document.createElement("style");
-		style.id = STYLE_ID;
-		style.textContent = `
+	const STYLE_TEXT = `
 .${CARD_CLASS} {
   display: flex;
   align-items: center;
@@ -75,16 +71,16 @@
 .${CARD_CLASS} .${IMAGE_CLASS} {
   display: block;
   width: min(${
-			CONFIG.imageMaxWidthRem
-		}rem, ${
-			CONFIG.imageMaxWidthVw
-		}vw);
+		CONFIG.imageMaxWidthRem
+	}rem, ${
+		CONFIG.imageMaxWidthVw
+	}vw);
   height: auto;
   background: transparent;
   transform-origin: center;
   animation: ad-ext-takeout-pulse ${
-			CONFIG.pulseDurationMs
-		}ms ease-in-out infinite;
+		CONFIG.pulseDurationMs
+	}ms ease-in-out infinite;
   will-change: transform, opacity;
   pointer-events: none;
 }
@@ -92,8 +88,8 @@
 @keyframes ad-ext-takeout-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(${
-			CONFIG.pulseScale
-		}); opacity: 0.95; }
+		CONFIG.pulseScale
+	}); opacity: 0.95; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -102,19 +98,6 @@
   }
 }
 `;
-
-		const target = document.head || document.documentElement;
-		if (target) {
-			target.appendChild(style);
-		} else {
-			document.addEventListener("DOMContentLoaded", () => {
-				const fallbackTarget = document.head || document.documentElement;
-				if (fallbackTarget && !document.getElementById(STYLE_ID)) {
-					fallbackTarget.appendChild(style);
-				}
-			}, {once: true});
-		}
-	}
 
 	function buildImage() {
 		const image = document.createElement("img");
@@ -237,49 +220,10 @@
 		});
 	}
 
-	let scheduled = false;
-	function scheduleUpdate() {
-		if (scheduled) {
-			return;
-		}
-		scheduled = true;
-		requestAnimationFrame(() => {
-			scheduled = false;
-			updateNotices();
-		});
-	}
+	const scheduleUpdate = createRafScheduler(updateNotices);
 
-	ensureStyle();
+	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateNotices();
 
-	const observer = new MutationObserver((mutations) => {
-		for (const mutation of mutations) {
-			if (mutation.type === "childList" || mutation.type === "attributes" || mutation.type === "characterData") {
-				scheduleUpdate();
-				break;
-			}
-		}
-	});
-
-	const observeTarget = document.documentElement;
-	if (observeTarget) {
-		observer.observe(observeTarget, {
-			childList: true,
-			subtree: true,
-			characterData: true,
-			attributes: true
-		});
-	} else {
-		document.addEventListener("DOMContentLoaded", () => {
-			const fallbackTarget = document.documentElement;
-			if (fallbackTarget) {
-				observer.observe(fallbackTarget, {
-					childList: true,
-					subtree: true,
-					characterData: true,
-					attributes: true
-				});
-			}
-		}, {once: true});
-	}
+	observeMutations({onChange: scheduleUpdate});
 })();

@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      2.0
 // @description  Animates the turn points by counting up or down briefly instead of jumping.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Points%20Count.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Points%20Count.user.js
@@ -14,6 +15,8 @@
 
 (function () {
 	"use strict";
+
+	const {createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
 	// Script goal: count turn points up/down smoothly instead of jumping.
 	/**
@@ -149,38 +152,14 @@
 		});
 	}
 
-	let scheduled = false;
 	/**
    * Coalesces DOM changes into a single update per frame.
    * @returns {void}
    */
-	function scheduleUpdate() {
-		if (scheduled) {
-			return;
-		}
-		scheduled = true;
-		requestAnimationFrame(() => {
-			scheduled = false;
-			updateScores();
-		});
-	}
+	const scheduleUpdate = createRafScheduler(updateScores);
 
 	updateScores();
 
 	// Observes text/DOM changes to detect new turn points.
-	const observer = new MutationObserver((mutations) => {
-		for (const mutation of mutations) {
-			if (mutation.type === "childList" || mutation.type === "characterData" || mutation.type === "attributes") {
-				scheduleUpdate();
-				break;
-			}
-		}
-	});
-
-	observer.observe(document.documentElement, {
-		childList: true,
-		subtree: true,
-		characterData: true,
-		attributes: true
-	});
+	observeMutations({onChange: scheduleUpdate});
 })();

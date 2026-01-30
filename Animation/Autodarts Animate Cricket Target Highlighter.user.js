@@ -1,11 +1,11 @@
-// ==UserScript==// @name         Autodarts Animate Cricket Target Highlighter
-	// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      1.2
+﻿// ==UserScript==// @name         Autodarts Animate Cricket Target Highlighter// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+	// @version      2.0
 	// @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
 	// @author       Thomas Asen
 	// @license      MIT
 	// @match        *://play.autodarts.io/*
 	// @run-at       document-start
+	// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
 	// @grant        none
 	// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
 	// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
@@ -14,32 +14,45 @@
 	(function () {
 		"use strict";
 
-		// Skript-Ziel: Cricket-Marks je Spieler lesen und die Zustände als Board-Overlay darstellen.
+		const {
+			ensureStyle,
+			createRafScheduler,
+			observeMutations,
+			isCricketVariant,
+			findBoard,
+			ensureOverlayGroup,
+			clearOverlay,
+			segmentAngles,
+			createWedge,
+			createBull
+		} = window.autodartsAnimationShared;
+
+		// Skript-Ziel: Cricket-Marks je Spieler lesen und die ZustÃ¤nde als Board-Overlay darstellen.
 		// Ablauf:
 		// 1) Ermittelt die Cricket-Tabelle und die Spieleranzahl (funktioniert mit 1, 2 und mehr Spielern).
 		// 2) Liest pro Zeile (15-20, Bull) die Marks aus Symbolen/Icons/alt-Texten.
 		// 3) Berechnet daraus den Status je Ziel:
 		//    - offen: Spieler hat <3 Marks und kein Gegner ist bereits geschlossen.
 		//    - geschlossen: Spieler hat 3 Marks, alle Gegner ebenfalls geschlossen.
-		//    - score: Spieler hat 3 Marks, mindestens ein Gegner ist noch offen (Punkten möglich).
+		//    - score: Spieler hat 3 Marks, mindestens ein Gegner ist noch offen (Punkten mÃ¶glich).
 		//    - danger: Spieler ist offen, mindestens ein Gegner hat bereits geschlossen (Gegner kann punkten).
-		//    - tot: alle Spieler haben geschlossen (keine Punkte mehr möglich).
+		//    - tot: alle Spieler haben geschlossen (keine Punkte mehr mÃ¶glich).
 		// 4) Rendert ein SVG-Overlay auf dem Board:
 		//    - Nicht-Cricket-Felder (1-14) werden ausgeblendet.
-		//    - Cricket-Ziele werden je Status eingefärbt (konfigurierbar am Skriptanfang).
+		//    - Cricket-Ziele werden je Status eingefÃ¤rbt (konfigurierbar am Skriptanfang).
 		/**
-   * Konfiguration für Selektoren und Optik.
+   * Konfiguration fÃ¼r Selektoren und Optik.
    * @property {string} variantElementId - Element mit Spielvariante-Text.
-   * @property {string|null} tableSelector - Optionaler Selektor für die Cricket-Tabelle.
-   * @property {string} playerSelector - Selektor für Spieler-Karten.
-   * @property {string} activePlayerSelector - Selektor für den aktiven Spieler.
-   * @property {string} markElementSelector - Selektor zum Zählen von Mark-Icons.
+   * @property {string|null} tableSelector - Optionaler Selektor fÃ¼r die Cricket-Tabelle.
+   * @property {string} playerSelector - Selektor fÃ¼r Spieler-Karten.
+   * @property {string} activePlayerSelector - Selektor fÃ¼r den aktiven Spieler.
+   * @property {string} markElementSelector - Selektor zum ZÃ¤hlen von Mark-Icons.
    * @property {boolean} showDeadTargets - Auch Ziele markieren, die von allen Spielern geschlossen sind.
-   * @property {number} strokeWidthRatio - Strichstärke relativ zum Board-Radius.
-   * @property {number} edgePaddingPx - Zusätzlicher Rand für Overlay-Formen.
-   * @property {Object} baseColor - Basisfarbe fürs Ausblenden (RGB).
-   * @property {Object} opacity - Deckkraft für geschlossen/tot/inaktiv (0..1).
-   * @property {Object} highlight - Farben für Score/Danger-Highlights.
+   * @property {number} strokeWidthRatio - StrichstÃ¤rke relativ zum Board-Radius.
+   * @property {number} edgePaddingPx - ZusÃ¤tzlicher Rand fÃ¼r Overlay-Formen.
+   * @property {Object} baseColor - Basisfarbe fÃ¼rs Ausblenden (RGB).
+   * @property {Object} opacity - Deckkraft fÃ¼r geschlossen/tot/inaktiv (0..1).
+   * @property {Object} highlight - Farben fÃ¼r Score/Danger-Highlights.
    * @property {Object} ringRatios - Ring-Grenzen des Dartboards.
    */
 		const CONFIG = {
@@ -88,29 +101,6 @@
 			debug: false
 		};
 
-		const SEGMENT_ORDER = [
-			20,
-			1,
-			18,
-			4,
-			13,
-			6,
-			10,
-			15,
-			2,
-			17,
-			3,
-			19,
-			7,
-			16,
-			8,
-			11,
-			14,
-			9,
-			12,
-			5,
-		];
-
 		const TARGETS = [
 			{
 				label: "20",
@@ -154,7 +144,6 @@
 
 		const LABEL_SET = new Set(TARGETS.map((target) => target.label));
 
-		const SVG_NS = "http://www.w3.org/2000/svg";
 		const STYLE_ID = "autodarts-cricket-target-style";
 		const OVERLAY_ID = "ad-ext-cricket-targets";
 		const TARGET_CLASS = "ad-ext-cricket-target";
@@ -188,17 +177,10 @@
 		}
 
 		/**
-   * Fügt die benötigten CSS-Regeln einmalig ein.
+   * FÃ¼gt die benÃ¶tigten CSS-Regeln einmalig ein.
    * @returns {void}
    */
-		function ensureStyle() {
-			if (document.getElementById(STYLE_ID)) {
-				return;
-			}
-
-			const style = document.createElement("style");
-			style.id = STYLE_ID;
-			style.textContent = `
+		const STYLE_TEXT = `
 .${TARGET_CLASS} {
   fill: var(--ad-ext-cricket-fill, transparent);
   stroke: var(--ad-ext-cricket-stroke, transparent);
@@ -244,31 +226,17 @@
 }
 `;
 
-			const target = document.head || document.documentElement;
-			if (target) {
-				target.appendChild(style);
-			} else {
-				document.addEventListener("DOMContentLoaded", () => {
-					const fallbackTarget = document.head || document.documentElement;
-					if (fallbackTarget && !document.getElementById(STYLE_ID)) {
-						fallbackTarget.appendChild(style);
-					}
-				}, {once: true});
-			}
-		}
-
-		/**
-   * Prüft, ob die aktuelle Spielvariante Cricket ist.
-   * @returns {boolean}
-   */
-		function isCricketVariant() {
+		function isCricketVariantActive() {
 			const variantEl = document.getElementById(CONFIG.variantElementId);
 			if (! variantEl) {
 				debugLog("Variant element missing:", CONFIG.variantElementId);
 				return false;
 			}
 			const variant = variantEl.textContent ?. trim().toLowerCase() || "";
-			const isCricket = variant === "cricket" || variant.startsWith("cricket ");
+			const isCricket = isCricketVariant(CONFIG.variantElementId, {
+				allowMissing: false,
+				allowEmpty: false
+			});
 			debugLog("Variant detected via #ad-ext-game-variant:", variant, isCricket);
 			return isCricket;
 		}
@@ -310,7 +278,7 @@
 
 		/**
    * Findet Elemente, die wie Cricket-Zeilenlabels aussehen.
-   * @param {Element} scope - Wurzel-Element für die Suche.
+   * @param {Element} scope - Wurzel-Element fÃ¼r die Suche.
    * @returns {Element[]}
    */
 		function findLabelNodes(scope) {
@@ -413,21 +381,23 @@
       const extraLabel = cells
         .slice(1)
         .some((cell) =>normalizeLabel(cell.textContent)) 
+
+					if (extraLabel) {
+						return;
+					}
 				
-				if (extraLabel) {
-					return;
-				}
 				rows.set(label, {
 					row: root,
 					cells,
 					fromAlignment: false
 				});
 			}) 
-			
 
-			if (rows.size < 4) {
-				return null;
-			}
+
+				if (rows.size < 4) {
+					return null;
+				}
+			
 			debugLog("buildRowsFromLinearGrid: rows", rows.size);
 			return rows;
 		}
@@ -515,8 +485,8 @@
 		}
 
 		/**
-   * Wählt die plausibelsten Zellen einer Zeile.
-   * @param {Element[]} candidates - Mögliche Zellen.
+   * WÃ¤hlt die plausibelsten Zellen einer Zeile.
+   * @param {Element[]} candidates - MÃ¶gliche Zellen.
    * @param {number|null} playerCount - Anzahl der Spieler (falls bekannt).
    * @returns {Element[]}
    */
@@ -550,7 +520,9 @@
       if (labelCell && !adjusted.includes(labelCell)) {
         adjusted = [labelCell, ...adjusted];
         labelIndex = adjusted.findIndex((cell) => cell.contains(labelNode)) 
+
 			
+
 		}
 	}
 
@@ -590,7 +562,7 @@ function getRowCells (row, labelNode, playerCount) {
 }
 
 /**
-   * Bestimmt Zellen anhand der Zeilen-Ausrichtung (Fallback für getrennte Spalten).
+   * Bestimmt Zellen anhand der Zeilen-Ausrichtung (Fallback fÃ¼r getrennte Spalten).
    * @param {Element} root - Wurzel der Cricket-Tabelle.
    * @param {Element} labelNode - Label-Element.
    * @param {number|null} playerCount - Anzahl der Spieler (falls bekannt).
@@ -709,7 +681,7 @@ function getMarksFromAttributes (element) {
 }
 
 /**
-   * Liest Marks aus Zelltext (unterstützt gängige Cricket-Symbole).
+   * Liest Marks aus Zelltext (unterstÃ¼tzt gÃ¤ngige Cricket-Symbole).
    * @param {string|null} text - Zelltext.
    * @returns {number|null}
    */
@@ -722,10 +694,10 @@ function getMarksFromText (text) {
 		return null;
 	}
 
-	if (cleaned.includes("⨂") || cleaned.includes("⊗")) {
+	if (cleaned.includes("â¨‚") || cleaned.includes("âŠ—")) {
 		return 3;
 	}
-	if (cleaned.includes("×") || cleaned.includes("X")) {
+	if (cleaned.includes("Ã—") || cleaned.includes("X")) {
 		return 2;
 	}
 	if (cleaned.includes("/")) {
@@ -763,7 +735,7 @@ function getMarksFromText (text) {
 }
 
 /**
-   * Zählt Mark-Icons anhand eines Selektors.
+   * ZÃ¤hlt Mark-Icons anhand eines Selektors.
    * @param {Element} cell - Zellen-Element.
    * @returns {number|null}
    */
@@ -823,7 +795,7 @@ function getMarks (cell) {
 }
 
 /**
-   * Prüft, ob eine Zelle visuell leer ist.
+   * PrÃ¼ft, ob eine Zelle visuell leer ist.
    * @param {Element} cell - Zellen-Element.
    * @returns {boolean}
    */
@@ -839,7 +811,7 @@ function isEmptyCell (cell) {
 }
 
 /**
-   * Baut eine Zustands-Map für den aktiven Spieler.
+   * Baut eine Zustands-Map fÃ¼r den aktiven Spieler.
    * @param {number} playerCount - Anzahl der Spieler.
    * @param {number} activeIndex - Index des aktiven Spielers.
    * @returns {Map<string, {state: string}>|null}
@@ -942,234 +914,7 @@ function getCricketStates (playerCount, activeIndex) {
 }
 
 /**
-   * Sucht den größten Kreisradius innerhalb eines SVG-Elements.
-   * @param {Element} root - SVG- oder Gruppen-Element.
-   * @returns {number}
-   */
-function getBoardRadius (root) {
-	return [... root.querySelectorAll("circle")].reduce((max, circle) => {
-		const r = Number.parseFloat(circle.getAttribute("r"));
-		return Number.isFinite(r) && r > max ? r : max;
-	}, 0);
-}
-
-/**
-   * Findet das wahrscheinlichste Dartboard-SVG.
-   * @returns {{group: Element, radius: number} | null}
-   */
-function findBoard () {
-	const svgs = [...document.querySelectorAll("svg")];
-	if (! svgs.length) {
-		return null;
-	}
-
-	let best = null;
-	let bestScore = -1;
-
-	for (const svg of svgs) {
-		const numbers = new Set([... svg.querySelectorAll("text")].map((text) => Number.parseInt(text.textContent, 10)).filter((value) => value >= 1 && value <= 20));
-		const numberScore = numbers.size;
-		const radius = getBoardRadius(svg);
-		const score = numberScore * 1000 + radius;
-		if (score > bestScore) {
-			best = svg;
-			bestScore = score;
-		}
-	}
-
-	if (! best) {
-		return null;
-	}
-
-	let bestGroup = null;
-	let bestRadius = 0;
-
-	for (const group of best.querySelectorAll("g")) {
-		const radius = getBoardRadius(group);
-		if (radius > bestRadius) {
-			bestRadius = radius;
-			bestGroup = group;
-		}
-	}
-
-	const radius = bestRadius || getBoardRadius(best);
-	if (! radius) {
-		return null;
-	}
-
-	return {
-		group: bestGroup || best,
-		radius
-	};
-}
-
-/**
-   * Stellt sicher, dass eine Overlay-Gruppe existiert.
-   * @param {Element} boardGroup - SVG-Gruppe.
-   * @returns {SVGGElement}
-   */
-function ensureOverlayGroup (boardGroup) {
-	let overlay = boardGroup.querySelector(`#${OVERLAY_ID}`);
-	if (! overlay) {
-		overlay = document.createElementNS(SVG_NS, "g");
-		overlay.id = OVERLAY_ID;
-		boardGroup.appendChild(overlay);
-	}
-	return overlay;
-}
-
-/**
-   * Entfernt vorhandene Ziel-Overlays.
-   * @param {Element} overlay - Overlay-Gruppe.
-   * @returns {void}
-   */
-function clearOverlay (overlay) {
-	while (overlay.firstChild) {
-		overlay.removeChild(overlay.firstChild);
-	}
-}
-
-/**
-   * Wandelt Polar- in SVG-Koordinaten um.
-   * @param {number} r - Radius.
-   * @param {number} deg - Winkel in Grad.
-   * @returns {{x: number, y: number}}
-   */
-function polar (r, deg) {
-	const rad = (deg * Math.PI) / 180;
-	return {
-		x: r * Math.sin(rad),
-		y: - r * Math.cos(rad)
-	};
-}
-
-/**
-   * Baut einen Keil-Pfad zwischen zwei Radien.
-   * @param {number} rInner - Innenradius.
-   * @param {number} rOuter - Außenradius.
-   * @param {number} startDeg - Startwinkel.
-   * @param {number} endDeg - Endwinkel.
-   * @returns {string}
-   */
-function wedgePath (rInner, rOuter, startDeg, endDeg) {
-	const p0 = polar(rOuter, startDeg);
-	const p1 = polar(rOuter, endDeg);
-	const p2 = polar(rInner, endDeg);
-	const p3 = polar(rInner, startDeg);
-	const large = (endDeg - startDeg + 360) % 360 > 180 ? 1 : 0;
-	return [
-		`M ${
-			p0.x
-		} ${
-			p0.y
-		}`,
-		`A ${rOuter} ${rOuter} 0 ${large} 1 ${
-			p1.x
-		} ${
-			p1.y
-		}`,
-		`L ${
-			p2.x
-		} ${
-			p2.y
-		}`,
-		`A ${rInner} ${rInner} 0 ${large} 0 ${
-			p3.x
-		} ${
-			p3.y
-		}`,
-		"Z",
-	].join(" ");
-}
-
-/**
-   * Baut einen Ring-Pfad zwischen zwei Radien.
-   * @param {number} rInner - Innenradius.
-   * @param {number} rOuter - Außenradius.
-   * @returns {string}
-   */
-function ringPath (rInner, rOuter) {
-	const outer = [
-		`M 0 ${ - rOuter
-		}`,
-		`A ${rOuter} ${rOuter} 0 1 1 0 ${rOuter}`,
-		`A ${rOuter} ${rOuter} 0 1 1 0 ${ - rOuter
-		}`,
-		"Z",
-	].join(" ");
-	const inner = [
-		`M 0 ${ - rInner
-		}`,
-		`A ${rInner} ${rInner} 0 1 0 0 ${rInner}`,
-		`A ${rInner} ${rInner} 0 1 0 0 ${ - rInner
-		}`,
-		"Z",
-	].join(" ");
-	return `${outer} ${inner}`;
-}
-
-/**
-   * Berechnet die Winkelgrenzen für ein Segment.
-   * @param {number} value - Segmentwert 1..20.
-   * @returns {{start: number, end: number} | null}
-   */
-function segmentAngles (value) {
-	const index = SEGMENT_ORDER.indexOf(value);
-	if (index === -1) {
-		return null;
-	}
-	const center = index * 18;
-	return {
-		start: center - 9,
-		end: center + 9
-	};
-}
-
-/**
-   * Erstellt einen Keil für das Board-Overlay.
-   * @param {number} radius - Board-Radius.
-   * @param {number} innerRatio - Innenanteil.
-   * @param {number} outerRatio - Außenanteil.
-   * @param {number} startDeg - Startwinkel.
-   * @param {number} endDeg - Endwinkel.
-   * @returns {SVGPathElement}
-   */
-function createWedge (radius, innerRatio, outerRatio, startDeg, endDeg) {
-	const path = document.createElementNS(SVG_NS, "path");
-	const padding = CONFIG.edgePaddingPx || 0;
-	const rInner = Math.max(0, radius * innerRatio);
-	const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
-	path.setAttribute("d", wedgePath(rInner, rOuter, startDeg, endDeg));
-	return path;
-}
-
-/**
-   * Erstellt Bull-Ring oder -Kreis.
-   * @param {number} radius - Board-Radius.
-   * @param {number} innerRatio - Innenanteil.
-   * @param {number} outerRatio - Außenanteil.
-   * @param {boolean} solid - true für gefüllten Kreis.
-   * @returns {SVGElement}
-   */
-function createBull (radius, innerRatio, outerRatio, solid) {
-	const padding = CONFIG.edgePaddingPx || 0;
-	if (solid) {
-		const circle = document.createElementNS(SVG_NS, "circle");
-		const rOuter = Math.max(0, radius * outerRatio + padding);
-		circle.setAttribute("r", String(rOuter));
-		return circle;
-	}
-
-	const rInner = Math.max(0, radius * innerRatio);
-	const rOuter = Math.max(rInner + 0.5, radius * outerRatio + padding);
-	const ring = document.createElementNS(SVG_NS, "path");
-	ring.setAttribute("d", ringPath(rInner, rOuter));
-	ring.setAttribute("fill-rule", "evenodd");
-	return ring;
-}
-
-/**
-   * Baut die Highlight-Formen für ein Ziel.
+   * Baut die Highlight-Formen fÃ¼r ein Ziel.
    * @param {number} radius - Board-Radius.
    * @param {{label: string, value?: number, ring?: string}} target - Zielinfo.
    * @returns {SVGElement[]}
@@ -1179,8 +924,8 @@ function buildTargetShapes (radius, target) {
 	const shapes = [];
 
 	if (target.ring === "BULL") {
-		shapes.push(createBull(radius, 0, ratios.outerBullInner, true));
-		shapes.push(createBull(radius, ratios.outerBullInner, ratios.outerBullOuter, false));
+		shapes.push(createBull(radius, 0, ratios.outerBullInner, true, {edgePaddingPx: CONFIG.edgePaddingPx}));
+		shapes.push(createBull(radius, ratios.outerBullInner, ratios.outerBullOuter, false, {edgePaddingPx: CONFIG.edgePaddingPx}));
 		return shapes;
 	}
 
@@ -1193,16 +938,16 @@ function buildTargetShapes (radius, target) {
 		return shapes;
 	}
 
-	shapes.push(createWedge(radius, ratios.outerBullOuter, ratios.tripleInner, angles.start, angles.end));
-	shapes.push(createWedge(radius, ratios.tripleInner, ratios.tripleOuter, angles.start, angles.end));
-	shapes.push(createWedge(radius, ratios.tripleOuter, ratios.doubleInner, angles.start, angles.end));
-	shapes.push(createWedge(radius, ratios.doubleInner, ratios.doubleOuter, angles.start, angles.end));
+	shapes.push(createWedge(radius, ratios.outerBullOuter, ratios.tripleInner, angles.start, angles.end, CONFIG.edgePaddingPx));
+	shapes.push(createWedge(radius, ratios.tripleInner, ratios.tripleOuter, angles.start, angles.end, CONFIG.edgePaddingPx));
+	shapes.push(createWedge(radius, ratios.tripleOuter, ratios.doubleInner, angles.start, angles.end, CONFIG.edgePaddingPx));
+	shapes.push(createWedge(radius, ratios.doubleInner, ratios.doubleOuter, angles.start, angles.end, CONFIG.edgePaddingPx));
 
 	return shapes;
 }
 
 /**
-   * Setzt CSS-Variablen für das Overlay.
+   * Setzt CSS-Variablen fÃ¼r das Overlay.
    * @param {SVGGElement} overlay - Overlay-Gruppe.
    * @param {number} radius - Board-Radius.
    * @returns {void}
@@ -1248,7 +993,7 @@ function applyOverlayTheme (overlay, radius) {
 
 /**
    * Rendert die Ziel-Overlays anhand des aktuellen Zustands.
-   * @param {Map<string, {state: string}>} stateMap - Map der Zielzustände.
+   * @param {Map<string, {state: string}>} stateMap - Map der ZielzustÃ¤nde.
    * @returns {void}
    */
 function renderTargets (stateMap) {
@@ -1257,7 +1002,7 @@ function renderTargets (stateMap) {
 		return;
 	}
 
-	const overlay = ensureOverlayGroup(board.group);
+	const overlay = ensureOverlayGroup(board.group, OVERLAY_ID);
 	applyOverlayTheme(overlay, board.radius);
 	clearOverlay(overlay);
 
@@ -1288,8 +1033,8 @@ function renderTargets (stateMap) {
 }
 
 /**
-   * Erstellt einen kompakten Status-Key, um unnötige Updates zu vermeiden.
-   * @param {Map<string, {state: string}>} stateMap - Map der Zielzustände.
+   * Erstellt einen kompakten Status-Key, um unnÃ¶tige Updates zu vermeiden.
+   * @param {Map<string, {state: string}>} stateMap - Map der ZielzustÃ¤nde.
    * @returns {string}
    */
 function buildStateKey (stateMap) {
@@ -1308,10 +1053,10 @@ function buildStateKey (stateMap) {
    * @returns {void}
    */
 function updateTargets () {
-	if (!isCricketVariant()) {
+	if (!isCricketVariantActive()) {
 		const board = findBoard();
 		if (board) {
-			clearOverlay(ensureOverlayGroup(board.group));
+			clearOverlay(ensureOverlayGroup(board.group, OVERLAY_ID));
 		}
 		lastStateKey = null;
 		lastBoardKey = null;
@@ -1350,38 +1095,17 @@ function updateTargets () {
 	renderTargets(stateMap);
 }
 
-let scheduled = false;
-/**
-   * Fasst viele DOM-Änderungen zu einem Update pro Frame zusammen.
+		/**
+   * Fasst viele DOM-Ã„nderungen zu einem Update pro Frame zusammen.
    * @returns {void}
    */
-function scheduleUpdate () {
-	if (scheduled) {
-		return;
-	}
-	scheduled = true;
-	requestAnimationFrame(() => {
-		scheduled = false;
+		const scheduleUpdate = createRafScheduler(updateTargets);
+
+		ensureStyle(STYLE_ID, STYLE_TEXT);
 		updateTargets();
-	});
-}
 
-ensureStyle();
-updateTargets();
-
-// Beobachtet DOM-Änderungen der Cricket-Tabelle und des aktiven Spielers.
-const observer = new MutationObserver((mutations) => {
-	for (const mutation of mutations) {
-		if (mutation.type === "childList" || mutation.type === "characterData" || mutation.type === "attributes") {
-			scheduleUpdate();
-			break;
-		}
-	}
-});
-
-observer.observe(document.documentElement, {
-	childList: true,
-	subtree: true,
-	characterData: true,
-	attributes: true
-});})();
+		// Beobachtet DOM-Ã„nderungen der Cricket-Tabelle und des aktiven Spielers.
+		observeMutations({
+			onChange: scheduleUpdate
+		});
+	})();
