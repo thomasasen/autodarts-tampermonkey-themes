@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Autodarts Theme X01
 // @author       Thomas Asen
 // @license      MIT
@@ -99,6 +99,10 @@ span.chakra-badge.css-n2903v,
 span.chakra-badge.css-1j1ty0z,
 span.chakra-badge.css-1c4630i {
   font-size: calc(${STAT_LEG_FONT_SIZE_PX}px * var(--ad-ext-stat-scale));
+}
+
+.ad-ext-player.ad-ext-player-inactive span.css-3fr5p8 > p {
+  font-size: calc(${STAT_LEG_FONT_SIZE_PX}px * var(--ad-ext-stat-scale)) !important;
 }
 
 .ad-ext-avg-trend-arrow {
