@@ -611,7 +611,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Remove Darts Notification](assets/TakeOut.png)
+<img src="assets/TakeOut.png" alt="Remove Darts Notification" width="305">
 
 ##### ℹ️ Weitere Hinweise
 
@@ -864,7 +864,7 @@ Varianten über:
 - `CONFIG.highlightTargets`: `first`, `all`
 - `CONFIG.singleRing`: `inner`, `outer`, `both`
 
-![Animate Checkout Board Targets](assets/Checkout%20Board%20Blink.gif)
+![Animate Checkout Board Targets](assets/Checkout%20Score%20Pulse.gif)
 
 ##### ℹ️ Weitere Hinweise
 
