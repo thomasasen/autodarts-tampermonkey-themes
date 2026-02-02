@@ -78,7 +78,10 @@
     lensOpacity: 1,
     lensOffsetX: 0,
     lensOffsetY: 0,
-    lensRefreshMs: 200,
+    lensRefreshMs: 600,
+    lensIncludeDartOverlay: true, // Dart-Overlay aus dem Marker-Script in der Lupe anzeigen
+    lensDartOverlaySelector: "#ad-ext-dart-image-overlay",
+    lensHideMarkerCircles: true, // kleine Treffer-Kreise in der Lupe ausblenden, wenn Dart-Overlay aktiv
     lensScaleMultiplier: 1.6, // Gewuenschte Vergroesserung relativ zum Board (1.0 = kein Zoom)
     lensMaxScale: 12, // Sicherheitslimit fuer die interne ViewBox-Skalierung
     lensAllowClicks: true, // Klicks in der Lupe auf das Board weiterleiten
@@ -86,7 +89,7 @@
     lensClickSuppressMs: 4000, // Zeitfenster, in dem die Lupe nach Klicks deaktiv bleibt
     lensCursor: "crosshair",
     lensGlowColor: "rgba(190, 255, 140, 1)",
-    lensGlowDurationMs: 1800,
+    lensGlowDurationMs: 3200,
     lensZIndex: 150, // hinter GIF-Animation (z-[180])
 
     // Zoom-Staerke
