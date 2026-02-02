@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.3
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
@@ -43,6 +43,30 @@
 		} = window.autodartsAnimationShared;
 
 		const XLINK_NS = "http://www.w3.org/1999/xlink";
+
+		// ------------------------------------------------------------
+		// Lens-Visuals Preset (steuerbar am Skriptanfang)
+		// - "tv"     (Default, empfohlen): Doppelring + Highlight + Vignette
+		// - "camera" : RGB-Edge (chromatic aberration) + Scanlines + Vignette
+		// - "focus"  : Spotlight außerhalb abdunkeln + markanter Rahmen
+		// ------------------------------------------------------------
+		const LENS_STYLE_PRESET = "focus";
+
+		const LENS_FILTER_ID = "ad-ext-camzoom-lens-rgb";
+		const SPOTLIGHT_ID = "ad-ext-camzoom-spotlight";
+
+		function getLensPreset() {
+			const raw = String(LENS_STYLE_PRESET || "").trim().toLowerCase();
+			return raw === "camera" || raw === "focus" || raw === "tv" ? raw : "tv";
+		}
+
+		function isFocusPreset() {
+			return getLensPreset() === "focus";
+		}
+
+		function isCameraPreset() {
+			return getLensPreset() === "camera";
+		}
 
 		/**
    * Konfiguration fuer WM-TV-Style CamZoom.
@@ -162,10 +186,22 @@
   z-index: var(--ad-ext-lens-z, 150);
   opacity: 0;
   background: rgba(0, 0, 0, 0.35);
-  box-shadow: var(--ad-ext-lens-shadow, 0 18px 36px rgba(0, 0, 0, 0.45));
+  isolation: isolate;
+  box-shadow:
+    var(--ad-ext-lens-shadow, 0 18px 36px rgba(0, 0, 0, 0.45)),
+    var(--ad-ext-lens-frame, 0 0 0 rgba(0, 0, 0, 0));
   border: 2px solid rgba(255, 255, 255, 0.75);
   transition: opacity 140ms ease-out;
   animation: ad-ext-camzoom-glow var(--ad-ext-lens-glow-duration, 1800ms) ease-in-out infinite;
+}
+
+#ad-ext-camzoom-lens::before,
+#ad-ext-camzoom-lens::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: 0;
 }
 
 #ad-ext-camzoom-lens svg {
@@ -179,21 +215,141 @@
   0% {
     box-shadow:
       var(--ad-ext-lens-shadow, 0 18px 36px rgba(0, 0, 0, 0.45)),
+      var(--ad-ext-lens-frame, 0 0 0 rgba(0, 0, 0, 0)),
       0 0 26px var(--ad-ext-lens-glow, rgba(190, 255, 140, 0.8)),
       0 0 56px rgba(190, 255, 140, 0.5);
   }
   50% {
     box-shadow:
       var(--ad-ext-lens-shadow, 0 18px 36px rgba(0, 0, 0, 0.45)),
+      var(--ad-ext-lens-frame, 0 0 0 rgba(0, 0, 0, 0)),
       0 0 46px var(--ad-ext-lens-glow, rgba(190, 255, 140, 1)),
       0 0 110px rgba(190, 255, 140, 0.7);
   }
   100% {
     box-shadow:
       var(--ad-ext-lens-shadow, 0 18px 36px rgba(0, 0, 0, 0.45)),
+      var(--ad-ext-lens-frame, 0 0 0 rgba(0, 0, 0, 0)),
       0 0 26px var(--ad-ext-lens-glow, rgba(190, 255, 140, 0.8)),
       0 0 56px rgba(190, 255, 140, 0.5);
   }
+}
+
+/* ------------------------------------------------------------
+   Lens Presets (TV / CAMERA / FOCUS)
+   ------------------------------------------------------------ */
+
+/* TV: Doppelring + Highlight + Vignette */
+#ad-ext-camzoom-lens.ad-ext-lens-tv {
+  --ad-ext-lens-frame:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-tv::before {
+  opacity: 0.22;
+  transform: rotate(-18deg) translateY(-6%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.16) 28%,
+    rgba(255, 255, 255, 0.05) 52%,
+    rgba(255, 255, 255, 0) 78%
+  );
+  mix-blend-mode: screen;
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-tv::after {
+  opacity: 0.38;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0) 55%,
+    rgba(0, 0, 0, 0.34) 78%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-tv svg {
+  filter: contrast(1.08) saturate(1.05);
+}
+
+/* CAMERA: Scanlines + Vignette (RGB-Edge kommt per SVG-Filter) */
+#ad-ext-camzoom-lens.ad-ext-lens-camera {
+  --ad-ext-lens-frame:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-camera::before {
+  /* Glasreflex + dezente Scanlines (ohne Farb-Shift) */
+  opacity: 0.14;
+  transform: rotate(-14deg) translateY(-4%);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.18) 26%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0) 78%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.10) 0px,
+      rgba(255, 255, 255, 0.10) 1px,
+      rgba(0, 0, 0, 0) 3px,
+      rgba(0, 0, 0, 0) 6px
+    );
+  mix-blend-mode: screen;
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-camera::after {
+  opacity: 0.35;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0) 52%,
+    rgba(0, 0, 0, 0.28) 76%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-camera svg {
+  filter: contrast(1.12) saturate(0.95) brightness(1.03);
+}
+
+/* FOCUS: markanter Rahmen, Rest macht Spotlight */
+#ad-ext-camzoom-lens.ad-ext-lens-focus {
+  --ad-ext-lens-frame:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+#ad-ext-camzoom-lens.ad-ext-lens-focus svg {
+  filter: contrast(1.06) saturate(1.0);
+}
+
+/* Spotlight Overlay (nur Preset "focus") */
+#${SPOTLIGHT_ID} {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+  background: radial-gradient(
+    circle at var(--ad-ext-spot-x, 50%) var(--ad-ext-spot-y, 50%),
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) calc(var(--ad-ext-spot-r, 120px) - 2px),
+    rgba(0, 0, 0, 0.34) calc(var(--ad-ext-spot-r, 120px) + 26px),
+    rgba(0, 0, 0, 0.56) 100%
+  );
+}
+
+#${SPOTLIGHT_ID}.ad-ext-spot-on {
+  opacity: 1;
 }
 `;
 
@@ -217,6 +373,8 @@
 		let lensScene = null;
 		let lensBoardUse = null;
 		let lensOverlayUse = null;
+
+		let spotlightEl = null;
 
 		let lensInitPending = false;
 		let lensListenersAttached = false;
@@ -653,6 +811,8 @@
 
 				return count;
 			
+
+
 		}
 
 		function shouldShowT20Zoom(turn, boardSvg) {
@@ -829,6 +989,8 @@
 				lensContainer.appendChild(lensSvg);
 			}
 
+			ensureLensDefs();
+
 			if (! lensScene) {
 				lensScene = document.createElementNS(SVG_NS, "g");
 				lensScene.dataset.adExtCamzoomLens = "true";
@@ -838,6 +1000,118 @@
 			attachLensListeners();
 			applyLensStyles();
 			return lensContainer;
+		}
+
+		function ensureLensDefs() {
+			if (! lensSvg) {
+				return;
+			}
+
+			let defs = lensSvg.querySelector("defs");
+			if (! defs) {
+				defs = document.createElementNS(SVG_NS, "defs");
+				lensSvg.insertBefore(defs, lensSvg.firstChild);
+			}
+
+			if (lensSvg.querySelector(`#${LENS_FILTER_ID}`)) {
+				return;
+			}
+
+			const filter = document.createElementNS(SVG_NS, "filter");
+			filter.id = LENS_FILTER_ID;
+			filter.setAttribute("x", "-20%");
+			filter.setAttribute("y", "-20%");
+			filter.setAttribute("width", "140%");
+			filter.setAttribute("height", "140%");
+			filter.setAttribute("color-interpolation-filters", "sRGB");
+
+			const mkColorMatrix = (values, result) => {
+				const m = document.createElementNS(SVG_NS, "feColorMatrix");
+				m.setAttribute("in", "SourceGraphic");
+				m.setAttribute("type", "matrix");
+				m.setAttribute("values", values);
+				m.setAttribute("result", result);
+				return m;
+			};
+
+			const mkOffset = (input, dx, dy, result) => {
+				const o = document.createElementNS(SVG_NS, "feOffset");
+				o.setAttribute("in", input);
+				o.setAttribute("dx", String(dx));
+				o.setAttribute("dy", String(dy));
+				o.setAttribute("result", result);
+				return o;
+			};
+
+			// Kanal-Isolierung
+			const red = mkColorMatrix("1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0", "adExtRed");
+			const green = mkColorMatrix("0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0", "adExtGreen");
+			const blue = mkColorMatrix("0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0", "adExtBlue");
+
+			// Minimaler RGB-Shift (px, Lens-ViewBox ist in Screen-Koordinaten)
+			const redOff = mkOffset("adExtRed", 0.8, 0, "adExtRedOff");
+			const blueOff = mkOffset("adExtBlue", -0.8, 0, "adExtBlueOff");
+
+			const merge = document.createElementNS(SVG_NS, "feMerge");
+			const mn1 = document.createElementNS(SVG_NS, "feMergeNode");
+			mn1.setAttribute("in", "adExtRedOff");
+			const mn2 = document.createElementNS(SVG_NS, "feMergeNode");
+			mn2.setAttribute("in", "adExtGreen");
+			const mn3 = document.createElementNS(SVG_NS, "feMergeNode");
+			mn3.setAttribute("in", "adExtBlueOff");
+			merge.appendChild(mn1);
+			merge.appendChild(mn2);
+			merge.appendChild(mn3);
+
+			filter.appendChild(red);
+			filter.appendChild(green);
+			filter.appendChild(blue);
+			filter.appendChild(redOff);
+			filter.appendChild(blueOff);
+			filter.appendChild(merge);
+
+			defs.appendChild(filter);
+		}
+
+		function ensureSpotlight() {
+			if (!document.body) {
+				return null;
+			}
+			if (spotlightEl && document.body.contains(spotlightEl)) {
+				return spotlightEl;
+			}
+			spotlightEl = document.getElementById(SPOTLIGHT_ID);
+			if (! spotlightEl) {
+				spotlightEl = document.createElement("div");
+				spotlightEl.id = SPOTLIGHT_ID;
+				spotlightEl.setAttribute("aria-hidden", "true");
+				document.body.appendChild(spotlightEl);
+			}
+			return spotlightEl;
+		}
+
+		function hideSpotlight() {
+			if (! spotlightEl) {
+				return;
+			}
+			spotlightEl.classList.remove("ad-ext-spot-on");
+			spotlightEl.style.opacity = "0";
+		}
+
+		function updateSpotlight(centerX, centerY, radiusPx, lensZ) {
+			const el = ensureSpotlight();
+			if (! el) {
+				return;
+			}
+			el.style.setProperty("--ad-ext-spot-x", `${centerX}px`);
+			el.style.setProperty("--ad-ext-spot-y", `${centerY}px`);
+			el.style.setProperty("--ad-ext-spot-r", `${
+				Math.max(40, radiusPx)
+			}px`);
+			if (Number.isFinite(lensZ)) {
+				el.style.zIndex = String(Math.max(0, Math.floor(lensZ) - 1));
+			}
+			el.classList.add("ad-ext-spot-on");
 		}
 
 		function attachLensListeners() {
@@ -960,20 +1234,36 @@
 			if (! lensContainer) {
 				return;
 			}
+
+			const preset = getLensPreset();
+			lensContainer.classList.remove("ad-ext-lens-tv", "ad-ext-lens-camera", "ad-ext-lens-focus");
+			lensContainer.classList.add(`ad-ext-lens-${preset}`);
+
 			const size = Math.max(80, Number.parseFloat(CONFIG.lensDiameterPx) || 200);
-			const borderPx = Math.max(0, Number.parseFloat(CONFIG.lensBorderPx) || 0);
+			let borderPx = Math.max(0, Number.parseFloat(CONFIG.lensBorderPx) || 0);
+			if (preset === "tv") {
+				borderPx = Math.max(borderPx, 3);
+			}
+			if (preset === "focus") {
+				borderPx = Math.max(borderPx, 4);
+			}
+
 			const opacity = Math.max(0, Math.min(1, Number.parseFloat(CONFIG.lensOpacity) || 1));
 			const glowDuration = Math.max(0, Number.parseInt(CONFIG.lensGlowDurationMs, 10) || 0);
-			const glowColor = CONFIG.lensGlowColor || "rgba(159, 219, 88, 0.6)";
+
+			const glowColor = preset === "camera" ? "rgba(170, 210, 255, 1)" : preset === "focus" ? "rgba(255, 220, 160, 1)" : CONFIG.lensGlowColor || "rgba(190, 255, 140, 1)";
+
+			const borderColor = preset === "camera" ? "rgba(235, 245, 255, 0.70)" : preset === "focus" ? "rgba(255, 255, 255, 0.80)" : CONFIG.lensBorderColor || "rgba(255, 255, 255, 0.75)";
 
 			lensContainer.style.width = `${size}px`;
 			lensContainer.style.height = `${size}px`;
-			lensContainer.style.border = `${borderPx}px solid ${
-				CONFIG.lensBorderColor || "rgba(255, 255, 255, 0.75)"
-			}`;
+			lensContainer.style.border = `${borderPx}px solid ${borderColor}`;
+
 			lensContainer.style.setProperty("--ad-ext-lens-shadow", CONFIG.lensShadow || "none");
 			lensContainer.style.setProperty("--ad-ext-lens-glow", glowColor);
-			lensContainer.style.setProperty("--ad-ext-lens-z", String(Number.parseInt(CONFIG.lensZIndex, 10) || 150));
+
+			const z = Number.parseInt(CONFIG.lensZIndex, 10) || 150;
+			lensContainer.style.setProperty("--ad-ext-lens-z", String(z));
 
 			if (glowDuration > 0) {
 				lensContainer.style.setProperty("--ad-ext-lens-glow-duration", `${glowDuration}ms`);
@@ -983,15 +1273,24 @@
 			} else {
 				lensContainer.style.setProperty("--ad-ext-lens-glow-duration", "0ms");
 				lensContainer.style.animation = "none";
-			} lensContainer.style.boxShadow = "var(--ad-ext-lens-shadow)";
-			lensContainer.style.background = CONFIG.lensBackground || "transparent";
+			} lensContainer.style.background = CONFIG.lensBackground || "transparent";
 			lensContainer.style.opacity = String(opacity);
 			lensContainer.style.pointerEvents = CONFIG.lensAllowClicks ? "auto" : "none";
 			lensContainer.style.cursor = CONFIG.lensAllowClicks ? CONFIG.lensCursor || "crosshair" : "default";
 			lensContainer.style.borderRadius = "50%";
 			lensContainer.style.overflow = "hidden";
 			lensContainer.style.position = "fixed";
-			lensContainer.style.zIndex = String(Number.parseInt(CONFIG.lensZIndex, 10) || 150);
+			lensContainer.style.zIndex = String(z);
+
+			// Camera preset nutzt CSS-Glasoverlays; kein SVG-Farbfilter (verhindert Farbstich).
+			if (lensScene) {
+				lensScene.removeAttribute("filter");
+			}
+
+			// Spotlight zIndex updaten, falls vorhanden
+			if (spotlightEl) {
+				spotlightEl.style.zIndex = String(Math.max(0, z - 1));
+			}
 
 			if (lensSvg) {
 				lensSvg.style.width = "100%";
@@ -1008,6 +1307,7 @@
 			lensContainer.style.left = "-9999px";
 			lensContainer.style.top = "-9999px";
 			lensContainer.style.pointerEvents = "none";
+			hideSpotlight();
 		}
 
 		function ensureElementId(el, prefix) {
@@ -1354,6 +1654,14 @@
 
     lensSvg.setAttribute("viewBox", `${vbX} ${vbY} ${vbWidth} ${vbHeight}`);
     activeZoom.lensViewBox = { x: vbX, y: vbY, width: vbWidth, height: vbHeight };
+
+    // Fokus-Preset: Außen abdunkeln (Spotlight)
+    if (isFocusPreset()) {
+      const z = Number.parseInt(CONFIG.lensZIndex, 10) || 150;
+      updateSpotlight(screenPoint.x + offsetX, screenPoint.y + offsetY, size / 2, z);
+    } else {
+      hideSpotlight();
+    }
   }
 
   function buildTransform(origin, scale) {
