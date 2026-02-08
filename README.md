@@ -829,6 +829,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 - Zweck: WM-TV-Style Cam-Zoom/Lupe auf dem Board für Checkout-Doubles (Score <= 50) oder T20-Push-In.
 - Trigger/Erkennung: X01-Variante; Score-Check beim aktiven Spieler; T20 nur wenn die ersten zwei Darts T20 sind und kein dritter Vorschlag vorhanden ist.
 - Änderungen: erzeugt eine schwebende Lupe (Lens-Mode), optional klick-durchleitbar, ohne Board-Transform.
+- Verhalten bei Korrekturen: Bei jeder Punkte- oder Wurfänderung wird neu bewertet; wenn kein gültiges Checkout-/T20-Ziel mehr vorliegt, wird der Zoom sofort entfernt.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -849,6 +850,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 | `CONFIG.checkoutScale`    | `1.1`                       | Basis-Scale für Checkout-Zoom.                                          |
 | `CONFIG.t20Scale`         | `1.06`                      | Basis-Scale für T20-Push-In.                                            |
 | `CONFIG.scorePollMs`      | `300`                       | Prüft Score-Änderungen regelmäßig und triggert eine Neubewertung.       |
+| `CONFIG.strictRecheckOnScoreOrThrowChange` | `true`       | Erzwingt bei Punkte-/Wurfänderungen eine harte Neubewertung ohne Hold-/Keep-Überhang. |
 | `CONFIG.lensDiameterPx`   | `270`                       | Größe der Lupe in Pixeln.                                               |
 | `CONFIG.lensScaleMultiplier` | `1.6`                    | Vergrößerung innerhalb der Lupe relativ zum Board.                      |
 | `CONFIG.lensClickSuppressMs` | `4000`                   | Zeit in ms, in der die Lupe nach Klicks ausgeblendet bleibt.            |
@@ -864,6 +866,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 
 - Checkout-Zoom ist scorebasiert: `50` = Bullseye, sonst `D(score/2)`; bei fehlender Score-Anzeige kein Checkout-Zoom.
 - T20-Zoom verschwindet, sobald ein dritter Wurf oder eine andere Suggestion auftaucht.
+- Punkte-/Wurfkorrekturen haben Vorrang: Wenn sich der Zustand ändert und die Bedingungen nicht mehr passen, bleibt kein alter Zoom stehen.
 - `lensZIndex` sollte unter dem GIF-Overlay liegen, wenn die Animation darüber erscheinen soll.
 
 ---

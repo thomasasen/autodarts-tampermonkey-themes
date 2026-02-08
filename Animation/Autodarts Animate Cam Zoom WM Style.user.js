@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      1.4
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
@@ -19,6 +19,8 @@
  *   -> Hat Vorrang: Wenn ein Checkout-Doppel als naechstes suggested ist, kein T20-Push-In.
  * - Kein Checkout: wenn die ersten zwei Darts im Turn T20 sind -> leichter Push-In auf T20 vor Dart 3.
  * - Sonst kein Zoom.
+ * - Bei jeder Punkte- oder Wurfaenderung wird die Zoom-Bedingung hart neu geprueft.
+ *   Wenn kein gueltiges Ziel mehr vorliegt, wird der Zoom sofort entfernt.
  *
  * Lens-Mode (NEU):
  * - Kein SVG-Clone mehr.
@@ -95,6 +97,9 @@
 			checkoutFallbackFromTurnPlan: true,
 			holdWhenTargetMissing: true,
 			keepZoomUntilDartsCleared: true,
+			// Erzwingt bei echter Punkte-/Wurfaenderung eine harte Neubewertung.
+			// Dann greifen Hold/Keep nicht, wenn kein Checkout/T20 mehr vorliegt.
+			strictRecheckOnScoreOrThrowChange: true,
 			checkoutHoldMs: 1600,
 			t20HoldMs: 1100,
 			pollIntervalMs: 300,
@@ -382,6 +387,7 @@
 		let lensResumeTimer = null;
 
 		let lastScoreValue = null;
+		let lastGameplayState = null;
 		let cachedRoots = null;
 		let cachedRootsAt = 0;
 		let rootObserver = null;
@@ -773,6 +779,36 @@
     return order === "first" ? throwsList.slice(0, 3) : throwsList.slice(-3);
   }
 
+		function serializeThrow(entry) {
+			if (! entry || typeof entry.ring !== "string") {
+				return "";
+			}
+			if (entry.ring === "DB" || entry.ring === "SB") {
+				return entry.ring;
+			}
+			const value = Number.isFinite(entry.value) ? entry.value : "";
+			return `${entry.ring}${value}`;
+		}
+
+		function getGameplayState(scoreValue, throwsList) {
+			const safeThrows = Array.isArray(throwsList) ? throwsList : [];
+			return {
+				score: Number.isFinite(scoreValue) ? scoreValue : null,
+				throwsKey: safeThrows.map(serializeThrow).filter(Boolean).join("|")
+			};
+		}
+
+		function didGameplayStateChange(nextState) {
+			if (! nextState || ! lastGameplayState) {
+				return false;
+			}
+			const scoreKnownNow = Number.isFinite(nextState.score);
+			const scoreKnownBefore = Number.isFinite(lastGameplayState.score);
+			const scoreChanged = (scoreKnownNow || scoreKnownBefore) && nextState.score !== lastGameplayState.score;
+			const throwsChanged = nextState.throwsKey !== lastGameplayState.throwsKey;
+			return scoreChanged || throwsChanged;
+		}
+
   function isT20Throw(entry) {
     return Boolean(entry && entry.ring === "T" && entry.value === 20);
   }
@@ -873,15 +909,15 @@
 			return Boolean(CONFIG.holdWhenTargetMissing && activeZoom && activeZoom.type !== "t20" && activeZoom.holdUntil && now < activeZoom.holdUntil);
 		}
 
-		function shouldKeepZoomWithoutTarget() {
+		function shouldKeepZoomWithoutTarget(throwsList) {
 			if (! CONFIG.keepZoomUntilDartsCleared || ! activeZoom) {
 				return false;
 			}
 			if (activeZoom.type === "t20") {
 				return false;
 			}
-			const throwsList = getCurrentThrows();
-			if (throwsList.length > 0) {
+			const safeThrows = Array.isArray(throwsList) ? throwsList : getCurrentThrows();
+			if (safeThrows.length > 0) {
 				return true;
 			}
 			const boardSvg = activeZoom.boardSvg || (activeZoom.board && activeZoom.board.ownerSVGElement);
@@ -1751,20 +1787,18 @@
     return Boolean(target && (target.ring === "DB" || target.ring === "D"));
   }
 
-  function getCheckoutTarget(throwsCount) {
+  function getCheckoutTarget(score) {
     if (!CONFIG.enableCheckoutZoom) {
       return null;
     }
-    const score = getActiveScoreValue();
     if (score === null || !isCheckoutPossibleFromScore(score)) {
       return null;
     }
     return getDirectCheckoutTargetFromScore(score);
   }
 
-  function getDesiredZoom(board) {
-    const throwsCount = getCurrentThrows().length;
-    const checkoutTarget = getCheckoutTarget(throwsCount);
+  function getDesiredZoom(board, scoreValue) {
+    const checkoutTarget = getCheckoutTarget(scoreValue);
     const hasCheckout = Boolean(checkoutTarget);
 
     if (checkoutTarget) {
@@ -2039,14 +2073,24 @@
 				}
 			}
 
-			const desired = getDesiredZoom(board);
+			const throwsList = getCurrentThrows();
+			const scoreValue = getActiveScoreValue();
+			const gameplayState = getGameplayState(scoreValue, throwsList);
+			const gameplayStateChanged = didGameplayStateChange(gameplayState);
+			lastGameplayState = gameplayState;
+
+			const desired = getDesiredZoom(board, scoreValue);
 
 			if (! desired) {
 				if (activeZoom && activeZoom.type === "t20") {
 					clearZoomInstant();
 					return;
 				}
-				if (shouldHold(now) || shouldKeepZoomWithoutTarget()) {
+				if (CONFIG.strictRecheckOnScoreOrThrowChange && gameplayStateChanged && activeZoom) {
+					resetZoom();
+					return;
+				}
+				if (shouldHold(now) || shouldKeepZoomWithoutTarget(throwsList)) {
 					if (activeZoom && activeZoom.mode === "lens") {
 						renderLens(activeZoom.currentScale || activeZoom.scaleTo || 1);
 					}
