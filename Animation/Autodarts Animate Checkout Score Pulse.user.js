@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Highlight the remaining score when a checkout is available in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Score%20Pulse.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Score%20Pulse.user.js
@@ -17,6 +18,7 @@
 	"use strict";
 
 	const {ensureStyle, createRafScheduler, observeMutations, isX01Variant} = window.autodartsAnimationShared;
+	const gameStateShared = window.autodartsGameStateShared || null;
 
 	const STYLE_ID = "autodarts-animate-checkout-style";
 	const HIGHLIGHT_CLASS = "ad-ext-checkout-possible";
@@ -143,6 +145,13 @@
 	}
 
 	function getActiveScoreValue() {
+		if (gameStateShared && typeof gameStateShared.getActiveScore === "function") {
+			const stateScore = gameStateShared.getActiveScore();
+			if (Number.isFinite(stateScore)) {
+				return stateScore;
+			}
+		}
+
 		const node = document.querySelector(ACTIVE_SCORE_SELECTOR) || document.querySelector(SCORE_SELECTOR);
 		return parseScore(node ?. textContent || "");
 	}
@@ -195,7 +204,11 @@
 
 	// Prefer the checkout suggestion text; fall back to score math in X01.
 	function updateScoreHighlights() {
-		const isX01 = isX01Variant(VARIANT_ELEMENT_ID, {
+		const isX01 = gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
+			allowMissing: true,
+			allowEmpty: true,
+			allowNumeric: true
+		}) : isX01Variant(VARIANT_ELEMENT_ID, {
 			allowMissing: true,
 			allowEmpty: true,
 			allowNumeric: true

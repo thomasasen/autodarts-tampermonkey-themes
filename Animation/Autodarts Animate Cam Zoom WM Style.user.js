@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.5
+// @version      1.6
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cam%20Zoom%20WM%20Style.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cam%20Zoom%20WM%20Style.user.js
@@ -43,6 +44,7 @@
 			polar,
 			SVG_NS
 		} = window.autodartsAnimationShared;
+		const gameStateShared = window.autodartsGameStateShared || null;
 
 		const XLINK_NS = "http://www.w3.org/1999/xlink";
 
@@ -544,6 +546,14 @@
 			if (! CONFIG.useScoreCheckoutGuard) {
 				return null;
 			}
+
+			if (gameStateShared && typeof gameStateShared.getActiveScore === "function") {
+				const stateScore = gameStateShared.getActiveScore();
+				if (Number.isFinite(stateScore)) {
+					return stateScore;
+				}
+			}
+
 			const activeNodes = queryAllInRoots(CONFIG.activeScoreSelector);
 			if (activeNodes.length) {
 				const score = parseScore(activeNodes[0].textContent || "");
@@ -2091,7 +2101,11 @@
 			const now = performance.now();
 
 			if (CONFIG.requireX01) {
-				const isX01 = isX01Variant(CONFIG.variantElementId, {
+				const isX01 = gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
+					allowMissing: false,
+					allowEmpty: false,
+					allowNumeric: true
+				}) : isX01Variant(CONFIG.variantElementId, {
 					allowMissing: false,
 					allowEmpty: false,
 					allowNumeric: true

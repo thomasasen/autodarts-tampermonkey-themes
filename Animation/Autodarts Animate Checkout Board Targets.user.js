@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Highlights checkout targets on the dartboard (e.g. doubles/bull) and animates them with blink, pulse, or glow when a checkout is possible in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js
@@ -15,6 +16,7 @@
 
 (function () {
 	"use strict";
+	const gameStateShared = window.autodartsGameStateShared || null;
 
 	const {
 		SVG_NS,
@@ -384,7 +386,11 @@
 		const suggestionEl = document.querySelector(CONFIG.suggestionSelector);
 		const text = suggestionEl ?. textContent ?. trim() || "";
 
-		const isX01 = CONFIG.requireX01 ? isX01Variant(CONFIG.variantElementId, {
+		const isX01 = CONFIG.requireX01 ? gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
+			allowMissing: false,
+			allowEmpty: false,
+			allowNumeric: false
+		}) : isX01Variant(CONFIG.variantElementId, {
 			allowMissing: false,
 			allowEmpty: false,
 			allowNumeric: false

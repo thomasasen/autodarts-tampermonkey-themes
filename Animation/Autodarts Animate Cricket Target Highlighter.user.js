@@ -1,17 +1,19 @@
-﻿// ==UserScript==// @name         Autodarts Animate Cricket Target Highlighter// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-	// @version      2.0
-	// @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
-	// @author       Thomas Asen
-	// @license      MIT
-	// @match        *://play.autodarts.io/*
-	// @run-at       document-start
-	// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
-	// @grant        none
-	// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
-	// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
-	// ==/UserScript==
-
-	(function () {
+﻿// ==UserScript==
+// @name         Autodarts Animate Cricket Target Highlighter
+// @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
+// @version      2.1
+// @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
+// @author       Thomas Asen
+// @license      MIT
+// @match        *://play.autodarts.io/*
+// @run-at       document-start
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
+// @grant        none
+// @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
+// @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js
+// ==/UserScript==
+(function () {
 		"use strict";
 
 		const {
@@ -26,6 +28,7 @@
 			createWedge,
 			createBull
 		} = window.autodartsAnimationShared;
+		const gameStateShared = window.autodartsGameStateShared || null;
 
 		// Skript-Ziel: Cricket-Marks je Spieler lesen und die ZustÃ¤nde als Board-Overlay darstellen.
 		// Ablauf:
@@ -227,6 +230,16 @@
 `;
 
 		function isCricketVariantActive() {
+			if (gameStateShared && typeof gameStateShared.isCricketVariant === "function") {
+				const fromState = gameStateShared.isCricketVariant({
+					allowMissing: false,
+					allowEmpty: false
+				});
+				if (fromState) {
+					return true;
+				}
+			}
+
 			const variantEl = document.getElementById(CONFIG.variantElementId);
 			if (! variantEl) {
 				debugLog("Variant element missing:", CONFIG.variantElementId);
@@ -1109,3 +1122,4 @@ function updateTargets () {
 			onChange: scheduleUpdate
 		});
 	})();
+
