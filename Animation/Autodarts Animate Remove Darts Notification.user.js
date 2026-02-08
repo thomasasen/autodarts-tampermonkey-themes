@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Replaces the "Removing Darts" notice with TakeOut.png and a subtle pulse animation.
 // @author       Thomas Asen
 // @license      MIT
@@ -137,7 +137,13 @@
 	}
 
 	function getCurrentViewKey() {
-		return `${location.pathname}|${location.search}|${location.hash}`;
+		return `${
+			location.pathname
+		}|${
+			location.search
+		}|${
+			location.hash
+		}`;
 	}
 
 	function syncViewState() {
@@ -156,7 +162,7 @@
 	}
 
 	function trackShadowHost(host) {
-		if (! CONFIG.searchShadowRoots || !host || host.nodeType !== Node.ELEMENT_NODE || seenShadowHosts.has(host)) {
+		if (! CONFIG.searchShadowRoots || ! host || host.nodeType !== Node.ELEMENT_NODE || seenShadowHosts.has(host)) {
 			return;
 		}
 		seenShadowHosts.add(host);
@@ -171,16 +177,13 @@
 	}
 
 	function trackShadowHostsInNode(node) {
-		if (! CONFIG.searchShadowRoots || !node) {
+		if (! CONFIG.searchShadowRoots || ! node) {
 			return;
 		}
 		if (node.nodeType === Node.ELEMENT_NODE) {
 			trackShadowHost(node);
 		}
-		if (
-			(node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) ||
-			typeof document.createTreeWalker !== "function"
-		) {
+		if ((node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) || typeof document.createTreeWalker !== "function") {
 			return;
 		}
 		const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, null);
@@ -196,7 +199,7 @@
 			return;
 		}
 		mutations.forEach((mutation) => {
-			if (! mutation) {
+			if (!mutation) {
 				return;
 			}
 			if (mutation.type === "childList") {
@@ -216,7 +219,7 @@
 			return;
 		}
 		const prototype = Element.prototype;
-		if (!prototype || typeof prototype.attachShadow !== "function") {
+		if (! prototype || typeof prototype.attachShadow !== "function") {
 			return;
 		}
 		const currentAttachShadow = prototype.attachShadow;
@@ -231,8 +234,7 @@
 		Object.defineProperty(wrappedAttachShadow, ATTACH_SHADOW_HOOK_FLAG, {value: true});
 		try {
 			prototype.attachShadow = wrappedAttachShadow;
-		} catch (error) {
-			// Ignore: if patching is blocked, mutation-based tracking still works.
+		} catch (error) { // Ignore: if patching is blocked, mutation-based tracking still works.
 		}
 	}
 
@@ -302,19 +304,19 @@
 			if (collectWithSelectors(root, CONFIG.matchViewSelectors || [])) {
 				break;
 			}
-			if (collected.length < limit) {
+			if (collected.length<limit) {
 				if (root === document) {
 					addCandidate(document.body || document.documentElement);
 				} else if (root && root.host) {
 					addCandidate(root.host);
 				}
 			}
-			if (collected.length >= limit) {
+			if (collected.length> = limit) {
 				break;
 			}
 		}
 
-		if (!collected.length) {
+		if (! collected.length) {
 			addCandidate(document.body || document.documentElement);
 		}
 
@@ -330,7 +332,7 @@
 
 	function getFallbackScanAreas(roots) {
 		const areas = getFallbackAreas(roots);
-		if (!areas.length) {
+		if (! areas.length) {
 			return [];
 		}
 		const windowSize = Math.max(1, Math.min(Number(CONFIG.fallbackAreaWindowSize) || 1, areas.length));
@@ -343,7 +345,7 @@
 	}
 
 	function collectByText(areas) {
-		if (! fallbackTextMatches.length || !areas.length) {
+		if (! fallbackTextMatches.length || ! areas.length) {
 			return [];
 		}
 		const matches = new Set();
