@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.6
+// @version      1.7
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
@@ -361,6 +361,8 @@
 `;
 
 		const IMPOSSIBLE_CHECKOUTS = new Set(Array.isArray(CONFIG.impossibleCheckoutScores) ? CONFIG.impossibleCheckoutScores : []);
+		const dartMarkerBaselineByBoard = new WeakMap();
+		const DART_MARKER_HINT_RE = /shadow|marker|hit|dart|drop-shadow|filter/i;
 
 		const EASING = {
 			linear: (t) => t,
@@ -720,6 +722,61 @@
 			return throwsList;
 		}
 
+		function parseThrowFromState(rawThrow) {
+			if (! rawThrow || typeof rawThrow !== "object") {
+				return null;
+			}
+
+			const directText = normalizeText(rawThrow.entry || rawThrow.segment?.name || "");
+			const parsedFromText = parseThrowText(directText);
+			if (parsedFromText) {
+				return parsedFromText;
+			}
+
+			const segment = rawThrow.segment || {};
+			const number = Number.parseInt(segment.number, 10);
+			const multiplier = Number.parseInt(segment.multiplier, 10);
+			const bed = String(segment.bed || "").toUpperCase();
+
+			if (number === 25 || bed.includes("BULL")) {
+				if (multiplier === 2 || bed.includes("DOUBLE")) {
+					return {ring: "DB"};
+				}
+				return {ring: "SB"};
+			}
+
+			if (! Number.isFinite(number) || number < 1 || number > 20) {
+				return null;
+			}
+			if (multiplier === 3) {
+				return {ring: "T", value: number};
+			}
+			if (multiplier === 2) {
+				return {ring: "D", value: number};
+			}
+			return {ring: "S", value: number};
+		}
+
+		function getCurrentThrowsFromGameState() {
+			if (! gameStateShared || typeof gameStateShared.getActiveTurn !== "function") {
+				return null;
+			}
+			const activeTurn = gameStateShared.getActiveTurn();
+			if (! activeTurn || ! Array.isArray(activeTurn.throws)) {
+				return null;
+			}
+			return activeTurn.throws.map((rawThrow) => parseThrowFromState(rawThrow)).filter(Boolean);
+		}
+
+		function trimThrowsToConfiguredOrder(throwsList) {
+			const safeThrows = Array.isArray(throwsList) ? throwsList : [];
+			if (safeThrows.length <= 3) {
+				return safeThrows;
+			}
+			const order = CONFIG.throwOrder === "first" ? "first" : "latest";
+			return order === "first" ? safeThrows.slice(0, 3) : safeThrows.slice(-3);
+		}
+
 		function selectBestThrowNodes() {
 			const scopes = [];
 
@@ -777,17 +834,17 @@
 		}
 
 		function getCurrentThrows() {
+			const gameStateThrows = getCurrentThrowsFromGameState();
+			if (Array.isArray(gameStateThrows)) {
+				return trimThrowsToConfiguredOrder(gameStateThrows);
+			}
+
 			const best = selectBestThrowNodes();
 			if (! best) {
 				return [];
 			}
-			const throwsList = best.parsed;
-			if (throwsList.length<= 3) {
-      return throwsList;
-    }
-    const order = CONFIG.throwOrder === "first" ? "first" : "latest";
-    return order === "first" ? throwsList.slice(0, 3) : throwsList.slice(-3);
-  }
+			return trimThrowsToConfiguredOrder(best.parsed);
+		}
 
 		function serializeThrow(entry) {
 			if (! entry || typeof entry.ring !== "string") {
@@ -832,7 +889,20 @@
     return !(sequence.length === 1 && isT20Throw(sequence[0]));
   }
 
-  function countDartMarkers(boardSvg) {
+  function isLikelyDartMarkerCircle(circle) {
+    if (!circle) {
+      return false;
+    }
+    if (circle.hasAttribute("data-hit") || circle.hasAttribute("data-marker")) {
+      return true;
+    }
+    const className = circle.getAttribute("class") || "";
+    const style = circle.getAttribute("style") || "";
+    const filter = circle.getAttribute("filter") || "";
+    return DART_MARKER_HINT_RE.test(`${className} ${style} ${filter}`);
+  }
+
+  function countDartMarkers(boardSvg, throwsList) {
     if (!boardSvg) {
       return 0;
     }
@@ -841,7 +911,8 @@
       minR, Number.parseFloat(CONFIG.dartMarkerMaxRadius) || 6
     );
     const circles = boardSvg.querySelectorAll("circle");
-    let count = 0;
+    let countRaw = 0;
+    let countMarked = 0;
     circles.forEach((circle) => {
 				if (circle.closest && circle.closest("defs,mask,clipPath,pattern,symbol")) {
 					return;
@@ -851,37 +922,47 @@
 					return;
 				}
 				if (r >= minR && r <= maxR) {
-					count += 1;
+					countRaw += 1;
+					if (isLikelyDartMarkerCircle(circle)) {
+						countMarked += 1;
+					}
 				}
-			}) 
+			});
 
-				return count;
-			
+			if (countMarked > 0) {
+				return countMarked;
+			}
 
-
+			const safeThrows = Array.isArray(throwsList) ? throwsList : [];
+			if (safeThrows.length === 0) {
+				dartMarkerBaselineByBoard.set(boardSvg, countRaw);
+				return 0;
+			}
+			const baseline = dartMarkerBaselineByBoard.get(boardSvg);
+			if (Number.isFinite(baseline)) {
+				return Math.max(0, countRaw - baseline);
+			}
+			return countRaw;
 		}
 
-		function shouldShowT20Zoom(turn, boardSvg) {
-			if (! turn) {
+		function shouldShowT20Zoom(throwsList, turn, boardSvg) {
+			const safeThrows = Array.isArray(throwsList) ? throwsList : [];
+			if (safeThrows.length < 2) {
 				return false;
 			}
-			const rows = Array.from(turn.querySelectorAll(CONFIG.throwRowSelector));
-			if (rows.length < 2) {
-				return false;
-			}
-			const first = parseThrowText(getThrowTextFromRow(rows[0]));
-			const second = parseThrowText(getThrowTextFromRow(rows[1]));
+			const first = safeThrows[0];
+			const second = safeThrows[1];
 			if (!isT20Throw(first) || !isT20Throw(second)) {
 				return false;
 			}
-			const third = rows[2] ? parseThrowText(getThrowTextFromRow(rows[2])) : null;
+			const third = safeThrows[2] || null;
 			if (third) {
 				return false;
 			}
-			if (isSuggestionBlockingT20(turn)) {
+			if (turn && isSuggestionBlockingT20(turn)) {
 				return false;
 			}
-			if (boardSvg && countDartMarkers(boardSvg) >= 3) {
+			if (boardSvg && countDartMarkers(boardSvg, safeThrows) >= 3) {
 				return false;
 			}
 			return true;
@@ -934,7 +1015,7 @@
 			if (! boardSvg) {
 				return false;
 			}
-			return countDartMarkers(boardSvg) > 0;
+			return countDartMarkers(boardSvg, safeThrows) > 0;
 		}
 
 		function isLensMode() {
@@ -1890,7 +1971,7 @@
     return getDirectCheckoutTargetFromScore(score);
   }
 
-  function getDesiredZoom(board, scoreValue) {
+  function getDesiredZoom(board, scoreValue, throwsList) {
     const checkoutTarget = getCheckoutTarget(scoreValue);
     const hasCheckout = Boolean(checkoutTarget);
 
@@ -1903,7 +1984,7 @@
     if (
       CONFIG.enableT20Zoom &&
       (!CONFIG.t20RequiresNoCheckout || !hasCheckout) &&
-      shouldShowT20Zoom(getTurnContainer(), board.svg)
+      shouldShowT20Zoom(throwsList, getTurnContainer(), board.svg)
     ) {
       return {
         key: "t20", type: "t20", target: { ring: "T", value: 20 }, scale: getConfiguredScale(CONFIG.t20Scale), board, };
@@ -2176,7 +2257,7 @@
 			const gameplayStateChanged = didGameplayStateChange(gameplayState);
 			lastGameplayState = gameplayState;
 
-			const desired = getDesiredZoom(board, scoreValue);
+			const desired = getDesiredZoom(board, scoreValue, throwsList);
 
 			if (! desired) {
 				if (activeZoom && activeZoom.type === "t20") {

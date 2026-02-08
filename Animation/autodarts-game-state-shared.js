@@ -82,15 +82,98 @@
     return Number.isFinite(idx) ? idx : null;
   }
 
+  function getActivePlayerId() {
+    const match = state.match;
+    const idx = getActivePlayerIndex();
+    if (!match || !Array.isArray(match.players) || !Number.isFinite(idx)) {
+      return null;
+    }
+    const player = match.players[idx];
+    const id = player && player.id;
+    return id ? String(id) : null;
+  }
+
+  function parseTimestamp(value) {
+    if (!value) {
+      return 0;
+    }
+    const ts = Date.parse(value);
+    return Number.isFinite(ts) ? ts : 0;
+  }
+
+  function selectNewestTurn(candidates) {
+    if (!Array.isArray(candidates) || !candidates.length) {
+      return null;
+    }
+    return candidates.reduce((best, candidate) => {
+      if (!best) {
+        return candidate;
+      }
+      const candidateRound = Number.isFinite(candidate?.round) ? candidate.round : -1;
+      const bestRound = Number.isFinite(best?.round) ? best.round : -1;
+      if (candidateRound !== bestRound) {
+        return candidateRound > bestRound ? candidate : best;
+      }
+      const candidateTurn = Number.isFinite(candidate?.turn) ? candidate.turn : -1;
+      const bestTurn = Number.isFinite(best?.turn) ? best.turn : -1;
+      if (candidateTurn !== bestTurn) {
+        return candidateTurn > bestTurn ? candidate : best;
+      }
+      const candidateTs = parseTimestamp(candidate?.createdAt);
+      const bestTs = parseTimestamp(best?.createdAt);
+      return candidateTs >= bestTs ? candidate : best;
+    }, null);
+  }
+
   function getActiveTurn() {
-    const turns = state.match?.turns;
+    const match = state.match;
+    const turns = match?.turns;
     if (!Array.isArray(turns) || !turns.length) {
       return null;
     }
-    return turns[0];
+
+    const activePlayerId = getActivePlayerId();
+    const unfinished = turns.filter((turn) => {
+      if (!turn || typeof turn !== "object") {
+        return false;
+      }
+      const finishedAt = String(turn.finishedAt || "").trim();
+      return !finishedAt;
+    });
+
+    const unfinishedActive = activePlayerId
+      ? unfinished.filter((turn) => String(turn.playerId || "") === activePlayerId)
+      : [];
+    const unfinishedPick = selectNewestTurn(unfinishedActive) || selectNewestTurn(unfinished);
+    if (unfinishedPick) {
+      return unfinishedPick;
+    }
+
+    const activeTurns = activePlayerId
+      ? turns.filter((turn) => turn && String(turn.playerId || "") === activePlayerId)
+      : [];
+    return selectNewestTurn(activeTurns) || selectNewestTurn(turns) || turns[0];
+  }
+
+  function getActiveThrows() {
+    const turn = getActiveTurn();
+    if (!turn || !Array.isArray(turn.throws)) {
+      return [];
+    }
+    return turn.throws;
   }
 
   function getActiveScore() {
+    const match = state.match;
+    const playerIdx = getActivePlayerIndex();
+    const gameScores = match?.gameScores;
+    if (Array.isArray(gameScores) && Number.isFinite(playerIdx)) {
+      const gameScore = gameScores[playerIdx];
+      if (Number.isFinite(gameScore)) {
+        return gameScore;
+      }
+    }
+
     const turn = getActiveTurn();
     if (!turn) {
       return null;
@@ -217,6 +300,7 @@
     getCricketMode,
     getActivePlayerIndex,
     getActiveTurn,
+    getActiveThrows,
     getActiveScore,
     applyMatch,
   };
