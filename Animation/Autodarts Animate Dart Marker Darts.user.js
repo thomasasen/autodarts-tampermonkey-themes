@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -1115,27 +1115,103 @@
 	}
 
 	// Funktion: watchLocationChanges
-	// Zweck: SPA-Navigation über History/Events beobachten.
+	// Zweck: SPA-Navigation über Events/Observer beobachten.
 	// Parameter: keine.
 	// Rückgabe: void.
-	// Nutzt: history.pushState/replaceState, handleLocationChange().
+	// Nutzt: popstate/hashchange/currententrychange, MutationObserver, Fallback-Interval, handleLocationChange().
 	// Wird genutzt von: Initialisierung.
 	function watchLocationChanges() {
-		const originalPushState = history.pushState;
-		const originalReplaceState = history.replaceState;
-
-		history.pushState = function (...args) {
-			originalPushState.apply(this, args);
-			handleLocationChange();
-		};
-		history.replaceState = function (...args) {
-			originalReplaceState.apply(this, args);
+		const onPotentialLocationChange = () => {
 			handleLocationChange();
 		};
 
-		window.addEventListener("popstate", handleLocationChange);
-		window.addEventListener("hashchange", handleLocationChange);
-		setInterval(handleLocationChange, 500);
+		window.addEventListener("popstate", onPotentialLocationChange);
+		window.addEventListener("hashchange", onPotentialLocationChange);
+
+		const navigationApi = typeof window.navigation === "object" ? window.navigation : null;
+		const hasCurrentEntryChangeEvent = Boolean(navigationApi && typeof navigationApi.addEventListener === "function" && typeof navigationApi.removeEventListener === "function");
+		if (hasCurrentEntryChangeEvent) {
+			navigationApi.addEventListener("currententrychange", onPotentialLocationChange);
+		}
+
+		let fallbackInterval = 0;
+		const stopFallbackInterval = () => {
+			if (! fallbackInterval) {
+				return;
+			}
+			window.clearInterval(fallbackInterval);
+			fallbackInterval = 0;
+		};
+		const startFallbackInterval = () => {
+			if (fallbackInterval) {
+				return;
+			}
+			fallbackInterval = window.setInterval(handleLocationChange, 1000);
+		};
+		const needsFallbackInterval = ! hasCurrentEntryChangeEvent;
+
+		let locationObserver = null;
+		const startLocationObserver = () => {
+			if (locationObserver || typeof MutationObserver !== "function") {
+				return Boolean(locationObserver);
+			}
+
+			const root = document.documentElement || document.body;
+			if (! root) {
+				return false;
+			}
+
+			locationObserver = new MutationObserver(onPotentialLocationChange);
+			locationObserver.observe(root, {
+				childList: true,
+				subtree: true
+			});
+			if (! needsFallbackInterval) {
+				stopFallbackInterval();
+			}
+			return true;
+		};
+
+		let domReadyListener = null;
+		const observerStarted = startLocationObserver();
+		if (! observerStarted) {
+			domReadyListener = () => {
+				if (startLocationObserver()) {
+					if (! needsFallbackInterval) {
+						stopFallbackInterval();
+					}
+				}
+			};
+			document.addEventListener("DOMContentLoaded", domReadyListener, {once: true});
+		}
+		if (needsFallbackInterval || ! observerStarted) {
+			startFallbackInterval();
+		}
+
+		const cleanupLocationWatch = () => {
+			window.removeEventListener("popstate", onPotentialLocationChange);
+			window.removeEventListener("hashchange", onPotentialLocationChange);
+			if (hasCurrentEntryChangeEvent) {
+				navigationApi.removeEventListener("currententrychange", onPotentialLocationChange);
+			}
+
+			if (domReadyListener) {
+				document.removeEventListener("DOMContentLoaded", domReadyListener);
+				domReadyListener = null;
+			}
+
+			if (locationObserver) {
+				locationObserver.disconnect();
+				locationObserver = null;
+			}
+
+			stopFallbackInterval();
+			window.removeEventListener("pagehide", cleanupLocationWatch);
+			window.removeEventListener("beforeunload", cleanupLocationWatch);
+		};
+
+		window.addEventListener("pagehide", cleanupLocationWatch, {once: true});
+		window.addEventListener("beforeunload", cleanupLocationWatch, {once: true});
 	}
 
 	ensureStyle(STYLE_ID, STYLE_TEXT);
