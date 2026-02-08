@@ -26,6 +26,11 @@
    * @property {string[]} fallbackTexts - Text matches used if the selector changes.
    * @property {boolean} searchShadowRoots - Also search open shadow roots for the notice.
    * @property {number} fallbackScanMs - Minimum delay between text fallback scans.
+   * @property {string[]} matchViewSelectors - Candidate selectors to identify match-view scopes.
+   * @property {string[]} fallbackAreaSelectors - Candidate selectors for bounded text fallback scans.
+   * @property {number} fallbackAreaLimit - Max candidate areas tracked per view.
+   * @property {number} fallbackAreaWindowSize - Number of candidate areas scanned per fallback run.
+   * @property {number} fallbackTextNodeBudget - Max text nodes inspected per fallback run.
    * @property {number} imageMaxWidthRem - Max width in rem (desktop sizing).
    * @property {number} imageMaxWidthVw - Max width in vw (mobile sizing).
    * @property {number} pulseDurationMs - Duration of the pulse animation.
@@ -40,6 +45,20 @@
 		],
 		searchShadowRoots: true,
 		fallbackScanMs: 900,
+		matchViewSelectors: [
+			"main", "[role=\"main\"]", "#app"
+		],
+		fallbackAreaSelectors: [
+			".v-overlay-container",
+			".v-overlay__content",
+			".v-snackbar",
+			".v-alert",
+			"[role=\"alert\"]",
+			".adt-remove"
+		],
+		fallbackAreaLimit: 10,
+		fallbackAreaWindowSize: 3,
+		fallbackTextNodeBudget: 700,
 		imageMaxWidthRem: 30,
 		imageMaxWidthVw: 90,
 		pulseDurationMs: 1400,
@@ -51,6 +70,14 @@
 	const IMAGE_CLASS = "ad-ext-takeout-image";
 	const fallbackTextMatches = (CONFIG.fallbackTexts || []).map((text) => String(text || "").trim().toLowerCase()).filter(Boolean);
 	let lastFallbackScan = 0;
+	const seenShadowHosts = new WeakSet();
+	const seenShadowRoots = new WeakSet();
+	const shadowRoots = [];
+	let currentViewKey = "";
+	let fallbackAreasDirty = true;
+	let fallbackAreas = [];
+	let fallbackWindowOffset = 0;
+	const ATTACH_SHADOW_HOOK_FLAG = "__adExtTakeoutAttachShadowHook";
 
 	const STYLE_TEXT = `
 .${CARD_CLASS} {
@@ -109,14 +136,116 @@
 		return image;
 	}
 
+	function getCurrentViewKey() {
+		return `${location.pathname}|${location.search}|${location.hash}`;
+	}
+
+	function syncViewState() {
+		const viewKey = getCurrentViewKey();
+		if (viewKey === currentViewKey) {
+			return;
+		}
+		currentViewKey = viewKey;
+		fallbackAreasDirty = true;
+		fallbackAreas = [];
+		fallbackWindowOffset = 0;
+	}
+
+	function markFallbackAreasDirty() {
+		fallbackAreasDirty = true;
+	}
+
+	function trackShadowHost(host) {
+		if (! CONFIG.searchShadowRoots || !host || host.nodeType !== Node.ELEMENT_NODE || seenShadowHosts.has(host)) {
+			return;
+		}
+		seenShadowHosts.add(host);
+
+		const root = host.shadowRoot;
+		if (! root || root.mode !== "open" || seenShadowRoots.has(root)) {
+			return;
+		}
+		seenShadowRoots.add(root);
+		shadowRoots.push(root);
+		markFallbackAreasDirty();
+	}
+
+	function trackShadowHostsInNode(node) {
+		if (! CONFIG.searchShadowRoots || !node) {
+			return;
+		}
+		if (node.nodeType === Node.ELEMENT_NODE) {
+			trackShadowHost(node);
+		}
+		if (
+			(node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) ||
+			typeof document.createTreeWalker !== "function"
+		) {
+			return;
+		}
+		const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, null);
+		let current = walker.nextNode();
+		while (current) {
+			trackShadowHost(current);
+			current = walker.nextNode();
+		}
+	}
+
+	function collectShadowRootsFromMutations(mutations) {
+		if (! CONFIG.searchShadowRoots || !Array.isArray(mutations)) {
+			return;
+		}
+		mutations.forEach((mutation) => {
+			if (! mutation) {
+				return;
+			}
+			if (mutation.type === "childList") {
+				if (mutation.addedNodes && mutation.addedNodes.length) {
+					markFallbackAreasDirty();
+					mutation.addedNodes.forEach((node) => trackShadowHostsInNode(node));
+				}
+				if (mutation.removedNodes && mutation.removedNodes.length) {
+					markFallbackAreasDirty();
+				}
+			}
+		});
+	}
+
+	function installAttachShadowHook() {
+		if (! CONFIG.searchShadowRoots || typeof Element === "undefined") {
+			return;
+		}
+		const prototype = Element.prototype;
+		if (!prototype || typeof prototype.attachShadow !== "function") {
+			return;
+		}
+		const currentAttachShadow = prototype.attachShadow;
+		if (currentAttachShadow && currentAttachShadow[ATTACH_SHADOW_HOOK_FLAG]) {
+			return;
+		}
+		const wrappedAttachShadow = function (...args) {
+			const root = currentAttachShadow.apply(this, args);
+			trackShadowHost(this);
+			return root;
+		};
+		Object.defineProperty(wrappedAttachShadow, ATTACH_SHADOW_HOOK_FLAG, {value: true});
+		try {
+			prototype.attachShadow = wrappedAttachShadow;
+		} catch (error) {
+			// Ignore: if patching is blocked, mutation-based tracking still works.
+		}
+	}
+
 	function getSearchRoots() {
 		const roots = [document];
 		if (! CONFIG.searchShadowRoots) {
 			return roots;
 		}
-		document.querySelectorAll("*").forEach((element) => {
-			if (element.shadowRoot) {
-				roots.push(element.shadowRoot);
+		trackShadowHost(document.documentElement);
+		trackShadowHost(document.body);
+		shadowRoots.forEach((root) => {
+			if (root && root.host && root.host.isConnected) {
+				roots.push(root);
 			}
 		});
 		return roots;
@@ -133,18 +262,100 @@
 		return Array.from(results);
 	}
 
-	function collectByText(roots) {
-		if (! fallbackTextMatches.length) {
+	function getFallbackAreas(roots) {
+		syncViewState();
+		if (! fallbackAreasDirty) {
+			return fallbackAreas;
+		}
+
+		const limit = Math.max(1, Number(CONFIG.fallbackAreaLimit) || 1);
+		const collected = [];
+		const seen = new Set();
+		const addCandidate = (element) => {
+			if (!element || element.nodeType !== Node.ELEMENT_NODE || !element.isConnected || seen.has(element)) {
+				return false;
+			}
+			seen.add(element);
+			collected.push(element);
+			return collected.length >= limit;
+		};
+
+		const collectWithSelectors = (root, selectors) => {
+			if (!root || typeof root.querySelectorAll !== "function") {
+				return false;
+			}
+			for (const selector of selectors) {
+				const nodes = root.querySelectorAll(selector);
+				for (const node of nodes) {
+					if (addCandidate(node)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+
+		for (const root of roots) {
+			if (collectWithSelectors(root, CONFIG.fallbackAreaSelectors || [])) {
+				break;
+			}
+			if (collectWithSelectors(root, CONFIG.matchViewSelectors || [])) {
+				break;
+			}
+			if (collected.length < limit) {
+				if (root === document) {
+					addCandidate(document.body || document.documentElement);
+				} else if (root && root.host) {
+					addCandidate(root.host);
+				}
+			}
+			if (collected.length >= limit) {
+				break;
+			}
+		}
+
+		if (!collected.length) {
+			addCandidate(document.body || document.documentElement);
+		}
+
+		fallbackAreas = collected.slice(0, limit);
+		fallbackAreasDirty = false;
+		if (fallbackAreas.length === 0) {
+			fallbackWindowOffset = 0;
+		} else if (fallbackWindowOffset >= fallbackAreas.length) {
+			fallbackWindowOffset = fallbackWindowOffset % fallbackAreas.length;
+		}
+		return fallbackAreas;
+	}
+
+	function getFallbackScanAreas(roots) {
+		const areas = getFallbackAreas(roots);
+		if (!areas.length) {
+			return [];
+		}
+		const windowSize = Math.max(1, Math.min(Number(CONFIG.fallbackAreaWindowSize) || 1, areas.length));
+		const selected = [];
+		for (let index = 0; index < windowSize; index += 1) {
+			selected.push(areas[(fallbackWindowOffset + index) % areas.length]);
+		}
+		fallbackWindowOffset = (fallbackWindowOffset + windowSize) % areas.length;
+		return selected;
+	}
+
+	function collectByText(areas) {
+		if (! fallbackTextMatches.length || !areas.length) {
 			return [];
 		}
 		const matches = new Set();
-		roots.forEach((root) => {
-			if (!root) {
+		let remainingTextBudget = Math.max(1, Number(CONFIG.fallbackTextNodeBudget) || 1);
+		areas.forEach((area) => {
+			if (!area || remainingTextBudget <= 0) {
 				return;
 			}
-			const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+			const walker = document.createTreeWalker(area, NodeFilter.SHOW_TEXT, null);
 			let node = walker.nextNode();
-			while (node) {
+			while (node && remainingTextBudget > 0) {
+				remainingTextBudget -= 1;
 				const value = node.nodeValue;
 				const normalized = value ? value.trim().toLowerCase() : "";
 				if (normalized) {
@@ -188,7 +399,11 @@
 		if (deep.length) {
 			return deep;
 		}
-		return collectByText(roots);
+		if (! fallbackTextMatches.length) {
+			return [];
+		}
+		const scanAreas = getFallbackScanAreas(roots);
+		return collectByText(scanAreas);
 	}
 
 	function applyReplacement(notice) {
@@ -222,8 +437,14 @@
 
 	const scheduleUpdate = createRafScheduler(updateNotices);
 
+	installAttachShadowHook();
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateNotices();
 
-	observeMutations({onChange: scheduleUpdate});
+	observeMutations({
+		onChange: (mutation, mutations) => {
+			collectShadowRootsFromMutations(mutations || [mutation]);
+			scheduleUpdate();
+		}
+	});
 })();
