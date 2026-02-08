@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -183,6 +183,7 @@
 			overlay.setAttribute("focusable", "false");
 			(document.body || document.documentElement).appendChild(overlay);
 		}
+		overlay.dataset.adExtDartMarkerOverlay = "true";
 		return overlay;
 	}
 
@@ -317,11 +318,13 @@
 		if (! svg) {
 			return [];
 		}
-		const primary = Array.from(svg.querySelectorAll(CONFIG.markerSelector));
-		if (primary.length) {
-			return primary;
+		const primarySet = new Set(svg.querySelectorAll(CONFIG.markerSelector));
+		const circles = Array.from(svg.querySelectorAll("circle"));
+		const merged = circles.filter((circle) => primarySet.has(circle) || isMarkerCandidate(circle));
+		if (merged.length) {
+			return merged;
 		}
-		return Array.from(svg.querySelectorAll("circle")).filter(isMarkerCandidate);
+		return Array.from(primarySet);
 	}
 
 	// Funktion: collectMarkersInDocument

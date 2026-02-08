@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.4
+// @version      1.5
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
@@ -377,7 +377,7 @@
 		let lensSvg = null;
 		let lensScene = null;
 		let lensBoardUse = null;
-		let lensOverlayUse = null;
+		const lensOverlayUseBySource = new Map();
 
 		let spotlightEl = null;
 
@@ -1376,6 +1376,48 @@
 			useEl.setAttributeNS(XLINK_NS, "href", href);
 		}
 
+		function isValidLensOverlay(overlay) {
+			if (! overlay || ! overlay.isConnected || ! overlay.tagName) {
+				return false;
+			}
+			if (overlay.tagName.toLowerCase() !== "svg") {
+				return false;
+			}
+			return ! isLensSvg(overlay);
+		}
+
+		function collectLensOverlays() {
+			const selectors = new Set();
+			if (CONFIG.lensDartOverlaySelector) {
+				selectors.add(CONFIG.lensDartOverlaySelector);
+			}
+			selectors.add("#ad-ext-dart-image-overlay");
+			selectors.add("svg.ad-ext-dart-image-overlay");
+			selectors.add("svg[data-ad-ext-dart-marker-overlay='true']");
+
+			const overlays = [];
+			const seen = new Set();
+
+			selectors.forEach((selector) => {
+				if (! selector || typeof document.querySelectorAll !== "function") {
+					return;
+				}
+				try {
+					document.querySelectorAll(selector).forEach((overlay) => {
+						if (! isValidLensOverlay(overlay) || seen.has(overlay)) {
+							return;
+						}
+						seen.add(overlay);
+						overlays.push(overlay);
+					});
+				} catch (error) {
+					// Ignore invalid custom selectors and continue with built-in fallbacks.
+				}
+			});
+
+			return overlays;
+		}
+
 		function getViewBox(svg) {
 			if (! svg) {
 				return null;
@@ -1473,70 +1515,111 @@
 			if (! svgEl || typeof svgEl.getBoundingClientRect !== "function") {
 				return null;
 			}
+
+			const viewBox = getViewBox(svgEl);
+			if (viewBox) {
+				const origin = mapPointToScreen(svgEl, {
+					x: viewBox.x,
+					y: viewBox.y
+				});
+				const xAxis = mapPointToScreen(svgEl, {
+					x: viewBox.x + 1,
+					y: viewBox.y
+				});
+				const yAxis = mapPointToScreen(svgEl, {
+					x: viewBox.x,
+					y: viewBox.y + 1
+				});
+
+				const points = [origin, xAxis, yAxis];
+				if (points.every((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y))) {
+					const a = xAxis.x - origin.x;
+					const b = xAxis.y - origin.y;
+					const c = yAxis.x - origin.x;
+					const d = yAxis.y - origin.y;
+					const e = origin.x;
+					const f = origin.y;
+					return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
+				}
+			}
+
 			const rect = svgEl.getBoundingClientRect();
-			if (! rect || rect.width<= 0 || rect.height <= 0) {
-      return null;
-    }
-    const vb = getViewBox(svgEl) || { x: 0, y: 0, width: rect.width, height: rect.height };
-    const sx = rect.width / vb.width;
-    const sy = rect.height / vb.height;
-    return `translate(${rect.left} ${rect.top}) scale(${sx} ${sy}) translate(${-vb.x} ${-vb.y})`;
-  }
+			if (! rect || rect.width <= 0 || rect.height <= 0) {
+				return null;
+			}
 
-  function ensureLensSceneFor(boardSvg, boardRefEl) {
-    if (!lensSvg || !lensScene || !boardSvg || !boardRefEl) {
-      return;
-    }
+			const fallbackViewBox = viewBox || {
+				x: 0,
+				y: 0,
+				width: rect.width,
+				height: rect.height
+			};
+			const sx = rect.width / fallbackViewBox.width;
+			const sy = rect.height / fallbackViewBox.height;
+			return `translate(${rect.left} ${rect.top}) scale(${sx} ${sy}) translate(${-fallbackViewBox.x} ${-fallbackViewBox.y})`;
+		}
 
-    // Board <use>
-    if (!lensBoardUse) {
-      lensBoardUse = document.createElementNS(SVG_NS, "use");
-      lensBoardUse.dataset.adExtCamzoomLens = "true";
-      lensBoardUse.setAttribute("pointer-events", "none");
-      lensScene.appendChild(lensBoardUse);
-    }
+	function ensureLensSceneFor(boardSvg, boardRefEl) {
+		if (! lensSvg || ! lensScene || ! boardSvg || ! boardRefEl) {
+			return;
+		}
 
-    const boardId = ensureElementId(boardRefEl, "ad-ext-camzoom-board");
-    if (boardId) {
-      setUseHref(lensBoardUse, boardId);
-      const tBoard = computeSvgToScreenTransform(boardSvg);
-      if (tBoard) {
-        lensBoardUse.setAttribute("transform", tBoard);
-      } else {
-        lensBoardUse.removeAttribute("transform");
-      }
-    }
+		// Board <use>
+		if (! lensBoardUse) {
+			lensBoardUse = document.createElementNS(SVG_NS, "use");
+			lensBoardUse.dataset.adExtCamzoomLens = "true";
+			lensBoardUse.setAttribute("pointer-events", "none");
+			lensScene.appendChild(lensBoardUse);
+		}
 
-    // Optional: Dart Overlay <use>
-    const overlay =
-      CONFIG.lensDartOverlaySelector &&
-      typeof document.querySelector === "function"
-        ? document.querySelector(CONFIG.lensDartOverlaySelector)
-        : null;
+		const boardId = ensureElementId(boardRefEl, "ad-ext-camzoom-board");
+		if (boardId) {
+			setUseHref(lensBoardUse, boardId);
+			const tBoard = computeSvgToScreenTransform(boardSvg);
+			if (tBoard) {
+				lensBoardUse.setAttribute("transform", tBoard);
+			} else {
+				lensBoardUse.removeAttribute("transform");
+			}
+		}
 
-    if (overlay && overlay.isConnected && overlay.tagName && overlay.tagName.toLowerCase() === "svg") {
-      if (!lensOverlayUse) {
-        lensOverlayUse = document.createElementNS(SVG_NS, "use");
-        lensOverlayUse.dataset.adExtCamzoomLens = "true";
-        lensOverlayUse.setAttribute("pointer-events", "none");
-        lensScene.appendChild(lensOverlayUse);
-      }
-      const overlayId = ensureElementId(overlay, "ad-ext-camzoom-overlay");
-      if (overlayId) {
-        setUseHref(lensOverlayUse, overlayId);
-        const tOverlay = computeSvgToScreenTransform(overlay);
-        if (tOverlay) {
-          lensOverlayUse.setAttribute("transform", tOverlay);
-        } else {
-          lensOverlayUse.removeAttribute("transform");
-        }
-      }
-    } else if (lensOverlayUse) {
-      // Overlay nicht vorhanden -> entfernen, damit keine stale Referenz bleibt
-      lensOverlayUse.remove();
-      lensOverlayUse = null;
-    }
-  }
+		const overlays = collectLensOverlays();
+		const activeOverlays = new Set();
+
+		overlays.forEach((overlay) => {
+			activeOverlays.add(overlay);
+			let useEl = lensOverlayUseBySource.get(overlay);
+			if (! useEl) {
+				useEl = document.createElementNS(SVG_NS, "use");
+				useEl.dataset.adExtCamzoomLens = "true";
+				useEl.setAttribute("pointer-events", "none");
+				lensOverlayUseBySource.set(overlay, useEl);
+			}
+
+			const overlayId = ensureElementId(overlay, "ad-ext-camzoom-overlay");
+			if (overlayId) {
+				setUseHref(useEl, overlayId);
+				const tOverlay = computeSvgToScreenTransform(overlay);
+				if (tOverlay) {
+					useEl.setAttribute("transform", tOverlay);
+				} else {
+					useEl.removeAttribute("transform");
+				}
+			}
+
+			lensScene.appendChild(useEl);
+		});
+
+		for (const [overlay, useEl] of lensOverlayUseBySource.entries()) {
+			if (activeOverlays.has(overlay) && overlay.isConnected) {
+				continue;
+			}
+			if (useEl && useEl.parentNode) {
+				useEl.remove();
+			}
+			lensOverlayUseBySource.delete(overlay);
+		}
+	}
 
   function getSvgCenter(board) {
     if (!board || !board.svg) {
@@ -1654,7 +1737,7 @@
 
     // Lens-Scene aufbauen/aktualisieren (Board + optionales Overlay)
     ensureLens();
-    ensureLensSceneFor(boardSvg, boardGroup);
+    ensureLensSceneFor(boardSvg, boardSvg);
 
     const originSvg = activeZoom.originSvg;
     if (!originSvg) {
