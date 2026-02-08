@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cam Zoom WM Style
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.7
+// @version      1.8
 // @description  WM-style camera zoom on the virtual dartboard (checkout double or T20 push-in) for X01 only.
 // @author       Thomas Asen
 // @license      MIT
@@ -58,6 +58,7 @@
 
 		const LENS_FILTER_ID = "ad-ext-camzoom-lens-rgb";
 		const SPOTLIGHT_ID = "ad-ext-camzoom-spotlight";
+		const DART_OVERLAY_SCENE_SELECTOR = "#ad-ext-dart-image-overlay-scene, g[data-ad-ext-dart-overlay-scene='true']";
 
 		function getLensPreset() {
 			const raw = String(LENS_STYLE_PRESET || "").trim().toLowerCase();
@@ -1509,6 +1510,17 @@
 			return overlays;
 		}
 
+		function resolveLensOverlayReference(overlay) {
+			if (! overlay || typeof overlay.querySelector !== "function") {
+				return overlay;
+			}
+			const scene = overlay.querySelector(DART_OVERLAY_SCENE_SELECTOR);
+			if (scene && scene.isConnected && ! isLensSvg(scene)) {
+				return scene;
+			}
+			return overlay;
+		}
+
 		function getViewBox(svg) {
 			if (! svg) {
 				return null;
@@ -1575,6 +1587,59 @@
 			};
 		}
 
+		function toMatrixTransform(matrix) {
+			if (! matrix) {
+				return null;
+			}
+			const values = [
+				matrix.a,
+				matrix.b,
+				matrix.c,
+				matrix.d,
+				matrix.e,
+				matrix.f
+			];
+			if (! values.every(Number.isFinite)) {
+				return null;
+			}
+			return `matrix(${values.join(" ")})`;
+		}
+
+		function parsePreserveAspectRatio(value) {
+			const raw = String(value || "").trim();
+			if (! raw) {
+				return {
+					none: false,
+					alignX: "mid",
+					alignY: "mid",
+					mode: "meet"
+				};
+			}
+			if (raw === "none") {
+				return {
+					none: true,
+					alignX: "mid",
+					alignY: "mid",
+					mode: "meet"
+				};
+			}
+			const parts = raw.split(/\s+/).filter(Boolean);
+			if (parts[0] && parts[0].toLowerCase() === "defer") {
+				parts.shift();
+			}
+			const align = parts[0] || "xMidYMid";
+			const alignMatch = align.match(/^x(Min|Mid|Max)Y(Min|Mid|Max)$/i);
+			const alignX = alignMatch ? alignMatch[1].toLowerCase() : "mid";
+			const alignY = alignMatch ? alignMatch[2].toLowerCase() : "mid";
+			const mode = String(parts[1] || "").toLowerCase() === "slice" ? "slice" : "meet";
+			return {
+				none: false,
+				alignX,
+				alignY,
+				mode
+			};
+		}
+
 		function mapPointToScreen(element, point) {
 			if (! element || ! point) {
 				return null;
@@ -1606,48 +1671,89 @@
 			if (! svgEl || typeof svgEl.getBoundingClientRect !== "function") {
 				return null;
 			}
-
-			const viewBox = getViewBox(svgEl);
-			if (viewBox) {
-				const origin = mapPointToScreen(svgEl, {
-					x: viewBox.x,
-					y: viewBox.y
-				});
-				const xAxis = mapPointToScreen(svgEl, {
-					x: viewBox.x + 1,
-					y: viewBox.y
-				});
-				const yAxis = mapPointToScreen(svgEl, {
-					x: viewBox.x,
-					y: viewBox.y + 1
-				});
-
-				const points = [origin, xAxis, yAxis];
-				if (points.every((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y))) {
-					const a = xAxis.x - origin.x;
-					const b = xAxis.y - origin.y;
-					const c = yAxis.x - origin.x;
-					const d = yAxis.y - origin.y;
-					const e = origin.x;
-					const f = origin.y;
-					return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
-				}
-			}
-
 			const rect = svgEl.getBoundingClientRect();
 			if (! rect || rect.width <= 0 || rect.height <= 0) {
 				return null;
 			}
-
-			const fallbackViewBox = viewBox || {
+			const viewBox = getViewBox(svgEl) || {
 				x: 0,
 				y: 0,
 				width: rect.width,
 				height: rect.height
 			};
-			const sx = rect.width / fallbackViewBox.width;
-			const sy = rect.height / fallbackViewBox.height;
-			return `translate(${rect.left} ${rect.top}) scale(${sx} ${sy}) translate(${-fallbackViewBox.x} ${-fallbackViewBox.y})`;
+			if (! Number.isFinite(viewBox.width) || ! Number.isFinite(viewBox.height) || viewBox.width <= 0 || viewBox.height <= 0) {
+				return null;
+			}
+
+			const preserveAspect = parsePreserveAspectRatio(svgEl.getAttribute && svgEl.getAttribute("preserveAspectRatio"));
+			let a = 1;
+			let b = 0;
+			let c = 0;
+			let d = 1;
+			let e = rect.left;
+			let f = rect.top;
+
+			if (preserveAspect.none) {
+				const sx = rect.width / viewBox.width;
+				const sy = rect.height / viewBox.height;
+				a = sx;
+				d = sy;
+				e = rect.left - viewBox.x * sx;
+				f = rect.top - viewBox.y * sy;
+			} else {
+				const scaleX = rect.width / viewBox.width;
+				const scaleY = rect.height / viewBox.height;
+				const uniform = preserveAspect.mode === "slice" ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+				const contentWidth = viewBox.width * uniform;
+				const contentHeight = viewBox.height * uniform;
+
+				let extraX = 0;
+				let extraY = 0;
+				if (preserveAspect.alignX === "mid") {
+					extraX = (rect.width - contentWidth) / 2;
+				} else if (preserveAspect.alignX === "max") {
+					extraX = rect.width - contentWidth;
+				}
+				if (preserveAspect.alignY === "mid") {
+					extraY = (rect.height - contentHeight) / 2;
+				} else if (preserveAspect.alignY === "max") {
+					extraY = rect.height - contentHeight;
+				}
+
+				a = uniform;
+				d = uniform;
+				e = rect.left + extraX - viewBox.x * uniform;
+				f = rect.top + extraY - viewBox.y * uniform;
+			}
+
+			return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
+		}
+
+		function computeElementToScreenTransform(element, fallbackSvg) {
+			if (! element) {
+				return null;
+			}
+			const tag = element.tagName ? element.tagName.toLowerCase() : "";
+			if (tag === "svg") {
+				const svgTransform = computeSvgToScreenTransform(element);
+				if (svgTransform) {
+					return svgTransform;
+				}
+			}
+
+			if (typeof element.getScreenCTM === "function") {
+				const matrix = element.getScreenCTM();
+				const matrixTransform = toMatrixTransform(matrix);
+				if (matrixTransform) {
+					return matrixTransform;
+				}
+			}
+
+			const fallback = fallbackSvg || element.ownerSVGElement || null;
+			if (fallback && fallback !== element) {
+				return computeSvgToScreenTransform(fallback);
+			}
+			return null;
 		}
 
 	function ensureLensSceneFor(boardSvg, boardRefEl) {
@@ -1666,7 +1772,7 @@
 		const boardId = ensureElementId(boardRefEl, "ad-ext-camzoom-board");
 		if (boardId) {
 			setUseHref(lensBoardUse, boardId);
-			const tBoard = computeSvgToScreenTransform(boardSvg);
+			const tBoard = computeElementToScreenTransform(boardRefEl, boardSvg);
 			if (tBoard) {
 				lensBoardUse.setAttribute("transform", tBoard);
 			} else {
@@ -1687,10 +1793,11 @@
 				lensOverlayUseBySource.set(overlay, useEl);
 			}
 
-			const overlayId = ensureElementId(overlay, "ad-ext-camzoom-overlay");
+			const overlayRefEl = resolveLensOverlayReference(overlay) || overlay;
+			const overlayId = ensureElementId(overlayRefEl, "ad-ext-camzoom-overlay");
 			if (overlayId) {
 				setUseHref(useEl, overlayId);
-				const tOverlay = computeSvgToScreenTransform(overlay);
+				const tOverlay = computeElementToScreenTransform(overlayRefEl, overlay);
 				if (tOverlay) {
 					useEl.setAttribute("transform", tOverlay);
 				} else {
@@ -1828,7 +1935,7 @@
 
     // Lens-Scene aufbauen/aktualisieren (Board + optionales Overlay)
     ensureLens();
-    ensureLensSceneFor(boardSvg, boardSvg);
+    ensureLensSceneFor(boardSvg, boardGroup || boardSvg);
 
     const originSvg = activeZoom.originSvg;
     if (!originSvg) {

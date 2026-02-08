@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
 // @author       Thomas Asen
 // @license      MIT
@@ -102,6 +102,7 @@
 	const STYLE_ID = "ad-ext-dart-image-style";
 	const OVERLAY_ID = "ad-ext-dart-image-overlay";
 	const OVERLAY_CLASS = "ad-ext-dart-image-overlay";
+	const OVERLAY_SCENE_ID = "ad-ext-dart-image-overlay-scene";
 	const DART_CLASS = "ad-ext-dart-image";
 	const DART_SHADOW_CLASS = "ad-ext-dart-shadow";
 	const DART_FLIGHT_CLASS = "ad-ext-dart-flight";
@@ -184,7 +185,26 @@
 			(document.body || document.documentElement).appendChild(overlay);
 		}
 		overlay.dataset.adExtDartMarkerOverlay = "true";
+		ensureOverlayScene(overlay);
 		return overlay;
+	}
+
+	function ensureOverlayScene(overlay) {
+		if (! overlay) {
+			return null;
+		}
+		let scene = overlay.querySelector(`#${OVERLAY_SCENE_ID}`);
+		if (scene && scene.tagName.toLowerCase() !== "g") {
+			scene.remove();
+			scene = null;
+		}
+		if (! scene) {
+			scene = document.createElementNS(SVG_NS, "g");
+			scene.id = OVERLAY_SCENE_ID;
+			overlay.appendChild(scene);
+		}
+		scene.dataset.adExtDartOverlayScene = "true";
+		return scene;
 	}
 
 	// Funktion: ensureShadowFilter
@@ -246,9 +266,24 @@
 	// Nutzt: removeChild().
 	// Wird genutzt von: clearDarts().
 	function clearOverlay(overlay) {
-		while (overlay.firstChild) {
-			overlay.removeChild(overlay.firstChild);
+		if (! overlay) {
+			return;
 		}
+		const scene = ensureOverlayScene(overlay);
+		if (scene) {
+			while (scene.firstChild) {
+				scene.removeChild(scene.firstChild);
+			}
+		}
+		Array.from(overlay.children).forEach((child) => {
+			if (child === scene) {
+				return;
+			}
+			if (child.tagName && child.tagName.toLowerCase() === "defs") {
+				return;
+			}
+			child.remove();
+		});
 	}
 
 	// Funktion: removeOverlay
@@ -935,6 +970,10 @@
 		const paddingPx = getOverlayPadding(size);
 		const overlay = ensureOverlaySvg();
 		ensureShadowFilter(overlay);
+		const overlayScene = ensureOverlayScene(overlay);
+		if (! overlayScene) {
+			return;
+		}
 		const overlayRect = updateOverlayLayout(overlay, boardRect, paddingPx);
 
 		const boardCenter = {
@@ -984,7 +1023,7 @@
 			if (! entry) {
 				entry = createDartElements(center, size, boardCenter);
 				entry.settleUntil = now + settleDurationMs;
-				overlay.appendChild(entry.container);
+				overlayScene.appendChild(entry.container);
 				dartByMarker.set(marker, entry);
 				createdAny = true;
 				if (shouldAnimate) {
@@ -1023,7 +1062,7 @@
 
 			for (const item of markerEntries) {
 				if (item.entry && item.entry.container) {
-					overlay.appendChild(item.entry.container);
+					overlayScene.appendChild(item.entry.container);
 				}
 			}
 		}
