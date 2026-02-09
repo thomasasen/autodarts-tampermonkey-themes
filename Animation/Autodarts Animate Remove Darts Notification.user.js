@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Replaces the "Removing Darts" notice with TakeOut.png and a subtle pulse animation.
 // @author       Thomas Asen
 // @license      MIT
@@ -304,14 +304,14 @@
 			if (collectWithSelectors(root, CONFIG.matchViewSelectors || [])) {
 				break;
 			}
-			if (collected.length<limit) {
+			if (collected.length < limit) {
 				if (root === document) {
 					addCandidate(document.body || document.documentElement);
 				} else if (root && root.host) {
 					addCandidate(root.host);
 				}
 			}
-			if (collected.length> = limit) {
+			if (collected.length >= limit) {
 				break;
 			}
 		}
