@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Style checkout suggestions so they read as recommendations in X01.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
-// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://raw.githubusercontent.com/thomasasen/autodarts-tampermonkey-themes/refs/heads/main/Animation/autodarts-animation-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js
@@ -16,7 +16,120 @@
 (function () {
 	"use strict";
 
-	const {ensureStyle, createRafScheduler, observeMutations, isX01Variant} = window.autodartsAnimationShared;
+	const shared = window.autodartsAnimationShared || {};
+
+	function ensureStyleFallback(styleId, cssText) {
+		if (!styleId || document.getElementById(styleId)) {
+			return false;
+		}
+
+		const style = document.createElement("style");
+		style.id = styleId;
+		style.textContent = cssText;
+
+		const target = document.head || document.documentElement;
+		if (target) {
+			target.appendChild(style);
+			return true;
+		}
+
+		document.addEventListener(
+			"DOMContentLoaded",
+			() => {
+				const fallbackTarget = document.head || document.documentElement;
+				if (fallbackTarget && !document.getElementById(styleId)) {
+					fallbackTarget.appendChild(style);
+				}
+			},
+			{once: true}
+		);
+
+		return true;
+	}
+
+	function createRafSchedulerFallback(callback) {
+		let scheduled = false;
+		return function schedule() {
+			if (scheduled) {
+				return;
+			}
+			scheduled = true;
+			requestAnimationFrame(() => {
+				scheduled = false;
+				callback();
+			});
+		};
+	}
+
+	function observeMutationsFallback(options) {
+		if (!options || typeof options.onChange !== "function") {
+			return null;
+		}
+
+		const onChange = options.onChange;
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				if (
+					mutation.type === "childList" ||
+					mutation.type === "characterData" ||
+					mutation.type === "attributes"
+				) {
+					onChange(mutation, mutations);
+					break;
+				}
+			}
+		});
+
+		const root = options.target || document.documentElement;
+		const observeRoot = (targetRoot) => {
+			if (!targetRoot) {
+				return;
+			}
+			observer.observe(targetRoot, {
+				childList: true,
+				subtree: true,
+				characterData: true,
+				attributes: true
+			});
+		};
+
+		if (root) {
+			observeRoot(root);
+		} else {
+			document.addEventListener("DOMContentLoaded", () => {
+				observeRoot(options.target || document.documentElement);
+			}, {once: true});
+		}
+
+		return observer;
+	}
+
+	function isX01VariantFallback(variantElementId, options) {
+		const config = options || {};
+		const elementId = variantElementId || "ad-ext-game-variant";
+		const variantEl = document.getElementById(elementId);
+		const variant = variantEl?.textContent?.trim().toLowerCase() || "";
+
+		if (!variant) {
+			return Boolean(config.allowEmpty || config.allowMissing);
+		}
+		if (variant.includes("x01")) {
+			return true;
+		}
+		if (config.allowNumeric) {
+			return /\b\d+01\b/.test(variant);
+		}
+		return false;
+	}
+
+	const ensureStyle = typeof shared.ensureStyle === "function" ? shared.ensureStyle : ensureStyleFallback;
+	const createRafScheduler = typeof shared.createRafScheduler === "function" ? shared.createRafScheduler : createRafSchedulerFallback;
+	const observeMutations = typeof shared.observeMutations === "function" ? shared.observeMutations : observeMutationsFallback;
+	const isX01Variant = typeof shared.isX01Variant === "function" ? shared.isX01Variant : isX01VariantFallback;
+
+	if (!window.autodartsAnimationShared) {
+		console.warn("[Autodarts Style Checkout Suggestions] Shared helper not available. Using local fallback helpers.");
+	}
 
 	/**
    * Style options:
@@ -232,7 +345,7 @@
 	}
 
 	function resetSuggestion(element) {
-		element.classList.remove(BASE_CLASS, NO_LABEL_CLASS, ... STYLE_CLASS_LIST);
+		element.classList.remove(BASE_CLASS, NO_LABEL_CLASS, ...STYLE_CLASS_LIST);
 		element.removeAttribute("data-ad-ext-label");
 		element.style.removeProperty("--ad-ext-accent");
 		element.style.removeProperty("--ad-ext-accent-soft");
@@ -245,7 +358,7 @@
 
 	function updateSuggestions() {
 		const suggestions = document.querySelectorAll(CONFIG.suggestionSelector);
-		if (! suggestions.length) {
+		if (!suggestions.length) {
 			return;
 		}
 
@@ -258,20 +371,21 @@
 		const label = String(CONFIG.labelText || "").trim();
 
 		suggestions.forEach((element) => {
-			if (! isX01) {
+			if (!isX01) {
 				resetSuggestion(element);
 				return;
 			}
 
 			element.classList.add(BASE_CLASS);
-			element.classList.remove(... STYLE_CLASS_LIST);
+			element.classList.remove(...STYLE_CLASS_LIST);
 			element.classList.add(desiredClass);
-			element.classList.toggle(NO_LABEL_CLASS, ! label);
+			element.classList.toggle(NO_LABEL_CLASS, !label);
 			if (label) {
 				element.setAttribute("data-ad-ext-label", label);
 			} else {
 				element.removeAttribute("data-ad-ext-label");
-			} applyElementConfig(element);
+			}
+			applyElementConfig(element);
 		});
 	}
 
