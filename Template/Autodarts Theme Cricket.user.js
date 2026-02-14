@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Layout- und Farb-Theme fuer Cricket mit aufgeraeumter Board- und Spieleransicht.
 // @xconfig-description  Aktiviert ein visuelles Cricket-Theme auf Basis des Shared-Helpers fuer Farben, Abstaende und Struktur.
 // @xconfig-variant      cricket

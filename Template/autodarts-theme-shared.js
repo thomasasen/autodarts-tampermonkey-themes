@@ -273,6 +273,72 @@ div.css-y3hfdd > .css-1igwmid{
     return variantEl?.textContent?.trim().toLowerCase() || "";
   }
 
+  function isVariantNameActive(variantName, matchMode = "equals") {
+    const expectedVariant = String(variantName || "").trim().toLowerCase();
+    if (!expectedVariant) {
+      return false;
+    }
+
+    const currentVariant = getVariantName();
+    if (!currentVariant) {
+      const gameState = global.autodartsGameStateShared || null;
+      if (expectedVariant === "x01" && gameState && typeof gameState.isX01Variant === "function") {
+        return gameState.isX01Variant({
+          allowMissing: false,
+          allowEmpty: false,
+          allowNumeric: true,
+        });
+      }
+      if (expectedVariant === "cricket" && gameState && typeof gameState.isCricketVariant === "function") {
+        return gameState.isCricketVariant({
+          allowMissing: false,
+          allowEmpty: false,
+        });
+      }
+      return false;
+    }
+
+    const directMatch = matchMode === "includes"
+      ? currentVariant.includes(expectedVariant)
+      : currentVariant === expectedVariant || currentVariant.startsWith(`${expectedVariant} `);
+    if (directMatch) {
+      return true;
+    }
+
+    if (expectedVariant === "x01") {
+      if (/\b\d+01\b/.test(currentVariant)) {
+        return true;
+      }
+
+      const gameState = global.autodartsGameStateShared || null;
+      if (gameState && typeof gameState.isX01Variant === "function") {
+        return gameState.isX01Variant({
+          allowMissing: false,
+          allowEmpty: false,
+          allowNumeric: true,
+        });
+      }
+      return false;
+    }
+
+    if (expectedVariant === "cricket") {
+      if (currentVariant.startsWith("cricket ")) {
+        return true;
+      }
+
+      const gameState = global.autodartsGameStateShared || null;
+      if (gameState && typeof gameState.isCricketVariant === "function") {
+        return gameState.isCricketVariant({
+          allowMissing: false,
+          allowEmpty: false,
+        });
+      }
+      return false;
+    }
+
+    return false;
+  }
+
   function joinCss(...parts) {
     return parts.filter(Boolean).join("");
   }
@@ -322,10 +388,7 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function isVariantActive() {
-      const current = getVariantName();
-      return matchMode === "includes"
-        ? current.includes(normalizedVariant)
-        : current === normalizedVariant;
+      return isVariantNameActive(normalizedVariant, matchMode);
     }
 
     function observeShadowRoot(root) {
@@ -551,10 +614,7 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function matchesVariant() {
-      const currentVariant = getVariantName();
-      return matchMode === "includes"
-        ? currentVariant.includes(normalizedVariant)
-        : currentVariant === normalizedVariant;
+      return isVariantNameActive(normalizedVariant, matchMode);
     }
 
     function evaluateAndApply() {
@@ -617,6 +677,7 @@ div.css-y3hfdd > .css-1igwmid{
     commonThemeCss,
     commonLayoutCss,
     getVariantName,
+    isVariantNameActive,
     joinCss,
     createCssBuilder,
     initPreviewPlacement,

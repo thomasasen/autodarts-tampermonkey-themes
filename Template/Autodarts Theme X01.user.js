@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Vollstaendiges X01-Theme mit Fokus auf klare Scores, Player-Karten und Navigation.
 // @xconfig-description  Setzt in X01 ein umfassendes visuelles Theme fuer Lesbarkeit, Struktur und konsistente Darstellung.
 // @xconfig-variant      x01
