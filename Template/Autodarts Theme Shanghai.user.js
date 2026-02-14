@@ -1,10 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Theme Shanghai.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
 // @description  Layout- und Farb-Theme fuer Shanghai mit sauber ausgerichtetem Grid.
 // @xconfig-description  Aktiviert ein Shanghai-Theme mit gemeinsamem Layout/Styling ueber den Theme-Shared-Helper.
 // @xconfig-variant      shanghai
+// @xconfig-readme-anchor  template-autodarts-theme-shanghai
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

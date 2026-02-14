@@ -1,10 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Theme Bermuda
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
 // @description  Layout- und Farb-Theme fuer Bermuda mit klarer Trennung von Spieler- und Boardbereich.
 // @xconfig-description  Wendet ein visuelles Theme fuer Bermuda an und nutzt den Shared-Helper fuer konsistentes Layout/Styling.
 // @xconfig-variant      bermuda
+// @xconfig-readme-anchor  template-autodarts-theme-bermuda
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.7.0
+// @version      0.7.1
 // @description  Adds a central AD xConfig menu button and a dummy settings UI scaffold for future script integration.
 // @author       Thomas Asen
 // @license      MIT
@@ -27,6 +27,7 @@
   const REPO_NAME = "autodarts-tampermonkey-themes";
   const REPO_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes";
   const REPO_BRANCH = "main";
+  const REPO_README_URL = `${REPO_BASE_URL}/blob/${REPO_BRANCH}/README.md`;
   const REPO_API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
   const REPO_RAW_BASE = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}`;
 
@@ -139,6 +140,14 @@
     return category === "themes" ? "Theme" : "Animation";
   }
 
+  function normalizeReadmeAnchor(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/^#/, "")
+      .replace(/[^a-z0-9-]/g, "");
+  }
+
   function toRawPath(pathValue) {
     return normalizeSourcePath(pathValue)
       .split("/")
@@ -215,6 +224,7 @@
     const description = metadata["xconfig-description"] || metadata.description || "No description available.";
     const version = metadata.version || "0.0.0";
     const variant = normalizeVariantLabel(metadata["xconfig-variant"], category);
+    const readmeAnchor = normalizeReadmeAnchor(metadata["xconfig-readme-anchor"]);
     const author = String(metadata.author || "").trim();
     const settingsVersion = Number.parseInt(metadata["xconfig-settings-version"] || "1", 10);
     const safeSettingsVersion = Number.isFinite(settingsVersion) && settingsVersion > 0 ? settingsVersion : 1;
@@ -225,6 +235,7 @@
       title,
       description,
       variant,
+      readmeAnchor,
       author,
       source,
       status: "dummy",
@@ -319,6 +330,11 @@
       return REPO_BASE_URL;
     }
     return `${REPO_BASE_URL}/blob/${REPO_BRANCH}/${toRawPath(feature.source)}`;
+  }
+
+  function getFeatureReadmeUrl(feature) {
+    const anchor = normalizeReadmeAnchor(feature?.readmeAnchor);
+    return anchor ? `${REPO_README_URL}#${anchor}` : REPO_README_URL;
   }
 
   function formatDateTime(isoString) {
@@ -1156,6 +1172,7 @@
         <div class="xcfg-actions-row">
           <button type="button" class="xcfg-mini-btn xcfg-mini-btn--primary" data-action="check-feature" data-feature-id="${escapeHtml(feature.id)}">Check update</button>
           <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">Open repo</button>
+          <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">Readme</button>
           ${acknowledgeButton}
         </div>
         ${authorText ? `<p class="xcfg-meta-line">Author: ${escapeHtml(authorText)}</p>` : ""}
@@ -1228,6 +1245,11 @@
 
     if (action === "open-repo" && featureId) {
       openFeatureRepo(featureId);
+      return;
+    }
+
+    if (action === "open-readme" && featureId) {
+      openFeatureReadme(featureId);
       return;
     }
 
@@ -1478,6 +1500,17 @@
     const repoUrl = getFeatureRepoUrl(feature);
     window.open(repoUrl, "_blank", "noopener,noreferrer");
     setNotice("info", `Opened repository path for ${feature.title} (dummy flow).`);
+  }
+
+  function openFeatureReadme(featureId) {
+    const feature = getFeatureById(featureId);
+    if (!feature) {
+      return;
+    }
+
+    const readmeUrl = getFeatureReadmeUrl(feature);
+    window.open(readmeUrl, "_blank", "noopener,noreferrer");
+    setNotice("info", `Opened README section for ${feature.title}.`);
   }
 
   function onPanelClick(event) {

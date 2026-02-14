@@ -5,6 +5,7 @@
 // @description  Ersetzt Trefferpunkte auf dem Board durch konfigurierbare Dart-Grafiken.
 // @xconfig-description  Tauscht die Standard-Hitmarker gegen ausrichtbare Dart-Bilder und optional animierte Flugdarstellung.
 // @xconfig-variant      all
+// @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

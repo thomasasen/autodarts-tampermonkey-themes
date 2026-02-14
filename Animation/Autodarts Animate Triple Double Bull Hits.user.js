@@ -1,9 +1,10 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.0
 // @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste mit Animation.
 // @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverlaeufen hervor.
 // @xconfig-variant      all
+// @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none

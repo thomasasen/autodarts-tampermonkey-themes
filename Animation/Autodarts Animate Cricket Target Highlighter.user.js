@@ -5,6 +5,7 @@
 // @description  Zeigt im Cricket die Zielzustaende (offen, geschlossen, punktbar, tot) als Board-Overlay.
 // @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustaende fuer 15-20 und Bull direkt auf dem Board.
 // @xconfig-variant      cricket
+// @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -1,10 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
 // @description  Hebt moegliche Checkout-Ziele auf dem Board hervor und animiert sie in X01.
 // @xconfig-description  Markiert moegliche Checkout-Felder (Double/Bull) auf dem Dartboard und animiert sie mit Blink, Pulse oder Glow in X01.
 // @xconfig-variant      x01
+// @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

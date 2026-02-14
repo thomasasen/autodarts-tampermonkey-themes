@@ -5,6 +5,7 @@
 // @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
+// @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
