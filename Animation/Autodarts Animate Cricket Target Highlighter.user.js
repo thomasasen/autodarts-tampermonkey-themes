@@ -2,8 +2,8 @@
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Zeigt im Cricket die Zielzustaende (offen, geschlossen, punktbar, tot) als Board-Overlay.
-// @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustaende fuer 15-20 und Bull direkt auf dem Board.
+// @description  Zeigt im Cricket die Zielzustände (offen, geschlossen, punktbar, tot) als Board-Overlay.
+// @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustände für 15-20 und Bull direkt auf dem Board.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
@@ -889,7 +889,7 @@ function getMarks (cell) {
 }
 
 /**
-   * PrÃ¼ft, ob eine Zelle visuell leer ist.
+   * Prüft, ob eine Zelle visuell leer ist.
    * @param {Element} cell - Zellen-Element.
    * @returns {boolean}
    */

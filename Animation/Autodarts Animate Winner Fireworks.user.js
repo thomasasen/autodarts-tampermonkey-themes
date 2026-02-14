@@ -79,23 +79,23 @@
 	const {ensureStyle} = window.autodartsAnimationShared;
 
 	/**
-   * Konfiguration fuer Gewinner-Effekte.
+   * Konfiguration für Gewinner-Effekte.
    * effect:
    * - "firework": Feuerwerk-Ring mit Doppelkranz, Glitter und hellem Flash.
    * - "confetti": Bunter Konfetti-Regen mit leichter Drift.
-   * - "aurora": Weiche Leuchtbaender mit Sternfunkeln.
-   * - "pulse": Neon-Pulsringe, die ueber den Screen wandern.
-   * @property {string} winnerSelector - CSS-Selektor fuer den Gewinner-Bereich.
-   * @property {string} overlayId - ID fuer das Overlay.
-   * @property {string} styleId - ID fuer das Style-Tag.
-   * @property {string} effect - Ausgewaehlter Effekt (siehe Liste oben).
+   * - "aurora": Weiche Leuchtbänder mit Sternfunkeln.
+   * - "pulse": Neon-Pulsringe, die über den Screen wandern.
+   * @property {string} winnerSelector - CSS-Selektor für den Gewinner-Bereich.
+   * @property {string} overlayId - ID für das Overlay.
+   * @property {string} styleId - ID für das Style-Tag.
+   * @property {string} effect - Ausgewählter Effekt (siehe Liste oben).
    * @property {boolean} dynamicFps - Aktiviert dynamische FPS-Drosselung.
-   * @property {number} fpsHigh - Oberes FPS-Ziel fuer dynamische Drosselung.
-   * @property {number} fpsLow - Unteres FPS-Ziel fuer dynamische Drosselung.
+   * @property {number} fpsHigh - Oberes FPS-Ziel für dynamische Drosselung.
+   * @property {number} fpsLow - Unteres FPS-Ziel für dynamische Drosselung.
    * @property {number} fpsDownshiftMs - Frame-Zeit in ms, ab der auf fpsLow gewechselt wird.
    * @property {number} fpsUpshiftMs - Frame-Zeit in ms, ab der wieder auf fpsHigh gewechselt wird.
    * @property {number} fpsAdjustCooldownMs - Mindestabstand zwischen FPS-Umschaltungen (ms).
-   * @property {boolean} autoReduceParticles - Reduziert Partikel je nach Geraet (optional).
+   * @property {boolean} autoReduceParticles - Reduziert Partikel je nach Gerät (optional).
    * @property {number} minQualityScale - Minimale Skalierung bei autoReduceParticles.
    * @property {number} rocketIntervalMs - Abstand zwischen Raketen.
    * @property {number} maxRockets - Maximale gleichzeitige Raketen.
@@ -111,10 +111,10 @@
    * @property {number} gravity - Schwerkraft pro Frame.
    * @property {number} friction - Reibung pro Frame.
    * @property {number} confettiCount - Anzahl der Konfetti-Elemente.
-   * @property {number} auroraBandCount - Anzahl der Aurora-Baender.
-   * @property {number} auroraStarCount - Anzahl der Sterne fuer Aurora.
+   * @property {number} auroraBandCount - Anzahl der Aurora-Bänder.
+   * @property {number} auroraStarCount - Anzahl der Sterne für Aurora.
    * @property {number} pulseIntervalMs - Abstand zwischen Pulsringen.
-   * @property {string[]} colors - Farbpalette fuer Effekte.
+   * @property {string[]} colors - Farbpalette für Effekte.
    */
 	const CONFIG = {
 		winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",

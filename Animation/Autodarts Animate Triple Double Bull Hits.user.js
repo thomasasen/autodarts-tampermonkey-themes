@@ -2,7 +2,7 @@
 // @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.1
 // @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste mit Animation.
-// @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverlaeufen hervor.
+// @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverläufen hervor.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @xconfig-background     assets/animation-triple-double-bull-hits-xConfig.png
@@ -26,7 +26,7 @@
   const xConfig_DOUBLE_HERVORHEBEN = true;
   // xConfig: {"type":"toggle","label":"Bull hervorheben","description":"Hebt BULL-Treffer in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULL_HERVORHEBEN = true;
-  // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Waehlt zwischen reinem Live-Observer oder zusaetzlichem Polling fuer hohe Kompatibilitaet.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
+  // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Wählt zwischen reinem Live-Observer oder zusätzlichem Polling für hohe Kompatibilität.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
   const xConfig_AKTUALISIERUNGSMODUS = 3000;
 
   function resolveToggle(value, fallbackValue) {

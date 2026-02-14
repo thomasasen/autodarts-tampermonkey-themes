@@ -3,7 +3,7 @@
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
 // @description  Zeigt beim Start eines neuen Zuges einen kurzen Sweep beim aktiven Spieler.
-// @xconfig-description  Erzeugt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen ueber Zeile oder Karte.
+// @xconfig-description  Erzeugt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen über Zeile oder Karte.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-start-sweep
 // @xconfig-background     assets/animation-turn-start-sweep-xConfig.gif

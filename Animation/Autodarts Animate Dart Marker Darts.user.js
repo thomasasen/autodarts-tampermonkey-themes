@@ -138,9 +138,9 @@
 		return defaultValue;
 	}
 
-	// xConfig: {"type":"select","label":"Dart Design","description":"Waehlt das Dart-Bild fuer die Hitmarker auf dem Board.","options":[{"value":"Dart_autodarts.png","label":"Autodarts (Standard)"},{"value":"Dart_blackblue.png","label":"Black Blue"},{"value":"Dart_blackgreen.png","label":"Black Green"},{"value":"Dart_blackred.png","label":"Black Red"},{"value":"Dart_blue.png","label":"Blue"},{"value":"Dart_camoflage.png","label":"Camouflage"},{"value":"Dart_green.png","label":"Green"},{"value":"Dart_pride.png","label":"Pride"},{"value":"Dart_red.png","label":"Red"},{"value":"Dart_white.png","label":"White"},{"value":"Dart_whitetrible.png","label":"White Trible"},{"value":"Dart_yellow.png","label":"Yellow"},{"value":"Dart_yellowscull.png","label":"Yellow Skull"}]}
+	// xConfig: {"type":"select","label":"Dart Design","description":"Wählt das Dart-Bild für die Hitmarker auf dem Board.","options":[{"value":"Dart_autodarts.png","label":"Autodarts (Standard)"},{"value":"Dart_blackblue.png","label":"Black Blue"},{"value":"Dart_blackgreen.png","label":"Black Green"},{"value":"Dart_blackred.png","label":"Black Red"},{"value":"Dart_blue.png","label":"Blue"},{"value":"Dart_camoflage.png","label":"Camouflage"},{"value":"Dart_green.png","label":"Green"},{"value":"Dart_pride.png","label":"Pride"},{"value":"Dart_red.png","label":"Red"},{"value":"Dart_white.png","label":"White"},{"value":"Dart_whitetrible.png","label":"White Trible"},{"value":"Dart_yellow.png","label":"Yellow"},{"value":"Dart_yellowscull.png","label":"Yellow Skull"}]}
 	const xConfig_DART_DESIGN = "Dart_autodarts.png";
-	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Aktiviert Flug-, Einschlag- und Wobble-Animation fuer neue Darts.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
+	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Aktiviert Flug-, Einschlag- und Wobble-Animation für neue Darts.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
 	const xConfig_ANIMATE_DARTS = true;
 
 	const DART_DESIGN = resolveXConfigSelect("xConfig_DART_DESIGN", xConfig_DART_DESIGN, DART_DESIGN_OPTIONS);
@@ -439,7 +439,7 @@
 	// Funktion: isMarkerCandidate
 	// Zweck: Marker-Kandidaten anhand von Attributen erkennen.
 	// Parameter: circle (SVGCircleElement).
-	// Rueckgabe: boolean.
+	// Rückgabe: boolean.
 	// Nutzt: class/style/filter/data-* Attribute.
 	// Wird genutzt von: collectMarkers().
 	function isMarkerCandidate(circle) {
@@ -456,9 +456,9 @@
 	}
 
 	// Funktion: collectMarkers
-	// Zweck: Marker im Board-SVG finden (Primaer-Selektor + Fallback).
+	// Zweck: Marker im Board-SVG finden (Primär-Selektor + Fallback).
 	// Parameter: svg (SVGElement).
-	// Rueckgabe: Array<SVGCircleElement>.
+	// Rückgabe: Array<SVGCircleElement>.
 	// Nutzt: CONFIG.markerSelector, isMarkerCandidate().
 	// Wird genutzt von: updateDarts(), collectMarkersInDocument().
 	function collectMarkers(svg) {
@@ -475,9 +475,9 @@
 	}
 
 	// Funktion: collectMarkersInDocument
-	// Zweck: Marker ueber alle SVGs sammeln.
+	// Zweck: Marker über alle SVGs sammeln.
 	// Parameter: keine.
-	// Rueckgabe: Array<SVGCircleElement>.
+	// Rückgabe: Array<SVGCircleElement>.
 	// Nutzt: collectMarkers().
 	// Wird genutzt von: resetMarkers().
 	function collectMarkersInDocument() {

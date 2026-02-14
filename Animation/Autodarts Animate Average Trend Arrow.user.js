@@ -2,8 +2,8 @@
 // @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Zeigt bei AVG-Aenderungen kurz einen Trendpfeil nach oben oder unten.
-// @xconfig-description  Visualisiert AVG-Aenderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
+// @description  Zeigt bei AVG-Änderungen kurz einen Trendpfeil nach oben oder unten.
+// @xconfig-description  Visualisiert AVG-Änderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
 // @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
