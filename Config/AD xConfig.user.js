@@ -1,8 +1,8 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.7.1
-// @description  Adds a central AD xConfig menu button and a dummy settings UI scaffold for future script integration.
+// @version      0.8.0
+// @description  Adds a central AD xConfig menu with script discovery and configurable xConfig_ settings.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -21,7 +21,7 @@
 
   const MENU_LABEL = "AD xConfig";
   const STORAGE_KEY = "ad-xconfig:config";
-  const CONFIG_VERSION = 5;
+  const CONFIG_VERSION = 6;
   const CONFIG_PATH = "/ad-xconfig";
   const REPO_OWNER = "thomasasen";
   const REPO_NAME = "autodarts-tampermonkey-themes";
@@ -63,6 +63,7 @@
   const state = {
     config: null,
     featureRegistry: [],
+    activeConfigFeatureId: "",
     panelOpen: false,
     panelHost: null,
     menuButton: null,
@@ -180,6 +181,309 @@
     return metadata;
   }
 
+  function scalarSettingValueKey(value) {
+    if (typeof value === "boolean") {
+      return `b:${value ? "1" : "0"}`;
+    }
+
+    if (typeof value === "number") {
+      return `n:${Number.isFinite(value) ? String(value) : "nan"}`;
+    }
+
+    return `s:${String(value)}`;
+  }
+
+  function normalizeBooleanSettingValue(value) {
+    if (value === true || value === false) {
+      return value;
+    }
+
+    if (value === 1) {
+      return true;
+    }
+
+    if (value === 0) {
+      return false;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "on", "yes", "active", "aktiv"].includes(normalized)) {
+        return true;
+      }
+      if (["false", "0", "off", "no", "inactive", "inaktiv"].includes(normalized)) {
+        return false;
+      }
+    }
+
+    return null;
+  }
+
+  function parseConfigLiteral(rawValue) {
+    const text = String(rawValue || "").trim();
+    if (!text) {
+      return "";
+    }
+
+    if (/^"(?:\\.|[^"])*"$/.test(text)) {
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        return text.slice(1, -1);
+      }
+    }
+
+    if (/^'(?:\\.|[^'])*'$/.test(text)) {
+      return text
+        .slice(1, -1)
+        .replace(/\\'/g, "'")
+        .replace(/\\\\/g, "\\");
+    }
+
+    if (text === "true") {
+      return true;
+    }
+
+    if (text === "false") {
+      return false;
+    }
+
+    if (/^-?\d+(?:\.\d+)?$/.test(text)) {
+      const numberValue = Number(text);
+      if (Number.isFinite(numberValue)) {
+        return numberValue;
+      }
+    }
+
+    return text;
+  }
+
+  function normalizeSettingType(rawType) {
+    const type = String(rawType || "").trim().toLowerCase();
+    if (["toggle", "boolean", "bool", "switch"].includes(type)) {
+      return "toggle";
+    }
+    if (["select", "choice", "enum", "dropdown"].includes(type)) {
+      return "select";
+    }
+    return "";
+  }
+
+  function normalizeSettingOptions(rawOptions) {
+    if (!Array.isArray(rawOptions)) {
+      return [];
+    }
+
+    const options = [];
+    const seen = new Set();
+
+    rawOptions.forEach((rawOption) => {
+      let value;
+      let label;
+
+      if (rawOption && typeof rawOption === "object" && !Array.isArray(rawOption) && "value" in rawOption) {
+        value = rawOption.value;
+        label = String(rawOption.label ?? rawOption.text ?? rawOption.value ?? "").trim();
+      } else if (["string", "number", "boolean"].includes(typeof rawOption)) {
+        value = rawOption;
+        label = String(rawOption);
+      } else {
+        return;
+      }
+
+      if (!["string", "number", "boolean"].includes(typeof value)) {
+        return;
+      }
+
+      const key = scalarSettingValueKey(value);
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      options.push({
+        value,
+        label: label || String(value),
+      });
+    });
+
+    return options;
+  }
+
+  function findSettingOptionIndexByValue(options, value) {
+    if (!Array.isArray(options) || !options.length) {
+      return -1;
+    }
+
+    const directKey = scalarSettingValueKey(value);
+    let fallbackIndex = -1;
+
+    for (let index = 0; index < options.length; index += 1) {
+      const option = options[index];
+      if (!option || !("value" in option)) {
+        continue;
+      }
+
+      const optionValue = option.value;
+      if (scalarSettingValueKey(optionValue) === directKey) {
+        return index;
+      }
+
+      if (fallbackIndex === -1 && String(optionValue) === String(value)) {
+        fallbackIndex = index;
+      }
+    }
+
+    return fallbackIndex;
+  }
+
+  function resolveSettingValue(field, rawValue) {
+    if (!field || typeof field !== "object") {
+      return rawValue;
+    }
+
+    if (field.type === "toggle") {
+      const parsed = normalizeBooleanSettingValue(rawValue);
+      if (parsed !== null) {
+        return parsed;
+      }
+      const fallback = normalizeBooleanSettingValue(field.defaultValue);
+      return fallback !== null ? fallback : false;
+    }
+
+    if (field.type === "select") {
+      const options = Array.isArray(field.options) ? field.options : [];
+      const valueIndex = findSettingOptionIndexByValue(options, rawValue);
+      if (valueIndex >= 0) {
+        return options[valueIndex].value;
+      }
+
+      const defaultIndex = findSettingOptionIndexByValue(options, field.defaultValue);
+      if (defaultIndex >= 0) {
+        return options[defaultIndex].value;
+      }
+
+      if (options.length) {
+        return options[0].value;
+      }
+    }
+
+    return field.defaultValue;
+  }
+
+  function extractXConfigMetaFromLines(lines, declarationIndex) {
+    const lowerBound = Math.max(0, declarationIndex - 8);
+
+    for (let index = declarationIndex - 1; index >= lowerBound; index -= 1) {
+      const rawLine = String(lines[index] || "");
+      const trimmed = rawLine.trim();
+      if (!trimmed) {
+        continue;
+      }
+
+      const metaMatch = trimmed.match(/^\/\/\s*xConfig:\s*(\{.*\})\s*$/);
+      if (metaMatch) {
+        try {
+          const parsed = JSON.parse(metaMatch[1]);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (_) {
+          return null;
+        }
+        return null;
+      }
+
+      if (!trimmed.startsWith("//")) {
+        break;
+      }
+    }
+
+    return null;
+  }
+
+  function parseXConfigFieldsFromSource(content) {
+    const sourceText = String(content || "");
+    if (!sourceText) {
+      return [];
+    }
+
+    const lines = sourceText.split(/\r?\n/);
+    const fields = [];
+    const seenVariables = new Set();
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const declarationMatch = lines[index].match(/^\s*const\s+(xConfig_[A-Za-z0-9_]+)\s*=\s*(.+?)\s*;\s*$/);
+      if (!declarationMatch) {
+        continue;
+      }
+
+      const variableName = declarationMatch[1];
+      if (seenVariables.has(variableName)) {
+        continue;
+      }
+
+      seenVariables.add(variableName);
+
+      const meta = extractXConfigMetaFromLines(lines, index);
+      if (!meta) {
+        continue;
+      }
+
+      const type = normalizeSettingType(meta.type || meta.control || meta.kind || meta.input);
+      if (!type) {
+        continue;
+      }
+
+      const settingKey = variableName.slice("xConfig_".length);
+      if (!settingKey) {
+        continue;
+      }
+
+      const declarationDefault = parseConfigLiteral(declarationMatch[2]);
+      let options = normalizeSettingOptions(meta.options);
+
+      if (type === "toggle") {
+        const booleanOptions = options.filter((option) => typeof option.value === "boolean");
+        options = booleanOptions.length === 2
+          ? booleanOptions
+          : [
+            { value: true, label: "Aktiv" },
+            { value: false, label: "Inaktiv" },
+          ];
+      } else if (!options.length) {
+        if (["string", "number", "boolean"].includes(typeof declarationDefault)) {
+          options = [{
+            value: declarationDefault,
+            label: String(declarationDefault),
+          }];
+        } else {
+          continue;
+        }
+      }
+
+      const label = String(meta.label || settingKey.replaceAll("_", " ")).trim() || settingKey;
+      const description = String(meta.description || meta.help || "").trim();
+      const defaultValue = resolveSettingValue({
+        type,
+        options,
+        defaultValue: declarationDefault,
+      }, declarationDefault);
+
+      fields.push({
+        key: settingKey,
+        variableName,
+        type,
+        label,
+        description,
+        options,
+        defaultValue,
+      });
+    }
+
+    return fields;
+  }
+
   function requestText(url) {
     if (typeof GM_xmlhttpRequest === "function") {
       return new Promise((resolve, reject) => {
@@ -224,6 +528,7 @@
 
   function normalizeFeatureFromSource(category, entry, scriptText) {
     const metadata = parseUserscriptMetadata(scriptText);
+    const settingsSchema = parseXConfigFieldsFromSource(scriptText);
     const source = normalizeSourcePath(entry.path || "");
     const title = normalizeTitle(metadata.name, source);
     const description = metadata["xconfig-description"] || metadata.description || "No description available.";
@@ -251,6 +556,7 @@
       settingsVersion: safeSettingsVersion,
       latestSettingsVersion: safeSettingsVersion,
       remoteSha: String(entry.sha || ""),
+      settingsSchema,
     };
   }
 
@@ -330,6 +636,36 @@
 
   function getFeatureById(featureId) {
     return getFeatureRegistry().find((feature) => feature.id === featureId) || null;
+  }
+
+  function getFeatureSettingsSchema(feature) {
+    if (!feature || !Array.isArray(feature.settingsSchema)) {
+      return [];
+    }
+    return feature.settingsSchema.filter((field) => field && typeof field === "object");
+  }
+
+  function getFeatureSettingField(featureId, settingKey) {
+    const feature = getFeatureById(featureId);
+    if (!feature || !settingKey) {
+      return null;
+    }
+
+    return getFeatureSettingsSchema(feature).find((field) => field.variableName === settingKey) || null;
+  }
+
+  function ensureFeatureSettingsDefaults(feature, featureState) {
+    if (!featureState || typeof featureState !== "object") {
+      return;
+    }
+
+    if (!featureState.settings || typeof featureState.settings !== "object") {
+      featureState.settings = {};
+    }
+
+    getFeatureSettingsSchema(feature).forEach((field) => {
+      featureState.settings[field.variableName] = resolveSettingValue(field, featureState.settings[field.variableName]);
+    });
   }
 
   function getFeatureRepoUrl(feature) {
@@ -463,9 +799,16 @@
   }
 
   async function readStore(key, fallbackValue) {
+    let gmValue = null;
+    let gmLoaded = false;
+
     try {
       if (typeof GM_getValue === "function") {
-        return await toPromise(GM_getValue(key, fallbackValue));
+        gmLoaded = true;
+        gmValue = await toPromise(GM_getValue(key, fallbackValue));
+        if (gmValue !== undefined && gmValue !== null) {
+          return gmValue;
+        }
       }
     } catch (error) {
       console.warn("AD xConfig: GM_getValue failed, fallback to localStorage", error);
@@ -473,18 +816,24 @@
 
     try {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallbackValue;
+      if (raw) {
+        return JSON.parse(raw);
+      }
     } catch (error) {
       console.warn("AD xConfig: localStorage read failed", error);
-      return fallbackValue;
     }
+
+    if (gmLoaded && gmValue !== undefined && gmValue !== null) {
+      return gmValue;
+    }
+
+    return fallbackValue;
   }
 
   async function writeStore(key, value) {
     try {
       if (typeof GM_setValue === "function") {
         await toPromise(GM_setValue(key, value));
-        return;
       }
     } catch (error) {
       console.warn("AD xConfig: GM_setValue failed, fallback to localStorage", error);
@@ -529,7 +878,8 @@
     }
 
     getFeatureRegistry().forEach((feature) => {
-      ensureFeatureState(feature.id);
+      const featureState = ensureFeatureState(feature.id);
+      ensureFeatureSettingsDefaults(feature, featureState);
     });
   }
 
@@ -746,6 +1096,7 @@
 #${PANEL_HOST_ID} .xcfg-badge--version { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); }
 #${PANEL_HOST_ID} .xcfg-badge--update { border-color: rgba(74,178,255,0.65); background: rgba(74,178,255,0.25); }
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
+#${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--git { border-color: rgba(74,178,255,0.65); background: rgba(74,178,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
 #${PANEL_HOST_ID} .xcfg-actions-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -761,6 +1112,7 @@
 }
 #${PANEL_HOST_ID} .xcfg-mini-btn:hover { background: rgba(255,255,255,0.16); }
 #${PANEL_HOST_ID} .xcfg-mini-btn--primary { border-color: rgba(74,178,255,0.52); background: rgba(74,178,255,0.2); }
+#${PANEL_HOST_ID} .xcfg-mini-btn--config { border-color: rgba(148,214,255,0.6); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-meta-line { margin: 0.5rem 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.64); }
 #${PANEL_HOST_ID} .xcfg-onoff {
   position: relative;
@@ -795,6 +1147,70 @@
 
 #${PANEL_HOST_ID} .xcfg-empty { border-radius: 10px; border: 1px dashed rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); padding: 1rem; color: rgba(255,255,255,0.75); font-size: 0.88rem; }
 
+#${PANEL_HOST_ID} .xcfg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: rgba(5, 11, 29, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+#${PANEL_HOST_ID} .xcfg-modal {
+  width: min(44rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: linear-gradient(160deg, rgba(15,27,67,0.97) 0%, rgba(25,32,71,0.98) 75%);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.45);
+  padding: 1rem;
+}
+#${PANEL_HOST_ID} .xcfg-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; }
+#${PANEL_HOST_ID} .xcfg-modal-title { margin: 0; font-size: 1.05rem; line-height: 1.3; }
+#${PANEL_HOST_ID} .xcfg-modal-subtitle { margin: 0.35rem 0 0; color: rgba(255,255,255,0.75); font-size: 0.82rem; }
+#${PANEL_HOST_ID} .xcfg-modal-body { margin-top: 0.95rem; display: grid; gap: 0.65rem; }
+#${PANEL_HOST_ID} .xcfg-setting-row {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  padding: 0.75rem;
+}
+#${PANEL_HOST_ID} .xcfg-setting-label { display: block; font-weight: 700; font-size: 0.86rem; color: rgba(255,255,255,0.96); }
+#${PANEL_HOST_ID} .xcfg-setting-desc { margin: 0.32rem 0 0; color: rgba(255,255,255,0.73); font-size: 0.79rem; line-height: 1.35; }
+#${PANEL_HOST_ID} .xcfg-setting-input { margin-top: 0.58rem; }
+#${PANEL_HOST_ID} .xcfg-setting-select {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(12,17,36,0.9);
+  color: #fff;
+  font-size: 0.84rem;
+  padding: 0.45rem 0.55rem;
+}
+#${PANEL_HOST_ID} .xcfg-setting-select:focus { outline: 2px solid rgba(148,214,255,0.55); outline-offset: 1px; }
+#${PANEL_HOST_ID} .xcfg-setting-toggle {
+  display: inline-flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
+}
+#${PANEL_HOST_ID} .xcfg-setting-toggle-btn {
+  appearance: none;
+  border: none;
+  min-width: 5.2rem;
+  padding: 0.45rem 0.8rem;
+  background: transparent;
+  color: rgba(255,255,255,0.88);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+#${PANEL_HOST_ID} .xcfg-setting-toggle-btn:hover { background: rgba(255,255,255,0.15); }
+#${PANEL_HOST_ID} .xcfg-setting-toggle-btn.is-active { background: rgba(148,214,255,0.3); color: #fff; }
+
 @media (max-width: 1180px) {
   #${PANEL_HOST_ID} .xcfg-grid { grid-template-columns: 1fr; }
 }
@@ -803,6 +1219,9 @@
   #${PANEL_HOST_ID} .xcfg-actions { width: 100%; }
   #${PANEL_HOST_ID} .xcfg-card-desc { width: 100%; }
   #${PANEL_HOST_ID} .xcfg-card-bg img { width: 62%; opacity: 0.42; }
+  #${PANEL_HOST_ID} .xcfg-modal { width: 100%; padding: 0.85rem; }
+  #${PANEL_HOST_ID} .xcfg-setting-toggle { width: 100%; }
+  #${PANEL_HOST_ID} .xcfg-setting-toggle-btn { flex: 1 1 50%; min-width: 0; }
 }
 `;
 
@@ -906,6 +1325,9 @@
       };
     } else {
       const featureState = state.config.features[featureId];
+      if (!featureState.settings || typeof featureState.settings !== "object") {
+        featureState.settings = {};
+      }
       if (typeof featureState.lastCheckedAt !== "string") {
         featureState.lastCheckedAt = null;
       }
@@ -1150,14 +1572,207 @@
     }, { updates: 0, settings: 0 });
   }
 
+  function getResolvedFeatureSettingValue(featureId, settingKey) {
+    const feature = getFeatureById(featureId);
+    if (!feature) {
+      return undefined;
+    }
+
+    const field = getFeatureSettingField(featureId, settingKey);
+    if (!field) {
+      return undefined;
+    }
+
+    const featureState = ensureFeatureState(featureId);
+    ensureFeatureSettingsDefaults(feature, featureState);
+    return resolveSettingValue(field, featureState.settings?.[settingKey]);
+  }
+
+  function getSelectedOptionIndexForField(field, value) {
+    if (!field || field.type !== "select") {
+      return -1;
+    }
+
+    const options = Array.isArray(field.options) ? field.options : [];
+    const valueIndex = findSettingOptionIndexByValue(options, value);
+    if (valueIndex >= 0) {
+      return valueIndex;
+    }
+
+    const defaultIndex = findSettingOptionIndexByValue(options, field.defaultValue);
+    if (defaultIndex >= 0) {
+      return defaultIndex;
+    }
+
+    return options.length ? 0 : -1;
+  }
+
+  function setFeatureSettingValue(featureId, settingKey, rawValue) {
+    if (!featureId || !settingKey || !state.config) {
+      return;
+    }
+
+    const feature = getFeatureById(featureId);
+    const field = getFeatureSettingField(featureId, settingKey);
+    if (!feature || !field) {
+      return;
+    }
+
+    const featureState = ensureFeatureState(featureId);
+    ensureFeatureSettingsDefaults(feature, featureState);
+
+    const resolvedNextValue = resolveSettingValue(field, rawValue);
+    const resolvedPrevValue = resolveSettingValue(field, featureState.settings?.[settingKey]);
+    featureState.settings[settingKey] = resolvedNextValue;
+    renderPanel();
+
+    if (scalarSettingValueKey(resolvedPrevValue) === scalarSettingValueKey(resolvedNextValue)) {
+      return;
+    }
+
+    saveConfig().catch((error) => {
+      console.error("AD xConfig: failed to store feature setting", error);
+      setNotice("error", "Failed to store setting.");
+    });
+  }
+
+  function openFeatureConfig(featureId) {
+    const feature = getFeatureById(featureId);
+    if (!feature) {
+      return;
+    }
+
+    const settingsSchema = getFeatureSettingsSchema(feature);
+    if (!settingsSchema.length) {
+      setNotice("info", `${feature.title}: no configurable settings exposed.`);
+      return;
+    }
+
+    const featureState = ensureFeatureState(feature.id);
+    ensureFeatureSettingsDefaults(feature, featureState);
+    state.activeConfigFeatureId = feature.id;
+    renderPanel();
+  }
+
+  function closeFeatureConfig() {
+    if (!state.activeConfigFeatureId) {
+      return;
+    }
+    state.activeConfigFeatureId = "";
+    renderPanel();
+  }
+
+  function renderSettingFieldHtml(feature, field, rowIndex) {
+    const fieldLabel = escapeHtml(field.label || field.key || field.variableName || "Setting");
+    const settingKey = escapeHtml(field.variableName || "");
+    const featureId = escapeHtml(feature.id);
+    const description = String(field.description || "").trim();
+    const descriptionHtml = description
+      ? `<p class="xcfg-setting-desc">${escapeHtml(description)}</p>`
+      : "";
+
+    if (field.type === "toggle") {
+      const currentValue = getResolvedFeatureSettingValue(feature.id, field.variableName);
+      const isEnabled = normalizeBooleanSettingValue(currentValue) === true;
+
+      const toggleOptions = Array.isArray(field.options)
+        ? field.options.filter((option) => typeof option.value === "boolean")
+        : [];
+      const onLabel = escapeHtml(toggleOptions.find((option) => option.value === true)?.label || "Aktiv");
+      const offLabel = escapeHtml(toggleOptions.find((option) => option.value === false)?.label || "Inaktiv");
+      const onClass = isEnabled ? "is-active" : "";
+      const offClass = isEnabled ? "" : "is-active";
+
+      return `
+        <div class="xcfg-setting-row">
+          <label class="xcfg-setting-label">${fieldLabel}</label>
+          ${descriptionHtml}
+          <div class="xcfg-setting-input">
+            <div class="xcfg-setting-toggle" role="group" aria-label="${fieldLabel}">
+              <button type="button" class="xcfg-setting-toggle-btn ${onClass}" data-action="set-setting-toggle" data-feature-id="${featureId}" data-setting-key="${settingKey}" data-setting-value="true">${onLabel}</button>
+              <button type="button" class="xcfg-setting-toggle-btn ${offClass}" data-action="set-setting-toggle" data-feature-id="${featureId}" data-setting-key="${settingKey}" data-setting-value="false">${offLabel}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (field.type === "select") {
+      const currentValue = getResolvedFeatureSettingValue(feature.id, field.variableName);
+      const selectedIndex = getSelectedOptionIndexForField(field, currentValue);
+      const selectId = `xcfg-setting-${slugifyFeatureId(feature.id)}-${rowIndex}`;
+      const optionsHtml = (Array.isArray(field.options) ? field.options : []).map((option, optionIndex) => {
+        const selected = optionIndex === selectedIndex ? " selected" : "";
+        const optionLabel = escapeHtml(option.label || String(option.value));
+        return `<option value="${optionIndex}"${selected}>${optionLabel}</option>`;
+      }).join("");
+
+      return `
+        <div class="xcfg-setting-row">
+          <label class="xcfg-setting-label" for="${selectId}">${fieldLabel}</label>
+          ${descriptionHtml}
+          <div class="xcfg-setting-input">
+            <select id="${selectId}" class="xcfg-setting-select" data-setting-select="true" data-feature-id="${featureId}" data-setting-key="${settingKey}">
+              ${optionsHtml}
+            </select>
+          </div>
+        </div>
+      `;
+    }
+
+    return "";
+  }
+
+  function renderConfigModalHtml() {
+    if (!state.activeConfigFeatureId) {
+      return "";
+    }
+
+    const feature = getFeatureById(state.activeConfigFeatureId);
+    if (!feature) {
+      state.activeConfigFeatureId = "";
+      return "";
+    }
+
+    const settingsSchema = getFeatureSettingsSchema(feature);
+    if (!settingsSchema.length) {
+      state.activeConfigFeatureId = "";
+      return "";
+    }
+
+    const fieldsHtml = settingsSchema.map((field, index) => renderSettingFieldHtml(feature, field, index)).join("");
+    if (!fieldsHtml) {
+      return "";
+    }
+
+    const titleId = `xcfg-config-title-${slugifyFeatureId(feature.id)}`;
+    return `
+      <div class="xcfg-modal-backdrop">
+        <section class="xcfg-modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
+          <header class="xcfg-modal-header">
+            <div>
+              <h3 id="${titleId}" class="xcfg-modal-title">${escapeHtml(feature.title)} - Config</h3>
+              <p class="xcfg-modal-subtitle">Changes are stored immediately.</p>
+            </div>
+            <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close-config" data-feature-id="${escapeHtml(feature.id)}">Close</button>
+          </header>
+          <div class="xcfg-modal-body">${fieldsHtml}</div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderFeatureCardHtml(feature) {
     const featureState = ensureFeatureState(feature.id);
+    ensureFeatureSettingsDefaults(feature, featureState);
     const flags = getFeatureFlags(feature, featureState);
     const hasAttention = flags.hasUpdate || flags.hasSettingsUpdate;
     const lastChecked = formatDateTime(featureState.lastCheckedAt);
     const shortSha = feature.remoteSha ? String(feature.remoteSha).slice(0, 7) : "";
     const authorText = String(feature.author || "").trim();
     const backgroundUrl = getFeatureBackgroundUrl(feature);
+    const settingsSchema = getFeatureSettingsSchema(feature);
+    const hasConfigurableFields = settingsSchema.length > 0;
 
     const badges = [
       `<span class="xcfg-badge xcfg-badge--dummy">Dummy</span>`,
@@ -1180,8 +1795,16 @@
       badges.push(`<span class="xcfg-badge xcfg-badge--settings">New settings</span>`);
     }
 
+    if (hasConfigurableFields) {
+      const settingLabel = settingsSchema.length === 1 ? "setting" : "settings";
+      badges.push(`<span class="xcfg-badge xcfg-badge--config">${settingsSchema.length} ${settingLabel}</span>`);
+    }
+
     const acknowledgeButton = hasAttention
       ? `<button type="button" class="xcfg-mini-btn" data-action="ack-feature" data-feature-id="${escapeHtml(feature.id)}">Mark read</button>`
+      : "";
+    const configButton = hasConfigurableFields
+      ? `<button type="button" class="xcfg-mini-btn xcfg-mini-btn--config" data-action="open-config" data-feature-id="${escapeHtml(feature.id)}">Config</button>`
       : "";
 
     const onClass = featureState.enabled ? "is-active" : "";
@@ -1209,13 +1832,14 @@
           </div>
           <div class="xcfg-actions-row">
             <button type="button" class="xcfg-mini-btn xcfg-mini-btn--primary" data-action="check-feature" data-feature-id="${escapeHtml(feature.id)}">Check update</button>
+            ${configButton}
             <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">Open repo</button>
             <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">Readme</button>
             ${acknowledgeButton}
           </div>
           ${authorText ? `<p class="xcfg-meta-line">Author: ${escapeHtml(authorText)}</p>` : ""}
           <p class="xcfg-meta-line">Last checked (dummy): ${escapeHtml(lastChecked)}</p>
-          <p class="xcfg-card-note">No runtime adapter connected yet. Toggle state is saved for future integration.</p>
+          <p class="xcfg-card-note">${hasConfigurableFields ? "xConfig settings are persisted and available to scripts that read AD xConfig." : "No xConfig fields exposed by this script yet."}</p>
         </div>
         ${backgroundHtml}
       </article>
@@ -1240,9 +1864,27 @@
     return `<div class="xcfg-grid">${features.map(renderFeatureCardHtml).join("")}</div>`;
   }
 
-  function handlePanelAction(action, featureId) {
+  function handlePanelAction(action, featureId, payload = {}) {
     if (action === "close") {
       navigateToLastNonConfigRoute();
+      return;
+    }
+
+    if (action === "open-config" && featureId) {
+      openFeatureConfig(featureId);
+      return;
+    }
+
+    if (action === "close-config") {
+      closeFeatureConfig();
+      return;
+    }
+
+    if (action === "set-setting-toggle" && featureId && payload.settingKey) {
+      const boolValue = normalizeBooleanSettingValue(payload.settingValue);
+      if (boolValue !== null) {
+        setFeatureSettingValue(featureId, payload.settingKey, boolValue);
+      }
       return;
     }
 
@@ -1323,52 +1965,7 @@
   }
 
   function bindInteractiveControls() {
-    if (!state.panelHost) {
-      return;
-    }
-
-    state.panelHost.querySelectorAll("[data-action]").forEach((element) => {
-      element.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const action = element.getAttribute("data-action");
-        const featureId = element.getAttribute("data-feature-id");
-        const enabledRaw = element.getAttribute("data-feature-enabled");
-        if (action === "set-feature" && featureId && enabledRaw) {
-          handleFeatureToggle(featureId, enabledRaw === "true");
-          return;
-        }
-        if (action) {
-          handlePanelAction(action, featureId);
-        }
-      });
-    });
-
-    state.panelHost.querySelectorAll("[data-tab]").forEach((element) => {
-      element.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const tabId = element.getAttribute("data-tab");
-        if (!tabId) {
-          return;
-        }
-
-        setActiveTab(tabId).catch((error) => {
-          console.error("AD xConfig: failed to switch tab", error);
-        });
-      });
-    });
-
-    state.panelHost.querySelectorAll("input[data-feature-id]").forEach((element) => {
-      if (!(element instanceof HTMLInputElement)) {
-        return;
-      }
-      element.addEventListener("change", (event) => {
-        event.stopPropagation();
-        const featureId = element.getAttribute("data-feature-id");
-        handleFeatureToggle(featureId, element.checked);
-      });
-    });
+    // Event delegation is attached once in attachPanelListeners().
   }
 
   function renderPanel() {
@@ -1391,6 +1988,7 @@
     }).join("");
 
     const contentHtml = renderFeatureGridHtml(activeTab);
+    const modalHtml = renderConfigModalHtml();
 
     state.panelHost.innerHTML = `
       <div class="xcfg-page">
@@ -1401,7 +1999,7 @@
                 <button type="button" class="xcfg-btn xcfg-back-btn" data-action="back" aria-label="Back">←</button>
                 <h1 class="xcfg-title">AD xConfig</h1>
               </div>
-              <p class="xcfg-subtitle">Module manager for themes and animations. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Enabled (dummy): ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. New settings: ${updateCounters.settings}. Last Git sync: ${escapeHtml(lastSyncText)}</p>
+              <p class="xcfg-subtitle">Module manager for themes and animations. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Enabled: ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. New settings: ${updateCounters.settings}. Last Git sync: ${escapeHtml(lastSyncText)}</p>
             </div>
             <div class="xcfg-actions">
               <button type="button" class="xcfg-btn" data-action="sync-git">Sync Git</button>
@@ -1413,6 +2011,7 @@
           ${renderNoticeHtml()}
           <nav class="xcfg-tabs">${tabsHtml}</nav>
           <div class="xcfg-content">${contentHtml}</div>
+          ${modalHtml}
         </section>
       </div>
     `;
@@ -1563,6 +2162,8 @@
     if (actionEl) {
       const action = actionEl.getAttribute("data-action");
       const featureId = actionEl.getAttribute("data-feature-id");
+      const settingKey = actionEl.getAttribute("data-setting-key");
+      const settingValue = actionEl.getAttribute("data-setting-value");
       if (action === "set-feature" && featureId) {
         const enabledRaw = actionEl.getAttribute("data-feature-enabled");
         if (enabledRaw === "true" || enabledRaw === "false") {
@@ -1572,7 +2173,7 @@
       }
 
       if (action) {
-        handlePanelAction(action, featureId);
+        handlePanelAction(action, featureId, { settingKey, settingValue });
       }
 
       return;
@@ -1591,6 +2192,24 @@
 
   function onPanelChange(event) {
     const target = event.target;
+    if (target instanceof HTMLSelectElement && target.getAttribute("data-setting-select") === "true") {
+      const featureId = target.getAttribute("data-feature-id");
+      const settingKey = target.getAttribute("data-setting-key");
+      const optionIndex = Number.parseInt(target.value, 10);
+      const field = getFeatureSettingField(featureId, settingKey);
+
+      if (!field || field.type !== "select") {
+        return;
+      }
+
+      if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= field.options.length) {
+        return;
+      }
+
+      setFeatureSettingValue(featureId, settingKey, field.options[optionIndex].value);
+      return;
+    }
+
     if (!(target instanceof HTMLInputElement)) {
       return;
     }
@@ -1698,6 +2317,7 @@
     state.lastRoute = currentRoute;
     if (!shouldBeOpen) {
       state.lastNonConfigRoute = currentRouteWithQueryAndHash();
+      state.activeConfigFeatureId = "";
     }
 
     syncRoutePanelState();

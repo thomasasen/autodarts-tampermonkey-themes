@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.3
+// @version      2.4
 // @description  Ersetzt Trefferpunkte auf dem Board durch konfigurierbare Dart-Grafiken.
 // @xconfig-description  Tauscht die Standard-Hitmarker gegen ausrichtbare Dart-Bilder und optional animierte Flugdarstellung.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -28,15 +29,122 @@
 		getBoardRadius
 	} = window.autodartsAnimationShared;
 
-	// Dart-Design-Optionen (DART_DESIGN auf einen dieser Werte setzen):
-	// Dart_autodarts.png, Dart_blackblue.png, Dart_blackgreen.png, Dart_blackred.png,
-	// Dart_blue.png, Dart_camoflage.png, Dart_green.png, Dart_pride.png,
-	// Dart_red.png, Dart_white.png, Dart_whitetrible.png, Dart_yellow.png,
-	// Dart_yellowscull.png
-	const DART_DESIGN = "Dart_autodarts.png";
+	const XCONFIG_STORAGE_KEY = "ad-xconfig:config";
+	const XCONFIG_FEATURE_ID = "a-marker-darts";
+	const XCONFIG_FEATURE_SOURCE = "Animation/Autodarts Animate Dart Marker Darts.user.js";
 	const DART_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/";
-	// Dart-Fluganimation ein-/ausschalten.
-	const ANIMATE_DARTS = true;
+	const DART_DESIGN_OPTIONS = [
+		"Dart_autodarts.png",
+		"Dart_blackblue.png",
+		"Dart_blackgreen.png",
+		"Dart_blackred.png",
+		"Dart_blue.png",
+		"Dart_camoflage.png",
+		"Dart_green.png",
+		"Dart_pride.png",
+		"Dart_red.png",
+		"Dart_white.png",
+		"Dart_whitetrible.png",
+		"Dart_yellow.png",
+		"Dart_yellowscull.png"
+	];
+
+	function slugifyFeatureId(value) {
+		return String(value || "")
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "");
+	}
+
+	function readXConfigFeatureSettings() {
+		try {
+			const rawConfig = localStorage.getItem(XCONFIG_STORAGE_KEY);
+			if (! rawConfig) {
+				return {};
+			}
+
+			const parsedConfig = JSON.parse(rawConfig);
+			const features = parsedConfig && typeof parsedConfig === "object" ? parsedConfig.features : null;
+			if (! features || typeof features !== "object") {
+				return {};
+			}
+
+			const fallbackFeatureId = slugifyFeatureId(XCONFIG_FEATURE_SOURCE);
+			const featureState = features[XCONFIG_FEATURE_ID] || features[fallbackFeatureId];
+			if (! featureState || typeof featureState !== "object") {
+				return {};
+			}
+
+			const settings = featureState.settings;
+			return settings && typeof settings === "object" ? settings : {};
+		} catch (_) {
+			return {};
+		}
+	}
+
+	function readXConfigSetting(variableName) {
+		const settings = readXConfigFeatureSettings();
+		if (! settings || typeof settings !== "object") {
+			return undefined;
+		}
+
+		if (Object.prototype.hasOwnProperty.call(settings, variableName)) {
+			return settings[variableName];
+		}
+
+		const shortKey = String(variableName || "").replace(/^xConfig_/, "");
+		if (shortKey && Object.prototype.hasOwnProperty.call(settings, shortKey)) {
+			return settings[shortKey];
+		}
+
+		return undefined;
+	}
+
+	function resolveXConfigSelect(variableName, defaultValue, allowedValues) {
+		const currentValue = readXConfigSetting(variableName);
+		if (currentValue === undefined || currentValue === null) {
+			return defaultValue;
+		}
+
+		const asString = String(currentValue);
+		if (Array.isArray(allowedValues) && allowedValues.includes(asString)) {
+			return asString;
+		}
+
+		return defaultValue;
+	}
+
+	function resolveXConfigToggle(variableName, defaultValue) {
+		const currentValue = readXConfigSetting(variableName);
+		if (typeof currentValue === "boolean") {
+			return currentValue;
+		}
+		if (typeof currentValue === "string") {
+			const normalized = currentValue.trim().toLowerCase();
+			if (["true", "1", "yes", "on", "aktiv", "active"].includes(normalized)) {
+				return true;
+			}
+			if (["false", "0", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+				return false;
+			}
+		}
+		if (currentValue === 1) {
+			return true;
+		}
+		if (currentValue === 0) {
+			return false;
+		}
+		return defaultValue;
+	}
+
+	// xConfig: {"type":"select","label":"Dart Design","description":"Waehlt das Dart-Bild fuer die Hitmarker auf dem Board.","options":[{"value":"Dart_autodarts.png","label":"Autodarts (Standard)"},{"value":"Dart_blackblue.png","label":"Black Blue"},{"value":"Dart_blackgreen.png","label":"Black Green"},{"value":"Dart_blackred.png","label":"Black Red"},{"value":"Dart_blue.png","label":"Blue"},{"value":"Dart_camoflage.png","label":"Camouflage"},{"value":"Dart_green.png","label":"Green"},{"value":"Dart_pride.png","label":"Pride"},{"value":"Dart_red.png","label":"Red"},{"value":"Dart_white.png","label":"White"},{"value":"Dart_whitetrible.png","label":"White Trible"},{"value":"Dart_yellow.png","label":"Yellow"},{"value":"Dart_yellowscull.png","label":"Yellow Skull"}]}
+	const xConfig_DART_DESIGN = "Dart_autodarts.png";
+	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Aktiviert Flug-, Einschlag- und Wobble-Animation fuer neue Darts.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
+	const xConfig_ANIMATE_DARTS = true;
+
+	const DART_DESIGN = resolveXConfigSelect("xConfig_DART_DESIGN", xConfig_DART_DESIGN, DART_DESIGN_OPTIONS);
+	const ANIMATE_DARTS = resolveXConfigToggle("xConfig_ANIMATE_DARTS", xConfig_ANIMATE_DARTS);
 
 	/**
    * Konfiguration für die Dart-Bildplatzierung (ANIMATE_DARTS oben umschalten).
