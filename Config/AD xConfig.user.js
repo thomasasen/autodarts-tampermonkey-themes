@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.9.0
+// @version      1.0.0
 // @description  Adds a central AD xConfig menu with script discovery and configurable xConfig_ settings.
 // @author       Thomas Asen
 // @license      MIT
@@ -21,7 +21,10 @@
 
   const MENU_LABEL = "AD xConfig";
   const STORAGE_KEY = "ad-xconfig:config";
-  const CONFIG_VERSION = 6;
+  const CONFIG_VERSION = 7;
+  const MODULE_CACHE_STORAGE_KEY = "ad-xconfig:module-cache:v1";
+  const MODULE_CACHE_VERSION = 1;
+  const LOADER_MODE = "xconfig-authoritative";
   const CONFIG_PATH = "/ad-xconfig";
   const REPO_OWNER = "thomasasen";
   const REPO_NAME = "autodarts-tampermonkey-themes";
@@ -40,6 +43,13 @@
   const SINGLE_BULL_AUDIO_TOKEN = "/assets/singlebull.mp3";
   const THEME_PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
   const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket"];
+  const LOADER_STATUS = Object.freeze({
+    IDLE: "idle",
+    LOADED: "loaded",
+    MISSING_CACHE: "missing-cache",
+    BLOCKED: "blocked",
+    ERROR: "error",
+  });
 
   const TABS = [
     { id: "themes", label: "Themen" },
@@ -65,6 +75,12 @@
     "Animation/Autodarts Animate Turn Start Sweep.user.js": "a-turn-sweep",
     "Animation/Autodarts Animate Remove Darts Notification.user.js": "a-remove-darts",
   };
+  const LEGACY_SOURCE_BY_FEATURE_ID = Object.entries(LEGACY_FEATURE_ID_BY_SOURCE).reduce((acc, [source, featureId]) => {
+    if (!acc[featureId]) {
+      acc[featureId] = source;
+    }
+    return acc;
+  }, {});
 
   const state = {
     config: null,
@@ -88,10 +104,15 @@
       hooksInstalled: false,
       bootstrapLoaded: false,
       bootstrapConfig: null,
+      moduleCache: null,
       sourceToFeatureId: new Map(),
       knownFeatureIds: new Set(),
       stackHintEntries: [],
       stackHintCache: new Map(),
+      executedFeatures: new Set(),
+      executedFiles: new Set(),
+      featureRuntimeStatus: {},
+      currentFeatureExecution: "",
       observerHandlesByFeature: new Map(),
       intervalHandlesByFeature: new Map(),
       timeoutHandlesByFeature: new Map(),
@@ -201,6 +222,161 @@
       return decodeURIComponent(text);
     } catch (_) {
       return text;
+    }
+  }
+
+  function getFeatureSourcePathById(featureId) {
+    if (!featureId) {
+      return "";
+    }
+
+    const feature = getFeatureById(featureId);
+    if (feature && feature.source) {
+      return normalizeSourcePath(feature.source);
+    }
+
+    const cachedSource = state.runtime.moduleCache?.featureSources?.[featureId];
+    if (cachedSource) {
+      return normalizeSourcePath(cachedSource);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(LEGACY_SOURCE_BY_FEATURE_ID, featureId)) {
+      return normalizeSourcePath(LEGACY_SOURCE_BY_FEATURE_ID[featureId]);
+    }
+
+    return "";
+  }
+
+  function getFeatureTitleById(featureId) {
+    const feature = getFeatureById(featureId);
+    if (feature && feature.title) {
+      return String(feature.title);
+    }
+    return String(featureId || "Unbekanntes Modul");
+  }
+
+  function normalizeStringArray(values) {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    const seen = new Set();
+    const normalized = [];
+    values.forEach((value) => {
+      const text = normalizeSourcePath(String(value || "").trim()).replace(/^\/+/, "");
+      if (!text || seen.has(text)) {
+        return;
+      }
+      seen.add(text);
+      normalized.push(text);
+    });
+    return normalized;
+  }
+
+  function createEmptyModuleCache() {
+    return {
+      schemaVersion: MODULE_CACHE_VERSION,
+      repo: {
+        owner: REPO_OWNER,
+        name: REPO_NAME,
+        branch: REPO_BRANCH,
+      },
+      syncedAt: null,
+      featureSources: {},
+      files: {},
+    };
+  }
+
+  function normalizeModuleCache(rawCache) {
+    if (!rawCache || typeof rawCache !== "object") {
+      return null;
+    }
+
+    const schemaVersion = Number(rawCache.schemaVersion || 0);
+    if (schemaVersion !== MODULE_CACHE_VERSION) {
+      return null;
+    }
+
+    const filesSource = rawCache.files && typeof rawCache.files === "object" ? rawCache.files : {};
+    const featureSourcesSource = rawCache.featureSources && typeof rawCache.featureSources === "object" ? rawCache.featureSources : {};
+    const files = {};
+    const featureSources = {};
+
+    Object.keys(featureSourcesSource).forEach((featureId) => {
+      const sourcePath = normalizeSourcePath(featureSourcesSource[featureId] || "").replace(/^\/+/, "");
+      if (!featureId || !sourcePath) {
+        return;
+      }
+      featureSources[featureId] = sourcePath;
+    });
+
+    Object.keys(filesSource).forEach((rawPath) => {
+      const repoPath = normalizeSourcePath(rawPath).replace(/^\/+/, "");
+      if (!repoPath) {
+        return;
+      }
+
+      const entry = filesSource[rawPath];
+      if (!entry || typeof entry !== "object") {
+        return;
+      }
+
+      const content = typeof entry.content === "string" ? entry.content : "";
+      if (!content) {
+        return;
+      }
+
+      files[repoPath] = {
+        sha: typeof entry.sha === "string" ? entry.sha : "",
+        content,
+        requires: normalizeStringArray(entry.requires),
+        blockedRequires: normalizeStringArray(entry.blockedRequires),
+        fetchedAt: typeof entry.fetchedAt === "string" ? entry.fetchedAt : null,
+      };
+    });
+
+    return {
+      schemaVersion: MODULE_CACHE_VERSION,
+      repo: {
+        owner: String(rawCache?.repo?.owner || REPO_OWNER),
+        name: String(rawCache?.repo?.name || REPO_NAME),
+        branch: String(rawCache?.repo?.branch || REPO_BRANCH),
+      },
+      syncedAt: typeof rawCache.syncedAt === "string" ? rawCache.syncedAt : null,
+      featureSources,
+      files,
+    };
+  }
+
+  function persistModuleCacheToLocalStorage(cacheValue) {
+    const normalized = normalizeModuleCache(cacheValue);
+    if (!normalized) {
+      return false;
+    }
+
+    try {
+      localStorage.setItem(MODULE_CACHE_STORAGE_KEY, JSON.stringify(normalized));
+      return true;
+    } catch (error) {
+      console.warn("AD xConfig Loader: failed to persist module cache", error);
+      return false;
+    }
+  }
+
+  function bootstrapModuleCacheFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem(MODULE_CACHE_STORAGE_KEY);
+      if (!raw) {
+        state.runtime.moduleCache = createEmptyModuleCache();
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      const normalized = normalizeModuleCache(parsed);
+      state.runtime.moduleCache = normalized || createEmptyModuleCache();
+    } catch (error) {
+      console.warn("AD xConfig Loader: failed to bootstrap module cache", error);
+      state.runtime.moduleCache = createEmptyModuleCache();
     }
   }
 
@@ -395,6 +571,48 @@
     return true;
   }
 
+  function getLoaderStatus(featureId) {
+    if (!featureId) {
+      return null;
+    }
+    const status = state.runtime.featureRuntimeStatus[featureId];
+    return status && typeof status === "object" ? status : null;
+  }
+
+  function setLoaderStatus(featureId, runtimeState, message) {
+    if (!featureId) {
+      return;
+    }
+
+    state.runtime.featureRuntimeStatus[featureId] = {
+      state: String(runtimeState || LOADER_STATUS.IDLE),
+      message: String(message || ""),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  function getLoaderBadge(featureId) {
+    const status = getLoaderStatus(featureId);
+    const statusState = String(status?.state || "");
+    if (!statusState || statusState === LOADER_STATUS.IDLE) {
+      return null;
+    }
+
+    if (statusState === LOADER_STATUS.LOADED) {
+      return { cssClass: "xcfg-badge--runtime-ok", label: "Laufzeit: geladen" };
+    }
+    if (statusState === LOADER_STATUS.MISSING_CACHE) {
+      return { cssClass: "xcfg-badge--runtime-missing", label: "Laufzeit: fehlt (Cache)" };
+    }
+    if (statusState === LOADER_STATUS.BLOCKED) {
+      return { cssClass: "xcfg-badge--runtime-blocked", label: "Laufzeit: blockiert" };
+    }
+    if (statusState === LOADER_STATUS.ERROR) {
+      return { cssClass: "xcfg-badge--runtime-error", label: "Laufzeit: Fehler" };
+    }
+    return { cssClass: "xcfg-badge--runtime-missing", label: `Laufzeit: ${statusState}` };
+  }
+
   function cloneRuntimeValue(value) {
     if (typeof structuredClone === "function") {
       try {
@@ -445,6 +663,7 @@
   function publishRuntimeState(reason) {
     const snapshot = buildRuntimeSnapshot();
     const runtimeApi = {
+      loaderMode: LOADER_MODE,
       reason: String(reason || "update"),
       updatedAt: snapshot.updatedAt,
       getSnapshot: () => cloneRuntimeValue(snapshot),
@@ -456,6 +675,14 @@
       getFeatureState: (featureRef) => {
         const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
         return cloneRuntimeValue(snapshot.features[resolvedFeatureId] || null);
+      },
+      getLoaderStatus: (featureRef) => {
+        const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+        return cloneRuntimeValue(getLoaderStatus(resolvedFeatureId));
+      },
+      isFeatureLoaded: (featureRef) => {
+        const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+        return state.runtime.executedFeatures.has(resolvedFeatureId);
       },
       getSetting: (featureRef, settingKey, fallbackValue) => {
         const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
@@ -531,7 +758,11 @@
     try {
       throw new Error("ad-xconfig stack marker");
     } catch (error) {
-      return resolveFeatureIdFromStack(error && typeof error === "object" ? error.stack : "");
+      const fromStack = resolveFeatureIdFromStack(error && typeof error === "object" ? error.stack : "");
+      if (fromStack) {
+        return fromStack;
+      }
+      return String(state.runtime.currentFeatureExecution || "");
     }
   }
 
@@ -982,6 +1213,9 @@
 
   function initRuntimeLayer() {
     hydrateRuntimeBootstrapConfig();
+    if (!state.runtime.moduleCache) {
+      state.runtime.moduleCache = createEmptyModuleCache();
+    }
     refreshRuntimeFeatureIndex();
     installRuntimeHooks();
     ensureAnimationSharedRuntimeWrappers();
@@ -990,11 +1224,12 @@
     queueRuntimeCleanup();
   }
 
-  function parseUserscriptMetadata(content) {
+  function parseUserscriptMetadataDetailed(content) {
     const sourceText = String(content || "");
     const blockMatch = sourceText.match(/\/\/\s*==UserScript==([\s\S]*?)\/\/\s*==\/UserScript==/i);
     const header = blockMatch ? blockMatch[1] : "";
     const metadata = {};
+    const all = {};
     const linePattern = /\/\/\s*@([a-zA-Z0-9:_-]+)\s+([^\n\r]+)/g;
     let lineMatch = linePattern.exec(header);
 
@@ -1004,10 +1239,20 @@
       if (key && !(key in metadata)) {
         metadata[key] = value;
       }
+      if (key) {
+        if (!Array.isArray(all[key])) {
+          all[key] = [];
+        }
+        all[key].push(value);
+      }
       lineMatch = linePattern.exec(header);
     }
 
-    return metadata;
+    return { metadata, all };
+  }
+
+  function parseUserscriptMetadata(content) {
+    return parseUserscriptMetadataDetailed(content).metadata;
   }
 
   function scalarSettingValueKey(value) {
@@ -1313,6 +1558,105 @@
     return fields;
   }
 
+  function buildRepoContentsApiUrl(repoPath) {
+    const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+    return `${REPO_API_BASE}/contents/${toRawPath(normalizedPath)}?ref=${encodeURIComponent(REPO_BRANCH)}`;
+  }
+
+  function buildRepoRawUrl(repoPath) {
+    const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+    return `${REPO_RAW_BASE}/${toRawPath(normalizedPath)}`;
+  }
+
+  function normalizeRequireRepoPath(rawRequireUrl) {
+    const urlText = String(rawRequireUrl || "").trim();
+    if (!urlText) {
+      return { ok: false, reason: "empty" };
+    }
+
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(urlText);
+    } catch (_) {
+      return { ok: false, reason: "invalid-url" };
+    }
+
+    const host = parsedUrl.hostname.toLowerCase();
+    const pathnameParts = parsedUrl.pathname.split("/").filter(Boolean);
+    let owner = "";
+    let repo = "";
+    let branch = "";
+    let pathParts = [];
+
+    if (
+      host === "github.com"
+      && pathnameParts.length >= 7
+      && pathnameParts[2] === "raw"
+      && pathnameParts[3] === "refs"
+      && pathnameParts[4] === "heads"
+    ) {
+      owner = pathnameParts[0];
+      repo = pathnameParts[1];
+      branch = pathnameParts[5];
+      pathParts = pathnameParts.slice(6);
+    } else if (host === "raw.githubusercontent.com" && pathnameParts.length >= 6 && pathnameParts[2] === "refs" && pathnameParts[3] === "heads") {
+      owner = pathnameParts[0];
+      repo = pathnameParts[1];
+      branch = pathnameParts[4];
+      pathParts = pathnameParts.slice(5);
+    } else if (host === "raw.githubusercontent.com" && pathnameParts.length >= 4) {
+      owner = pathnameParts[0];
+      repo = pathnameParts[1];
+      branch = pathnameParts[2];
+      pathParts = pathnameParts.slice(3);
+    } else {
+      return { ok: false, reason: "unsupported-host-or-pattern", raw: urlText };
+    }
+
+    if (owner.toLowerCase() !== REPO_OWNER.toLowerCase() || repo.toLowerCase() !== REPO_NAME.toLowerCase()) {
+      return { ok: false, reason: "external-repo-blocked", raw: urlText };
+    }
+
+    if (branch !== REPO_BRANCH) {
+      return { ok: false, reason: "non-main-branch-blocked", raw: urlText };
+    }
+
+    const decodedPath = pathParts
+      .map((part) => safeDecodeUriComponent(part))
+      .join("/");
+    const repoPath = normalizeSourcePath(decodedPath).replace(/^\/+/, "");
+    if (!repoPath) {
+      return { ok: false, reason: "empty-path", raw: urlText };
+    }
+
+    return { ok: true, path: repoPath, raw: urlText };
+  }
+
+  function parseScriptRequirePaths(scriptText) {
+    const metaDetailed = parseUserscriptMetadataDetailed(scriptText);
+    const requireValues = Array.isArray(metaDetailed?.all?.require) ? metaDetailed.all.require : [];
+    const requires = [];
+    const blockedRequires = [];
+    const seen = new Set();
+
+    requireValues.forEach((requireValue) => {
+      const normalized = normalizeRequireRepoPath(requireValue);
+      if (!normalized.ok) {
+        blockedRequires.push(String(requireValue || "").trim());
+        return;
+      }
+      if (!seen.has(normalized.path)) {
+        seen.add(normalized.path);
+        requires.push(normalized.path);
+      }
+    });
+
+    return {
+      requires,
+      blockedRequires,
+    };
+  }
+
   function requestText(url) {
     if (typeof GM_xmlhttpRequest === "function") {
       return new Promise((resolve, reject) => {
@@ -1352,6 +1696,25 @@
       return JSON.parse(text);
     } catch (_) {
       throw new Error("Invalid JSON response");
+    }
+  }
+
+  async function fetchRepoFileWithSha(repoPath) {
+    const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+    if (!normalizedPath) {
+      throw new Error("Missing repository path");
+    }
+
+    const contentsUrl = buildRepoContentsApiUrl(normalizedPath);
+    try {
+      const entry = await requestJson(contentsUrl);
+      const sha = typeof entry?.sha === "string" ? entry.sha : "";
+      const downloadUrl = entry?.download_url || buildRepoRawUrl(normalizedPath);
+      const content = await requestText(downloadUrl);
+      return { sha, content };
+    } catch (_) {
+      const content = await requestText(buildRepoRawUrl(normalizedPath));
+      return { sha: "", content };
     }
   }
 
@@ -1419,14 +1782,64 @@
       jobs.push({ category: "animations", entry });
     });
 
+    const moduleCache = createEmptyModuleCache();
+    moduleCache.syncedAt = new Date().toISOString();
+
+    const dependencyQueue = [];
+    const queuedDependencies = new Set();
+    function enqueueDependencyPath(repoPath) {
+      const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+      if (!normalizedPath || queuedDependencies.has(normalizedPath)) {
+        return;
+      }
+      queuedDependencies.add(normalizedPath);
+      dependencyQueue.push(normalizedPath);
+    }
+
     const features = await Promise.all(jobs.map(async (job) => {
       const rawUrl = job.entry.download_url
         || `${REPO_RAW_BASE}/${toRawPath(job.entry.path || "")}`;
       const scriptText = await requestText(rawUrl);
-      return normalizeFeatureFromSource(job.category, job.entry, scriptText);
+      const feature = normalizeFeatureFromSource(job.category, job.entry, scriptText);
+      const sourcePath = normalizeSourcePath(job.entry.path || "").replace(/^\/+/, "");
+      if (feature?.id && sourcePath) {
+        moduleCache.featureSources[feature.id] = sourcePath;
+      }
+      const requireInfo = parseScriptRequirePaths(scriptText);
+      moduleCache.files[sourcePath] = {
+        sha: String(job.entry.sha || ""),
+        content: scriptText,
+        requires: requireInfo.requires,
+        blockedRequires: requireInfo.blockedRequires,
+        fetchedAt: moduleCache.syncedAt,
+      };
+      requireInfo.requires.forEach(enqueueDependencyPath);
+      return feature;
     }));
 
-    return features
+    while (dependencyQueue.length) {
+      const dependencyPath = dependencyQueue.shift();
+      if (!dependencyPath || moduleCache.files[dependencyPath]) {
+        continue;
+      }
+
+      try {
+        const dependencyFile = await fetchRepoFileWithSha(dependencyPath);
+        const requireInfo = parseScriptRequirePaths(dependencyFile.content);
+        moduleCache.files[dependencyPath] = {
+          sha: String(dependencyFile.sha || ""),
+          content: dependencyFile.content,
+          requires: requireInfo.requires,
+          blockedRequires: requireInfo.blockedRequires,
+          fetchedAt: moduleCache.syncedAt,
+        };
+        requireInfo.requires.forEach(enqueueDependencyPath);
+      } catch (error) {
+        console.warn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
+      }
+    }
+
+    const sortedFeatures = features
       .filter(Boolean)
       .sort((left, right) => {
         if (left.category !== right.category) {
@@ -1434,6 +1847,189 @@
         }
         return left.title.localeCompare(right.title);
       });
+
+    return {
+      features: sortedFeatures,
+      moduleCache: normalizeModuleCache(moduleCache) || createEmptyModuleCache(),
+    };
+  }
+
+  function applyModuleCache(moduleCacheValue) {
+    const normalized = normalizeModuleCache(moduleCacheValue);
+    if (!normalized) {
+      return false;
+    }
+
+    state.runtime.moduleCache = normalized;
+    persistModuleCacheToLocalStorage(normalized);
+    return true;
+  }
+
+  function getFeatureExecutionTargets() {
+    const targets = [];
+    const seen = new Set();
+
+    getFeatureRegistry().forEach((feature) => {
+      if (!feature?.id) {
+        return;
+      }
+      const sourcePath = normalizeSourcePath(feature.source || "").replace(/^\/+/, "");
+      targets.push({
+        id: feature.id,
+        title: String(feature.title || feature.id),
+        sourcePath,
+      });
+      seen.add(feature.id);
+    });
+
+    const runtimeConfig = getRuntimeConfigSource();
+    const rawFeatures = runtimeConfig && typeof runtimeConfig === "object" && runtimeConfig.features && typeof runtimeConfig.features === "object"
+      ? runtimeConfig.features
+      : {};
+
+    Object.keys(rawFeatures).forEach((featureId) => {
+      if (seen.has(featureId)) {
+        return;
+      }
+      const sourcePath = getFeatureSourcePathById(featureId);
+      targets.push({
+        id: featureId,
+        title: getFeatureTitleById(featureId),
+        sourcePath,
+      });
+      seen.add(featureId);
+    });
+
+    return targets;
+  }
+
+  function getModuleCacheFileEntry(repoPath) {
+    const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+    if (!normalizedPath) {
+      return null;
+    }
+    const files = state.runtime.moduleCache?.files;
+    if (!files || typeof files !== "object") {
+      return null;
+    }
+    const entry = files[normalizedPath];
+    return entry && typeof entry === "object" ? entry : null;
+  }
+
+  function executeCodeWithSourceUrl(code, sourcePath) {
+    const scriptText = String(code || "");
+    const normalizedPath = normalizeSourcePath(sourcePath || "unknown-module.js");
+    const sourceUrl = `ad-xconfig-loader/${normalizedPath}`;
+    const payload = `${scriptText}\n//# sourceURL=${sourceUrl}`;
+    // Indirect eval keeps global scope, so userscripts behave as standalone modules.
+    (0, eval)(payload);
+  }
+
+  function executeModuleFileFromCache(repoPath, featureId, executionStack = new Set()) {
+    const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+    if (!normalizedPath) {
+      return { ok: false, status: LOADER_STATUS.ERROR, message: "Fehlender Modulpfad." };
+    }
+
+    if (state.runtime.executedFiles.has(normalizedPath)) {
+      return { ok: true, status: LOADER_STATUS.LOADED, message: "Bereits geladen." };
+    }
+
+    if (executionStack.has(normalizedPath)) {
+      return { ok: false, status: LOADER_STATUS.ERROR, message: `Zyklische Abhaengigkeit erkannt (${normalizedPath}).` };
+    }
+
+    const fileEntry = getModuleCacheFileEntry(normalizedPath);
+    if (!fileEntry) {
+      return { ok: false, status: LOADER_STATUS.MISSING_CACHE, message: `Cache-Eintrag fehlt (${normalizedPath}).` };
+    }
+
+    const blockedRequires = normalizeStringArray(fileEntry.blockedRequires);
+    if (blockedRequires.length) {
+      return {
+        ok: false,
+        status: LOADER_STATUS.BLOCKED,
+        message: `Blockierte @require-Quelle(n): ${blockedRequires.join(", ")}`,
+      };
+    }
+
+    executionStack.add(normalizedPath);
+    const requires = normalizeStringArray(fileEntry.requires);
+    for (const requiredPath of requires) {
+      const dependencyResult = executeModuleFileFromCache(requiredPath, featureId, executionStack);
+      if (!dependencyResult.ok) {
+        executionStack.delete(normalizedPath);
+        return dependencyResult;
+      }
+    }
+
+    const previousFeatureExecution = state.runtime.currentFeatureExecution;
+    try {
+      state.runtime.currentFeatureExecution = featureId;
+      executeCodeWithSourceUrl(fileEntry.content, normalizedPath);
+      state.runtime.executedFiles.add(normalizedPath);
+      executionStack.delete(normalizedPath);
+      return { ok: true, status: LOADER_STATUS.LOADED, message: `Geladen: ${normalizedPath}` };
+    } catch (error) {
+      executionStack.delete(normalizedPath);
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        status: LOADER_STATUS.ERROR,
+        message: `Ausfuehrungsfehler in ${normalizedPath}: ${message}`,
+      };
+    } finally {
+      state.runtime.currentFeatureExecution = previousFeatureExecution;
+    }
+  }
+
+  function executeEnabledFeaturesFromCache(reason = "runtime") {
+    const targets = getFeatureExecutionTargets();
+    const cacheFilesCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+
+    targets.forEach((target) => {
+      const featureId = target.id;
+      if (!featureId) {
+        return;
+      }
+
+      if (!isRuntimeFeatureEnabled(featureId)) {
+        setLoaderStatus(featureId, LOADER_STATUS.IDLE, "Deaktiviert.");
+        return;
+      }
+
+      if (state.runtime.executedFeatures.has(featureId)) {
+        setLoaderStatus(featureId, LOADER_STATUS.LOADED, "Bereits geladen.");
+        return;
+      }
+
+      if (!cacheFilesCount) {
+        setLoaderStatus(featureId, LOADER_STATUS.MISSING_CACHE, "Kein Loader-Cache vorhanden. Bitte Skripte & Loader-Cache laden.");
+        return;
+      }
+
+      const sourcePath = normalizeSourcePath(target.sourcePath || "").replace(/^\/+/, "");
+      if (!sourcePath) {
+        setLoaderStatus(featureId, LOADER_STATUS.MISSING_CACHE, "Kein Skriptpfad fuer dieses Modul bekannt.");
+        return;
+      }
+
+      const executionResult = executeModuleFileFromCache(sourcePath, featureId);
+      if (executionResult.ok) {
+        state.runtime.executedFeatures.add(featureId);
+        setLoaderStatus(featureId, LOADER_STATUS.LOADED, executionResult.message);
+        console.info(`AD xConfig Loader: ${featureId} geladen (${reason}).`);
+        return;
+      }
+
+      setLoaderStatus(featureId, executionResult.status || LOADER_STATUS.ERROR, executionResult.message || "Unbekannter Loader-Fehler.");
+      console.error(`AD xConfig Loader: ${featureId} konnte nicht geladen werden (${reason}).`, executionResult.message);
+    });
+
+    publishRuntimeState(`loader-${reason}`);
+    if (state.panelHost && state.panelOpen) {
+      renderPanel();
+    }
   }
 
   function normalizeVersion(version) {
@@ -1689,6 +2285,7 @@
     refreshRuntimeFeatureIndex();
     publishRuntimeState("config-loaded");
     queueRuntimeCleanup();
+    executeEnabledFeaturesFromCache("config-change");
     if (!parsed || parsed.version !== CONFIG_VERSION) {
       await saveConfig();
     }
@@ -1742,10 +2339,13 @@
 
     const job = (async () => {
       try {
-        const features = await fetchFeatureRegistryFromGit();
+        const gitPayload = await fetchFeatureRegistryFromGit();
+        const features = Array.isArray(gitPayload?.features) ? gitPayload.features : [];
+        const moduleCache = gitPayload?.moduleCache;
         const applied = applyFeatureRegistry(features);
+        const cacheApplied = applyModuleCache(moduleCache);
 
-        if (!applied) {
+        if (!applied || !cacheApplied) {
           throw new Error("No module data returned from repository");
         }
 
@@ -1753,6 +2353,9 @@
         state.gitLoad.lastError = "";
         state.gitLoad.lastSuccessAt = new Date().toISOString();
         state.gitLoad.lastSuccessCount = features.length;
+        console.info(`AD xConfig Loader: Git sync erfolgreich (${features.length} Module, ${Object.keys(state.runtime.moduleCache?.files || {}).length} Cache-Dateien).`);
+
+        executeEnabledFeaturesFromCache("post-sync");
 
         if (state.config) {
           state.config.git.connected = true;
@@ -1761,12 +2364,13 @@
         }
 
         if (!silent) {
-          setNotice("success", `${features.length} Module von GitHub geladen.`);
+          const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+          setNotice("success", `${features.length} Module und ${cacheCount} Cache-Dateien geladen.`);
         } else {
           renderPanel();
         }
 
-        return { ok: true, count: features.length };
+        return { ok: true, count: features.length, cacheFiles: Object.keys(state.runtime.moduleCache?.files || {}).length };
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         state.featureRegistry = [];
@@ -1879,6 +2483,15 @@
 #${PANEL_HOST_ID} .xcfg-conn--ok { background: rgba(58,180,122,0.17); border-color: rgba(58,180,122,0.52); }
 #${PANEL_HOST_ID} .xcfg-conn--warn { background: rgba(255,198,92,0.14); border-color: rgba(255,198,92,0.45); }
 #${PANEL_HOST_ID} .xcfg-conn--error { background: rgba(255,84,84,0.15); border-color: rgba(255,84,84,0.5); }
+#${PANEL_HOST_ID} .xcfg-loader-hint {
+  margin-top: 0.85rem;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.82rem;
+  border: 1px solid rgba(148,214,255,0.42);
+  background: rgba(148,214,255,0.12);
+  color: rgba(255,255,255,0.86);
+}
 
 #${PANEL_HOST_ID} .xcfg-tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
 #${PANEL_HOST_ID} .xcfg-tab {
@@ -1933,6 +2546,10 @@
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
+#${PANEL_HOST_ID} .xcfg-badge--runtime-ok { border-color: rgba(58,180,122,0.6); background: rgba(58,180,122,0.2); }
+#${PANEL_HOST_ID} .xcfg-badge--runtime-missing { border-color: rgba(255,198,92,0.6); background: rgba(255,198,92,0.2); }
+#${PANEL_HOST_ID} .xcfg-badge--runtime-blocked { border-color: rgba(255,120,120,0.64); background: rgba(255,120,120,0.2); }
+#${PANEL_HOST_ID} .xcfg-badge--runtime-error { border-color: rgba(255,84,84,0.68); background: rgba(255,84,84,0.24); }
 #${PANEL_HOST_ID} .xcfg-actions-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 #${PANEL_HOST_ID} .xcfg-mini-btn {
   border: 1px solid rgba(255,255,255,0.24);
@@ -2366,16 +2983,17 @@
     }
 
     if (state.gitLoad.lastError) {
-      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte laden</b> klicken, sobald die Verbindung wieder verfuegbar ist.</div>`;
+      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken, sobald die Verbindung wieder verfuegbar ist.</div>`;
     }
 
     const count = Number(state.gitLoad.lastSuccessCount || 0);
     const loadedAt = formatDateTime(state.gitLoad.lastSuccessAt);
     if (count > 0) {
-      return `<div class="xcfg-conn xcfg-conn--ok">Git verbunden. Daten live aus GitHub geladen: ${count} Skripte (Stand: ${escapeHtml(loadedAt)}).</div>`;
+      const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+      return `<div class="xcfg-conn xcfg-conn--ok">Git verbunden. Daten live aus GitHub geladen: ${count} Skripte, Loader-Cache: ${cacheCount} Dateien (Stand: ${escapeHtml(loadedAt)}).</div>`;
     }
 
-    return "<div class=\"xcfg-conn xcfg-conn--warn\">Noch keine Skriptinformationen geladen. Bitte auf <b>🔄 Skripte laden</b> klicken.</div>";
+    return "<div class=\"xcfg-conn xcfg-conn--warn\">Noch keine Skriptinformationen geladen. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken.</div>";
   }
 
   function getEnabledFeatureCount() {
@@ -2619,6 +3237,12 @@
       const settingLabel = settingsSchema.length === 1 ? "Einstellung" : "Einstellungen";
       badges.push(`<span class="xcfg-badge xcfg-badge--config">${settingsSchema.length} ${settingLabel}</span>`);
     }
+    const runtimeBadge = getLoaderBadge(feature.id);
+    if (runtimeBadge) {
+      const runtimeMessage = String(getLoaderStatus(feature.id)?.message || "").trim();
+      const titleAttr = runtimeMessage ? ` title="${escapeHtml(runtimeMessage)}"` : "";
+      badges.push(`<span class="xcfg-badge ${runtimeBadge.cssClass}"${titleAttr}>${escapeHtml(runtimeBadge.label)}</span>`);
+    }
     const configButton = hasConfigurableFields
       ? `<button type="button" class="xcfg-mini-btn xcfg-mini-btn--config" data-action="open-config" data-feature-id="${escapeHtml(feature.id)}">⚙ Einstellungen</button>`
       : "";
@@ -2667,10 +3291,10 @@
       }
 
       if (state.gitLoad.lastError) {
-        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung pruefen und <b>🔄 Skripte laden</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
+        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung pruefen und <b>🔄 Skripte & Loader-Cache laden</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
       }
 
-      return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>🔄 Skripte laden</b> klicken.</div>";
+      return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>🔄 Skripte & Loader-Cache laden</b> klicken.</div>";
     }
 
     return `<div class="xcfg-grid">${features.map(renderFeatureCardHtml).join("")}</div>`;
@@ -2743,6 +3367,7 @@
     const featureState = ensureFeatureState(featureId);
     const enabled = Boolean(checked);
     featureState.enabled = enabled;
+    executeEnabledFeaturesFromCache("config-change");
     queueRuntimeCleanup();
     const feature = getFeatureById(featureId);
     renderPanel();
@@ -2795,12 +3420,13 @@
               <p class="xcfg-subtitle">Modulverwaltung fuer Themen und Animationen. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Aktiv: ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. Neue Einstellungen: ${updateCounters.settings}. Letzter Git-Abgleich: ${escapeHtml(lastSyncText)}</p>
             </div>
             <div class="xcfg-actions">
-              <button type="button" class="xcfg-btn" data-action="sync-git">🔄 Skripte laden</button>
+              <button type="button" class="xcfg-btn" data-action="sync-git">🔄 Skripte & Loader-Cache laden</button>
               <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">↺ Zurücksetzen</button>
             </div>
           </header>
           ${renderGitConnectionHtml()}
           ${renderNoticeHtml()}
+          <div class="xcfg-loader-hint">xConfig laedt Module selbst. Manuell installierte Einzel-Skripte bitte deaktivieren oder deinstallieren, um Doppel-Ausfuehrung zu vermeiden.</div>
           <nav class="xcfg-tabs">${tabsHtml}</nav>
           <div class="xcfg-content">${contentHtml}</div>
           ${modalHtml}
@@ -2833,6 +3459,7 @@
     }
 
     state.config = createDefaultConfig();
+    executeEnabledFeaturesFromCache("config-change");
     queueRuntimeCleanup();
     await saveConfig();
     renderPanel();
@@ -2859,7 +3486,8 @@
     renderPanel();
 
     if (syncResult.ok) {
-      setNotice("success", `Skripte geladen: ${syncResult.count} Module aus dem Repository.`);
+      const cacheFiles = Number(syncResult.cacheFiles || 0);
+      setNotice("success", `Skripte geladen: ${syncResult.count} Module, ${cacheFiles} Loader-Cache-Dateien.`);
     } else {
       setNotice("error", `Skriptabgleich fehlgeschlagen. Grund: ${syncResult.error}`);
     }
@@ -3089,6 +3717,8 @@
   async function init() {
     ensureStyles();
     initRuntimeLayer();
+    bootstrapModuleCacheFromLocalStorage();
+    executeEnabledFeaturesFromCache("startup");
     await loadConfig();
     ensureFeatureStatesForRegistry();
 
