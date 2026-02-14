@@ -1112,9 +1112,9 @@
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
-  width: 6.2rem;
-  min-width: 6.2rem;
-  max-width: 6.2rem;
+  width: 5.2rem;
+  min-width: 5.2rem;
+  max-width: 5.2rem;
   overflow: hidden;
   border-radius: 8px;
   background: rgba(255,255,255,0.14);
@@ -1125,12 +1125,12 @@
   background: transparent;
   color: rgba(255,255,255,0.9);
   width: 50%;
-  min-width: 3.1rem;
+  min-width: 2.6rem;
   height: 2.2rem;
-  padding: 0 .6rem;
+  padding: 0 .45rem;
   cursor: pointer;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.86rem;
   line-height: 1;
   white-space: nowrap;
   text-align: center;
@@ -1194,11 +1194,11 @@
 #${PANEL_HOST_ID} .xcfg-setting-toggle-btn {
   appearance: none;
   border: none;
-  min-width: 5.2rem;
-  padding: 0.45rem 0.8rem;
+  min-width: 4rem;
+  padding: 0.45rem 0.65rem;
   background: transparent;
   color: rgba(255,255,255,0.88);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1668,8 +1668,8 @@
       const toggleOptions = Array.isArray(field.options)
         ? field.options.filter((option) => typeof option.value === "boolean")
         : [];
-      const onLabel = escapeHtml(toggleOptions.find((option) => option.value === true)?.label || "Aktiv");
-      const offLabel = escapeHtml(toggleOptions.find((option) => option.value === false)?.label || "Inaktiv");
+      const onLabel = escapeHtml(toggleOptions.find((option) => option.value === true)?.label || "An");
+      const offLabel = escapeHtml(toggleOptions.find((option) => option.value === false)?.label || "Aus");
       const onClass = isEnabled ? "is-active" : "";
       const offClass = isEnabled ? "" : "is-active";
 
@@ -1799,8 +1799,8 @@
               <p class="xcfg-card-desc">${escapeHtml(feature.description || "")}</p>
             </div>
             <div class="xcfg-onoff" title="Aktiviert oder deaktiviert dieses Skript.">
-              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">Aktiv</button>
-              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Inaktiv</button>
+              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">An</button>
+              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Aus</button>
             </div>
           </header>
           <div class="xcfg-card-footer">
