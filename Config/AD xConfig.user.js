@@ -1916,6 +1916,92 @@
     return entry && typeof entry === "object" ? entry : null;
   }
 
+  function toInlineJsLiteral(value) {
+    if (typeof value === "boolean") {
+      return value ? "true" : "false";
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+
+    if (typeof value === "string") {
+      return JSON.stringify(value);
+    }
+
+    return "";
+  }
+
+  function applyFeatureSettingOverridesToCode(code, featureId, sourcePath) {
+    const scriptText = String(code || "");
+    if (!featureId || !scriptText || !scriptText.includes("xConfig_")) {
+      return scriptText;
+    }
+
+    const featureRecord = getRuntimeFeatureRecord(featureId);
+    const featureSettings = featureRecord && typeof featureRecord.settings === "object"
+      ? featureRecord.settings
+      : null;
+    if (!featureSettings) {
+      return scriptText;
+    }
+
+    const overrides = new Map();
+    Object.keys(featureSettings).forEach((key) => {
+      const rawKey = String(key || "").trim();
+      if (!rawKey) {
+        return;
+      }
+
+      const rawValue = featureSettings[rawKey];
+      if (!["string", "number", "boolean"].includes(typeof rawValue)) {
+        return;
+      }
+      if (typeof rawValue === "number" && !Number.isFinite(rawValue)) {
+        return;
+      }
+
+      if (rawKey.startsWith("xConfig_")) {
+        overrides.set(rawKey, rawValue);
+        const shortKey = rawKey.slice("xConfig_".length);
+        if (shortKey) {
+          overrides.set(shortKey, rawValue);
+        }
+      } else {
+        overrides.set(rawKey, rawValue);
+        overrides.set(`xConfig_${rawKey}`, rawValue);
+      }
+    });
+
+    if (!overrides.size) {
+      return scriptText;
+    }
+
+    let appliedCount = 0;
+    const patchedText = scriptText.replace(
+      /^(\s*const\s+)(xConfig_[A-Za-z0-9_]+)(\s*=\s*)(.+?)(\s*;\s*(?:\/\/.*)?)$/gm,
+      (fullMatch, constPrefix, variableName, assignPrefix, _defaultExpr, suffix) => {
+        const overrideValue = overrides.has(variableName)
+          ? overrides.get(variableName)
+          : overrides.get(String(variableName || "").replace(/^xConfig_/, ""));
+
+        const inlineLiteral = toInlineJsLiteral(overrideValue);
+        if (!inlineLiteral) {
+          return fullMatch;
+        }
+
+        appliedCount += 1;
+        return `${constPrefix}${variableName}${assignPrefix}${inlineLiteral}${suffix}`;
+      },
+    );
+
+    if (appliedCount > 0) {
+      console.info(`AD xConfig Loader: ${featureId} xConfig-Overrides angewendet (${appliedCount}) [${normalizeSourcePath(sourcePath || "")}]`);
+    }
+
+    return patchedText;
+  }
+
   function executeCodeWithSourceUrl(code, sourcePath) {
     const scriptText = String(code || "");
     const normalizedPath = normalizeSourcePath(sourcePath || "unknown-module.js");
@@ -1966,7 +2052,12 @@
     const previousFeatureExecution = state.runtime.currentFeatureExecution;
     try {
       state.runtime.currentFeatureExecution = featureId;
-      executeCodeWithSourceUrl(fileEntry.content, normalizedPath);
+      const featureSourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
+      const isFeatureMainFile = Boolean(featureSourcePath) && featureSourcePath === normalizedPath;
+      const scriptContent = isFeatureMainFile
+        ? applyFeatureSettingOverridesToCode(fileEntry.content, featureId, normalizedPath)
+        : String(fileEntry.content || "");
+      executeCodeWithSourceUrl(scriptContent, normalizedPath);
       state.runtime.executedFiles.add(normalizedPath);
       executionStack.delete(normalizedPath);
       return { ok: true, status: LOADER_STATUS.LOADED, message: `Geladen: ${normalizedPath}` };
@@ -3077,7 +3168,20 @@
       return;
     }
 
-    saveConfig().catch((error) => {
+    saveConfig().then(() => {
+      // Re-run enabled feature scripts so updated xConfig_* values are applied immediately.
+      if (isRuntimeFeatureEnabled(featureId)) {
+        clearRuntimeHandlesForFeature(featureId);
+        cleanupFeatureArtifacts(featureId);
+        state.runtime.executedFeatures.delete(featureId);
+        const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
+        if (sourcePath) {
+          state.runtime.executedFiles.delete(sourcePath);
+        }
+      }
+      executeEnabledFeaturesFromCache("config-change");
+      queueRuntimeCleanup();
+    }).catch((error) => {
       console.error("AD xConfig: failed to store feature setting", error);
       setNotice("error", "Einstellung konnte nicht gespeichert werden.");
     });
