@@ -17,12 +17,13 @@ Viele Skripte aktivieren sich je nach Spielvariante automatisch und lassen sich 
 - Optionale Animations- und Effekt-Skripte für bessere Lesbarkeit.
 - Skripte reagieren automatisch, wenn sich die Spielansicht dynamisch ändert.
 - DartsZoom-Vorschau optional unter den Würfen; Platz wird nur reserviert, wenn die Vorschau sichtbar ist.
-- Jede Datei ist unabhängig installierbar; Templates und Animationen lassen sich frei kombinieren.
+- Bevorzugte Nutzung über **AD xConfig**; direkte Einzelinstallation bleibt optional möglich.
 
 ### 🗂️ Ordnerstruktur
 
 - `Template/`: Themes (Layout/Farben) je Spielvariante.
 - `Animation/`: Animationen und Effekte.
+- `Config/`: zentrale Steuerung und Loader (`AD xConfig.user.js`).
 - `Template/autodarts-theme-shared.js`: gemeinsamer Helfer für die Themes (wird per `@require` geladen).
 - `Animation/autodarts-animation-shared.js`: gemeinsamer Helfer für Animationen (wird per `@require` geladen).
 - `assets/`: Screenshots, GIFs, Sounds und Design-Bilder.
@@ -30,21 +31,91 @@ Viele Skripte aktivieren sich je nach Spielvariante automatisch und lassen sich 
 ### 🧭 Leseführung
 
 - Erst Tampermonkey, Installation und Updates.
-- Danach alle Skripte einzeln, jeweils mit Beschreibung, Konfiguration, Beispielen/Screenshots und Hinweisen.
+- Danach zuerst **AD xConfig** einrichten (empfohlen) und anschließend bei Bedarf die einzelnen Skriptabschnitte nutzen.
 - Am Ende: Feedback, Testumgebung, Lizenz und Haftungsausschluss.
 
 ## 🚀 Schnellstart
 
 1. Tampermonkey installieren (Chrome/Edge/Chromium): [tampermonkey.net](https://www.tampermonkey.net/index.php?browser=chrome)
-2. Skript auswählen und über den „Installieren“-Button einbinden.
-3. Autodarts neu laden und ggf. Variablen im Skript anpassen.
+2. **Empfohlen:** `AD xConfig` installieren (zentrale Verwaltung für Themes/Animationen).
+3. In Autodarts über den Hauptmenü-Button **AD xConfig** die Module laden und aktivieren.
+4. Autodarts neu laden.
 
-Tipp: Erst ein Template installieren, danach Animationen/Effekte ergänzen.
+Tipp: In **AD xConfig** zuerst **„🔄 Skripte & Loader-Cache laden“**, dann ein Theme aktivieren und anschließend gewünschte Animationen ergänzen.
+
+## ⭐ Empfohlene Methode: AD xConfig
+
+Die bevorzugte Implementierung ist **`Config/AD xConfig.user.js`**.
+Damit verwaltest du Themes und Animationen zentral über eine Oberfläche in Autodarts, statt viele Einzelskripte manuell zu installieren und einzeln zu pflegen.
+
+- Datei: `Config/AD xConfig.user.js`
+
+[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Config/AD%20xConfig.user.js)
+
+![AD xConfig](assets/AD-xConfig.png)
+
+### Warum diese Methode bevorzugt ist
+
+- **Einfachheit:** Eine zentrale Oberfläche statt vieler einzelner Skript-Konfigurationen.
+- **Weniger Pflegeaufwand:** Du musst nicht mehr jedes einzelne Theme-/Animations-Skript separat aktualisieren.
+- **Live-Ladung aus GitHub:** Die Module werden direkt aus dem Repository geladen (über **„🔄 Skripte & Loader-Cache laden“**).
+- **Zentrale Updates:** In der Regel muss maximal `AD xConfig.user.js` aktuell gehalten werden.
+- **Transparenz:** Laufzeitstatus, Versionen, Varianten, Updates und konfigurierbare Felder sind direkt sichtbar.
+
+### Key-Features (besonders wichtig)
+
+- **Ein/Aus je Skript:** Jedes Modul kann über **`An`** / **`Aus`** direkt geschaltet werden.
+- **Eigene Einstellungen je Skript:** Über **`⚙ Einstellungen`** kannst du modulbezogene Optionen ändern (z. B. Designs, Effekte, Modi).
+- **Dauerhaft gespeichert:** Aktivierungen und Einstellungen bleiben erhalten, auch nach Browser-Neustart (siehe Voraussetzungen unten).
+- **Direkte Hilfe je Modul:** Über **`📖 Anleitung`** springst du aus der Modulkarte direkt zum passenden Abschnitt in dieser README.
+
+### Installation und Nutzung
+
+1. `AD xConfig.user.js` über den Installationsbutton installieren.
+2. `https://play.autodarts.io` öffnen oder neu laden.
+3. Im Hauptmenü erscheint der neue Button **AD xConfig**.
+4. Im xConfig-Panel auf **„🔄 Skripte & Loader-Cache laden“** klicken.
+5. Über die Schalter **An/Aus** die gewünschten Module aktivieren.
+6. Optional pro Modul **`⚙ Einstellungen`** öffnen und eigene Konfiguration speichern.
+7. Über **`📖 Anleitung`** direkt die zugehörige README-Stelle öffnen.
+
+### Tabs „Themen“ und „Animationen“
+
+- **Themen:** Enthält Layout-/Design-Module (z. B. X01, Shanghai, Bermuda, Cricket).
+- **Animationen:** Enthält visuelle Effekte und Hervorhebungen.
+- Die Tabs dienen zur strukturierten Modulverwaltung; Aktivierung und Konfiguration erfolgen pro Karte.
+
+### Tags und Badges in den Karten
+
+Je Modulkarte werden Tags/Badges im Originaldesign angezeigt. Typische Bezeichnungen sind:
+
+- `v2.2`
+- `X01` / `Alle`
+- `Update verfügbar`
+- `Neue Einstellungen`
+- `2 Einstellungen`
+- `Laufzeit: geladen`
+- `Laufzeit: fehlt (Cache)`
+- `Laufzeit: blockiert`
+- `Laufzeit: Fehler`
+
+So siehst du schnell, was aktiv ist, ob ein Update vorliegt und ob ein Modul korrekt geladen wurde.
+
+### Persistente Einstellungen (auch nach Browser-Neustart)
+
+Einstellungen und Aktivierungen werden dauerhaft gespeichert und bleiben auch nach dem Schließen des Browsers erhalten, **wenn** folgende Voraussetzungen erfüllt sind:
+
+- Du nutzt dasselbe Browser-Profil.
+- Tampermonkey und Website-Daten sind nicht so konfiguriert, dass sie beim Schließen automatisch gelöscht werden.
+- Du nutzt keinen Modus mit flüchtigem Speicher (z. B. strikter Privat-/Inkognito-Modus ohne Persistenz).
+
+Technisch werden die Werte über Tampermonkey-Storage (bzw. Fallback `localStorage`) persistiert.
 
 ## 🧭 Inhaltsverzeichnis
 
 - [📖 Einführung](#einführung)
 - [🚀 Schnellstart](#schnellstart)
+- [⭐ Empfohlene Methode: AD xConfig](#-empfohlene-methode-ad-xconfig)
 - [🧰 Tampermonkey](#tampermonkey)
 - [📦 Installation](#installation)
 - [🔄 Updates](#updates)
@@ -88,12 +159,21 @@ Weiterführende Links:
 
 Nach der Installation findest du das Tampermonkey-Icon in der Browser-Toolbar.
 Dort kannst du die installierten Skripte öffnen, aktivieren/deaktivieren und aktualisieren.
-Variablen ändern: Tampermonkey-Icon -> Dashboard -> Skript öffnen -> im Editor die Variablen anpassen -> Speichern. Danach die Autodarts-Seite neu laden.
-Hinweis: Wenn du im Skript Variablen änderst, können Updates diese Änderungen überschreiben. Dann musst du sie danach erneut eintragen.
+Variablen ändern (klassische Einzelinstallation): Tampermonkey-Icon -> Dashboard -> Skript öffnen -> im Editor die Variablen anpassen -> Speichern. Danach die Autodarts-Seite neu laden.
+Hinweis: Bei Nutzung von **AD xConfig** ist das in der Regel nicht nötig, da Einstellungen zentral im xConfig-Panel vorgenommen und gespeichert werden.
 
 ## 📦 Installation
 
-1. Wähle unten ein Skript und klicke auf den Button unter dem Skript.
+### Empfohlen: zentrale Installation mit AD xConfig
+
+1. Installiere `Config/AD xConfig.user.js` über den Installationsbutton oben.
+2. Öffne Autodarts und gehe über den Menüpunkt **AD xConfig** in die Modulverwaltung.
+3. Klicke auf **„🔄 Skripte & Loader-Cache laden“**.
+4. Aktiviere gewünschte Module mit **`An`** und passe bei Bedarf **`⚙ Einstellungen`** an.
+
+### Optional: klassische Einzelinstallation
+
+1. Wähle unten ein einzelnes Skript und klicke auf den jeweiligen Installationsbutton.
 2. Tampermonkey öffnet den Installationsdialog.
 3. Klicke auf „Installieren“ und lasse automatische Updates aktiviert.
 
@@ -108,8 +188,12 @@ Wenn kein Dialog erscheint, ist Tampermonkey nicht installiert oder deaktiviert.
 
 ## 🧩 Skripte
 
-Hinweis zur Konfiguration: Jedes Skript hat seinen Konfigurationsblock nahe am Dateianfang.
-Ändere nur die Variablen im jeweiligen Skript, speichere es in Tampermonkey und lade die Autodarts-Seite neu.
+Hinweis für die meisten Nutzer:
+Die Konfiguration erfolgt bevorzugt zentral über **AD xConfig** (Ein/Aus, Einstellungen, Updates, Laufzeitstatus).
+
+Hinweis für technisch Versierte (klassische Einzelinstallation):
+Jedes Skript hat zusätzlich einen Konfigurationsblock nahe am Dateianfang.
+Ändere nur diese Variablen im jeweiligen Skript, speichere es in Tampermonkey und lade die Autodarts-Seite neu.
 Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
 
 Kennzeichnung: Jede Skriptsektion enthält einen Block **Einfache Variablen (Beispiele)**.
