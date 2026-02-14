@@ -1838,11 +1838,6 @@
   }
 
   function handlePanelAction(action, featureId, payload = {}) {
-    if (action === "close") {
-      navigateToLastNonConfigRoute();
-      return;
-    }
-
     if (action === "open-config" && featureId) {
       openFeatureConfig(featureId);
       return;
@@ -1864,7 +1859,7 @@
     if (action === "reset") {
       resetConfig().catch((error) => {
         console.error("AD xConfig: reset failed", error);
-        setNotice("error", "Zuruecksetzen fehlgeschlagen.");
+        setNotice("error", "Zurücksetzen fehlgeschlagen.");
       });
       return;
     }
@@ -1960,8 +1955,7 @@
             </div>
             <div class="xcfg-actions">
               <button type="button" class="xcfg-btn" data-action="sync-git">🔄 Skripte laden</button>
-              <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">↺ Zuruecksetzen</button>
-              <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close">✖ Schliessen</button>
+              <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">↺ Zurücksetzen</button>
             </div>
           </header>
           ${renderGitConnectionHtml()}
@@ -1992,7 +1986,7 @@
   }
 
   async function resetConfig() {
-    const confirmed = window.confirm("AD xConfig auf Standardwerte zuruecksetzen?");
+    const confirmed = window.confirm("Bist du dir sicher. Damit werden alle Deine Einstellungen auf die Defaultwerte zurückgesetzt und alle Skripte auf \"Aus\" gesetzt.");
     if (!confirmed) {
       return;
     }
@@ -2000,7 +1994,7 @@
     state.config = createDefaultConfig();
     await saveConfig();
     renderPanel();
-    setNotice("success", "Konfiguration auf Standardwerte zurueckgesetzt.");
+    setNotice("success", "Konfiguration auf Standardwerte zurückgesetzt.");
   }
 
   async function runGitSyncDummy() {
