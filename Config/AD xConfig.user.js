@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      0.8.0
+// @version      0.9.0
 // @description  Adds a central AD xConfig menu with script discovery and configurable xConfig_ settings.
 // @author       Thomas Asen
 // @license      MIT
@@ -34,6 +34,12 @@
   const STYLE_ID = "ad-xconfig-style";
   const MENU_ITEM_ID = "ad-xconfig-menu-item";
   const PANEL_HOST_ID = "ad-xconfig-panel-host";
+  const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
+  const RUNTIME_EVENT_NAME = "ad-xconfig:changed";
+  const RUNTIME_CLEANUP_INTERVAL_MS = 450;
+  const SINGLE_BULL_AUDIO_TOKEN = "/assets/singlebull.mp3";
+  const THEME_PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
+  const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket"];
 
   const TABS = [
     { id: "themes", label: "Themen" },
@@ -78,6 +84,30 @@
     gitLoad: { loading: false, source: "not-loaded", lastError: "", lastSuccessAt: null, lastSuccessCount: 0, promise: null },
     lastNonConfigRoute: "/lobbies",
     lastRoute: routeKey(),
+    runtime: {
+      hooksInstalled: false,
+      bootstrapLoaded: false,
+      bootstrapConfig: null,
+      sourceToFeatureId: new Map(),
+      knownFeatureIds: new Set(),
+      stackHintEntries: [],
+      stackHintCache: new Map(),
+      observerHandlesByFeature: new Map(),
+      intervalHandlesByFeature: new Map(),
+      timeoutHandlesByFeature: new Map(),
+      cleanupObserver: null,
+      cleanupTimer: null,
+      cleanupQueued: false,
+      animationSharedWrapped: false,
+      native: {
+        MutationObserver: null,
+        setInterval: null,
+        clearInterval: null,
+        setTimeout: null,
+        clearTimeout: null,
+        mediaPlay: null,
+      },
+    },
   };
 
   function routeKey() {
@@ -159,6 +189,805 @@
       .split("/")
       .map((segment) => encodeURIComponent(segment))
       .join("/");
+  }
+
+  function safeDecodeUriComponent(value) {
+    const text = String(value || "");
+    if (!text.includes("%")) {
+      return text;
+    }
+
+    try {
+      return decodeURIComponent(text);
+    } catch (_) {
+      return text;
+    }
+  }
+
+  function normalizeStackHintText(value) {
+    return normalizeSourcePath(String(value || "")).trim().toLowerCase();
+  }
+
+  function addRuntimeFeatureHint(hintMap, featureId, rawHint) {
+    if (!(hintMap instanceof Map) || !featureId) {
+      return;
+    }
+
+    const normalized = normalizeStackHintText(rawHint);
+    if (!normalized || normalized.length < 6) {
+      return;
+    }
+
+    const variants = new Set([normalized]);
+    if (normalized.includes(" ")) {
+      variants.add(normalized.replaceAll(" ", "%20"));
+    }
+
+    const basename = normalized.split("/").pop();
+    if (basename) {
+      variants.add(basename);
+      if (basename.endsWith(".user.js")) {
+        variants.add(basename.slice(0, -8));
+      }
+      if (basename.endsWith(".js")) {
+        variants.add(basename.slice(0, -3));
+      }
+    }
+
+    variants.add(slugifyFeatureId(normalized));
+
+    variants.forEach((variant) => {
+      if (!variant || variant.length < 6) {
+        return;
+      }
+      if (!hintMap.has(variant)) {
+        hintMap.set(variant, featureId);
+      }
+    });
+  }
+
+  function refreshRuntimeFeatureIndex() {
+    const knownFeatureIds = new Set();
+    const sourceToFeatureId = new Map();
+    const hintMap = new Map();
+
+    Object.entries(LEGACY_FEATURE_ID_BY_SOURCE).forEach(([source, featureId]) => {
+      const normalizedSource = normalizeSourcePath(source);
+      knownFeatureIds.add(featureId);
+      if (normalizedSource) {
+        sourceToFeatureId.set(normalizedSource, featureId);
+        sourceToFeatureId.set(normalizedSource.toLowerCase(), featureId);
+      }
+      addRuntimeFeatureHint(hintMap, featureId, normalizedSource);
+    });
+
+    getFeatureRegistry().forEach((feature) => {
+      if (!feature || !feature.id) {
+        return;
+      }
+
+      knownFeatureIds.add(feature.id);
+      const source = normalizeSourcePath(feature.source || "");
+      if (source) {
+        sourceToFeatureId.set(source, feature.id);
+        sourceToFeatureId.set(source.toLowerCase(), feature.id);
+        addRuntimeFeatureHint(hintMap, feature.id, source);
+      }
+
+      addRuntimeFeatureHint(hintMap, feature.id, feature.title || "");
+      addRuntimeFeatureHint(hintMap, feature.id, feature.id);
+    });
+
+    state.runtime.knownFeatureIds = knownFeatureIds;
+    state.runtime.sourceToFeatureId = sourceToFeatureId;
+    state.runtime.stackHintEntries = Array.from(hintMap.entries())
+      .map(([hint, featureId]) => ({ hint, featureId }))
+      .sort((left, right) => right.hint.length - left.hint.length);
+    state.runtime.stackHintCache.clear();
+  }
+
+  function resolveFeatureIdFromReference(rawReference) {
+    const reference = String(rawReference || "").trim();
+    if (!reference) {
+      return "";
+    }
+
+    if (state.runtime.knownFeatureIds.has(reference)) {
+      return reference;
+    }
+
+    const normalizedRef = normalizeSourcePath(reference);
+    if (state.runtime.sourceToFeatureId.has(normalizedRef)) {
+      return state.runtime.sourceToFeatureId.get(normalizedRef);
+    }
+    if (state.runtime.sourceToFeatureId.has(normalizedRef.toLowerCase())) {
+      return state.runtime.sourceToFeatureId.get(normalizedRef.toLowerCase());
+    }
+
+    const decodedRef = normalizeSourcePath(safeDecodeUriComponent(reference));
+    if (state.runtime.sourceToFeatureId.has(decodedRef)) {
+      return state.runtime.sourceToFeatureId.get(decodedRef);
+    }
+    if (state.runtime.sourceToFeatureId.has(decodedRef.toLowerCase())) {
+      return state.runtime.sourceToFeatureId.get(decodedRef.toLowerCase());
+    }
+
+    const basename = normalizedRef.split("/").pop() || "";
+    if (basename) {
+      const basenameLower = basename.toLowerCase();
+      for (const [sourcePath, featureId] of state.runtime.sourceToFeatureId.entries()) {
+        const sourceLower = sourcePath.toLowerCase();
+        if (sourceLower === basenameLower || sourceLower.endsWith(`/${basenameLower}`)) {
+          return featureId;
+        }
+      }
+    }
+
+    const titleMatch = getFeatureRegistry().find((feature) => {
+      return feature && typeof feature.title === "string" && feature.title.trim().toLowerCase() === reference.toLowerCase();
+    });
+    if (titleMatch?.id) {
+      return titleMatch.id;
+    }
+
+    const slugReference = slugifyFeatureId(reference);
+    if (state.runtime.knownFeatureIds.has(slugReference)) {
+      return slugReference;
+    }
+
+    return "";
+  }
+
+  function hydrateRuntimeBootstrapConfig() {
+    if (state.runtime.bootstrapLoaded) {
+      return;
+    }
+
+    state.runtime.bootstrapLoaded = true;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        state.runtime.bootstrapConfig = null;
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      state.runtime.bootstrapConfig = parsed && typeof parsed === "object" ? parsed : null;
+    } catch (_) {
+      state.runtime.bootstrapConfig = null;
+    }
+  }
+
+  function getRuntimeConfigSource() {
+    if (state.config && typeof state.config === "object") {
+      return state.config;
+    }
+    return state.runtime.bootstrapConfig;
+  }
+
+  function getRuntimeFeatureRecord(featureId) {
+    if (!featureId) {
+      return null;
+    }
+    const sourceConfig = getRuntimeConfigSource();
+    const features = sourceConfig && typeof sourceConfig === "object" ? sourceConfig.features : null;
+    if (!features || typeof features !== "object") {
+      return null;
+    }
+    const record = features[featureId];
+    return record && typeof record === "object" ? record : null;
+  }
+
+  function isRuntimeFeatureEnabled(featureId) {
+    if (!featureId) {
+      return true;
+    }
+
+    const record = getRuntimeFeatureRecord(featureId);
+    if (record && typeof record.enabled === "boolean") {
+      return record.enabled;
+    }
+
+    if (state.runtime.knownFeatureIds.has(featureId)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function cloneRuntimeValue(value) {
+    if (typeof structuredClone === "function") {
+      try {
+        return structuredClone(value);
+      } catch (_) {
+        // Fallback below.
+      }
+    }
+
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_) {
+      return value;
+    }
+  }
+
+  function buildRuntimeSnapshot() {
+    const sourceConfig = getRuntimeConfigSource();
+    const rawFeatures = sourceConfig && typeof sourceConfig === "object" && sourceConfig.features && typeof sourceConfig.features === "object"
+      ? sourceConfig.features
+      : {};
+    const featureIds = new Set([
+      ...Object.keys(rawFeatures),
+      ...state.runtime.knownFeatureIds,
+    ]);
+
+    const features = {};
+    featureIds.forEach((featureId) => {
+      const rawRecord = rawFeatures[featureId];
+      const settings = rawRecord && typeof rawRecord.settings === "object" && rawRecord.settings !== null
+        ? rawRecord.settings
+        : {};
+      features[featureId] = {
+        enabled: rawRecord && typeof rawRecord.enabled === "boolean"
+          ? rawRecord.enabled
+          : isRuntimeFeatureEnabled(featureId),
+        settings: cloneRuntimeValue(settings),
+      };
+    });
+
+    return {
+      version: CONFIG_VERSION,
+      updatedAt: sourceConfig?.updatedAt || null,
+      features,
+    };
+  }
+
+  function publishRuntimeState(reason) {
+    const snapshot = buildRuntimeSnapshot();
+    const runtimeApi = {
+      reason: String(reason || "update"),
+      updatedAt: snapshot.updatedAt,
+      getSnapshot: () => cloneRuntimeValue(snapshot),
+      resolveFeatureId: (featureRef) => resolveFeatureIdFromReference(featureRef),
+      isFeatureEnabled: (featureRef) => {
+        const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+        return isRuntimeFeatureEnabled(resolvedFeatureId);
+      },
+      getFeatureState: (featureRef) => {
+        const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+        return cloneRuntimeValue(snapshot.features[resolvedFeatureId] || null);
+      },
+      getSetting: (featureRef, settingKey, fallbackValue) => {
+        const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+        const featureState = snapshot.features[resolvedFeatureId];
+        if (!featureState || !featureState.settings || typeof featureState.settings !== "object") {
+          return fallbackValue;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(featureState.settings, settingKey)) {
+          return cloneRuntimeValue(featureState.settings[settingKey]);
+        }
+
+        return fallbackValue;
+      },
+    };
+
+    window[RUNTIME_GLOBAL_KEY] = runtimeApi;
+
+    if (typeof CustomEvent === "function") {
+      window.dispatchEvent(new CustomEvent(RUNTIME_EVENT_NAME, {
+        detail: {
+          reason: runtimeApi.reason,
+          snapshot: runtimeApi.getSnapshot(),
+        },
+      }));
+      return;
+    }
+
+    const fallbackEvent = document.createEvent("CustomEvent");
+    fallbackEvent.initCustomEvent(RUNTIME_EVENT_NAME, false, false, {
+      reason: runtimeApi.reason,
+      snapshot: runtimeApi.getSnapshot(),
+    });
+    window.dispatchEvent(fallbackEvent);
+  }
+
+  function resolveFeatureIdFromStack(rawStack) {
+    const stackText = String(rawStack || "");
+    if (!stackText) {
+      return "";
+    }
+
+    if (state.runtime.stackHintCache.has(stackText)) {
+      return state.runtime.stackHintCache.get(stackText);
+    }
+
+    const normalized = normalizeStackHintText(stackText);
+    const decoded = normalizeStackHintText(safeDecodeUriComponent(stackText));
+
+    let resolvedFeatureId = "";
+    for (const entry of state.runtime.stackHintEntries) {
+      if (!entry || !entry.hint) {
+        continue;
+      }
+      if (normalized.includes(entry.hint) || decoded.includes(entry.hint)) {
+        resolvedFeatureId = entry.featureId;
+        break;
+      }
+    }
+
+    state.runtime.stackHintCache.set(stackText, resolvedFeatureId);
+    if (state.runtime.stackHintCache.size > 320) {
+      const oldestKey = state.runtime.stackHintCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        state.runtime.stackHintCache.delete(oldestKey);
+      }
+    }
+
+    return resolvedFeatureId;
+  }
+
+  function resolveFeatureIdFromCurrentStack() {
+    try {
+      throw new Error("ad-xconfig stack marker");
+    } catch (error) {
+      return resolveFeatureIdFromStack(error && typeof error === "object" ? error.stack : "");
+    }
+  }
+
+  function trackRuntimeHandle(map, featureId, handle) {
+    if (!(map instanceof Map) || !featureId || handle === undefined || handle === null) {
+      return;
+    }
+
+    let handles = map.get(featureId);
+    if (!handles) {
+      handles = new Set();
+      map.set(featureId, handles);
+    }
+    handles.add(handle);
+  }
+
+  function untrackRuntimeHandle(map, handle) {
+    if (!(map instanceof Map) || handle === undefined || handle === null) {
+      return;
+    }
+
+    map.forEach((handles, featureId) => {
+      if (!(handles instanceof Set)) {
+        return;
+      }
+      handles.delete(handle);
+      if (!handles.size) {
+        map.delete(featureId);
+      }
+    });
+  }
+
+  function clearRuntimeHandlesForFeature(featureId) {
+    if (!featureId) {
+      return;
+    }
+
+    const observers = state.runtime.observerHandlesByFeature.get(featureId);
+    if (observers instanceof Set) {
+      observers.forEach((observer) => {
+        try {
+          if (observer && typeof observer.disconnect === "function") {
+            observer.disconnect();
+          }
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+      });
+      state.runtime.observerHandlesByFeature.delete(featureId);
+    }
+
+    const clearIntervalFn = state.runtime.native.clearInterval || window.clearInterval.bind(window);
+    const intervals = state.runtime.intervalHandlesByFeature.get(featureId);
+    if (intervals instanceof Set) {
+      intervals.forEach((intervalId) => {
+        try {
+          clearIntervalFn(intervalId);
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+      });
+      state.runtime.intervalHandlesByFeature.delete(featureId);
+    }
+
+    const clearTimeoutFn = state.runtime.native.clearTimeout || window.clearTimeout.bind(window);
+    const timeouts = state.runtime.timeoutHandlesByFeature.get(featureId);
+    if (timeouts instanceof Set) {
+      timeouts.forEach((timeoutId) => {
+        try {
+          clearTimeoutFn(timeoutId);
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+      });
+      state.runtime.timeoutHandlesByFeature.delete(featureId);
+    }
+  }
+
+  function removeElementById(elementId) {
+    if (!elementId) {
+      return;
+    }
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.remove();
+    }
+  }
+
+  function removeElementsBySelector(selector) {
+    if (!selector) {
+      return;
+    }
+    document.querySelectorAll(selector).forEach((element) => {
+      element.remove();
+    });
+  }
+
+  function removeClassesFromSelector(selector, classNames) {
+    if (!selector || !Array.isArray(classNames) || !classNames.length) {
+      return;
+    }
+    document.querySelectorAll(selector).forEach((element) => {
+      element.classList.remove(...classNames);
+    });
+  }
+
+  function removeStylePropertiesFromSelector(selector, properties) {
+    if (!selector || !Array.isArray(properties) || !properties.length) {
+      return;
+    }
+    document.querySelectorAll(selector).forEach((element) => {
+      properties.forEach((propertyName) => {
+        element.style.removeProperty(propertyName);
+      });
+    });
+  }
+
+  function cleanupFeatureArtifacts(featureId) {
+    if (!featureId) {
+      return;
+    }
+
+    switch (featureId) {
+      case "theme-x01":
+        removeElementById("autodarts-x01-custom-style");
+        break;
+      case "theme-shanghai":
+        removeElementById("autodarts-shanghai-custom-style");
+        break;
+      case "theme-bermuda":
+        removeElementById("autodarts-bermuda-custom-style");
+        break;
+      case "theme-cricket":
+        removeElementById("autodarts-cricket-custom-style");
+        break;
+      case "a-average-arrow":
+        removeElementsBySelector(".ad-ext-avg-trend-arrow");
+        break;
+      case "a-checkout-board":
+        removeElementById("ad-ext-checkout-targets");
+        break;
+      case "a-checkout-pulse":
+        removeClassesFromSelector(
+          ".ad-ext-checkout-possible, .ad-ext-checkout-possible--pulse, .ad-ext-checkout-possible--glow, .ad-ext-checkout-possible--scale, .ad-ext-checkout-possible--blink",
+          [
+            "ad-ext-checkout-possible",
+            "ad-ext-checkout-possible--pulse",
+            "ad-ext-checkout-possible--glow",
+            "ad-ext-checkout-possible--scale",
+            "ad-ext-checkout-possible--blink",
+          ],
+        );
+        break;
+      case "a-cricket-target":
+        removeElementById("ad-ext-cricket-targets");
+        break;
+      case "a-dart-marker-emphasis":
+        document.querySelectorAll("circle.ad-ext-dart-marker, circle.ad-ext-dart-marker--pulse, circle.ad-ext-dart-marker--glow").forEach((marker) => {
+          marker.classList.remove("ad-ext-dart-marker", "ad-ext-dart-marker--pulse", "ad-ext-dart-marker--glow");
+          marker.style.removeProperty("fill");
+        });
+        break;
+      case "a-marker-darts":
+        removeElementById("ad-ext-dart-image-overlay");
+        document.querySelectorAll("circle[data-ad-ext-original-opacity]").forEach((marker) => {
+          const originalOpacity = marker.getAttribute("data-ad-ext-original-opacity");
+          marker.style.opacity = originalOpacity || "";
+          marker.removeAttribute("data-ad-ext-original-opacity");
+        });
+        break;
+      case "a-checkout-style":
+        removeClassesFromSelector(
+          ".ad-ext-checkout-suggestion, .ad-ext-checkout-suggestion--no-label, .ad-ext-checkout-suggestion--badge, .ad-ext-checkout-suggestion--ribbon, .ad-ext-checkout-suggestion--stripe, .ad-ext-checkout-suggestion--ticket, .ad-ext-checkout-suggestion--outline, .suggestion",
+          [
+            "ad-ext-checkout-suggestion",
+            "ad-ext-checkout-suggestion--no-label",
+            "ad-ext-checkout-suggestion--badge",
+            "ad-ext-checkout-suggestion--ribbon",
+            "ad-ext-checkout-suggestion--stripe",
+            "ad-ext-checkout-suggestion--ticket",
+            "ad-ext-checkout-suggestion--outline",
+          ],
+        );
+        document.querySelectorAll(".suggestion, .ad-ext-checkout-suggestion").forEach((element) => {
+          element.removeAttribute("data-ad-ext-label");
+        });
+        removeStylePropertiesFromSelector(".suggestion, .ad-ext-checkout-suggestion", [
+          "--ad-ext-accent",
+          "--ad-ext-accent-soft",
+          "--ad-ext-accent-strong",
+          "--ad-ext-label-bg",
+          "--ad-ext-label-color",
+          "--ad-ext-radius",
+          "--ad-ext-stripe-opacity",
+        ]);
+        break;
+      case "a-remove-darts":
+        removeClassesFromSelector(".ad-ext-takeout-card", ["ad-ext-takeout-card"]);
+        removeElementsBySelector("img.ad-ext-takeout-image");
+        break;
+      case "a-turn-sweep":
+        removeClassesFromSelector(".ad-ext-turn-sweep", ["ad-ext-turn-sweep"]);
+        break;
+      case "a-single-bull":
+      case "a-turn-points":
+        break;
+      case "a-winner-fireworks":
+        removeElementById("ad-ext-winner-fireworks");
+        break;
+      case "a-triple-double-bull":
+        removeClassesFromSelector(".ad-ext-turn-throw", [
+          "animate-hit",
+          "animate-hit-triple",
+          "animate-hit-double",
+          "animate-hit-bull",
+        ]);
+        document.querySelectorAll(".ad-ext-turn-throw p.chakra-text").forEach((textNode) => {
+          if (textNode.querySelector("span.highlight, span[class*='highlight-']")) {
+            textNode.textContent = textNode.textContent || "";
+          }
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  function cleanupThemePreviewSpace() {
+    const hasEnabledTheme = THEME_FEATURE_IDS.some((featureId) => isRuntimeFeatureEnabled(featureId));
+    if (hasEnabledTheme) {
+      return;
+    }
+
+    const turnContainer = document.getElementById("ad-ext-turn");
+    if (turnContainer) {
+      turnContainer.classList.remove(THEME_PREVIEW_SPACE_CLASS);
+    }
+  }
+
+  function runRuntimeCleanup() {
+    state.runtime.cleanupQueued = false;
+    ensureAnimationSharedRuntimeWrappers();
+
+    const disabledFeatureIds = Array.from(state.runtime.knownFeatureIds).filter((featureId) => !isRuntimeFeatureEnabled(featureId));
+    disabledFeatureIds.forEach((featureId) => {
+      cleanupFeatureArtifacts(featureId);
+    });
+
+    cleanupThemePreviewSpace();
+  }
+
+  function queueRuntimeCleanup() {
+    if (state.runtime.cleanupQueued) {
+      return;
+    }
+    state.runtime.cleanupQueued = true;
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(runRuntimeCleanup);
+      return;
+    }
+    setTimeout(runRuntimeCleanup, 0);
+  }
+
+  function ensureAnimationSharedRuntimeWrappers() {
+    const shared = window.autodartsAnimationShared;
+    if (!shared || shared.__adXConfigRuntimeWrapped === true) {
+      return;
+    }
+
+    if (typeof shared.createRafScheduler === "function") {
+      const originalCreateRafScheduler = shared.createRafScheduler.bind(shared);
+      shared.createRafScheduler = function wrappedCreateRafScheduler(callback) {
+        const featureId = resolveFeatureIdFromCurrentStack();
+        const guardedCallback = featureId && typeof callback === "function"
+          ? function guardedRafCallback(...args) {
+            if (!isRuntimeFeatureEnabled(featureId)) {
+              return;
+            }
+            return callback(...args);
+          }
+          : callback;
+        return originalCreateRafScheduler(guardedCallback);
+      };
+    }
+
+    if (typeof shared.observeMutations === "function") {
+      const originalObserveMutations = shared.observeMutations.bind(shared);
+      shared.observeMutations = function wrappedObserveMutations(options) {
+        const featureId = resolveFeatureIdFromCurrentStack();
+        let finalOptions = options;
+        if (featureId && options && typeof options === "object" && typeof options.onChange === "function") {
+          const originalOnChange = options.onChange;
+          finalOptions = {
+            ...options,
+            onChange: function guardedOnChange(...args) {
+              if (!isRuntimeFeatureEnabled(featureId)) {
+                return;
+              }
+              return originalOnChange(...args);
+            },
+          };
+        }
+
+        const observer = originalObserveMutations(finalOptions);
+        if (featureId && observer && typeof observer.disconnect === "function") {
+          trackRuntimeHandle(state.runtime.observerHandlesByFeature, featureId, observer);
+        }
+        return observer;
+      };
+    }
+
+    shared.__adXConfigRuntimeWrapped = true;
+    state.runtime.animationSharedWrapped = true;
+  }
+
+  function installMutationObserverHook() {
+    if (state.runtime.native.MutationObserver || typeof window.MutationObserver !== "function") {
+      return;
+    }
+
+    const NativeMutationObserver = window.MutationObserver;
+    state.runtime.native.MutationObserver = NativeMutationObserver;
+
+    class RuntimeMutationObserver extends NativeMutationObserver {
+      constructor(callback) {
+        const featureId = resolveFeatureIdFromCurrentStack();
+        const guardedCallback = featureId && typeof callback === "function"
+          ? function guardedMutationCallback(...args) {
+            if (!isRuntimeFeatureEnabled(featureId)) {
+              return;
+            }
+            return callback(...args);
+          }
+          : callback;
+        super(guardedCallback);
+
+        if (featureId) {
+          this.__adXConfigFeatureId = featureId;
+          trackRuntimeHandle(state.runtime.observerHandlesByFeature, featureId, this);
+        }
+      }
+    }
+
+    window.MutationObserver = RuntimeMutationObserver;
+  }
+
+  function installTimerHooks() {
+    if (state.runtime.native.setInterval || typeof window.setInterval !== "function") {
+      return;
+    }
+
+    const nativeSetInterval = window.setInterval.bind(window);
+    const nativeClearInterval = window.clearInterval.bind(window);
+    const nativeSetTimeout = window.setTimeout.bind(window);
+    const nativeClearTimeout = window.clearTimeout.bind(window);
+
+    state.runtime.native.setInterval = nativeSetInterval;
+    state.runtime.native.clearInterval = nativeClearInterval;
+    state.runtime.native.setTimeout = nativeSetTimeout;
+    state.runtime.native.clearTimeout = nativeClearTimeout;
+
+    window.setInterval = function wrappedSetInterval(handler, timeout, ...args) {
+      const featureId = resolveFeatureIdFromCurrentStack();
+      const guardedHandler = featureId && typeof handler === "function"
+        ? function guardedIntervalHandler(...intervalArgs) {
+          if (!isRuntimeFeatureEnabled(featureId)) {
+            return;
+          }
+          return handler(...intervalArgs);
+        }
+        : handler;
+
+      const intervalId = nativeSetInterval(guardedHandler, timeout, ...args);
+      if (featureId) {
+        trackRuntimeHandle(state.runtime.intervalHandlesByFeature, featureId, intervalId);
+      }
+      return intervalId;
+    };
+
+    window.clearInterval = function wrappedClearInterval(intervalId) {
+      untrackRuntimeHandle(state.runtime.intervalHandlesByFeature, intervalId);
+      return nativeClearInterval(intervalId);
+    };
+  }
+
+  function installMediaPlayHook() {
+    if (state.runtime.native.mediaPlay || !window.HTMLMediaElement || !window.HTMLMediaElement.prototype) {
+      return;
+    }
+
+    const mediaProto = window.HTMLMediaElement.prototype;
+    if (typeof mediaProto.play !== "function") {
+      return;
+    }
+
+    const nativePlay = mediaProto.play;
+    state.runtime.native.mediaPlay = nativePlay;
+    mediaProto.play = function wrappedMediaPlay(...args) {
+      const mediaSource = String(this.currentSrc || this.src || "").toLowerCase();
+      if (mediaSource.includes(SINGLE_BULL_AUDIO_TOKEN) && !isRuntimeFeatureEnabled("a-single-bull")) {
+        return Promise.resolve();
+      }
+      return nativePlay.apply(this, args);
+    };
+  }
+
+  function installRuntimeHooks() {
+    if (state.runtime.hooksInstalled) {
+      return;
+    }
+    state.runtime.hooksInstalled = true;
+    installMutationObserverHook();
+    installTimerHooks();
+    installMediaPlayHook();
+  }
+
+  function startRuntimeCleanupEngine() {
+    if (!state.runtime.cleanupObserver && typeof MutationObserver === "function" && document.documentElement) {
+      state.runtime.cleanupObserver = new MutationObserver(() => {
+        queueRuntimeCleanup();
+      });
+      state.runtime.cleanupObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+    }
+
+    if (!state.runtime.cleanupTimer) {
+      state.runtime.cleanupTimer = window.setInterval(() => {
+        ensureAnimationSharedRuntimeWrappers();
+        queueRuntimeCleanup();
+      }, RUNTIME_CLEANUP_INTERVAL_MS);
+    }
+  }
+
+  function stopRuntimeCleanupEngine() {
+    if (state.runtime.cleanupObserver) {
+      state.runtime.cleanupObserver.disconnect();
+      state.runtime.cleanupObserver = null;
+    }
+
+    if (state.runtime.cleanupTimer) {
+      clearInterval(state.runtime.cleanupTimer);
+      state.runtime.cleanupTimer = null;
+    }
+  }
+
+  function initRuntimeLayer() {
+    hydrateRuntimeBootstrapConfig();
+    refreshRuntimeFeatureIndex();
+    installRuntimeHooks();
+    ensureAnimationSharedRuntimeWrappers();
+    startRuntimeCleanupEngine();
+    publishRuntimeState("runtime-init");
+    queueRuntimeCleanup();
   }
 
   function parseUserscriptMetadata(content) {
@@ -856,6 +1685,10 @@
     }
 
     state.config = sanitizeConfig(parsed);
+    state.runtime.bootstrapConfig = state.config;
+    refreshRuntimeFeatureIndex();
+    publishRuntimeState("config-loaded");
+    queueRuntimeCleanup();
     if (!parsed || parsed.version !== CONFIG_VERSION) {
       await saveConfig();
     }
@@ -867,6 +1700,9 @@
     }
     state.config.updatedAt = new Date().toISOString();
     await writeStore(STORAGE_KEY, state.config);
+    state.runtime.bootstrapConfig = state.config;
+    publishRuntimeState("config-saved");
+    queueRuntimeCleanup();
   }
 
   function ensureFeatureStatesForRegistry() {
@@ -887,6 +1723,9 @@
 
     state.featureRegistry = features;
     ensureFeatureStatesForRegistry();
+    refreshRuntimeFeatureIndex();
+    publishRuntimeState("feature-registry-updated");
+    queueRuntimeCleanup();
     return true;
   }
 
@@ -1902,7 +2741,9 @@
     }
 
     const featureState = ensureFeatureState(featureId);
-    featureState.enabled = Boolean(checked);
+    const enabled = Boolean(checked);
+    featureState.enabled = enabled;
+    queueRuntimeCleanup();
     const feature = getFeatureById(featureId);
     renderPanel();
 
@@ -1992,6 +2833,7 @@
     }
 
     state.config = createDefaultConfig();
+    queueRuntimeCleanup();
     await saveConfig();
     renderPanel();
     setNotice("success", "Konfiguration auf Standardwerte zurückgesetzt.");
@@ -2233,6 +3075,11 @@
       state.domObserver = null;
     }
 
+    state.runtime.knownFeatureIds.forEach((featureId) => {
+      clearRuntimeHandlesForFeature(featureId);
+    });
+    stopRuntimeCleanupEngine();
+
     state.observerRoot = null;
 
     restoreContentChildren();
@@ -2241,6 +3088,7 @@
 
   async function init() {
     ensureStyles();
+    initRuntimeLayer();
     await loadConfig();
     ensureFeatureStatesForRegistry();
 
@@ -2258,6 +3106,8 @@
     state.pollTimer = window.setInterval(() => {
       handleRouteChange();
       startDomObserver();
+      ensureAnimationSharedRuntimeWrappers();
+      queueRuntimeCleanup();
 
       if (!document.getElementById(MENU_ITEM_ID) || !document.getElementById(PANEL_HOST_ID)) {
         queueDomSync();
