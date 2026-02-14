@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.0
-// @description  Animates the turn points by counting up or down briefly instead of jumping.
+// @description  Animiert Turn-Points kurz hoch oder runter statt hart zu springen.
+// @xconfig-description  Zaehlt die Turn-Punkte bei Aenderungen kurz hoch oder runter, um Score-Spruenge besser lesbar zu machen.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

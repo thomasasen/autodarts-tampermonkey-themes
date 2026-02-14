@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
-// @description  Replaces dart hit markers with a configurable dart image aligned to the hit point.
+// @description  Ersetzt Trefferpunkte auf dem Board durch konfigurierbare Dart-Grafiken.
+// @xconfig-description  Tauscht die Standard-Hitmarker gegen ausrichtbare Dart-Bilder und optional animierte Flugdarstellung.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

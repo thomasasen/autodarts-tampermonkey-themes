@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Zeigt im Cricket pro aktivem Spieler, welche Ziele (15-20/Bull) offen, geschlossen, tot oder punktbar sind und blendet Nicht-Cricket-Felder am Board aus.
+// @description  Zeigt im Cricket die Zielzustaende (offen, geschlossen, punktbar, tot) als Board-Overlay.
+// @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustaende fuer 15-20 und Bull direkt auf dem Board.
+// @xconfig-variant      cricket
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

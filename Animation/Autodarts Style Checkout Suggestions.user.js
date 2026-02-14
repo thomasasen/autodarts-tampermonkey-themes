@@ -2,7 +2,9 @@
 // @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Style checkout suggestions so they read as recommendations in X01.
+// @description  Stylt Checkout-Empfehlungen in X01 klarer und besser lesbar.
+// @xconfig-description  Formatiert und betont Checkout-Suggestions in X01, damit Empfehlungen schneller erfassbar sind.
+// @xconfig-variant      x01
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

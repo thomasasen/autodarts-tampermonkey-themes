@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Replaces the "Removing Darts" notice with TakeOut.png and a subtle pulse animation.
+// @description  Ersetzt die Meldung "Removing Darts" durch ein TakeOut-Bild mit sanfter Animation.
+// @xconfig-description  Erkennt die Entfernen-Hinweismeldung und ersetzt sie visuell durch TakeOut.png inklusive Pulse-Effekt.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

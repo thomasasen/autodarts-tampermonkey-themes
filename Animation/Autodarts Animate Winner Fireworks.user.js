@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.0
-// @description  Gewinner-Effekt (Feuerwerk-Ring, Konfetti, Aurora oder Puls). Klick blendet aus.
+// @description  Zeigt nach dem Sieg einen visuellen Gewinner-Effekt (Firework, Confetti, Aurora, Pulse).
+// @xconfig-description  Blendet beim Gewinner ein Overlay mit konfigurierbarem Effekt ein; Klick blendet es wieder aus.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

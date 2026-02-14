@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.0
-// @description  Zeigt neben dem AVG-Wert kurz einen Pfeil nach oben oder unten, sobald sich der Durchschnitt ändert, damit du sofort siehst, ob der Schnitt steigt oder fällt.
+// @description  Zeigt bei AVG-Aenderungen kurz einen Trendpfeil nach oben oder unten.
+// @xconfig-description  Visualisiert AVG-Aenderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

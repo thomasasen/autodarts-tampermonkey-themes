@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Highlight the remaining score when a checkout is available in X01.
+// @description  Hebt den Restscore hervor, sobald ein Checkout in X01 moeglich ist.
+// @xconfig-description  Markiert den verbleibenden Punktestand visuell, wenn ein Checkout in X01 moeglich wird.
+// @xconfig-variant      x01
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

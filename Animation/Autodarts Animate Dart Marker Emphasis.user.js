@@ -2,7 +2,9 @@
 // @name         Autodarts Animate Dart Marker Emphasis
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.0
-// @description  Adjusts size and color of dart markers on the board and can add a subtle glow or pulse so hits stand out.
+// @description  Macht Dart-Trefferpunkte sichtbarer durch Groesse, Farbe und optionalen Glow/Pulse.
+// @xconfig-description  Passt Dart-Marker auf dem Board an und kann sie mit Glow oder Pulse hervorheben.
+// @xconfig-variant      all
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
