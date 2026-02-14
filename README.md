@@ -181,11 +181,11 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Theme X01](assets/Theme%20X01.png)
+![Theme X01](assets/template-theme-x01-readme.png)
 
 DartsZoom-Vorschau (PREVIEW_PLACEMENT):
-![DartsZoom Standard](assets/DartsZoom_Standard.png)
-![DartsZoom Under Throws](assets/DartsZoom_under-throws.png)
+![DartsZoom Standard](assets/template-theme-x01-preview-standard-readme.png)
+![DartsZoom Under Throws](assets/template-theme-x01-preview-under-throws-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -228,7 +228,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Theme Shanghai](assets/Theme%20Shanghai.png)
+![Theme Shanghai](assets/template-theme-shanghai-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -272,7 +272,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Theme Bermuda](assets/Theme%20Bermuda.png)
+![Theme Bermuda](assets/template-theme-bermuda-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -314,7 +314,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Theme Cricket](assets/Theme%20Cricket.png)
+![Theme Cricket](assets/template-theme-cricket-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -448,7 +448,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Checkout Score Pulse](assets/Checkout%20Score%20Pulse.gif)
+![Animate Checkout Score Pulse](assets/animation-checkout-score-pulse-readme.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -482,8 +482,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Turn Points Count](assets/Score%20Delta%20Slide.gif)
-![Score Delta Slide detail](assets/Score%20Delta%20Slide%20detail.gif)
+![Animate Turn Points Count](assets/animation-turn-points-count-readme.gif)
+![Score Delta Slide detail](assets/animation-turn-points-count-detail-readme.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -523,7 +523,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Average Trend Arrow](assets/Average%20Trend%20Arrow.png)
+![Animate Average Trend Arrow](assets/animation-average-trend-arrow-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -565,7 +565,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Turn Start Sweep](assets/Turn%20Start%20Sweep.gif)
+![Animate Turn Start Sweep](assets/animation-turn-start-sweep-readme.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -678,14 +678,14 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Winner Fireworks Firework](assets/Winner%20Fireworks_firework.gif)
+![Winner Fireworks Firework](assets/animation-winner-fireworks-firework-readme.gif)
 
 Varianten:
 Variante über `CONFIG.effect`: `firework`, `confetti`, `aurora`, `pulse`.
 
 | Aurora                                                           | Confetti                                                             | Firework                                                             | Pulse                                                          |
 | :--------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------- |
-| ![Winner Fireworks Aurora](assets/Winner%20Fireworks_aurora.gif) | ![Winner Fireworks Confetti](assets/Winner%20Fireworks_confetti.gif) | ![Winner Fireworks Firework](assets/Winner%20Fireworks_firework.gif) | ![Winner Fireworks Pulse](assets/Winner%20Fireworks_pulse.gif) |
+| ![Winner Fireworks Aurora](assets/animation-winner-fireworks-aurora-readme.gif) | ![Winner Fireworks Confetti](assets/animation-winner-fireworks-confetti-readme.gif) | ![Winner Fireworks Firework](assets/animation-winner-fireworks-firework-readme.gif) | ![Winner Fireworks Pulse](assets/animation-winner-fireworks-pulse-readme.gif) |
 
 ##### ℹ️ Weitere Hinweise
 
@@ -723,7 +723,7 @@ Variante über `CONFIG.effect`: `firework`, `confetti`, `aurora`, `pulse`.
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Dart Marker Emphasis](assets/Size%20Strokes.gif)
+![Animate Dart Marker Emphasis](assets/animation-dart-marker-emphasis-readme.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -794,7 +794,7 @@ Variante über `CONFIG.effect`: `firework`, `confetti`, `aurora`, `pulse`.
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Dart Marker Darts](assets/Dart%20Marker%20Darts.png)
+![Animate Dart Marker Darts](assets/animation-dart-marker-darts-readme.png)
 
 Designs (DART_DESIGN):
 Variante über `DART_DESIGN` (siehe Tabelle unten).
@@ -864,7 +864,7 @@ Varianten über:
 - `CONFIG.highlightTargets`: `first`, `all`
 - `CONFIG.singleRing`: `inner`, `outer`, `both`
 
-![Animate Checkout Board Targets](assets/Checkout%20Score%20Pulse.gif)
+![Animate Checkout Board Targets](assets/animation-checkout-board-targets-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -919,14 +919,14 @@ Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen
 Variante über `CONFIG.formatStyle`: `ribbon`, `badge`, `stripe`, `ticket`, `outline`.
 
 Vollbild (Ribbon):
-![Checkout Suggestion Format Ribbon](assets/Checkout%20Suggestion%20Format%2000%20ribbon.png)
+![Checkout Suggestion Format Ribbon](assets/animation-style-checkout-suggestions-format-ribbon-readme.png)
 
 Varianten:
 
-- ![Checkout Suggestion Format Badge](assets/Checkout%20Suggestion%20Format%2001%20badge.png)
-- ![Checkout Suggestion Format Stripe](assets/Checkout%20Suggestion%20Format%2002%20stripe.png)
-- ![Checkout Suggestion Format Ticket](assets/Checkout%20Suggestion%20Format%2003%20ticket.png)
-- ![Checkout Suggestion Format Outline](assets/Checkout%20Suggestion%20Format%2004%20outline.png)
+- ![Checkout Suggestion Format Badge](assets/animation-style-checkout-suggestions-format-badge-readme.png)
+- ![Checkout Suggestion Format Stripe](assets/animation-style-checkout-suggestions-format-stripe-readme.png)
+- ![Checkout Suggestion Format Ticket](assets/animation-style-checkout-suggestions-format-ticket-readme.png)
+- ![Checkout Suggestion Format Outline](assets/animation-style-checkout-suggestions-format-outline-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -974,7 +974,7 @@ Varianten:
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Cricket Target Highlighter](assets/Cricket%20Target%20Highlighter.png)
+![Cricket Target Highlighter](assets/animation-cricket-target-highlighter-readme.png)
 
 🧭 Screenshot erklärt:
 
@@ -1044,3 +1044,4 @@ Upstream (inventwo): MIT-Lizenz. Copyright (c) 2025 jkvarel und skvarel von inve
 
 Dieses Projekt ist nicht mit Autodarts verbunden.
 Änderungen an [play.autodarts.io](https://play.autodarts.io) können Skript-Updates erforderlich machen.
+

@@ -148,6 +148,11 @@
       .replace(/[^a-z0-9-]/g, "");
   }
 
+  function normalizeAssetPath(value) {
+    const pathValue = normalizeSourcePath(value || "").replace(/^\/+/, "");
+    return pathValue.startsWith("assets/") ? pathValue : "";
+  }
+
   function toRawPath(pathValue) {
     return normalizeSourcePath(pathValue)
       .split("/")
@@ -225,6 +230,7 @@
     const version = metadata.version || "0.0.0";
     const variant = normalizeVariantLabel(metadata["xconfig-variant"], category);
     const readmeAnchor = normalizeReadmeAnchor(metadata["xconfig-readme-anchor"]);
+    const backgroundAsset = normalizeAssetPath(metadata["xconfig-background"]);
     const author = String(metadata.author || "").trim();
     const settingsVersion = Number.parseInt(metadata["xconfig-settings-version"] || "1", 10);
     const safeSettingsVersion = Number.isFinite(settingsVersion) && settingsVersion > 0 ? settingsVersion : 1;
@@ -236,6 +242,7 @@
       description,
       variant,
       readmeAnchor,
+      backgroundAsset,
       author,
       source,
       status: "dummy",
@@ -335,6 +342,11 @@
   function getFeatureReadmeUrl(feature) {
     const anchor = normalizeReadmeAnchor(feature?.readmeAnchor);
     return anchor ? `${REPO_README_URL}#${anchor}` : REPO_README_URL;
+  }
+
+  function getFeatureBackgroundUrl(feature) {
+    const backgroundAsset = normalizeAssetPath(feature?.backgroundAsset);
+    return backgroundAsset ? `${REPO_RAW_BASE}/${toRawPath(backgroundAsset)}` : "";
   }
 
   function formatDateTime(isoString) {
@@ -702,6 +714,26 @@
 #${PANEL_HOST_ID} .xcfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 #${PANEL_HOST_ID} .xcfg-card { position: relative; overflow: hidden; min-height: 14rem; border-radius: 11px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.2); padding: 0.9rem; transition: transform .2s ease; }
 #${PANEL_HOST_ID} .xcfg-card:hover { transform: translateY(-2px); }
+#${PANEL_HOST_ID} .xcfg-card-content { position: relative; z-index: 2; }
+#${PANEL_HOST_ID} .xcfg-card-bg { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+#${PANEL_HOST_ID} .xcfg-card-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(15,27,67,0.88) 0%, rgba(15,27,67,0.84) 40%, rgba(15,27,67,0.36) 70%, rgba(15,27,67,0.2) 100%),
+    radial-gradient(100% 100% at 90% 10%, rgba(45,108,198,0.35) 0%, rgba(45,108,198,0) 70%);
+}
+#${PANEL_HOST_ID} .xcfg-card-bg img {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 72%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+  filter: saturate(0.85);
+}
 #${PANEL_HOST_ID} .xcfg-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; }
 #${PANEL_HOST_ID} .xcfg-card-header > div:first-child { flex: 1 1 auto; min-width: 0; }
 #${PANEL_HOST_ID} .xcfg-card-title { margin: 0; font-size: 0.98rem; }
@@ -770,6 +802,7 @@
   #${PANEL_HOST_ID} .xcfg-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #${PANEL_HOST_ID} .xcfg-actions { width: 100%; }
   #${PANEL_HOST_ID} .xcfg-card-desc { width: 100%; }
+  #${PANEL_HOST_ID} .xcfg-card-bg img { width: 62%; opacity: 0.42; }
 }
 `;
 
@@ -1124,6 +1157,7 @@
     const lastChecked = formatDateTime(featureState.lastCheckedAt);
     const shortSha = feature.remoteSha ? String(feature.remoteSha).slice(0, 7) : "";
     const authorText = String(feature.author || "").trim();
+    const backgroundUrl = getFeatureBackgroundUrl(feature);
 
     const badges = [
       `<span class="xcfg-badge xcfg-badge--dummy">Dummy</span>`,
@@ -1152,32 +1186,38 @@
 
     const onClass = featureState.enabled ? "is-active" : "";
     const offClass = featureState.enabled ? "" : "is-active";
+    const backgroundHtml = backgroundUrl
+      ? `<div class="xcfg-card-bg"><img src="${escapeHtml(backgroundUrl)}" alt="${escapeHtml(feature.title)} preview" loading="lazy" decoding="async"></div>`
+      : "";
 
     return `
       <article class="xcfg-card" data-feature-card="${escapeHtml(feature.id)}">
-        <header class="xcfg-card-header">
-          <div>
-            <h3 class="xcfg-card-title">${escapeHtml(feature.title)}</h3>
-            <p class="xcfg-card-desc">${escapeHtml(feature.description || "")}</p>
+        <div class="xcfg-card-content">
+          <header class="xcfg-card-header">
+            <div>
+              <h3 class="xcfg-card-title">${escapeHtml(feature.title)}</h3>
+              <p class="xcfg-card-desc">${escapeHtml(feature.description || "")}</p>
+            </div>
+            <div class="xcfg-onoff" title="Stored only, no runtime hook yet">
+              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">On</button>
+              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Off</button>
+            </div>
+          </header>
+          <div class="xcfg-card-footer">
+            ${badges.join("")}
+            <span class="xcfg-source">${escapeHtml(feature.source)}</span>
           </div>
-          <div class="xcfg-onoff" title="Stored only, no runtime hook yet">
-            <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">On</button>
-            <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Off</button>
+          <div class="xcfg-actions-row">
+            <button type="button" class="xcfg-mini-btn xcfg-mini-btn--primary" data-action="check-feature" data-feature-id="${escapeHtml(feature.id)}">Check update</button>
+            <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">Open repo</button>
+            <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">Readme</button>
+            ${acknowledgeButton}
           </div>
-        </header>
-        <div class="xcfg-card-footer">
-          ${badges.join("")}
-          <span class="xcfg-source">${escapeHtml(feature.source)}</span>
+          ${authorText ? `<p class="xcfg-meta-line">Author: ${escapeHtml(authorText)}</p>` : ""}
+          <p class="xcfg-meta-line">Last checked (dummy): ${escapeHtml(lastChecked)}</p>
+          <p class="xcfg-card-note">No runtime adapter connected yet. Toggle state is saved for future integration.</p>
         </div>
-        <div class="xcfg-actions-row">
-          <button type="button" class="xcfg-mini-btn xcfg-mini-btn--primary" data-action="check-feature" data-feature-id="${escapeHtml(feature.id)}">Check update</button>
-          <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">Open repo</button>
-          <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">Readme</button>
-          ${acknowledgeButton}
-        </div>
-        ${authorText ? `<p class="xcfg-meta-line">Author: ${escapeHtml(authorText)}</p>` : ""}
-        <p class="xcfg-meta-line">Last checked (dummy): ${escapeHtml(lastChecked)}</p>
-        <p class="xcfg-card-note">No runtime adapter connected yet. Toggle state is saved for future integration.</p>
+        ${backgroundHtml}
       </article>
     `;
   }

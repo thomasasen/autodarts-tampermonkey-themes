@@ -6,6 +6,7 @@
 // @xconfig-description  Wendet ein visuelles Theme fuer Bermuda an und nutzt den Shared-Helper fuer konsistentes Layout/Styling.
 // @xconfig-variant      bermuda
 // @xconfig-readme-anchor  template-autodarts-theme-bermuda
+// @xconfig-background     assets/template-theme-bermuda-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -6,6 +6,7 @@
 // @xconfig-description  Markiert den verbleibenden Punktestand visuell, wenn ein Checkout in X01 moeglich wird.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
+// @xconfig-background     assets/animation-checkout-score-pulse-xConfig.gif
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

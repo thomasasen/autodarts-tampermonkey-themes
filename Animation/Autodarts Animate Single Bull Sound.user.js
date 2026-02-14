@@ -6,6 +6,7 @@
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
+// @xconfig-background     assets/animation-single-bull-sound-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

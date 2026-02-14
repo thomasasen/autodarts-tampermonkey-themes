@@ -6,6 +6,7 @@
 // @xconfig-description  Zaehlt die Turn-Punkte bei Aenderungen kurz hoch oder runter, um Score-Spruenge besser lesbar zu machen.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-points-count
+// @xconfig-background     assets/animation-turn-points-count-xConfig.gif
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

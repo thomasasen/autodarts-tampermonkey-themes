@@ -6,6 +6,7 @@
 // @xconfig-description  Setzt in X01 ein umfassendes visuelles Theme fuer Lesbarkeit, Struktur und konsistente Darstellung.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  template-autodarts-theme-x01
+// @xconfig-background     assets/template-theme-x01-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

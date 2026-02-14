@@ -6,6 +6,7 @@
 // @xconfig-description  Aktiviert ein Shanghai-Theme mit gemeinsamem Layout/Styling ueber den Theme-Shared-Helper.
 // @xconfig-variant      shanghai
 // @xconfig-readme-anchor  template-autodarts-theme-shanghai
+// @xconfig-background     assets/template-theme-shanghai-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

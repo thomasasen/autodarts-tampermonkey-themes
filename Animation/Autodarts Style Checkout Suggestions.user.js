@@ -6,6 +6,7 @@
 // @xconfig-description  Formatiert und betont Checkout-Suggestions in X01, damit Empfehlungen schneller erfassbar sind.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-style-checkout-suggestions
+// @xconfig-background     assets/animation-style-checkout-suggestions-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -6,6 +6,7 @@
 // @xconfig-description  Blendet beim Gewinner ein Overlay mit konfigurierbarem Effekt ein; Klick blendet es wieder aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
+// @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

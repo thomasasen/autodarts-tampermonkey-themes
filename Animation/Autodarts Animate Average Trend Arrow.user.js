@@ -6,6 +6,7 @@
 // @xconfig-description  Visualisiert AVG-Aenderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
+// @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

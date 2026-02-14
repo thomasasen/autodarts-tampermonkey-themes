@@ -6,6 +6,7 @@
 // @xconfig-description  Erkennt die Entfernen-Hinweismeldung und ersetzt sie visuell durch TakeOut.png inklusive Pulse-Effekt.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
+// @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

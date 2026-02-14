@@ -6,6 +6,7 @@
 // @xconfig-description  Passt Dart-Marker auf dem Board an und kann sie mit Glow oder Pulse hervorheben.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-emphasis
+// @xconfig-background     assets/animation-dart-marker-emphasis-xConfig.gif
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -6,6 +6,7 @@
 // @xconfig-description  Aktiviert ein visuelles Cricket-Theme auf Basis des Shared-Helpers fuer Farben, Abstaende und Struktur.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  template-autodarts-theme-cricket
+// @xconfig-background     assets/template-theme-cricket-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -6,6 +6,7 @@
 // @xconfig-description  Tauscht die Standard-Hitmarker gegen ausrichtbare Dart-Bilder und optional animierte Flugdarstellung.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
+// @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

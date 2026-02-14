@@ -6,6 +6,7 @@
 // @xconfig-description  Erzeugt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen ueber Zeile oder Karte.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-start-sweep
+// @xconfig-background     assets/animation-turn-start-sweep-xConfig.gif
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

@@ -6,6 +6,7 @@
 // @xconfig-description  Markiert moegliche Checkout-Felder (Double/Bull) auf dem Dartboard und animiert sie mit Blink, Pulse oder Glow in X01.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
+// @xconfig-background     assets/animation-checkout-board-targets-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
