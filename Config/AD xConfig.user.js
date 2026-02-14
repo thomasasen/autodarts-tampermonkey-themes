@@ -36,8 +36,8 @@
   const PANEL_HOST_ID = "ad-xconfig-panel-host";
 
   const TABS = [
-    { id: "themes", label: "Themes" },
-    { id: "animations", label: "Animations" },
+    { id: "themes", label: "Themen" },
+    { id: "animations", label: "Animationen" },
   ];
 
   const LEGACY_FEATURE_ID_BY_SOURCE = {
@@ -133,12 +133,12 @@
       return "X01";
     }
     if (variant === "all") {
-      return "All";
+      return "Alle";
     }
     if (variant) {
       return variant.charAt(0).toUpperCase() + variant.slice(1);
     }
-    return category === "themes" ? "Theme" : "Animation";
+    return category === "themes" ? "Thema" : "Animation";
   }
 
   function normalizeReadmeAnchor(value) {
@@ -550,7 +550,6 @@
       backgroundAsset,
       author,
       source,
-      status: "dummy",
       version,
       latestVersion: version,
       settingsVersion: safeSettingsVersion,
@@ -741,7 +740,6 @@
       acc[feature.id] = {
         enabled: false,
         settings: {},
-        lastCheckedAt: null,
         lastSeenSha: "",
         ackVersion: "",
         ackSettingsVersion: 0,
@@ -776,7 +774,6 @@
       mergedFeatures[id] = {
         enabled: Boolean(record && record.enabled),
         settings: record && typeof record.settings === "object" ? record.settings : {},
-        lastCheckedAt: typeof record?.lastCheckedAt === "string" ? record.lastCheckedAt : null,
         lastSeenSha: typeof record?.lastSeenSha === "string" ? record.lastSeenSha : "",
         ackVersion: typeof record?.ackVersion === "string" ? record.ackVersion : "",
         ackSettingsVersion: Number.isFinite(record?.ackSettingsVersion)
@@ -925,7 +922,7 @@
         }
 
         if (!silent) {
-          setNotice("success", `Loaded ${features.length} modules from GitHub.`);
+          setNotice("success", `${features.length} Module von GitHub geladen.`);
         } else {
           renderPanel();
         }
@@ -944,7 +941,7 @@
         }
 
         if (!silent) {
-          setNotice("error", `GitHub load failed: ${message}`);
+          setNotice("error", `GitHub-Laden fehlgeschlagen: ${message}`);
         } else {
           renderPanel();
         }
@@ -1092,12 +1089,10 @@
 #${PANEL_HOST_ID} .xcfg-source { font-size: 0.72rem; color: rgba(255,255,255,0.62); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 #${PANEL_HOST_ID} .xcfg-card-note { margin: 0.65rem 0 0; font-size: 0.76rem; color: rgba(255,255,255,0.58); }
 #${PANEL_HOST_ID} .xcfg-badge { border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.72rem; line-height: 1; border: 1px solid transparent; }
-#${PANEL_HOST_ID} .xcfg-badge--dummy { border-color: rgba(255,198,92,0.5); background: rgba(255,198,92,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--version { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); }
 #${PANEL_HOST_ID} .xcfg-badge--update { border-color: rgba(74,178,255,0.65); background: rgba(74,178,255,0.25); }
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
-#${PANEL_HOST_ID} .xcfg-badge--git { border-color: rgba(74,178,255,0.65); background: rgba(74,178,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
 #${PANEL_HOST_ID} .xcfg-actions-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 #${PANEL_HOST_ID} .xcfg-mini-btn {
@@ -1111,7 +1106,6 @@
   cursor: pointer;
 }
 #${PANEL_HOST_ID} .xcfg-mini-btn:hover { background: rgba(255,255,255,0.16); }
-#${PANEL_HOST_ID} .xcfg-mini-btn--primary { border-color: rgba(74,178,255,0.52); background: rgba(74,178,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-mini-btn--config { border-color: rgba(148,214,255,0.6); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-meta-line { margin: 0.5rem 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.64); }
 #${PANEL_HOST_ID} .xcfg-onoff {
@@ -1318,7 +1312,6 @@
       state.config.features[featureId] = {
         enabled: false,
         settings: {},
-        lastCheckedAt: null,
         lastSeenSha: "",
         ackVersion: "",
         ackSettingsVersion: 0,
@@ -1327,9 +1320,6 @@
       const featureState = state.config.features[featureId];
       if (!featureState.settings || typeof featureState.settings !== "object") {
         featureState.settings = {};
-      }
-      if (typeof featureState.lastCheckedAt !== "string") {
-        featureState.lastCheckedAt = null;
       }
       if (typeof featureState.lastSeenSha !== "string") {
         featureState.lastSeenSha = "";
@@ -1537,7 +1527,7 @@
     }
 
     if (state.gitLoad.lastError) {
-      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>Sync Git</b> klicken, sobald die Verbindung wieder verfügbar ist.</div>`;
+      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte laden</b> klicken, sobald die Verbindung wieder verfuegbar ist.</div>`;
     }
 
     const count = Number(state.gitLoad.lastSuccessCount || 0);
@@ -1546,7 +1536,7 @@
       return `<div class="xcfg-conn xcfg-conn--ok">Git verbunden. Daten live aus GitHub geladen: ${count} Skripte (Stand: ${escapeHtml(loadedAt)}).</div>`;
     }
 
-    return "<div class=\"xcfg-conn xcfg-conn--warn\">Noch keine Skriptinformationen geladen. Bitte auf <b>Sync Git</b> klicken.</div>";
+    return "<div class=\"xcfg-conn xcfg-conn--warn\">Noch keine Skriptinformationen geladen. Bitte auf <b>🔄 Skripte laden</b> klicken.</div>";
   }
 
   function getEnabledFeatureCount() {
@@ -1632,7 +1622,7 @@
 
     saveConfig().catch((error) => {
       console.error("AD xConfig: failed to store feature setting", error);
-      setNotice("error", "Failed to store setting.");
+      setNotice("error", "Einstellung konnte nicht gespeichert werden.");
     });
   }
 
@@ -1644,7 +1634,7 @@
 
     const settingsSchema = getFeatureSettingsSchema(feature);
     if (!settingsSchema.length) {
-      setNotice("info", `${feature.title}: no configurable settings exposed.`);
+      setNotice("info", `${feature.title}: keine konfigurierbaren Einstellungen verfuegbar.`);
       return;
     }
 
@@ -1751,10 +1741,10 @@
         <section class="xcfg-modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
           <header class="xcfg-modal-header">
             <div>
-              <h3 id="${titleId}" class="xcfg-modal-title">${escapeHtml(feature.title)} - Config</h3>
-              <p class="xcfg-modal-subtitle">Changes are stored immediately.</p>
+              <h3 id="${titleId}" class="xcfg-modal-title">${escapeHtml(feature.title)} - Einstellungen</h3>
+              <p class="xcfg-modal-subtitle">Aenderungen werden sofort gespeichert.</p>
             </div>
-            <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close-config" data-feature-id="${escapeHtml(feature.id)}">Close</button>
+            <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close-config" data-feature-id="${escapeHtml(feature.id)}">✖ Schliessen</button>
           </header>
           <div class="xcfg-modal-body">${fieldsHtml}</div>
         </section>
@@ -1766,45 +1756,32 @@
     const featureState = ensureFeatureState(feature.id);
     ensureFeatureSettingsDefaults(feature, featureState);
     const flags = getFeatureFlags(feature, featureState);
-    const hasAttention = flags.hasUpdate || flags.hasSettingsUpdate;
-    const lastChecked = formatDateTime(featureState.lastCheckedAt);
-    const shortSha = feature.remoteSha ? String(feature.remoteSha).slice(0, 7) : "";
-    const authorText = String(feature.author || "").trim();
     const backgroundUrl = getFeatureBackgroundUrl(feature);
     const settingsSchema = getFeatureSettingsSchema(feature);
     const hasConfigurableFields = settingsSchema.length > 0;
 
     const badges = [
-      `<span class="xcfg-badge xcfg-badge--dummy">Dummy</span>`,
       `<span class="xcfg-badge xcfg-badge--version">v${escapeHtml(feature.version)}</span>`,
-      `<span class="xcfg-badge xcfg-badge--variant">${escapeHtml(feature.variant || "All")}</span>`,
+      `<span class="xcfg-badge xcfg-badge--variant">${escapeHtml(feature.variant || "Alle")}</span>`,
     ];
-
-    if (shortSha) {
-      badges.push(`<span class="xcfg-badge xcfg-badge--git">git ${escapeHtml(shortSha)}</span>`);
-    }
 
     if (flags.hasUpdate) {
       const updateLabel = feature.remoteSha && featureState.lastSeenSha && feature.remoteSha !== featureState.lastSeenSha
-        ? "Update available"
+        ? "Update verfuegbar"
         : `Update: v${feature.latestVersion}`;
       badges.push(`<span class="xcfg-badge xcfg-badge--update">${escapeHtml(updateLabel)}</span>`);
     }
 
     if (flags.hasSettingsUpdate) {
-      badges.push(`<span class="xcfg-badge xcfg-badge--settings">New settings</span>`);
+      badges.push(`<span class="xcfg-badge xcfg-badge--settings">Neue Einstellungen</span>`);
     }
 
     if (hasConfigurableFields) {
-      const settingLabel = settingsSchema.length === 1 ? "setting" : "settings";
+      const settingLabel = settingsSchema.length === 1 ? "Einstellung" : "Einstellungen";
       badges.push(`<span class="xcfg-badge xcfg-badge--config">${settingsSchema.length} ${settingLabel}</span>`);
     }
-
-    const acknowledgeButton = hasAttention
-      ? `<button type="button" class="xcfg-mini-btn" data-action="ack-feature" data-feature-id="${escapeHtml(feature.id)}">Mark read</button>`
-      : "";
     const configButton = hasConfigurableFields
-      ? `<button type="button" class="xcfg-mini-btn xcfg-mini-btn--config" data-action="open-config" data-feature-id="${escapeHtml(feature.id)}">Config</button>`
+      ? `<button type="button" class="xcfg-mini-btn xcfg-mini-btn--config" data-action="open-config" data-feature-id="${escapeHtml(feature.id)}">⚙ Einstellungen</button>`
       : "";
 
     const onClass = featureState.enabled ? "is-active" : "";
@@ -1821,9 +1798,9 @@
               <h3 class="xcfg-card-title">${escapeHtml(feature.title)}</h3>
               <p class="xcfg-card-desc">${escapeHtml(feature.description || "")}</p>
             </div>
-            <div class="xcfg-onoff" title="Stored only, no runtime hook yet">
-              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">On</button>
-              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Off</button>
+            <div class="xcfg-onoff" title="Aktiviert oder deaktiviert dieses Skript.">
+              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">Aktiv</button>
+              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Inaktiv</button>
             </div>
           </header>
           <div class="xcfg-card-footer">
@@ -1831,15 +1808,11 @@
             <span class="xcfg-source">${escapeHtml(feature.source)}</span>
           </div>
           <div class="xcfg-actions-row">
-            <button type="button" class="xcfg-mini-btn xcfg-mini-btn--primary" data-action="check-feature" data-feature-id="${escapeHtml(feature.id)}">Check update</button>
             ${configButton}
-            <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">Open repo</button>
-            <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">Readme</button>
-            ${acknowledgeButton}
+            <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">📦 Skript</button>
+            <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">📖 Anleitung</button>
           </div>
-          ${authorText ? `<p class="xcfg-meta-line">Author: ${escapeHtml(authorText)}</p>` : ""}
-          <p class="xcfg-meta-line">Last checked (dummy): ${escapeHtml(lastChecked)}</p>
-          <p class="xcfg-card-note">${hasConfigurableFields ? "xConfig settings are persisted and available to scripts that read AD xConfig." : "No xConfig fields exposed by this script yet."}</p>
+          <p class="xcfg-card-note">${hasConfigurableFields ? "Einstellungen werden zentral gespeichert und vom Skript uebernommen." : "Dieses Skript stellt aktuell keine xConfig-Felder bereit."}</p>
         </div>
         ${backgroundHtml}
       </article>
@@ -1855,10 +1828,10 @@
       }
 
       if (state.gitLoad.lastError) {
-        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung prüfen und <b>Sync Git</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
+        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung pruefen und <b>🔄 Skripte laden</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
       }
 
-      return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>Sync Git</b> klicken.</div>";
+      return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>🔄 Skripte laden</b> klicken.</div>";
     }
 
     return `<div class="xcfg-grid">${features.map(renderFeatureCardHtml).join("")}</div>`;
@@ -1891,36 +1864,20 @@
     if (action === "reset") {
       resetConfig().catch((error) => {
         console.error("AD xConfig: reset failed", error);
-        setNotice("error", "Reset failed.");
+        setNotice("error", "Zuruecksetzen fehlgeschlagen.");
       });
       return;
     }
 
     if (action === "sync-git") {
       if (state.gitLoad.loading) {
-        setNotice("info", "Git sync already running.");
+        setNotice("info", "Skriptabgleich laeuft bereits.");
         return;
       }
 
       runGitSyncDummy().catch((error) => {
         console.error("AD xConfig: sync failed", error);
-        setNotice("error", "Git sync failed.");
-      });
-      return;
-    }
-
-    if (action === "check-feature" && featureId) {
-      checkFeatureDummy(featureId).catch((error) => {
-        console.error("AD xConfig: feature check failed", error);
-        setNotice("error", "Dummy feature check failed.");
-      });
-      return;
-    }
-
-    if (action === "ack-feature" && featureId) {
-      acknowledgeFeatureChanges(featureId).catch((error) => {
-        console.error("AD xConfig: acknowledge failed", error);
-        setNotice("error", "Could not mark update as read.");
+        setNotice("error", "Skriptabgleich fehlgeschlagen.");
       });
       return;
     }
@@ -1960,7 +1917,7 @@
       setNotice("success", `${label}: ${stateLabel} und persistent gespeichert.`);
     }).catch((error) => {
       console.error("AD xConfig: failed to save feature state", error);
-      setNotice("error", "Failed to store feature state.");
+      setNotice("error", "Status konnte nicht gespeichert werden.");
     });
   }
 
@@ -1978,9 +1935,9 @@
     const moduleCount = getFeatureRegistry().length;
     const updateCounters = getUpdateCounters();
     const lastSyncText = formatDateTime(state.config?.git?.lastSyncAt || null);
-    const gitStatusText = state.config?.git?.connected ? "connected" : "offline";
+    const gitStatusText = state.config?.git?.connected ? "verbunden" : "offline";
     const gitSourceText = state.gitLoad.source || "not-loaded";
-    const gitLoadingText = state.gitLoad.loading ? "updating..." : "idle";
+    const gitLoadingText = state.gitLoad.loading ? "laedt..." : "bereit";
 
     const tabsHtml = TABS.map((tab) => {
       const isActive = tab.id === activeTab ? "is-active" : "";
@@ -1996,15 +1953,15 @@
           <header class="xcfg-header">
             <div>
               <div class="xcfg-header-main">
-                <button type="button" class="xcfg-btn xcfg-back-btn" data-action="back" aria-label="Back">←</button>
+                <button type="button" class="xcfg-btn xcfg-back-btn" data-action="back" aria-label="Zurueck">←</button>
                 <h1 class="xcfg-title">AD xConfig</h1>
               </div>
-              <p class="xcfg-subtitle">Module manager for themes and animations. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Enabled: ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. New settings: ${updateCounters.settings}. Last Git sync: ${escapeHtml(lastSyncText)}</p>
+              <p class="xcfg-subtitle">Modulverwaltung fuer Themen und Animationen. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Aktiv: ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. Neue Einstellungen: ${updateCounters.settings}. Letzter Git-Abgleich: ${escapeHtml(lastSyncText)}</p>
             </div>
             <div class="xcfg-actions">
-              <button type="button" class="xcfg-btn" data-action="sync-git">Sync Git</button>
-              <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">Reset</button>
-              <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close">Close</button>
+              <button type="button" class="xcfg-btn" data-action="sync-git">🔄 Skripte laden</button>
+              <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">↺ Zuruecksetzen</button>
+              <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close">✖ Schliessen</button>
             </div>
           </header>
           ${renderGitConnectionHtml()}
@@ -2030,12 +1987,12 @@
       await saveConfig();
     } catch (error) {
       console.error("AD xConfig: failed to persist active tab", error);
-      setNotice("error", "Tab selection could not be persisted.");
+      setNotice("error", "Tab-Auswahl konnte nicht gespeichert werden.");
     }
   }
 
   async function resetConfig() {
-    const confirmed = window.confirm("Reset AD xConfig to defaults?");
+    const confirmed = window.confirm("AD xConfig auf Standardwerte zuruecksetzen?");
     if (!confirmed) {
       return;
     }
@@ -2043,7 +2000,7 @@
     state.config = createDefaultConfig();
     await saveConfig();
     renderPanel();
-    setNotice("success", "Configuration reset to defaults.");
+    setNotice("success", "Konfiguration auf Standardwerte zurueckgesetzt.");
   }
 
   async function runGitSyncDummy() {
@@ -2057,7 +2014,6 @@
 
     getFeatureRegistry().forEach((feature) => {
       const featureState = ensureFeatureState(feature.id);
-      featureState.lastCheckedAt = nowIso;
       if (!featureState.lastSeenSha && feature.remoteSha) {
         featureState.lastSeenSha = feature.remoteSha;
       }
@@ -2067,67 +2023,10 @@
     renderPanel();
 
     if (syncResult.ok) {
-      setNotice("success", `Git sync done. Loaded ${syncResult.count} modules from repository.`);
+      setNotice("success", `Skripte geladen: ${syncResult.count} Module aus dem Repository.`);
     } else {
-      setNotice("error", `Git sync failed. No module data available. Reason: ${syncResult.error}`);
+      setNotice("error", `Skriptabgleich fehlgeschlagen. Grund: ${syncResult.error}`);
     }
-  }
-
-  async function checkFeatureDummy(featureId) {
-    await loadFeatureRegistryFromGit({ silent: true });
-    const feature = getFeatureById(featureId);
-    if (!feature || !state.config) {
-      return;
-    }
-
-    const nowIso = new Date().toISOString();
-    const featureState = ensureFeatureState(feature.id);
-    featureState.lastCheckedAt = nowIso;
-    if (!featureState.lastSeenSha && feature.remoteSha) {
-      featureState.lastSeenSha = feature.remoteSha;
-    }
-    state.config.git.lastSyncAt = nowIso;
-
-    await saveConfig();
-    renderPanel();
-
-    const flags = getFeatureFlags(feature, featureState);
-    const detailParts = [];
-
-    if (flags.hasUpdate) {
-      if (feature.remoteSha && featureState.lastSeenSha && feature.remoteSha !== featureState.lastSeenSha) {
-        detailParts.push("new Git revision detected");
-      } else {
-        detailParts.push(`update available: v${feature.latestVersion}`);
-      }
-    }
-    if (flags.hasSettingsUpdate) {
-      detailParts.push("new settings available");
-    }
-
-    const message = detailParts.length
-      ? `${feature.title}: ${detailParts.join(", ")}.`
-      : `${feature.title}: no new changes found (dummy).`;
-
-    setNotice("info", message);
-  }
-
-  async function acknowledgeFeatureChanges(featureId) {
-    const feature = getFeatureById(featureId);
-    if (!feature || !state.config) {
-      return;
-    }
-
-    const featureState = ensureFeatureState(feature.id);
-    if (feature.remoteSha) {
-      featureState.lastSeenSha = feature.remoteSha;
-    }
-    featureState.ackVersion = feature.latestVersion || "";
-    featureState.ackSettingsVersion = Number(feature.latestSettingsVersion || 0);
-
-    await saveConfig();
-    renderPanel();
-    setNotice("success", `${feature.title}: update markers marked as read.`);
   }
 
   function openFeatureRepo(featureId) {
@@ -2138,7 +2037,7 @@
 
     const repoUrl = getFeatureRepoUrl(feature);
     window.open(repoUrl, "_blank", "noopener,noreferrer");
-    setNotice("info", `Opened repository path for ${feature.title} (dummy flow).`);
+    setNotice("info", `${feature.title}: Skriptquelle im Repository geoeffnet.`);
   }
 
   function openFeatureReadme(featureId) {
@@ -2149,7 +2048,7 @@
 
     const readmeUrl = getFeatureReadmeUrl(feature);
     window.open(readmeUrl, "_blank", "noopener,noreferrer");
-    setNotice("info", `Opened README section for ${feature.title}.`);
+    setNotice("info", `${feature.title}: Anleitung im README geoeffnet.`);
   }
 
   function onPanelClick(event) {
