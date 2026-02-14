@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Stylt Checkout-Empfehlungen in X01 klarer und besser lesbar.
 // @xconfig-description  Formatiert und betont Checkout-Suggestions in X01, damit Empfehlungen schneller erfassbar sind.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-style-checkout-suggestions
 // @xconfig-background     assets/animation-style-checkout-suggestions-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -135,6 +136,49 @@
 		console.warn("[Autodarts Style Checkout Suggestions] Shared helper not available. Using local fallback helpers.");
 	}
 
+	// xConfig: {"type":"select","label":"Stil","description":"Wählt die Darstellungsart für Checkout-Empfehlungen.","options":[{"value":"badge","label":"Badge"},{"value":"ribbon","label":"Ribbon"},{"value":"stripe","label":"Stripe"},{"value":"ticket","label":"Ticket"},{"value":"outline","label":"Outline"}]}
+	const xConfig_STIL = "ribbon";
+	// xConfig: {"type":"select","label":"Labeltext","description":"Text im Label über der Empfehlung.","options":[{"value":"CHECKOUT","label":"CHECKOUT"},{"value":"FINISH","label":"FINISH"},{"value":"","label":"Kein Label"}]}
+	const xConfig_LABELTEXT = "CHECKOUT";
+	// xConfig: {"type":"select","label":"Farbthema","description":"Farbthema für Akzente, Label und Highlights.","options":[{"value":"amber","label":"Amber (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"rose","label":"Rose"}]}
+	const xConfig_FARBTHEMA = "amber";
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const COLOR_THEME_PRESETS = {
+		amber: {
+			accentColor: "#f59e0b",
+			accentSoftColor: "rgba(245, 158, 11, 0.16)",
+			accentStrongColor: "rgba(245, 158, 11, 0.6)",
+			labelBackground: "#fcd34d",
+			labelTextColor: "#1f1300",
+		},
+		cyan: {
+			accentColor: "#06b6d4",
+			accentSoftColor: "rgba(6, 182, 212, 0.16)",
+			accentStrongColor: "rgba(6, 182, 212, 0.58)",
+			labelBackground: "#67e8f9",
+			labelTextColor: "#082f35",
+		},
+		rose: {
+			accentColor: "#f43f5e",
+			accentSoftColor: "rgba(244, 63, 94, 0.15)",
+			accentStrongColor: "rgba(244, 63, 94, 0.58)",
+			labelBackground: "#fda4af",
+			labelTextColor: "#4a1020",
+		},
+	};
+
+	const RESOLVED_STIL = resolveStringChoice(xConfig_STIL, "ribbon", ["badge", "ribbon", "stripe", "ticket", "outline"]);
+	const RESOLVED_LABELTEXT = resolveStringChoice(xConfig_LABELTEXT, "CHECKOUT", ["CHECKOUT", "FINISH", ""]);
+	const RESOLVED_FARBTHEMA = resolveStringChoice(xConfig_FARBTHEMA, "amber", ["amber", "cyan", "rose"]);
+	const RESOLVED_COLOR_THEME = COLOR_THEME_PRESETS[RESOLVED_FARBTHEMA] || COLOR_THEME_PRESETS.amber;
+
 	/**
    * Style options:
    * - "badge"  : label + dashed outline (default)
@@ -147,13 +191,13 @@
 		suggestionSelector: ".suggestion",
 		variantElementId: "ad-ext-game-variant",
 		requireX01: true,
-		formatStyle: "ribbon",
-		labelText: "CHECKOUT",
-		accentColor: "#f59e0b",
-		accentSoftColor: "rgba(245, 158, 11, 0.16)",
-		accentStrongColor: "rgba(245, 158, 11, 0.6)",
-		labelBackground: "#fcd34d",
-		labelTextColor: "#1f1300",
+		formatStyle: RESOLVED_STIL,
+		labelText: RESOLVED_LABELTEXT,
+		accentColor: RESOLVED_COLOR_THEME.accentColor,
+		accentSoftColor: RESOLVED_COLOR_THEME.accentSoftColor,
+		accentStrongColor: RESOLVED_COLOR_THEME.accentStrongColor,
+		labelBackground: RESOLVED_COLOR_THEME.labelBackground,
+		labelTextColor: RESOLVED_COLOR_THEME.labelTextColor,
 		borderRadiusPx: 14,
 		stripeOpacity: 0.35
 	};

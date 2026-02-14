@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Animiert Turn-Points kurz hoch oder runter statt hart zu springen.
 // @xconfig-description  Zaehlt die Turn-Punkte bei Aenderungen kurz hoch oder runter, um Score-Spruenge besser lesbar zu machen.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-points-count
 // @xconfig-background     assets/animation-turn-points-count-xConfig.gif
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -20,6 +21,22 @@
 (function () {
 	"use strict";
 
+	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie schnell die Turn-Punkte hoch bzw. runter zählen.","options":[{"value":260,"label":"Schnell"},{"value":416,"label":"Standard"},{"value":650,"label":"Langsam"}]}
+	const xConfig_ANIMATIONSDAUER_MS = 416;
+
+	function resolveNumberChoice(value, fallbackValue, allowedValues) {
+		const numericValue = Number(value);
+		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+			? numericValue
+			: fallbackValue;
+	}
+
+	const RESOLVED_ANIMATION_MS = resolveNumberChoice(xConfig_ANIMATIONSDAUER_MS, 416, [
+		260,
+		416,
+		650,
+	]);
+
 	const {createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
 	// Script goal: count turn points up/down smoothly instead of jumping.
@@ -30,7 +47,7 @@
    */
 	const CONFIG = {
 		scoreSelector: "p.ad-ext-turn-points",
-		animationMs: 416
+		animationMs: RESOLVED_ANIMATION_MS
 	};
 
 	// Stores the last known value per element.

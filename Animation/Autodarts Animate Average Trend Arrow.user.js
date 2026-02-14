@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Zeigt bei AVG-Aenderungen kurz einen Trendpfeil nach oben oder unten.
 // @xconfig-description  Visualisiert AVG-Aenderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
 // @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -19,6 +20,22 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie lange der Trendpfeil sichtbar animiert wird.","options":[{"value":220,"label":"Schnell"},{"value":320,"label":"Standard"},{"value":500,"label":"Langsam"}]}
+	const xConfig_ANIMATIONSDAUER_MS = 320;
+
+	function resolveNumberChoice(value, fallbackValue, allowedValues) {
+		const numericValue = Number(value);
+		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+			? numericValue
+			: fallbackValue;
+	}
+
+	const ANIMATION_MS = resolveNumberChoice(xConfig_ANIMATIONSDAUER_MS, 320, [
+		220,
+		320,
+		500,
+	]);
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
@@ -41,7 +58,6 @@
 	const UP_CLASS = "ad-ext-avg-trend-up";
 	const DOWN_CLASS = "ad-ext-avg-trend-down";
 	const ANIMATE_CLASS = "ad-ext-avg-trend-animate";
-	const ANIMATION_MS = 320;
 
 	// Speichert den letzten AVG-Wert pro Node, um Änderungen zu erkennen.
 	const lastValues = new WeakMap();

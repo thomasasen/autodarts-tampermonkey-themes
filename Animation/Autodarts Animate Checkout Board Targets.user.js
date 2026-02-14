@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Hebt moegliche Checkout-Ziele auf dem Board hervor und animiert sie in X01.
 // @xconfig-description  Markiert moegliche Checkout-Felder (Double/Bull) auf dem Dartboard und animiert sie mit Blink, Pulse oder Glow in X01.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
 // @xconfig-background     assets/animation-checkout-board-targets-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -20,6 +21,44 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Effekt","description":"Legt den Animationseffekt für Board-Ziele fest.","options":[{"value":"pulse","label":"Pulse"},{"value":"blink","label":"Blink"},{"value":"glow","label":"Glow"}]}
+	const xConfig_EFFEKT = "pulse";
+	// xConfig: {"type":"select","label":"Zielumfang","description":"Markiert nur das erste Ziel oder alle Ziele der Empfehlung.","options":[{"value":"first","label":"Erstes Ziel"},{"value":"all","label":"Alle Ziele"}]}
+	const xConfig_ZIELUMFANG = "first";
+	// xConfig: {"type":"select","label":"Single-Ring","description":"Wählt, welcher Single-Ring bei Single-Zielen hervorgehoben wird.","options":[{"value":"both","label":"Beide Ringe"},{"value":"inner","label":"Nur innen"},{"value":"outer","label":"Nur außen"}]}
+	const xConfig_SINGLE_RING = "both";
+	// xConfig: {"type":"select","label":"Farbthema","description":"Farbthema für Füllung und Kontur der Zielbereiche.","options":[{"value":"violet","label":"Violett (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"amber","label":"Amber"}]}
+	const xConfig_FARBTHEMA = "violet";
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const BOARD_THEME_PRESETS = {
+		violet: {
+			color: "rgba(168, 85, 247, 0.85)",
+			strokeColor: "rgba(168, 85, 247, 0.95)",
+		},
+		cyan: {
+			color: "rgba(56, 189, 248, 0.85)",
+			strokeColor: "rgba(34, 211, 238, 0.95)",
+		},
+		amber: {
+			color: "rgba(245, 158, 11, 0.85)",
+			strokeColor: "rgba(251, 191, 36, 0.95)",
+		},
+	};
+
+	const RESOLVED_EFFECT = resolveStringChoice(xConfig_EFFEKT, "pulse", ["pulse", "blink", "glow"]);
+	const RESOLVED_TARGET_SCOPE = resolveStringChoice(xConfig_ZIELUMFANG, "first", ["first", "all"]);
+	const RESOLVED_SINGLE_RING = resolveStringChoice(xConfig_SINGLE_RING, "both", ["both", "inner", "outer"]);
+	const RESOLVED_THEME_KEY = resolveStringChoice(xConfig_FARBTHEMA, "violet", ["violet", "cyan", "amber"]);
+	const RESOLVED_THEME = BOARD_THEME_PRESETS[RESOLVED_THEME_KEY] || BOARD_THEME_PRESETS.violet;
+
 	const gameStateShared = window.autodartsGameStateShared || null;
 
 	const {
@@ -56,13 +95,13 @@
 		suggestionSelector: ".suggestion",
 		variantElementId: "ad-ext-game-variant",
 		requireX01: true,
-		highlightTargets: "first", // "first" | "all"
-		effect: "pulse", // "pulse" | "blink" | "glow"
-		color: "rgba(168, 85, 247, 0.85)",
-		strokeColor: "rgba(168, 85, 247, 0.95)",
+		highlightTargets: RESOLVED_TARGET_SCOPE, // "first" | "all"
+		effect: RESOLVED_EFFECT, // "pulse" | "blink" | "glow"
+		color: RESOLVED_THEME.color,
+		strokeColor: RESOLVED_THEME.strokeColor,
 		strokeWidthRatio: 0.008,
 		animationMs: 1000,
-		singleRing: "both", // "inner" | "outer" | "both"
+		singleRing: RESOLVED_SINGLE_RING, // "inner" | "outer" | "both"
 		edgePaddingPx: 1,
 		ringRatios: {
 			outerBullInner: 0.031112,

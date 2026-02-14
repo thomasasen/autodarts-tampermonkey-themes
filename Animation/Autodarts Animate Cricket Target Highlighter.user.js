@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Zeigt im Cricket die Zielzustaende (offen, geschlossen, punktbar, tot) als Board-Overlay.
 // @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustaende fuer 15-20 und Bull direkt auf dem Board.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -19,6 +20,82 @@
 // ==/UserScript==
 (function () {
 		"use strict";
+
+		// xConfig: {"type":"toggle","label":"Dead-Ziele anzeigen","description":"Zeigt auch Ziele an, die von allen Spielern bereits geschlossen wurden.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+		const xConfig_DEAD_ZIELE_ANZEIGEN = true;
+		// xConfig: {"type":"select","label":"Farbthema","description":"Wählt das Farbschema für Score- und Danger-Ziele.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
+		const xConfig_FARBTHEMA = "standard";
+		// xConfig: {"type":"select","label":"Intensität","description":"Steuert Deckkraft und Kontrast der Overlay-Hervorhebungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
+		const xConfig_INTENSITAET = "normal";
+
+		function resolveToggle(value, fallbackValue) {
+			if (typeof value === "boolean") {
+				return value;
+			}
+			if (value === 1 || value === "1") {
+				return true;
+			}
+			if (value === 0 || value === "0") {
+				return false;
+			}
+			if (typeof value === "string") {
+				const normalized = value.trim().toLowerCase();
+				if (["true", "yes", "on", "aktiv", "active"].includes(normalized)) {
+					return true;
+				}
+				if (["false", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+					return false;
+				}
+			}
+			return fallbackValue;
+		}
+
+		function resolveStringChoice(value, fallbackValue, allowedValues) {
+			const normalizedValue = String(value || "").trim();
+			return allowedValues.includes(normalizedValue)
+				? normalizedValue
+				: fallbackValue;
+		}
+
+		const CRICKET_THEME_PRESETS = {
+			standard: {
+				score: {r: 0, g: 178, b: 135},
+				danger: {r: 222, g: 120, b: 0},
+			},
+			"high-contrast": {
+				score: {r: 34, g: 197, b: 94},
+				danger: {r: 239, g: 68, b: 68},
+			},
+		};
+		const CRICKET_INTENSITY_PRESETS = {
+			subtle: {
+				closed: 0.68,
+				dead: 0.86,
+				inactive: 0.66,
+				highlightOpacity: 0.32,
+				strokeBoost: 0.14,
+			},
+			normal: {
+				closed: 0.8,
+				dead: 0.98,
+				inactive: 0.8,
+				highlightOpacity: 0.45,
+				strokeBoost: 0.2,
+			},
+			strong: {
+				closed: 0.92,
+				dead: 1,
+				inactive: 0.9,
+				highlightOpacity: 0.62,
+				strokeBoost: 0.3,
+			},
+		};
+
+		const RESOLVED_SHOW_DEAD_TARGETS = resolveToggle(xConfig_DEAD_ZIELE_ANZEIGEN, true);
+		const RESOLVED_THEME_KEY = resolveStringChoice(xConfig_FARBTHEMA, "standard", ["standard", "high-contrast"]);
+		const RESOLVED_INTENSITY_KEY = resolveStringChoice(xConfig_INTENSITAET, "normal", ["subtle", "normal", "strong"]);
+		const RESOLVED_THEME = CRICKET_THEME_PRESETS[RESOLVED_THEME_KEY] || CRICKET_THEME_PRESETS.standard;
+		const RESOLVED_INTENSITY = CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] || CRICKET_INTENSITY_PRESETS.normal;
 
 		const {
 			ensureStyle,
@@ -68,7 +145,7 @@
 			playerSelector: ".ad-ext-player",
 			activePlayerSelector: ".ad-ext-player-active",
 			markElementSelector: "[data-mark], [data-marks], [data-hit], [data-hits], " + "[class*='mark'], [class*='hit'], [class*='slash'], [class*='cross'], " + ".chakra-icon, svg, img[alt]",
-			showDeadTargets: true,
+			showDeadTargets: RESOLVED_SHOW_DEAD_TARGETS,
 			strokeWidthRatio: 0.006,
 			edgePaddingPx: 0.8,
 			baseColor: {
@@ -77,24 +154,24 @@
 				b: 90
 			},
 			opacity: {
-				closed: 0.8,
-				dead: 0.98,
-				inactive: 0.8
+				closed: RESOLVED_INTENSITY.closed,
+				dead: RESOLVED_INTENSITY.dead,
+				inactive: RESOLVED_INTENSITY.inactive
 			},
 			highlight: {
 				score: {
-					r: 0,
-					g: 178,
-					b: 135,
-					opacity: 0.45,
-					strokeBoost: 0.2
+					r: RESOLVED_THEME.score.r,
+					g: RESOLVED_THEME.score.g,
+					b: RESOLVED_THEME.score.b,
+					opacity: RESOLVED_INTENSITY.highlightOpacity,
+					strokeBoost: RESOLVED_INTENSITY.strokeBoost
 				},
 				danger: {
-					r: 222,
-					g: 120,
-					b: 0,
-					opacity: 0.45,
-					strokeBoost: 0.2
+					r: RESOLVED_THEME.danger.r,
+					g: RESOLVED_THEME.danger.g,
+					b: RESOLVED_THEME.danger.b,
+					opacity: RESOLVED_INTENSITY.highlightOpacity,
+					strokeBoost: RESOLVED_INTENSITY.strokeBoost
 				}
 			},
 			ringRatios: {

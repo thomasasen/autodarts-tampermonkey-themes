@@ -1,11 +1,12 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
-// @version      1.0
+// @version      1.1
 // @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste mit Animation.
 // @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverlaeufen hervor.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @xconfig-background     assets/animation-triple-double-bull-hits-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
@@ -19,11 +20,79 @@
 (function () {
   "use strict";
 
+  // xConfig: {"type":"toggle","label":"Triple hervorheben","description":"Hebt Triple-Treffer (T1-T20) in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  const xConfig_TRIPLE_HERVORHEBEN = true;
+  // xConfig: {"type":"toggle","label":"Double hervorheben","description":"Hebt Double-Treffer (D1-D20) in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  const xConfig_DOUBLE_HERVORHEBEN = true;
+  // xConfig: {"type":"toggle","label":"Bull hervorheben","description":"Hebt BULL-Treffer in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  const xConfig_BULL_HERVORHEBEN = true;
+  // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Waehlt zwischen reinem Live-Observer oder zusaetzlichem Polling fuer hohe Kompatibilitaet.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
+  const xConfig_AKTUALISIERUNGSMODUS = 3000;
+
+  function resolveToggle(value, fallbackValue) {
+    if (typeof value === "boolean") {
+      return value;
+    }
+    if (value === 1 || value === "1") {
+      return true;
+    }
+    if (value === 0 || value === "0") {
+      return false;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "yes", "on", "aktiv", "active"].includes(normalized)) {
+        return true;
+      }
+      if (["false", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+        return false;
+      }
+    }
+    return fallbackValue;
+  }
+
+  function resolveNumberChoice(value, fallbackValue, allowedValues) {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+      ? numericValue
+      : fallbackValue;
+  }
+
+  const RESOLVED_TRIPLE_HERVORHEBEN = resolveToggle(xConfig_TRIPLE_HERVORHEBEN, true);
+  const RESOLVED_DOUBLE_HERVORHEBEN = resolveToggle(xConfig_DOUBLE_HERVORHEBEN, true);
+  const RESOLVED_BULL_HERVORHEBEN = resolveToggle(xConfig_BULL_HERVORHEBEN, true);
+  const RESOLVED_POLL_INTERVAL_MS = resolveNumberChoice(xConfig_AKTUALISIERUNGSMODUS, 3000, [0, 3000]);
+
   // Script goal: highlight triple/double/bull hits in the throw list.
   // Default values 1..20 for valid segments.
   const SEGMENT_VALUES = [
     20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
   ];
+
+  const HIT_TYPE_CATALOG = {
+    triple: {
+      key: "triple",
+      prefix: "T",
+      values: [...SEGMENT_VALUES],
+      highlightColor: "#ffb347",
+      gradientStops: ["#ff6b6b", "#ff9f1c", "#ffd166"],
+    },
+    double: {
+      key: "double",
+      prefix: "D",
+      values: [...SEGMENT_VALUES],
+      highlightColor: "#5ec8ff",
+      gradientStops: ["#22d3ee", "#38bdf8", "#818cf8"],
+    },
+  };
+
+  const ACTIVE_HIT_TYPES = [];
+  if (RESOLVED_TRIPLE_HERVORHEBEN) {
+    ACTIVE_HIT_TYPES.push(HIT_TYPE_CATALOG.triple);
+  }
+  if (RESOLVED_DOUBLE_HERVORHEBEN) {
+    ACTIVE_HIT_TYPES.push(HIT_TYPE_CATALOG.double);
+  }
 
   /**
    * Configuration for hit types and visuals.
@@ -34,31 +103,16 @@
    * @property {Object} bull - Configuration for BULL (on/off).
    */
   const CONFIG = {
-    pollIntervalMs: 3000,
+    pollIntervalMs: RESOLVED_POLL_INTERVAL_MS,
     selectors: {
       throwRow: ".ad-ext-turn-throw",
       throwText: ".ad-ext-turn-throw p.chakra-text",
       textNode: "p.chakra-text",
     },
     defaultGradientStops: ["#22d3ee", "#9fdb58", "#f59e0b", "#34d399"],
-    hitTypes: [
-      {
-        key: "triple",
-        prefix: "T",
-        values: [...SEGMENT_VALUES],
-        highlightColor: "#ffb347",
-        gradientStops: ["#ff6b6b", "#ff9f1c", "#ffd166"],
-      },
-      {
-        key: "double",
-        prefix: "D",
-        values: [...SEGMENT_VALUES],
-        highlightColor: "#5ec8ff",
-        gradientStops: ["#22d3ee", "#38bdf8", "#818cf8"],
-      },
-    ],
+    hitTypes: ACTIVE_HIT_TYPES,
     bull: {
-      enabled: true,
+      enabled: RESOLVED_BULL_HERVORHEBEN,
       key: "bull",
       label: "BULL",
       highlightColor: "#ffe97a",

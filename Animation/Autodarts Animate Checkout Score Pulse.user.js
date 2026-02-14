@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Hebt den Restscore hervor, sobald ein Checkout in X01 moeglich ist.
 // @xconfig-description  Markiert den verbleibenden Punktestand visuell, wenn ein Checkout in X01 moeglich wird.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse-xConfig.gif
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -21,6 +22,26 @@
 (function () {
 	"use strict";
 
+	// xConfig: {"type":"select","label":"Effekt","description":"Legt den visuellen Effekt für checkout-fähige Scores fest.","options":[{"value":"pulse","label":"Pulse"},{"value":"glow","label":"Glow"},{"value":"scale","label":"Scale"},{"value":"blink","label":"Blink"}]}
+	const xConfig_EFFEKT = "scale";
+	// xConfig: {"type":"select","label":"Farbthema","description":"Farbton für Highlight und Glow des Scores.","options":[{"value":"159, 219, 88","label":"Grün (Standard)"},{"value":"56, 189, 248","label":"Cyan"},{"value":"245, 158, 11","label":"Amber"},{"value":"248, 113, 113","label":"Rot"}]}
+	const xConfig_FARBTHEMA = "159, 219, 88";
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const EFFECT = resolveStringChoice(xConfig_EFFEKT, "scale", ["pulse", "glow", "scale", "blink"]);
+	const PULSE_COLOR = resolveStringChoice(xConfig_FARBTHEMA, "159, 219, 88", [
+		"159, 219, 88",
+		"56, 189, 248",
+		"245, 158, 11",
+		"248, 113, 113",
+	]);
+
 	const {ensureStyle, createRafScheduler, observeMutations, isX01Variant} = window.autodartsAnimationShared;
 	const gameStateShared = window.autodartsGameStateShared || null;
 
@@ -30,7 +51,6 @@
 	const ACTIVE_SCORE_SELECTOR = ".ad-ext-player.ad-ext-player-active p.ad-ext-player-score, " + ".ad-ext-player-active p.ad-ext-player-score";
 	const SUGGESTION_SELECTOR = ".suggestion";
 	const VARIANT_ELEMENT_ID = "ad-ext-game-variant";
-	const PULSE_COLOR = "159, 219, 88";
 	const IMPOSSIBLE_CHECKOUTS = new Set([
 		169,
 		168,
@@ -43,7 +63,6 @@
 
 	// Effect for the highlighted checkout score: "pulse" | "glow" | "scale" | "blink"
 	// pulse = scale + glow, glow = glow only, scale = scale only, blink = on/off
-	const EFFECT = "scale";
 	const EFFECT_CLASSES = {
 		pulse: "ad-ext-checkout-possible--pulse",
 		glow: "ad-ext-checkout-possible--glow",

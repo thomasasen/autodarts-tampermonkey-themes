@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Ersetzt die Meldung "Removing Darts" durch ein TakeOut-Bild mit sanfter Animation.
 // @xconfig-description  Erkennt die Entfernen-Hinweismeldung und ersetzt sie visuell durch TakeOut.png inklusive Pulse-Effekt.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
 // @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -19,6 +20,63 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Bildgröße","description":"Legt die Größe des TakeOut-Bildes in der Meldung fest.","options":[{"value":"compact","label":"Kompakt"},{"value":"standard","label":"Standard"},{"value":"large","label":"Groß"}]}
+	const xConfig_BILDGROESSE = "standard";
+	// xConfig: {"type":"toggle","label":"Pulse-Animation","description":"Aktiviert oder deaktiviert den leichten Puls-Effekt des Bildes.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	const xConfig_PULSE_ANIMATION = true;
+
+	function resolveToggle(value, fallbackValue) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		if (value === 1 || value === "1") {
+			return true;
+		}
+		if (value === 0 || value === "0") {
+			return false;
+		}
+		if (typeof value === "string") {
+			const normalized = value.trim().toLowerCase();
+			if (["true", "yes", "on", "aktiv", "active"].includes(normalized)) {
+				return true;
+			}
+			if (["false", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+				return false;
+			}
+		}
+		return fallbackValue;
+	}
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const IMAGE_SIZE_PRESETS = {
+		compact: {
+			imageMaxWidthRem: 24,
+			imageMaxWidthVw: 72,
+		},
+		standard: {
+			imageMaxWidthRem: 30,
+			imageMaxWidthVw: 90,
+		},
+		large: {
+			imageMaxWidthRem: 36,
+			imageMaxWidthVw: 96,
+		},
+	};
+
+	const RESOLVED_IMAGE_SIZE = resolveStringChoice(xConfig_BILDGROESSE, "standard", [
+		"compact",
+		"standard",
+		"large",
+	]);
+	const RESOLVED_PULSE_ANIMATION = resolveToggle(xConfig_PULSE_ANIMATION, true);
+	const IMAGE_SIZE = IMAGE_SIZE_PRESETS[RESOLVED_IMAGE_SIZE] || IMAGE_SIZE_PRESETS.standard;
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
@@ -63,8 +121,8 @@
 		fallbackAreaLimit: 10,
 		fallbackAreaWindowSize: 3,
 		fallbackTextNodeBudget: 700,
-		imageMaxWidthRem: 30,
-		imageMaxWidthVw: 90,
+		imageMaxWidthRem: IMAGE_SIZE.imageMaxWidthRem,
+		imageMaxWidthVw: IMAGE_SIZE.imageMaxWidthVw,
 		pulseDurationMs: 1400,
 		pulseScale: 1.04
 	};
@@ -109,9 +167,9 @@
   height: auto;
   background: transparent;
   transform-origin: center;
-  animation: ad-ext-takeout-pulse ${
-		CONFIG.pulseDurationMs
-	}ms ease-in-out infinite;
+  animation: ${RESOLVED_PULSE_ANIMATION
+		? `ad-ext-takeout-pulse ${CONFIG.pulseDurationMs}ms ease-in-out infinite`
+		: "none"};
   will-change: transform, opacity;
   pointer-events: none;
 }

@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Zeigt nach dem Sieg einen visuellen Gewinner-Effekt (Firework, Confetti, Aurora, Pulse).
 // @xconfig-description  Blendet beim Gewinner ein Overlay mit konfigurierbarem Effekt ein; Klick blendet es wieder aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -19,6 +20,61 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Effekt","description":"Wählt den Gewinner-Effekt im Overlay.","options":[{"value":"firework","label":"Firework"},{"value":"confetti","label":"Confetti"},{"value":"aurora","label":"Aurora"},{"value":"pulse","label":"Pulse"}]}
+	const xConfig_EFFEKT = "confetti";
+	// xConfig: {"type":"select","label":"Performance","description":"Passt die Effekt-Intensität an Geräte-Leistung und gewünschte Dichte an.","options":[{"value":"eco","label":"Schonend"},{"value":"balanced","label":"Ausgewogen"},{"value":"high","label":"Intensiv"}]}
+	const xConfig_PERFORMANCE = "balanced";
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const PERFORMANCE_PRESETS = {
+		eco: {
+			autoReduceParticles: true,
+			maxRockets: 5,
+			maxParticles: 300,
+			burstParticlesMin: 24,
+			burstParticlesMax: 40,
+			confettiCount: 110,
+			auroraStarCount: 60,
+		},
+		balanced: {
+			autoReduceParticles: true,
+			maxRockets: 7,
+			maxParticles: 480,
+			burstParticlesMin: 36,
+			burstParticlesMax: 60,
+			confettiCount: 150,
+			auroraStarCount: 80,
+		},
+		high: {
+			autoReduceParticles: false,
+			maxRockets: 9,
+			maxParticles: 680,
+			burstParticlesMin: 48,
+			burstParticlesMax: 78,
+			confettiCount: 220,
+			auroraStarCount: 120,
+		},
+	};
+
+	const RESOLVED_EFFECT = resolveStringChoice(xConfig_EFFEKT, "confetti", [
+		"firework",
+		"confetti",
+		"aurora",
+		"pulse",
+	]);
+	const RESOLVED_PERFORMANCE = resolveStringChoice(xConfig_PERFORMANCE, "balanced", [
+		"eco",
+		"balanced",
+		"high",
+	]);
+	const PERFORMANCE_CONFIG = PERFORMANCE_PRESETS[RESOLVED_PERFORMANCE] || PERFORMANCE_PRESETS.balanced;
 
 	const {ensureStyle} = window.autodartsAnimationShared;
 
@@ -64,20 +120,20 @@
 		winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
 		overlayId: "ad-ext-winner-fireworks",
 		styleId: "ad-ext-winner-fireworks-style",
-		effect: "confetti",
+		effect: RESOLVED_EFFECT,
 		dynamicFps: true,
 		fpsHigh: 60,
 		fpsLow: 30,
 		fpsDownshiftMs: 22,
 		fpsUpshiftMs: 18,
 		fpsAdjustCooldownMs: 900,
-		autoReduceParticles: true,
+		autoReduceParticles: PERFORMANCE_CONFIG.autoReduceParticles,
 		minQualityScale: 0.45,
 		rocketIntervalMs: 360,
-		maxRockets: 7,
-		maxParticles: 480,
-		burstParticlesMin: 36,
-		burstParticlesMax: 60,
+		maxRockets: PERFORMANCE_CONFIG.maxRockets,
+		maxParticles: PERFORMANCE_CONFIG.maxParticles,
+		burstParticlesMin: PERFORMANCE_CONFIG.burstParticlesMin,
+		burstParticlesMax: PERFORMANCE_CONFIG.burstParticlesMax,
 		rocketSpeedMin: 6.6,
 		rocketSpeedMax: 9.4,
 		burstSpeedMin: 1.6,
@@ -86,9 +142,9 @@
 		particleLifeMaxMs: 1700,
 		gravity: 0.06,
 		friction: 0.985,
-		confettiCount: 150,
+		confettiCount: PERFORMANCE_CONFIG.confettiCount,
 		auroraBandCount: 3,
-		auroraStarCount: 80,
+		auroraStarCount: PERFORMANCE_CONFIG.auroraStarCount,
 		pulseIntervalMs: 520,
 		colors: [
 			"#FCE38A",

@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.2
+// @version      1.3
 // @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
 // @xconfig-background     assets/animation-single-bull-sound-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -18,6 +19,36 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Lautstärke","description":"Legt die Lautstärke des Single-Bull-Sounds fest.","options":[{"value":0.5,"label":"Leise"},{"value":0.75,"label":"Mittel"},{"value":0.9,"label":"Laut"},{"value":1,"label":"Sehr laut"}]}
+	const xConfig_LAUTSTAERKE = 0.9;
+	// xConfig: {"type":"select","label":"Wiederholsperre","description":"Verhindert Mehrfachauslösung in kurzer Zeit pro Wurfzeile.","options":[{"value":400,"label":"Kurz"},{"value":700,"label":"Standard"},{"value":1000,"label":"Lang"}]}
+	const xConfig_WIEDERHOLSPERRE_MS = 700;
+	// xConfig: {"type":"select","label":"Fallback-Scan","description":"Optionaler Zusatz-Scan für stabile Erkennung in seltenen DOM-Fällen.","options":[{"value":0,"label":"Aus"},{"value":1200,"label":"Ein (robuster)"}]}
+	const xConfig_FALLBACK_SCAN_MS = 0;
+
+	function resolveNumberChoice(value, fallbackValue, allowedValues) {
+		const numericValue = Number(value);
+		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+			? numericValue
+			: fallbackValue;
+	}
+
+	const RESOLVED_VOLUME = resolveNumberChoice(xConfig_LAUTSTAERKE, 0.9, [
+		0.5,
+		0.75,
+		0.9,
+		1,
+	]);
+	const RESOLVED_COOLDOWN_MS = resolveNumberChoice(xConfig_WIEDERHOLSPERRE_MS, 700, [
+		400,
+		700,
+		1000,
+	]);
+	const RESOLVED_FALLBACK_SCAN_MS = resolveNumberChoice(xConfig_FALLBACK_SCAN_MS, 0, [
+		0,
+		1200,
+	]);
 
 	// Script goal: play a sound when a single bull (25/BULL) appears in the throw list.
 	/**
@@ -32,15 +63,15 @@
    */
 	const CONFIG = {
 		soundUrl: "https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/singlebull.mp3",
-		volume: 0.9,
+		volume: RESOLVED_VOLUME,
 		targetPoints: 25,
 		targetLabel: "BULL",
 		selectors: {
 			throwRow: ".ad-ext-turn-throw",
 			throwText: ".chakra-text"
 		},
-		cooldownMs: 700,
-		pollIntervalMs: 0
+		cooldownMs: RESOLVED_COOLDOWN_MS,
+		pollIntervalMs: RESOLVED_FALLBACK_SCAN_MS
 	};
 
 	const targetLabelUpper = CONFIG.targetLabel.toUpperCase();

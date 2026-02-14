@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Turn Start Sweep
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.0
+// @version      2.1
 // @description  Zeigt beim Start eines neuen Zuges einen kurzen Sweep beim aktiven Spieler.
 // @xconfig-description  Erzeugt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen ueber Zeile oder Karte.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-start-sweep
 // @xconfig-background     assets/animation-turn-start-sweep-xConfig.gif
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -19,6 +20,52 @@
 
 (function () {
 	"use strict";
+
+	// xConfig: {"type":"select","label":"Sweep-Geschwindigkeit","description":"Legt fest, wie schnell der Lichtstreifen abläuft.","options":[{"value":300,"label":"Schnell"},{"value":420,"label":"Standard"},{"value":620,"label":"Langsam"}]}
+	const xConfig_SWEEP_GESCHWINDIGKEIT_MS = 420;
+	// xConfig: {"type":"select","label":"Sweep-Stil","description":"Bestimmt Stärke und Sichtbarkeit des Lichtstreifens.","options":[{"value":"subtle","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"strong","label":"Stark"}]}
+	const xConfig_SWEEP_STIL = "standard";
+
+	function resolveNumberChoice(value, fallbackValue, allowedValues) {
+		const numericValue = Number(value);
+		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+			? numericValue
+			: fallbackValue;
+	}
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const SWEEP_STYLE_PRESETS = {
+		subtle: {
+			sweepWidth: "36%",
+			sweepColor: "rgba(255, 255, 255, 0.24)"
+		},
+		standard: {
+			sweepWidth: "45%",
+			sweepColor: "rgba(255, 255, 255, 0.35)"
+		},
+		strong: {
+			sweepWidth: "58%",
+			sweepColor: "rgba(255, 255, 255, 0.48)"
+		},
+	};
+
+	const RESOLVED_SWEEP_DURATION_MS = resolveNumberChoice(xConfig_SWEEP_GESCHWINDIGKEIT_MS, 420, [
+		300,
+		420,
+		620,
+	]);
+	const RESOLVED_SWEEP_STYLE = resolveStringChoice(xConfig_SWEEP_STIL, "standard", [
+		"subtle",
+		"standard",
+		"strong",
+	]);
+	const SWEEP_STYLE = SWEEP_STYLE_PRESETS[RESOLVED_SWEEP_STYLE] || SWEEP_STYLE_PRESETS.standard;
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
@@ -35,10 +82,10 @@
 	const CONFIG = {
 		activeSelector: ".ad-ext-player-active",
 		sweepClass: "ad-ext-turn-sweep",
-		sweepDurationMs: 420,
+		sweepDurationMs: RESOLVED_SWEEP_DURATION_MS,
 		sweepDelayMs: 0,
-		sweepWidth: "45%",
-		sweepColor: "rgba(255, 255, 255, 0.35)"
+		sweepWidth: SWEEP_STYLE.sweepWidth,
+		sweepColor: SWEEP_STYLE.sweepColor
 	};
 
 	const STYLE_ID = "autodarts-turn-sweep-style";

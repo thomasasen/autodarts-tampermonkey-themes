@@ -430,9 +430,20 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.pollIntervalMs = 0` oder `3000`
+- `xConfig_TRIPLE_HERVORHEBEN`: `An` oder `Aus`
+- `xConfig_DOUBLE_HERVORHEBEN`: `An` oder `Aus`
+- `xConfig_BULL_HERVORHEBEN`: `An` oder `Aus`
+- `xConfig_AKTUALISIERUNGSMODUS`: `Nur Live (Observer)` oder `Kompatibel (zusätzliches Polling)`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_TRIPLE_HERVORHEBEN`: Steuert Triple-Highlights (T1–T20).
+- `xConfig_DOUBLE_HERVORHEBEN`: Steuert Double-Highlights (D1–D20).
+- `xConfig_BULL_HERVORHEBEN`: Schaltet Bull-Highlight separat.
+- `xConfig_AKTUALISIERUNGSMODUS`: `Nur Live` für minimale Last, `Kompatibel` für robuste Erkennung.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                      | Standard                           | Wirkung                                                                                                                                                                                   |
 | :---------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -469,13 +480,18 @@ Keine Screenshots vorhanden.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.soundUrl = "https://example.com/bull.mp3"`
-- `CONFIG.volume = 0.9` oder `0.5`
-- `CONFIG.targetPoints = 25`
-- `CONFIG.targetLabel = "BULL"`
-- `CONFIG.cooldownMs = 700` oder `1000`
+- `xConfig_LAUTSTAERKE`: `Leise`, `Mittel`, `Laut`, `Sehr laut`
+- `xConfig_WIEDERHOLSPERRE_MS`: `Kurz`, `Standard`, `Lang`
+- `xConfig_FALLBACK_SCAN_MS`: `Aus` oder `Ein (robuster)`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_LAUTSTAERKE`: Wählt die Sound-Lautstärke für den Single-Bull-Treffer.
+- `xConfig_WIEDERHOLSPERRE_MS`: Verhindert doppelte Auslösung in sehr kurzer Folge.
+- `xConfig_FALLBACK_SCAN_MS`: Schaltet den zusätzlichen Fallback-Scan für robuste Erkennung ein/aus.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                     | Standard                                                                                                | Wirkung                                                                     |
 | :--------------------------- | :------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------- |
@@ -513,10 +529,16 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `EFFECT = "pulse"` oder `"glow"` oder `"scale"` oder `"blink"`
-- `PULSE_COLOR = "159, 219, 88"`
+- `xConfig_EFFEKT`: `Pulse`, `Glow`, `Scale`, `Blink`
+- `xConfig_FARBTHEMA`: `Grün`, `Cyan`, `Amber`, `Rot`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_EFFEKT`: Legt die Art der Score-Animation fest.
+- `xConfig_FARBTHEMA`: Wechselt den Farbton von Glow/Pulse.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                | Standard                                      | Wirkung                                                                                                  |
 | :---------------------- | :-------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
@@ -555,9 +577,14 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.animationMs = 416` oder `600`
+- `xConfig_ANIMATIONSDAUER_MS`: `Schnell`, `Standard`, `Langsam`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_ANIMATIONSDAUER_MS`: Steuert, wie schnell die Turn-Punkte hoch/runter zählen.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable               | Standard               | Wirkung                                                                                 |
 | :--------------------- | :--------------------- | :-------------------------------------------------------------------------------------- |
@@ -590,9 +617,14 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `ANIMATION_MS = 320` oder `500`
+- `xConfig_ANIMATIONSDAUER_MS`: `Schnell`, `Standard`, `Langsam`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_ANIMATIONSDAUER_MS`: Legt die Dauer des Auf/Ab-Pfeils fest.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable        | Standard                        | Wirkung                                                                                       |
 | :-------------- | :------------------------------ | :-------------------------------------------------------------------------------------------- |
@@ -630,12 +662,16 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.sweepDurationMs = 420` oder `700`
-- `CONFIG.sweepDelayMs = 0` oder `150`
-- `CONFIG.sweepWidth = "45%"`
-- `CONFIG.sweepColor = "rgba(255, 255, 255, 0.35)"`
+- `xConfig_SWEEP_GESCHWINDIGKEIT_MS`: `Schnell`, `Standard`, `Langsam`
+- `xConfig_SWEEP_STIL`: `Dezent`, `Standard`, `Stark`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_SWEEP_GESCHWINDIGKEIT_MS`: Passt die Sweep-Dauer an.
+- `xConfig_SWEEP_STIL`: Wählt Breite/Intensität des Lichtstreifens.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                 | Standard                     | Wirkung                                                                                  |
 | :----------------------- | :--------------------------- | :--------------------------------------------------------------------------------------- |
@@ -673,12 +709,16 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.imageMaxWidthRem = 30` oder `36`
-- `CONFIG.imageMaxWidthVw = 90` oder `95`
-- `CONFIG.pulseDurationMs = 1400` oder `1000`
-- `CONFIG.pulseScale = 1.04` oder `1.08`
+- `xConfig_BILDGROESSE`: `Kompakt`, `Standard`, `Groß`
+- `xConfig_PULSE_ANIMATION`: `An` oder `Aus`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_BILDGROESSE`: Skaliert das TakeOut-Bild (kompakt/standard/groß).
+- `xConfig_PULSE_ANIMATION`: Aktiviert oder deaktiviert den Puls-Effekt.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                   | Standard                                                                                             | Wirkung                                                                       |
 | :------------------------- | :--------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
@@ -718,14 +758,16 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.effect = "confetti"` oder `"firework"` oder `"aurora"` oder `"pulse"`
-- `CONFIG.dynamicFps = true` oder `false`
-- `CONFIG.rocketIntervalMs = 360` oder `600`
-- `CONFIG.maxRockets = 7` oder `4`
-- `CONFIG.maxParticles = 480` oder `200`
-- `CONFIG.confettiCount = 150` oder `80`
+- `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`
+- `xConfig_PERFORMANCE`: `Schonend`, `Ausgewogen`, `Intensiv`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_EFFEKT`: Wechselt den Gewinner-Effekt direkt.
+- `xConfig_PERFORMANCE`: Regelt Dichte/Leistung (`Schonend`, `Ausgewogen`, `Intensiv`).
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                     | Standard                                          | Wirkung                                                                                                        |
 | :--------------------------- | :------------------------------------------------ | :------------------------------------------------------------------------------------------------------------- |
@@ -765,7 +807,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 ![Winner Fireworks Firework](assets/animation-winner-fireworks-firework-readme.gif)
 
 Varianten:
-Variante über `CONFIG.effect`: `firework`, `confetti`, `aurora`, `pulse`.
+Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 
 | Aurora                                                           | Confetti                                                             | Firework                                                             | Pulse                                                          |
 | :--------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------- |
@@ -792,11 +834,18 @@ Variante über `CONFIG.effect`: `firework`, `confetti`, `aurora`, `pulse`.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `MARKER_RADIUS = 6` oder `10`
-- `MARKER_FILL = "rgb(49, 130, 206)"` oder `"red"`
-- `EFFECT = "glow"` oder `"pulse"` oder `"none"`
+- `xConfig_MARKER_GROESSE`: `Klein`, `Standard`, `Groß`
+- `xConfig_MARKER_FARBE`: `Blau`, `Grün`, `Rot`, `Gelb`, `Weiß`
+- `xConfig_EFFEKT`: `Glow`, `Pulse`, `Kein Effekt`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_MARKER_GROESSE`: Passt die Markergröße sichtbar an.
+- `xConfig_MARKER_FARBE`: Wählt die Marker-Farbe.
+- `xConfig_EFFEKT`: Aktiviert `Glow`, `Pulse` oder deaktiviert den Effekt.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable          | Standard                                                    | Wirkung                                                            |
 | :---------------- | :---------------------------------------------------------- | :----------------------------------------------------------------- |
@@ -915,15 +964,20 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.requireX01 = true` oder `false`
-- `CONFIG.highlightTargets = "first"` oder `"all"`
-- `CONFIG.effect = "pulse"` oder `"blink"` oder `"glow"`
-- `CONFIG.color = "rgba(168, 85, 247, 0.85)"`
-- `CONFIG.strokeColor = "rgba(168, 85, 247, 0.95)"`
-- `CONFIG.animationMs = 1000` oder `600`
-- `CONFIG.singleRing = "inner"` oder `"outer"` oder `"both"`
+- `xConfig_EFFEKT`: `Pulse`, `Blink`, `Glow`
+- `xConfig_ZIELUMFANG`: `Erstes Ziel` oder `Alle Ziele`
+- `xConfig_SINGLE_RING`: `Beide Ringe`, `Nur innen`, `Nur außen`
+- `xConfig_FARBTHEMA`: `Violett`, `Cyan`, `Amber`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_EFFEKT`: Wechselt den Ziel-Effekt direkt.
+- `xConfig_ZIELUMFANG`: Markiert nur das erste oder alle vorgeschlagenen Ziele.
+- `xConfig_SINGLE_RING`: Steuert die Single-Ring-Auswahl.
+- `xConfig_FARBTHEMA`: Wechselt Füll- und Konturfarben als Paket.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                    | Standard                   | Wirkung                                                                                                                                                                       |
 | :-------------------------- | :------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -944,9 +998,9 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 
 Varianten über:
 
-- `CONFIG.effect`: `pulse`, `blink`, `glow`
-- `CONFIG.highlightTargets`: `first`, `all`
-- `CONFIG.singleRing`: `inner`, `outer`, `both`
+- `xConfig_EFFEKT`: `Pulse`, `Blink`, `Glow`
+- `xConfig_ZIELUMFANG`: `Erstes Ziel`, `Alle Ziele`
+- `xConfig_SINGLE_RING`: `Beide Ringe`, `Nur innen`, `Nur außen`
 
 ![Animate Checkout Board Targets](assets/animation-checkout-board-targets-readme.png)
 
@@ -971,16 +1025,18 @@ Varianten über:
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.requireX01 = true` oder `false`
-- `CONFIG.formatStyle = "ribbon"` oder `"badge"` oder `"stripe"` oder `"ticket"` oder `"outline"`
-- `CONFIG.labelText = "CHECKOUT"` oder `""`
-- `CONFIG.accentColor = "#f59e0b"`
-- `CONFIG.labelBackground = "#fcd34d"`
-- `CONFIG.labelTextColor = "#1f1300"`
-- `CONFIG.borderRadiusPx = 14` oder `8`
-- `CONFIG.stripeOpacity = 0.35` oder `0.2`
+- `xConfig_STIL`: `Badge`, `Ribbon`, `Stripe`, `Ticket`, `Outline`
+- `xConfig_LABELTEXT`: `CHECKOUT`, `FINISH`, `Kein Label`
+- `xConfig_FARBTHEMA`: `Amber`, `Cyan`, `Rose`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_STIL`: Wählt die visuelle Darstellungsart der Suggestion.
+- `xConfig_LABELTEXT`: Legt den Labeltext fest oder blendet ihn aus.
+- `xConfig_FARBTHEMA`: Wechselt Akzent-, Glow- und Labelfarben.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                    | Standard                   | Wirkung                                                 |
 | :-------------------------- | :------------------------- | :------------------------------------------------------ |
@@ -1000,7 +1056,7 @@ Varianten über:
 ##### 🖼️ Beispiele/Screenshots
 
 Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen der anderen Stile.
-Variante über `CONFIG.formatStyle`: `ribbon`, `badge`, `stripe`, `ticket`, `outline`.
+Variante über `xConfig_STIL`: `Ribbon`, `Badge`, `Stripe`, `Ticket`, `Outline`.
 
 Vollbild (Ribbon):
 ![Checkout Suggestion Format Ribbon](assets/animation-style-checkout-suggestions-format-ribbon-readme.png)
@@ -1033,9 +1089,18 @@ Varianten:
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `CONFIG.showDeadTargets = true` oder `false`
+- `xConfig_DEAD_ZIELE_ANZEIGEN`: `An` oder `Aus`
+- `xConfig_FARBTHEMA`: `Standard` oder `High Contrast`
+- `xConfig_INTENSITAET`: `Dezent`, `Standard`, `Stark`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_DEAD_ZIELE_ANZEIGEN`: Zeigt bzw. versteckt bereits „tote“ Ziele.
+- `xConfig_FARBTHEMA`: Wählt das Farbschema für `Score` und `Danger`.
+- `xConfig_INTENSITAET`: Regelt Deckkraft und Kontrast des Overlays.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                      | Standard                  | Wirkung                                                                                                                           |
 | :---------------------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
