@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Autodarts Theme Bull-off.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1
+// @version      1.2
 // @description  Layout- und Farb-Theme fuer Bull-off mit Fokus auf aktive Scores und Board-Kontrast.
 // @xconfig-description  Aktiviert ein Bull-off Theme mit bull-fokussierter Farbgebung und verbessertem Score-Kontrast.
 // @xconfig-variant      bull-off
 // @xconfig-readme-anchor  template-autodarts-theme-bull-off
+// @xconfig-background     assets/template-theme-bull-off-xConfig.png
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*

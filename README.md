@@ -441,7 +441,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 🖼️ Beispiele/Screenshots
 
-Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
+![Theme Bull-off](assets/template-theme-bull-off-readme.png)
 
 ##### ℹ️ Weitere Hinweise
 

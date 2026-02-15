@@ -43,6 +43,8 @@
   const SINGLE_BULL_AUDIO_TOKEN = "/assets/singlebull.mp3";
   const THEME_PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
   const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket", "theme-bull-off"];
+  const THEME_DISPLAY_ORDER = ["theme-bull-off", "theme-x01", "theme-cricket", "theme-shanghai", "theme-bermuda"];
+  const THEME_DISPLAY_ORDER_INDEX = new Map(THEME_DISPLAY_ORDER.map((featureId, index) => [featureId, index]));
   const LOADER_STATUS = Object.freeze({
     IDLE: "idle",
     LOADED: "loaded",
@@ -3354,7 +3356,18 @@
       return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>🔄 Skripte & Loader-Cache laden</b> klicken.</div>";
     }
 
-    return `<div class="xcfg-grid">${features.map(renderFeatureCardHtml).join("")}</div>`;
+    const orderedFeatures = tabId === "themes"
+      ? [...features].sort((left, right) => {
+        const leftRank = THEME_DISPLAY_ORDER_INDEX.has(left.id) ? THEME_DISPLAY_ORDER_INDEX.get(left.id) : Number.MAX_SAFE_INTEGER;
+        const rightRank = THEME_DISPLAY_ORDER_INDEX.has(right.id) ? THEME_DISPLAY_ORDER_INDEX.get(right.id) : Number.MAX_SAFE_INTEGER;
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+        return left.title.localeCompare(right.title);
+      })
+      : features;
+
+    return `<div class="xcfg-grid">${orderedFeatures.map(renderFeatureCardHtml).join("")}</div>`;
   }
 
   function handlePanelAction(action, featureId, payload = {}) {
