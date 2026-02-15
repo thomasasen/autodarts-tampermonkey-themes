@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Bull-off.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0
+// @version      1.1
 // @description  Layout- und Farb-Theme fuer Bull-off mit Fokus auf aktive Scores und Board-Kontrast.
 // @xconfig-description  Aktiviert ein Bull-off Theme mit bull-fokussierter Farbgebung und verbessertem Score-Kontrast.
 // @xconfig-variant      bull-off
@@ -31,7 +31,7 @@
 	const VARIANT_NAME = "bull-off";
 
 	// Preview placement: "standard" or "under-throws".
-	const PREVIEW_PLACEMENT = "under-throws";
+	const PREVIEW_PLACEMENT = "standard";
 	const PREVIEW_HEIGHT_PX = 128;
 	const PREVIEW_GAP_PX = 8;
 	const PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
@@ -139,6 +139,65 @@ span.css-3fr5p8{
 
 .css-7bjx6y .chakra-button:hover{
   background-color: rgba(40, 48, 60, 0.92);
+}
+
+/* Bull-off layout tuning:
+   - turn box as wide as player column
+   - board spans two rows for maximum size */
+.css-tkevr6 > .chakra-stack{
+  grid-template-areas:
+    "header header"
+    "footer board"
+    "players board" !important;
+  grid-template-columns: 0.94fr 1.06fr !important;
+  grid-template-rows: max-content 96px 1fr !important;
+}
+
+#ad-ext-turn{
+  grid-column-start: 1 !important;
+  grid-column-end: 2 !important;
+  grid-row-start: 2 !important;
+  grid-row-end: 3 !important;
+  grid-area: footer !important;
+  width: 100% !important;
+  padding-right: 0.5rem !important;
+}
+
+#ad-ext-turn > .score,
+#ad-ext-turn > .ad-ext-turn-throw,
+#ad-ext-turn > .suggestion{
+  width: 100% !important;
+  min-height: 84px;
+}
+
+#ad-ext-turn > .score > img{
+  width: 100% !important;
+  max-width: none !important;
+  height: 68px;
+  object-fit: contain;
+}
+
+.css-1kejrvi,
+.css-14xtjvc{
+  grid-column-start: 2 !important;
+  grid-column-end: 3 !important;
+  grid-row-start: 2 !important;
+  grid-row-end: 4 !important;
+  grid-area: board !important;
+  height: 100% !important;
+  align-self: stretch !important;
+}
+
+.css-14xtjvc .css-tqsk66,
+.css-1kejrvi .css-tqsk66{
+  padding-bottom: 0 !important;
+  height: calc(100% - 52px) !important;
+}
+
+.css-14xtjvc svg[viewBox="0 0 1000 1000"],
+.css-1kejrvi svg[viewBox="0 0 1000 1000"]{
+  width: min(100%, 92vh) !important;
+  height: min(100%, 92vh) !important;
 }
 
 @media (max-width: 1200px){
