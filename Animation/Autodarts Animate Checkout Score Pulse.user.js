@@ -2,8 +2,8 @@
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Hebt den Restscore hervor, sobald ein Checkout in X01 möglich ist.
-// @xconfig-description  Markiert den verbleibenden Punktestand visuell, wenn ein Checkout in X01 möglich wird.
+// @description  Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
+// @xconfig-description  Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse-xConfig.gif

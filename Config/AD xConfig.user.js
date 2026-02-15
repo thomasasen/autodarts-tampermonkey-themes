@@ -184,12 +184,25 @@
       return "X01";
     }
     if (variant === "all") {
-      return "Alle";
+      return "Alle Modi";
     }
     if (variant) {
       return variant.charAt(0).toUpperCase() + variant.slice(1);
     }
     return category === "themes" ? "Thema" : "Animation";
+  }
+
+  function formatVariantBadgeLabel(rawVariant) {
+    const variant = String(rawVariant || "").trim();
+    const normalized = variant.toLowerCase();
+
+    if (!variant || normalized === "all" || normalized === "alle" || normalized === "alle modi") {
+      return "Gilt für: alle Modi";
+    }
+    if (normalized === "x01") {
+      return "Gilt für: X01";
+    }
+    return `Gilt für: ${variant}`;
   }
 
   function normalizeReadmeAnchor(value) {
@@ -2101,7 +2114,7 @@
 
       const sourcePath = normalizeSourcePath(target.sourcePath || "").replace(/^\/+/, "");
       if (!sourcePath) {
-        setLoaderStatus(featureId, LOADER_STATUS.MISSING_CACHE, "Kein Skriptpfad fuer dieses Modul bekannt.");
+        setLoaderStatus(featureId, LOADER_STATUS.MISSING_CACHE, "Kein Skriptpfad für dieses Modul bekannt.");
         return;
       }
 
@@ -2121,32 +2134,6 @@
     if (state.panelHost && state.panelOpen) {
       renderPanel();
     }
-  }
-
-  function normalizeVersion(version) {
-    return String(version || "0.0.0")
-      .split(".")
-      .map((segment) => Number.parseInt(segment, 10) || 0);
-  }
-
-  function isVersionNewer(left, right) {
-    const leftParts = normalizeVersion(left);
-    const rightParts = normalizeVersion(right);
-    const maxLength = Math.max(leftParts.length, rightParts.length);
-
-    for (let index = 0; index < maxLength; index += 1) {
-      const leftValue = leftParts[index] || 0;
-      const rightValue = rightParts[index] || 0;
-
-      if (leftValue > rightValue) {
-        return true;
-      }
-      if (leftValue < rightValue) {
-        return false;
-      }
-    }
-
-    return false;
   }
 
   function getFeatureById(featureId) {
@@ -2237,18 +2224,10 @@
   }
 
   function getFeatureFlags(feature, featureState) {
-    const hasVersionUpdate = isVersionNewer(feature.latestVersion, feature.version)
-      && featureState.ackVersion !== feature.latestVersion;
-    const hasShaUpdate = Boolean(feature.remoteSha)
-      && Boolean(featureState.lastSeenSha)
-      && feature.remoteSha !== featureState.lastSeenSha;
-
-    const hasUpdate = hasVersionUpdate || hasShaUpdate;
-
     const hasSettingsUpdate = Number(feature.latestSettingsVersion || 0) > Number(feature.settingsVersion || 0)
       && Number(featureState.ackSettingsVersion || 0) < Number(feature.latestSettingsVersion || 0);
 
-    return { hasUpdate, hasSettingsUpdate };
+    return { hasSettingsUpdate };
   }
 
   function createDefaultConfig() {
@@ -2574,16 +2553,6 @@
 #${PANEL_HOST_ID} .xcfg-conn--ok { background: rgba(58,180,122,0.17); border-color: rgba(58,180,122,0.52); }
 #${PANEL_HOST_ID} .xcfg-conn--warn { background: rgba(255,198,92,0.14); border-color: rgba(255,198,92,0.45); }
 #${PANEL_HOST_ID} .xcfg-conn--error { background: rgba(255,84,84,0.15); border-color: rgba(255,84,84,0.5); }
-#${PANEL_HOST_ID} .xcfg-loader-hint {
-  margin-top: 0.85rem;
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.82rem;
-  border: 1px solid rgba(148,214,255,0.42);
-  background: rgba(148,214,255,0.12);
-  color: rgba(255,255,255,0.86);
-}
-
 #${PANEL_HOST_ID} .xcfg-tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
 #${PANEL_HOST_ID} .xcfg-tab {
   border-bottom: 2px solid transparent;
@@ -2629,11 +2598,11 @@
 #${PANEL_HOST_ID} .xcfg-card-title { margin: 0; font-size: 0.98rem; }
 #${PANEL_HOST_ID} .xcfg-card-desc { margin: 0.4rem 0 0; max-width: 65ch; font-size: 0.84rem; line-height: 1.35; color: rgba(255,255,255,0.76); }
 #${PANEL_HOST_ID} .xcfg-card-footer { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+#${PANEL_HOST_ID} .xcfg-source-line { margin-top: 0.45rem; }
 #${PANEL_HOST_ID} .xcfg-source { font-size: 0.72rem; color: rgba(255,255,255,0.62); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 #${PANEL_HOST_ID} .xcfg-card-note { margin: 0.65rem 0 0; font-size: 0.76rem; color: rgba(255,255,255,0.58); }
 #${PANEL_HOST_ID} .xcfg-badge { border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.72rem; line-height: 1; border: 1px solid transparent; }
 #${PANEL_HOST_ID} .xcfg-badge--version { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); }
-#${PANEL_HOST_ID} .xcfg-badge--update { border-color: rgba(74,178,255,0.65); background: rgba(74,178,255,0.25); }
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
@@ -2653,7 +2622,16 @@
   cursor: pointer;
 }
 #${PANEL_HOST_ID} .xcfg-mini-btn:hover { background: rgba(255,255,255,0.16); }
-#${PANEL_HOST_ID} .xcfg-mini-btn--config { border-color: rgba(148,214,255,0.6); background: rgba(148,214,255,0.2); }
+#${PANEL_HOST_ID} .xcfg-mini-btn--config {
+  border-color: rgba(126,216,255,0.92);
+  background: rgba(58,148,255,0.34);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(126,216,255,0.24), 0 2px 10px rgba(58,148,255,0.26);
+}
+#${PANEL_HOST_ID} .xcfg-mini-btn--config:hover {
+  background: rgba(72,170,255,0.48);
+}
 #${PANEL_HOST_ID} .xcfg-meta-line { margin: 0.5rem 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.64); }
 #${PANEL_HOST_ID} .xcfg-onoff {
   position: relative;
@@ -2664,7 +2642,8 @@
   max-width: 5.2rem;
   overflow: hidden;
   border-radius: 8px;
-  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(10,14,32,0.45);
 }
 #${PANEL_HOST_ID} .xcfg-onoff-btn {
   appearance: none;
@@ -2684,7 +2663,10 @@
   flex: 1 1 50%;
 }
 #${PANEL_HOST_ID} .xcfg-onoff-btn:hover { background: rgba(255,255,255,0.16); }
-#${PANEL_HOST_ID} .xcfg-onoff-btn.is-active { background: rgba(255,255,255,0.22); }
+#${PANEL_HOST_ID} .xcfg-onoff-btn--on { color: rgba(198,255,220,0.94); }
+#${PANEL_HOST_ID} .xcfg-onoff-btn--off { color: rgba(255,216,216,0.94); }
+#${PANEL_HOST_ID} .xcfg-onoff-btn--on.is-active { background: rgba(44,170,90,0.44); color: #fff; }
+#${PANEL_HOST_ID} .xcfg-onoff-btn--off.is-active { background: rgba(199,63,63,0.42); color: #fff; }
 
 #${PANEL_HOST_ID} .xcfg-empty { border-radius: 10px; border: 1px dashed rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); padding: 1rem; color: rgba(255,255,255,0.75); font-size: 0.88rem; }
 
@@ -3074,7 +3056,7 @@
     }
 
     if (state.gitLoad.lastError) {
-      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken, sobald die Verbindung wieder verfuegbar ist.</div>`;
+      return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken, sobald die Verbindung wieder verfügbar ist.</div>`;
     }
 
     const count = Number(state.gitLoad.lastSuccessCount || 0);
@@ -3085,29 +3067,6 @@
     }
 
     return "<div class=\"xcfg-conn xcfg-conn--warn\">Noch keine Skriptinformationen geladen. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken.</div>";
-  }
-
-  function getEnabledFeatureCount() {
-    return getFeatureRegistry().reduce((count, feature) => {
-      const featureState = state.config.features[feature.id];
-      return count + (featureState?.enabled ? 1 : 0);
-    }, 0);
-  }
-
-  function getUpdateCounters() {
-    return getFeatureRegistry().reduce((acc, feature) => {
-      const featureState = ensureFeatureState(feature.id);
-      const flags = getFeatureFlags(feature, featureState);
-
-      if (flags.hasUpdate) {
-        acc.updates += 1;
-      }
-      if (flags.hasSettingsUpdate) {
-        acc.settings += 1;
-      }
-
-      return acc;
-    }, { updates: 0, settings: 0 });
   }
 
   function getResolvedFeatureSettingValue(featureId, settingKey) {
@@ -3195,7 +3154,7 @@
 
     const settingsSchema = getFeatureSettingsSchema(feature);
     if (!settingsSchema.length) {
-      setNotice("info", `${feature.title}: keine konfigurierbaren Einstellungen verfuegbar.`);
+      setNotice("info", `${feature.title}: keine konfigurierbaren Einstellungen verfügbar.`);
       return;
     }
 
@@ -3303,9 +3262,9 @@
           <header class="xcfg-modal-header">
             <div>
               <h3 id="${titleId}" class="xcfg-modal-title">${escapeHtml(feature.title)} - Einstellungen</h3>
-              <p class="xcfg-modal-subtitle">Aenderungen werden sofort gespeichert.</p>
+              <p class="xcfg-modal-subtitle">Änderungen werden sofort gespeichert.</p>
             </div>
-            <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close-config" data-feature-id="${escapeHtml(feature.id)}">✖ Schliessen</button>
+            <button type="button" class="xcfg-btn xcfg-btn--close" data-action="close-config" data-feature-id="${escapeHtml(feature.id)}">✖ Schließen</button>
           </header>
           <div class="xcfg-modal-body">${fieldsHtml}</div>
         </section>
@@ -3323,15 +3282,8 @@
 
     const badges = [
       `<span class="xcfg-badge xcfg-badge--version">v${escapeHtml(feature.version)}</span>`,
-      `<span class="xcfg-badge xcfg-badge--variant">${escapeHtml(feature.variant || "Alle")}</span>`,
+      `<span class="xcfg-badge xcfg-badge--variant">${escapeHtml(formatVariantBadgeLabel(feature.variant || ""))}</span>`,
     ];
-
-    if (flags.hasUpdate) {
-      const updateLabel = feature.remoteSha && featureState.lastSeenSha && feature.remoteSha !== featureState.lastSeenSha
-        ? "Update verfuegbar"
-        : `Update: v${feature.latestVersion}`;
-      badges.push(`<span class="xcfg-badge xcfg-badge--update">${escapeHtml(updateLabel)}</span>`);
-    }
 
     if (flags.hasSettingsUpdate) {
       badges.push(`<span class="xcfg-badge xcfg-badge--settings">Neue Einstellungen</span>`);
@@ -3366,20 +3318,20 @@
               <p class="xcfg-card-desc">${escapeHtml(feature.description || "")}</p>
             </div>
             <div class="xcfg-onoff" title="Aktiviert oder deaktiviert dieses Skript.">
-              <button type="button" class="xcfg-onoff-btn ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">An</button>
-              <button type="button" class="xcfg-onoff-btn ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Aus</button>
+              <button type="button" class="xcfg-onoff-btn xcfg-onoff-btn--on ${onClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="true">An</button>
+              <button type="button" class="xcfg-onoff-btn xcfg-onoff-btn--off ${offClass}" data-action="set-feature" data-feature-id="${escapeHtml(feature.id)}" data-feature-enabled="false">Aus</button>
             </div>
           </header>
           <div class="xcfg-card-footer">
             ${badges.join("")}
-            <span class="xcfg-source">${escapeHtml(feature.source)}</span>
           </div>
+          <div class="xcfg-source-line"><span class="xcfg-source">${escapeHtml(feature.source)}</span></div>
           <div class="xcfg-actions-row">
             ${configButton}
             <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">📦 Skript</button>
             <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">📖 Anleitung</button>
           </div>
-          <p class="xcfg-card-note">${hasConfigurableFields ? "Einstellungen werden zentral gespeichert und vom Skript uebernommen." : "Dieses Skript stellt aktuell keine xConfig-Felder bereit."}</p>
+          <p class="xcfg-card-note">${hasConfigurableFields ? "Einstellungen werden zentral gespeichert und vom Skript übernommen." : "Dieses Skript stellt aktuell keine xConfig-Felder bereit."}</p>
         </div>
         ${backgroundHtml}
       </article>
@@ -3395,7 +3347,7 @@
       }
 
       if (state.gitLoad.lastError) {
-        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung pruefen und <b>🔄 Skripte & Loader-Cache laden</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
+        return `<div class="xcfg-empty">GitHub-Verbindung fehlgeschlagen. Bitte Verbindung prüfen und <b>🔄 Skripte & Loader-Cache laden</b> erneut klicken. Fehler: ${escapeHtml(state.gitLoad.lastError)}</div>`;
       }
 
       return "<div class=\"xcfg-empty\">Keine Skriptinformationen geladen. Bitte <b>🔄 Skripte & Loader-Cache laden</b> klicken.</div>";
@@ -3433,7 +3385,7 @@
 
     if (action === "sync-git") {
       if (state.gitLoad.loading) {
-        setNotice("info", "Skriptabgleich laeuft bereits.");
+        setNotice("info", "Skriptabgleich läuft bereits.");
         return;
       }
 
@@ -3473,14 +3425,9 @@
     featureState.enabled = enabled;
     executeEnabledFeaturesFromCache("config-change");
     queueRuntimeCleanup();
-    const feature = getFeatureById(featureId);
     renderPanel();
 
-    saveConfig().then(() => {
-      const label = feature?.title || featureId;
-      const stateLabel = checked ? "aktiviert" : "deaktiviert";
-      setNotice("success", `${label}: ${stateLabel} und persistent gespeichert.`);
-    }).catch((error) => {
+    saveConfig().catch((error) => {
       console.error("AD xConfig: failed to save feature state", error);
       setNotice("error", "Status konnte nicht gespeichert werden.");
     });
@@ -3496,14 +3443,6 @@
     }
 
     const activeTab = getActiveTab();
-    const enabledCount = getEnabledFeatureCount();
-    const moduleCount = getFeatureRegistry().length;
-    const updateCounters = getUpdateCounters();
-    const lastSyncText = formatDateTime(state.config?.git?.lastSyncAt || null);
-    const gitStatusText = state.config?.git?.connected ? "verbunden" : "offline";
-    const gitSourceText = state.gitLoad.source || "not-loaded";
-    const gitLoadingText = state.gitLoad.loading ? "laedt..." : "bereit";
-
     const tabsHtml = TABS.map((tab) => {
       const isActive = tab.id === activeTab ? "is-active" : "";
       return `<button type="button" class="xcfg-tab ${isActive}" data-tab="${escapeHtml(tab.id)}">${escapeHtml(tab.label)}</button>`;
@@ -3518,10 +3457,10 @@
           <header class="xcfg-header">
             <div>
               <div class="xcfg-header-main">
-                <button type="button" class="xcfg-btn xcfg-back-btn" data-action="back" aria-label="Zurueck">←</button>
+                <button type="button" class="xcfg-btn xcfg-back-btn" data-action="back" aria-label="Zurück">←</button>
                 <h1 class="xcfg-title">AD xConfig</h1>
               </div>
-              <p class="xcfg-subtitle">Modulverwaltung fuer Themen und Animationen. Git: ${escapeHtml(gitStatusText)} (${escapeHtml(gitSourceText)}, ${escapeHtml(gitLoadingText)}). Aktiv: ${enabledCount}/${moduleCount}. Updates: ${updateCounters.updates}. Neue Einstellungen: ${updateCounters.settings}. Letzter Git-Abgleich: ${escapeHtml(lastSyncText)}</p>
+              <p class="xcfg-subtitle">Modulverwaltung für Themen und Animationen.</p>
             </div>
             <div class="xcfg-actions">
               <button type="button" class="xcfg-btn" data-action="sync-git">🔄 Skripte & Loader-Cache laden</button>
@@ -3530,7 +3469,6 @@
           </header>
           ${renderGitConnectionHtml()}
           ${renderNoticeHtml()}
-          <div class="xcfg-loader-hint">xConfig laedt Module selbst. Manuell installierte Einzel-Skripte bitte deaktivieren oder deinstallieren, um Doppel-Ausfuehrung zu vermeiden.</div>
           <nav class="xcfg-tabs">${tabsHtml}</nav>
           <div class="xcfg-content">${contentHtml}</div>
           ${modalHtml}

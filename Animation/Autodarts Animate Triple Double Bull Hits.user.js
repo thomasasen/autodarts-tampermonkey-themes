@@ -5,7 +5,7 @@
 // @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverläufen hervor.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
-// @xconfig-background     assets/animation-triple-double-bull-hits-xConfig.png
+// @xconfig-background     assets/animation-animate-triple-double-bull-hits.gif
 // @xconfig-settings-version 2
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*

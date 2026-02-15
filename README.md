@@ -60,7 +60,7 @@ Damit verwaltest du Themes und Animationen zentral über eine Oberfläche in Aut
 - **Weniger Pflegeaufwand:** Du musst nicht mehr jedes einzelne Theme-/Animations-Skript separat aktualisieren.
 - **Live-Ladung aus GitHub:** Die Module werden direkt aus dem Repository geladen (über **„🔄 Skripte & Loader-Cache laden“**).
 - **Zentrale Updates:** In der Regel muss maximal `AD xConfig.user.js` aktuell gehalten werden.
-- **Transparenz:** Laufzeitstatus, Versionen, Varianten, Updates und konfigurierbare Felder sind direkt sichtbar.
+- **Transparenz:** Laufzeitstatus, Versionen, Varianten und konfigurierbare Felder sind direkt sichtbar.
 
 ### Key-Features (besonders wichtig)
 
@@ -90,8 +90,8 @@ Damit verwaltest du Themes und Animationen zentral über eine Oberfläche in Aut
 Je Modulkarte werden Tags/Badges im Originaldesign angezeigt. Typische Bezeichnungen sind:
 
 - `v2.2`
-- `X01` / `Alle`
-- `Update verfügbar`
+- `Gilt für: X01`
+- `Gilt für: alle Modi`
 - `Neue Einstellungen`
 - `2 Einstellungen`
 - `Laufzeit: geladen`
@@ -457,7 +457,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 🖼️ Beispiele/Screenshots
 
-Keine Screenshots vorhanden.
+![Animate Triple Double Bull Hits](assets/animation-animate-triple-double-bull-hits.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -506,6 +506,7 @@ Keine Screenshots vorhanden.
 
 ##### 🖼️ Beispiele/Screenshots
 
+Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
 Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### ℹ️ Weitere Hinweise
@@ -523,7 +524,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 📝 Beschreibung
 
-- Zweck: hebt den aktiven Restscore hervor, wenn ein Checkout möglich ist (X01).
+- Zweck: Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
 - Trigger/Erkennung: bevorzugt `.suggestion`-Text, fällt auf Score-Logik zurück; Variante via `#ad-ext-game-variant`.
 - Änderungen: setzt Klassen am Score-Element und animiert per CSS, damit Checkout-Situationen sofort ins Auge fallen.
 
@@ -593,7 +594,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Turn Points Count](assets/animation-turn-points-count-readme.gif)
 ![Score Delta Slide detail](assets/animation-turn-points-count-detail-readme.gif)
 
 ##### ℹ️ Weitere Hinweise
@@ -702,7 +702,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 📝 Beschreibung
 
-- Zweck: ersetzt die "Removing Darts" / "Darts entfernen"-Notification über dem Board durch `TakeOut.png` und lässt sie leicht pulsieren.
+- Zweck: ersetzt die TakeOut-Notifikation aus den "Tools für Autodarts" über dem Board durch eine Hand-Grafik, damit sie schöner und besser erkennbar ist.
 - Trigger/Erkennung: findet `.adt-remove` (mit Text-Fallbacks und optionalem Shadow-DOM-Scan).
 - Änderungen: entfernt den gelben Hintergrund der Notification und rendert das Bild in größerer Darstellung.
 - Hinweis: funktioniert nur, wenn in den Autodarts Tools die Option "Takeout Notification" aktiviert ist.
@@ -873,10 +873,11 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 
 ##### 📝 Beschreibung
 
-- Zweck: ersetzt die Trefferpunkte am Board durch ein Dart-PNG, dessen Spitze genau auf dem Treffer sitzt.
+- Zweck: stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar.
 - Animation: optionaler Flug mit leichtem Gravity-Bogen und kurzem Einschlag-Wobble.
 - Trigger/Erkennung: SVG-Marker via `CONFIG.markerSelector`.
 - Änderungen: legt ein SVG-Overlay mit `<image>`-Darts an, optional Rotation zur Boardmitte für bessere Ausrichtung.
+- Hinweis: Bilder der auswählbaren Designs findest du auch über den Button `📖 Anleitung` im AD xConfig-Modul.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1002,7 +1003,7 @@ Varianten über:
 - `xConfig_ZIELUMFANG`: `Erstes Ziel`, `Alle Ziele`
 - `xConfig_SINGLE_RING`: `Beide Ringe`, `Nur innen`, `Nur außen`
 
-![Animate Checkout Board Targets](assets/animation-checkout-board-targets-readme.png)
+Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
 
 ##### ℹ️ Weitere Hinweise
 
@@ -1055,11 +1056,11 @@ Varianten über:
 
 ##### 🖼️ Beispiele/Screenshots
 
-Das Vollbild zeigt die Ribbon-Variante, die kleineren Bilder sind Detailstreifen der anderen Stile.
-Variante über `xConfig_STIL`: `Ribbon`, `Badge`, `Stripe`, `Ticket`, `Outline`.
+Das Vollbild zeigt die Stripe-Variante, die kleineren Bilder sind Detailstreifen der anderen Stile.
+Variante über `xConfig_STIL`: `Stripe`, `Ribbon`, `Badge`, `Ticket`, `Outline`.
 
-Vollbild (Ribbon):
-![Checkout Suggestion Format Ribbon](assets/animation-style-checkout-suggestions-format-ribbon-readme.png)
+Vollbild (Stripe):
+![Checkout Suggestion Format Stripe](assets/animation-style-checkout-suggestions-format-stripe-readme.png)
 
 Varianten:
 
