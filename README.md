@@ -519,7 +519,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 📝 Beschreibung
 
-- Zweck: Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
+- Zweck: Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
 - Trigger/Erkennung: bevorzugt `.suggestion`-Text, fällt auf Score-Logik zurück; Variante via `#ad-ext-game-variant`.
 - Änderungen: setzt Klassen am Score-Element und animiert per CSS, damit Checkout-Situationen sofort ins Auge fallen.
 
@@ -550,7 +550,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Animate Checkout Score Pulse](assets/animation-checkout-score-pulse-readme.gif)
+![Animate Checkout Score Pulse](assets/animation-checkout-score-pulse.gif)
 
 ##### ℹ️ Weitere Hinweise
 
@@ -990,7 +990,7 @@ Varianten über:
 - `xConfig_ZIELUMFANG`: `Erstes Ziel`, `Alle Ziele`
 - `xConfig_SINGLE_RING`: `Beide Ringe`, `Nur innen`, `Nur außen`
 
-Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
+![Animate Checkout Board Targets](assets/animation-checkout-board-targets.gif)
 
 ##### ℹ️ Weitere Hinweise
 

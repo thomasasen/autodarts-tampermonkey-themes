@@ -2,11 +2,11 @@
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
-// @xconfig-description  Lässt das von Autodarts vorgeschlagene Feld zum Erreichen des Checkouts und das Checkoutfeld selbst in einer konfigurierbaren Farbe am Board aufblinken.
+// @description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
+// @xconfig-description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
-// @xconfig-background     assets/animation-checkout-score-pulse-xConfig.gif
+// @xconfig-background     assets/animation-checkout-score-pulse.gif
 // @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
