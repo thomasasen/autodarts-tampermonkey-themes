@@ -169,7 +169,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 ### 🧱 Templates
 
-#### Gemeinsamer Helfer (autodarts-theme-shared.js, kein Userscript)
+### Gemeinsamer Helfer (autodarts-theme-shared.js, kein Userscript)
 
 - Gilt für: `X01`, `Shanghai`, `Bermuda`, `Cricket`, `Bull-off`
 - Was das Skript macht: Dieser Shared Helper liefert gemeinsame Layout- und Theme-Funktionen für alle Template-Module. Dadurch verhalten sich Varianten konsistent und Updates lassen sich zentral pflegen.
@@ -178,7 +178,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 - Hinweise & Kombinationen: Du installierst den Helper nicht separat; er wird per `@require` von den Template-Skripten geladen.
 - Technische Details: [Gemeinsamer Helfer (Theme)](docs/TECHNIK-REFERENZ.md#gemeinsamer-helfer-autodarts-theme-sharedjs-kein-userscript)
 
-#### Template: Autodarts Theme X01
+---
+
+### Template: Autodarts Theme X01
 
 - Gilt für: `X01`
 - Was das Skript macht: Das Modul gestaltet die X01-Ansicht neu, damit Scores, Player-Karten und Navigationsbereiche klarer und ruhiger lesbar sind. Es passt dafür Layout, Abstände und visuelle Prioritäten im Spielbild an.
@@ -205,7 +207,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Template: Autodarts Theme X01](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-x01)
 
-#### Template: Autodarts Theme Shanghai
+---
+
+### Template: Autodarts Theme Shanghai
 
 - Gilt für: `Shanghai`
 - Was das Skript macht: Das Modul überträgt das konsistente Theme-Konzept auf Shanghai und verbessert Lesefluss und Struktur ohne Eingriff in Spielmechanik.
@@ -227,7 +231,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Template: Autodarts Theme Shanghai](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-shanghai)
 
-#### Template: Autodarts Theme Bermuda
+---
+
+### Template: Autodarts Theme Bermuda
 
 - Gilt für: `Bermuda`
 - Was das Skript macht: Liefert ein visuelles Bermuda-Theme mit konsistenten Farben, klarerem Kontrast und harmonisierten Abständen.
@@ -247,7 +253,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Template: Autodarts Theme Bermuda](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-bermuda)
 
-#### Template: Autodarts Theme Cricket
+---
+
+### Template: Autodarts Theme Cricket
 
 - Gilt für: `Cricket`
 - Was das Skript macht: Passt Cricket farblich und strukturell an, damit Ziele, Spielerbereiche und Statusinformationen schneller erfassbar sind.
@@ -269,7 +277,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Template: Autodarts Theme Cricket](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-cricket)
 
-#### Template: Autodarts Theme Bull-off
+---
+
+### Template: Autodarts Theme Bull-off
 
 - Gilt für: `Bull-off`
 - Was das Skript macht: Bull-off-spezifisches Theme mit bull-fokussierter Farbgebung und stärkerer Trennung wichtiger UI-Bereiche.
@@ -291,9 +301,11 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Template: Autodarts Theme Bull-off](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-bull-off)
 
+---
+
 ### 🎬 Animationen
 
-#### Gemeinsamer Helfer (autodarts-animation-shared.js, kein Userscript)
+### Gemeinsamer Helfer (autodarts-animation-shared.js, kein Userscript)
 
 - Gilt für: alle Animationsmodule
 - Was das Skript macht: Stellt gemeinsame Funktionen für Beobachtung, Variantenprüfung und robuste Triggererkennung bereit.
@@ -302,7 +314,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 - Hinweise & Kombinationen: Du installierst den Helper nicht separat; er wird per `@require` von den Animationsskripten geladen.
 - Technische Details: [Gemeinsamer Helfer (Animation)](docs/TECHNIK-REFERENZ.md#gemeinsamer-helfer-autodarts-animation-sharedjs-kein-userscript)
 
-#### Animation: Autodarts Animate Triple Double Bull Hits
+---
+
+### Animation: Autodarts Animate Triple Double Bull Hits
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Hebt Trefferarten in der Wurfliste farbig und animiert hervor, damit Triple/Double/Bull sofort auffallen.
@@ -339,7 +353,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Triple Double Bull Hits](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-triple-double-bull-hits)
 
-#### Animation: Autodarts Animate Single Bull Sound
+---
+
+### Animation: Autodarts Animate Single Bull Sound
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Spielt bei erkannten Single-Bull-Einträgen in der Wurfliste einen Ton ab.
@@ -372,7 +388,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Single Bull Sound](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-single-bull-sound)
 
-#### Animation: Autodarts Animate Checkout Score Pulse
+---
+
+### Animation: Autodarts Animate Checkout Score Pulse
 
 - Gilt für: `X01`
 - Was das Skript macht: Hebt den aktiven Score visuell hervor, sobald ein Checkout-Zustand erkannt wird.
@@ -409,7 +427,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Checkout Score Pulse](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-checkout-score-pulse)
 
-#### Animation: Autodarts Animate Turn Points Count
+---
+
+### Animation: Autodarts Animate Turn Points Count
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Animiert Punktänderungen bei Turn-Updates, damit Score-Sprünge leichter nachvollziehbar sind.
@@ -432,7 +452,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Turn Points Count](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-turn-points-count)
 
-#### Animation: Autodarts Animate Average Trend Arrow
+---
+
+### Animation: Autodarts Animate Average Trend Arrow
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Zeigt AVG-Trends mit einem kurzen Auf-/Ab-Pfeil direkt an der AVG-Anzeige.
@@ -459,7 +481,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Average Trend Arrow](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-average-trend-arrow)
 
-#### Animation: Autodarts Animate Turn Start Sweep
+---
+
+### Animation: Autodarts Animate Turn Start Sweep
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Blendet bei aktivem Spielerwechsel einen kurzen Sweep/Lichtstreifen ein.
@@ -486,7 +510,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Turn Start Sweep](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-turn-start-sweep)
 
-#### Animation: Autodarts Animate Remove Darts Notification
+---
+
+### Animation: Autodarts Animate Remove Darts Notification
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Ersetzt die TakeOut-Notifikation aus „Tools für Autodarts“ durch ein klar erkennbares Bildsignal.
@@ -519,7 +545,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Remove Darts Notification](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-remove-darts-notification)
 
-#### Animation: Autodarts Animate Winner Fireworks
+---
+
+### Animation: Autodarts Animate Winner Fireworks
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Zeigt beim Gewinner ein Overlay mit wählbarem Effekt an.
@@ -538,11 +566,10 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 **Screenshots / Varianten**
 
-- ![Winner Fireworks Standard](assets/animation-winner-fireworks-xConfig.gif)
+- ![Winner Fireworks Standard (Firework)](assets/animation-winner-fireworks-xConfig.gif)
 - Varianten:
 - ![Winner Fireworks Aurora](assets/animation-winner-fireworks-aurora-readme.gif)
 - ![Winner Fireworks Confetti](assets/animation-winner-fireworks-confetti-readme.gif)
-- ![Winner Fireworks Firework](assets/animation-winner-fireworks-firework-readme.gif)
 - ![Winner Fireworks Pulse](assets/animation-winner-fireworks-pulse-readme.gif)
 
 **Hinweise & Kombinationen**
@@ -551,7 +578,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Winner Fireworks](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-winner-fireworks)
 
-#### Animation: Autodarts Animate Dart Marker Emphasis
+---
+
+### Animation: Autodarts Animate Dart Marker Emphasis
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Passt die Board-Marker visuell an und kann sie zusätzlich per Glow/Pulse hervorheben.
@@ -593,7 +622,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Dart Marker Emphasis](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-dart-marker-emphasis)
 
-#### Animation: Autodarts Animate Dart Marker Darts
+---
+
+### Animation: Autodarts Animate Dart Marker Darts
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Ersetzt runde Treffer-Marker durch Dartbilder und animiert neue Treffer optional als Flug mit Einschlag.
@@ -628,8 +659,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 **Screenshots / Varianten**
 
-- Hauptansicht: ![Dart Marker Darts](assets/animation-dart-marker-darts-xConfig.png)
-- Detailansicht: ![Animate Dart Marker Darts](assets/animation-dart-marker-darts-readme.png)
+- Screenshot: ![Dart Marker Darts](assets/animation-dart-marker-darts-xConfig.png)
 - Dartdesign-Galerie:
 
 | Design | Vorschau | Design | Vorschau |
@@ -649,7 +679,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Dart Marker Darts](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-dart-marker-darts)
 
-#### Animation: Autodarts Animate Checkout Board Targets
+---
+
+### Animation: Autodarts Animate Checkout Board Targets
 
 - Gilt für: `X01`
 - Was das Skript macht: Markiert empfohlene Checkout-Zielbereiche direkt am Board (inkl. Single/Double/Bull-Logik).
@@ -691,7 +723,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Animate Checkout Board Targets](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-checkout-board-targets)
 
-#### Animation: Autodarts Style Checkout Suggestions
+---
+
+### Animation: Autodarts Style Checkout Suggestions
 
 - Gilt für: `X01`
 - Was das Skript macht: Formatiert den Checkout-Suggestion-Bereich in klarere, visuell schnell erfassbare Karten-/Label-Stile um.
@@ -715,10 +749,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 **Screenshots / Varianten**
 
-- ![Style Checkout Suggestions (xConfig)](assets/animation-style-checkout-suggestions-xConfig.png)
+- ![Style Checkout Suggestions (Standard / Ribbon)](assets/animation-style-checkout-suggestions-xConfig.png)
 - Varianten:
 - ![Format Badge](assets/animation-style-checkout-suggestions-format-badge-readme.png)
-- ![Format Ribbon](assets/animation-style-checkout-suggestions-format-ribbon-readme.png)
 - ![Format Stripe](assets/animation-style-checkout-suggestions-format-stripe-readme.png)
 - ![Format Ticket](assets/animation-style-checkout-suggestions-format-ticket-readme.png)
 - ![Format Outline](assets/animation-style-checkout-suggestions-format-outline-readme.png)
@@ -729,7 +762,9 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Technische Details: [Animation: Autodarts Style Checkout Suggestions](docs/TECHNIK-REFERENZ.md#animation-autodarts-style-checkout-suggestions)
 
-#### Animation: Autodarts Animate Cricket Target Highlighter
+---
+
+### Animation: Autodarts Animate Cricket Target Highlighter
 
 - Gilt für: `Cricket`
 - Was das Skript macht: Visualisiert Board-Ziele im Cricket nach Zustand (z. B. Score/Danger/Dead), damit Entscheidungen schneller fallen.
@@ -754,13 +789,14 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 **Screenshots / Varianten**
 
 - ![Cricket Target Highlighter](assets/animation-cricket-target-highlighter-xConfig.png)
-- Detail: ![Cricket Target Highlighter Detail](assets/animation-cricket-target-highlighter-readme.png)
 
 **Hinweise & Kombinationen**
 
 - Besonders effektiv zusammen mit dem `Template: Autodarts Theme Cricket`.
 
 - Technische Details: [Animation: Autodarts Animate Cricket Target Highlighter](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-cricket-target-highlighter)
+
+---
 
 ## ❓ FAQ
 
