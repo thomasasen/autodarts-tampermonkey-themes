@@ -42,7 +42,7 @@
   const RUNTIME_CLEANUP_INTERVAL_MS = 450;
   const SINGLE_BULL_AUDIO_TOKEN = "/assets/singlebull.mp3";
   const THEME_PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
-  const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket"];
+  const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket", "theme-bull-off"];
   const LOADER_STATUS = Object.freeze({
     IDLE: "idle",
     LOADED: "loaded",
@@ -61,6 +61,7 @@
     "Template/Autodarts Theme Shanghai.user.js": "theme-shanghai",
     "Template/Autodarts Theme Bermuda.user.js": "theme-bermuda",
     "Template/Autodarts Theme Cricket.user.js": "theme-cricket",
+    "Template/Autodarts Theme Bull-off.user.js": "theme-bull-off",
     "Animation/Autodarts Animate Turn Points Count.user.js": "a-turn-points",
     "Animation/Autodarts Animate Triple Double Bull Hits.user.js": "a-triple-double-bull",
     "Animation/Autodarts Animate Single Bull Sound.user.js": "a-single-bull",

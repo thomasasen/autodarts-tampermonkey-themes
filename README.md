@@ -89,7 +89,7 @@ Nutze nur den **AD xConfig Auto Loader**, damit keine Doppel-Ausführung entsteh
 
 ### Tabs „Themen“ und „Animationen“
 
-- **Themen:** Enthält Layout-/Design-Module (z. B. X01, Shanghai, Bermuda, Cricket).
+- **Themen:** Enthält Layout-/Design-Module (z. B. X01, Shanghai, Bermuda, Cricket, Bull-off).
 - **Animationen:** Enthält visuelle Effekte und Hervorhebungen.
 - Die Tabs dienen zur strukturierten Modulverwaltung; Aktivierung und Konfiguration erfolgen pro Karte.
 
@@ -133,6 +133,7 @@ Technisch werden die Werte über Tampermonkey-Storage (bzw. Fallback `localStora
     - [Template: Autodarts Theme Shanghai](#template-autodarts-theme-shanghai)
     - [Template: Autodarts Theme Bermuda](#template-autodarts-theme-bermuda)
     - [Template: Autodarts Theme Cricket](#template-autodarts-theme-cricket)
+    - [Template: Autodarts Theme Bull-off](#template-autodarts-theme-bull-off)
   - [🎬 Animationen](#animationen)
     - [Animation: Autodarts Animate Triple Double Bull Hits](#animation-autodarts-animate-triple-double-bull-hits)
     - [Animation: Autodarts Animate Single Bull Sound](#animation-autodarts-animate-single-bull-sound)
@@ -401,6 +402,50 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 ##### ℹ️ Weitere Hinweise
 
 - CSS in `customCss` anpassen, wenn du Farben oder Abstände ändern möchtest.
+
+---
+
+#### Template: Autodarts Theme Bull-off
+
+- Bezeichnung: Autodarts Theme Bull-off
+- Datei: `Template/Autodarts Theme Bull-off.user.js`
+
+
+##### 📝 Beschreibung
+
+- Zweck: Bull-off-spezifisches Theme mit bull-fokussierter Farbgebung (Rot/Grün), klarerem Score-Kontrast und besserer Abgrenzung von Wurf-/Board-Bereichen.
+- Aktivierung: Variante enthält `bull-off` (matchMode `includes`).
+- Änderungen: nutzt `commonThemeCss` und `commonLayoutCss` aus dem Shared Helper und ergänzt Bull-off-Overrides (`bullOffCss`) für Farben, Karten und Buttons.
+- Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
+
+##### ✅ Einfache Variablen (Beispiele)
+
+- `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
+- `PREVIEW_HEIGHT_PX = 128`
+- `PREVIEW_GAP_PX = 8`
+
+##### ⚙️ Konfiguration (Variablen)
+
+| Variable              | Standard                          | Wirkung                                                                                             |
+| :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `STYLE_ID`            | `autodarts-bull-off-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                 |
+| `VARIANT_NAME`        | `bull-off`                        | Basisname der Variante, an dem geprüft wird.                                                       |
+| `PREVIEW_PLACEMENT`   | `under-throws`                    | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                  |
+| `PREVIEW_HEIGHT_PX`   | `128`                             | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                  |
+| `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                   |
+| `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`       | CSS-Klasse für den reservierten Platz (für eigenes Styling).                                      |
+| `matchMode`           | `includes`                        | Aktiviert das Theme, wenn der Varianten-Text `bull-off` enthält.                                  |
+| `fallbackThemeCss`    | `commonThemeCss`                  | Fallback-Farben und Typografie aus dem Shared Helper.                                              |
+| `fallbackLayoutCss`   | `commonLayoutCss`                 | Fallback-Layout/Grid aus dem Shared Helper.                                                        |
+| `bullOffCss`          | CSS-Block                         | Bull-off-spezifische Farben und UI-Regeln (Variant-Badge, Spielerkarten, Throw-Boxen, Board-Rahmen). |
+
+##### 🖼️ Beispiele/Screenshots
+
+Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
+
+##### ℹ️ Weitere Hinweise
+
+- Farben und Intensität direkt im CSS-Block `bullOffCss` anpassen.
 
 ---
 
