@@ -54,8 +54,8 @@
   });
 
   const TABS = [
-    { id: "themes", label: "Themen" },
-    { id: "animations", label: "Animationen" },
+    { id: "themes", label: "Themen", icon: "🎨", description: "Farben & Layout der Oberfläche anpassen." },
+    { id: "animations", label: "Animationen", icon: "✨", description: "Visuelle Effekte ein- oder ausschalten." },
   ];
 
   const LEGACY_FEATURE_ID_BY_SOURCE = {
@@ -2558,19 +2558,39 @@
 #${PANEL_HOST_ID} .xcfg-conn--error { background: rgba(255,84,84,0.15); border-color: rgba(255,84,84,0.5); }
 #${PANEL_HOST_ID} .xcfg-tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
 #${PANEL_HOST_ID} .xcfg-tab {
-  border-bottom: 2px solid transparent;
-  border-left: 1px solid rgba(255,255,255,0.2);
-  border-right: 1px solid rgba(255,255,255,0.2);
-  border-top: 1px solid rgba(255,255,255,0.2);
-  border-radius: 9px;
-  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(166,196,255,0.52);
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.16), rgba(74,178,255,0.14));
   color: #fff;
-  padding: 0.8rem 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 0.86rem 0.82rem;
+  min-height: 4.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.22rem;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(12, 31, 72, 0.28), inset 0 0 0 1px rgba(255,255,255,0.06);
   cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
-#${PANEL_HOST_ID} .xcfg-tab.is-active { border-bottom-color: rgba(96,165,250,0.95); background: rgba(255,255,255,0.2); }
+#${PANEL_HOST_ID} .xcfg-tab:hover {
+  border-color: rgba(173,214,255,0.82);
+  background: linear-gradient(145deg, rgba(255,255,255,0.24), rgba(74,178,255,0.18));
+  transform: translateY(-1px);
+}
+#${PANEL_HOST_ID} .xcfg-tab:focus-visible {
+  outline: none;
+  border-color: rgba(154,227,255,0.98);
+  box-shadow: 0 0 0 2px rgba(112,196,255,0.52), 0 10px 24px rgba(12, 31, 72, 0.36);
+}
+#${PANEL_HOST_ID} .xcfg-tab.is-active {
+  border-color: rgba(112,196,255,0.95);
+  background: linear-gradient(145deg, rgba(138,204,255,0.35), rgba(74,178,255,0.28));
+  box-shadow: 0 10px 26px rgba(39, 108, 199, 0.28), inset 0 0 0 1px rgba(195,235,255,0.24);
+}
+#${PANEL_HOST_ID} .xcfg-tab-title { font-size: 1rem; font-weight: 800; line-height: 1.2; letter-spacing: 0.01em; }
+#${PANEL_HOST_ID} .xcfg-tab-desc { font-size: 0.76rem; line-height: 1.2; color: rgba(232,243,255,0.92); font-weight: 500; }
 #${PANEL_HOST_ID} .xcfg-content { margin-top: 1rem; }
 
 #${PANEL_HOST_ID} .xcfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
@@ -3459,7 +3479,14 @@
     const activeTab = getActiveTab();
     const tabsHtml = TABS.map((tab) => {
       const isActive = tab.id === activeTab ? "is-active" : "";
-      return `<button type="button" class="xcfg-tab ${isActive}" data-tab="${escapeHtml(tab.id)}">${escapeHtml(tab.label)}</button>`;
+      const title = `${tab.icon ? `${tab.icon} ` : ""}${tab.label || ""}`.trim();
+      const desc = String(tab.description || "");
+      return `
+        <button type="button" class="xcfg-tab ${isActive}" data-tab="${escapeHtml(tab.id)}" aria-label="${escapeHtml(`${title}. ${desc}`.trim())}">
+          <span class="xcfg-tab-title">${escapeHtml(title)}</span>
+          <span class="xcfg-tab-desc">${escapeHtml(desc)}</span>
+        </button>
+      `;
     }).join("");
 
     const contentHtml = renderFeatureGridHtml(activeTab);
