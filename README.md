@@ -242,13 +242,21 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 - `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
 - `PREVIEW_HEIGHT_PX = 128`
 - `PREVIEW_GAP_PX = 8`
+- `xConfig_AVG_ANZEIGE`: `An` oder `Aus`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert für X01 ein oder aus.
+- Kombination: Wenn `Aus` gesetzt ist, wird auch der Trendpfeil aus `Autodarts Animate Average Trend Arrow` ausgeblendet.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                        | Standard                     | Wirkung                                                                                                               |
 | :------------------------------ | :--------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`                      | `autodarts-x01-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleiben alte Styles bis zum Reload aktiv.                                  |
 | `VARIANT_NAME`                  | `x01`                        | Name der Spielvariante, bei der das Theme aktiv wird.                                                                 |
+| `xConfig_AVG_ANZEIGE`           | `true`                       | `true` zeigt den AVG normal an, `false` blendet AVG und Trendpfeil aus.                                               |
 | `PREVIEW_PLACEMENT`             | `under-throws`               | Position der DartsZoom-Vorschau: `standard` (Standardplatz) oder `under-throws` (unter den Würfen).                   |
 | `PREVIEW_HEIGHT_PX`             | `128`                        | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                                      |
 | `PREVIEW_GAP_PX`                | `8`                          | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                                      |
@@ -297,13 +305,21 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
 - `PREVIEW_HEIGHT_PX = 128`
 - `PREVIEW_GAP_PX = 8`
+- `xConfig_AVG_ANZEIGE`: `An` oder `Aus`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Shanghai-Theme ein oder aus.
+- Kombination: Bei `Aus` wird zusätzlich der Trendpfeil (`Autodarts Animate Average Trend Arrow`) verborgen.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                          | Wirkung                                                                           |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-shanghai-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv. |
 | `VARIANT_NAME`        | `shanghai`                        | Name der Spielvariante, bei der das Theme aktiv wird.                             |
+| `xConfig_AVG_ANZEIGE` | `true`                            | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                     |
 | `PREVIEW_PLACEMENT`   | `under-throws`                    | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                  |
 | `PREVIEW_HEIGHT_PX`   | `128`                             | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                  |
 | `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                  |
@@ -382,13 +398,21 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
 - `PREVIEW_HEIGHT_PX = 128`
 - `PREVIEW_GAP_PX = 8`
+- `xConfig_AVG_ANZEIGE`: `An` oder `Aus`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-Theme ein oder aus.
+- Kombination: Bei `Aus` wird auch der Trendpfeil (`Autodarts Animate Average Trend Arrow`) ausgeblendet.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                         | Wirkung                                                                                                          |
 | :-------------------- | :------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-cricket-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                                |
 | `VARIANT_NAME`        | `cricket`                        | Name der Spielvariante, bei der das Theme aktiv wird.                                                            |
+| `xConfig_AVG_ANZEIGE` | `true`                           | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                                                    |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                                 |
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                                 |
 | `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                                 |
@@ -423,14 +447,23 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `PREVIEW_PLACEMENT = "standard"` oder `"under-throws"`
 - `PREVIEW_HEIGHT_PX = 128`
 - `PREVIEW_GAP_PX = 8`
+- `xConfig_KONTRAST_PRESET`: `Sanft`, `Standard`, `Kräftig`
 
 ##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_KONTRAST_PRESET`: Regelt, wie deutlich Kontraste, Konturen und Glow-Effekte im Bull-off-Theme sichtbar sind.
+- `Sanft` ist ruhiger, `Standard` entspricht dem bisherigen Look, `Kräftig` hebt Kontraste deutlich stärker hervor.
+- Das Preset ändert nur die Intensität, nicht Layout oder Positionen.
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                          | Wirkung                                                                                             |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-bull-off-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                 |
 | `VARIANT_NAME`        | `bull-off`                        | Basisname der Variante, an dem geprüft wird.                                                       |
-| `PREVIEW_PLACEMENT`   | `under-throws`                    | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                  |
+| `xConfig_KONTRAST_PRESET` | `standard`                    | Preset für Kontrast-Intensität: `soft`, `standard`, `high` (sichtbar als Sanft/Standard/Kräftig). |
+| `PREVIEW_PLACEMENT`   | `standard`                        | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                  |
 | `PREVIEW_HEIGHT_PX`   | `128`                             | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                  |
 | `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                   |
 | `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`       | CSS-Klasse für den reservierten Platz (für eigenes Styling).                                      |
@@ -445,7 +478,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### ℹ️ Weitere Hinweise
 
-- Farben und Intensität direkt im CSS-Block `bullOffCss` anpassen.
+- Für schnelle Anpassungen nutze `xConfig_KONTRAST_PRESET`; tieferes Fine-Tuning bleibt im CSS-Block `bullOffCss` möglich.
 
 ---
 
@@ -572,6 +605,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 - `xConfig_EFFEKT`: `Pulse`, `Glow`, `Scale`, `Blink`
 - `xConfig_FARBTHEMA`: `Grün`, `Cyan`, `Amber`, `Rot`
+- `xConfig_INTENSITAET`: `Dezent`, `Standard`, `Stark`
+- `xConfig_TRIGGER_QUELLE`: `Vorschlag zuerst`, `Nur Score`, `Nur Vorschlag`
 
 ##### ⚙️ Konfiguration (Variablen)
 
@@ -579,6 +614,11 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 - `xConfig_EFFEKT`: Legt die Art der Score-Animation fest.
 - `xConfig_FARBTHEMA`: Wechselt den Farbton von Glow/Pulse.
+- `xConfig_INTENSITAET`: Steuert, wie stark Scale/Glow/Blink ausfallen.
+- `xConfig_TRIGGER_QUELLE`: Legt fest, wodurch ausgelöst wird:
+- `Vorschlag zuerst`: nutzt zuerst den Suggestion-Text, fällt sonst auf Score-Regel zurück.
+- `Nur Score`: ignoriert Suggestion und prüft nur die Checkout-Mathematik des Scores.
+- `Nur Vorschlag`: reagiert nur auf Suggestion-Text, ohne Score-Fallback.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                | Standard                                      | Wirkung                                                                                                  |
@@ -587,6 +627,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 | `HIGHLIGHT_CLASS`       | `ad-ext-checkout-possible`                    | CSS-Klasse, die auf den aktiven Score gesetzt wird; nützlich, wenn du eigene CSS-Regeln anhängen willst. |
 | `EFFECT`                | `scale`                                       | Art der Animation: `pulse`, `glow`, `scale` oder `blink`.                                                |
 | `PULSE_COLOR`           | `159, 219, 88`                                | RGB-Wert für Glow/Pulse (Alpha wird intern ergänzt).                                                     |
+| `xConfig_INTENSITAET`   | `standard`                                    | Preset für Stärke des Effekts: `dezent`, `standard`, `stark`.                                            |
+| `xConfig_TRIGGER_QUELLE`| `suggestion-first`                            | Trigger-Logik: `suggestion-first`, `score-only`, `suggestion-only`.                                     |
 | `IMPOSSIBLE_CHECKOUTS`  | `169, 168, 166, 165, 163, 162, 159`           | Scores, die nie checkoutbar sind (verhindert Fehltrigger).                                               |
 | `SUGGESTION_SELECTOR`   | `.suggestion`                                 | Selector für den Checkout-Vorschlag (bevorzugte Quelle).                                                 |
 | `SCORE_SELECTOR`        | `p.ad-ext-player-score`                       | Fallback-Selector für die Score-Anzeige, wenn keine Suggestion da ist.                                   |
@@ -600,6 +642,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 ##### ℹ️ Weitere Hinweise
 
 - Funktioniert für X01, da Checkout-Logik genutzt wird.
+- Bei Kombination mit `Autodarts Style Checkout Suggestions`: `Nur Vorschlag` zeigt nur dann Effekt, wenn ein passender Vorschlagstext vorhanden ist.
+- Bei Kombination mit `Autodarts Animate Checkout Board Targets` sind parallele Highlights normal (Score + Board).
 
 ---
 
@@ -656,18 +700,21 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 ##### ✅ Einfache Variablen (Beispiele)
 
 - `xConfig_ANIMATIONSDAUER_MS`: `Schnell`, `Standard`, `Langsam`
+- `xConfig_PFEIL_GROESSE`: `Klein`, `Standard`, `Groß`
 
 ##### ⚙️ Konfiguration (Variablen)
 
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_ANIMATIONSDAUER_MS`: Legt die Dauer des Auf/Ab-Pfeils fest.
+- `xConfig_PFEIL_GROESSE`: Ändert die sichtbare Pfeilgröße neben dem AVG.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable        | Standard                        | Wirkung                                                                                       |
 | :-------------- | :------------------------------ | :-------------------------------------------------------------------------------------------- |
 | `AVG_SELECTOR`  | `p.css-1j0bqop`                 | Selector für das AVG-Element; anpassen, wenn Autodarts die Klasse ändert.                     |
 | `ANIMATION_MS`  | `320`                           | Dauer der Pfeil-Animation in ms.                                                              |
+| `xConfig_PFEIL_GROESSE` | `standard`               | Größe des Trendpfeils: `klein`, `standard`, `groß`.                                          |
 | `STYLE_ID`      | `autodarts-average-trend-style` | ID für das injizierte CSS, damit keine doppelten Styles entstehen.                            |
 | `ARROW_CLASS`   | `ad-ext-avg-trend-arrow`        | Basis-Klasse für den Pfeil-Span (Form/Abstand); nur ändern, wenn du das CSS darauf abstimmst. |
 | `VISIBLE_CLASS` | `ad-ext-avg-trend-visible`      | Schaltet die Sichtbarkeit des Pfeils (Opacity/Transition).                                    |
@@ -682,6 +729,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 ##### ℹ️ Weitere Hinweise
 
 - Wenn Autodarts die CSS-Klasse für AVG ändert, passe `AVG_SELECTOR` an.
+- Wenn in einem Theme `xConfig_AVG_ANZEIGE = Aus` gesetzt ist, wird auch der Trendpfeil bewusst nicht angezeigt.
 
 ---
 
@@ -747,6 +795,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 - `xConfig_BILDGROESSE`: `Kompakt`, `Standard`, `Groß`
 - `xConfig_PULSE_ANIMATION`: `An` oder `Aus`
+- `xConfig_PULSE_STAERKE`: `Dezent`, `Standard`, `Stark`
 
 ##### ⚙️ Konfiguration (Variablen)
 
@@ -754,6 +803,8 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 
 - `xConfig_BILDGROESSE`: Skaliert das TakeOut-Bild (kompakt/standard/groß).
 - `xConfig_PULSE_ANIMATION`: Aktiviert oder deaktiviert den Puls-Effekt.
+- `xConfig_PULSE_STAERKE`: Regelt, wie stark das Bild beim Puls gezoomt wird.
+- Hinweis: Bei `xConfig_PULSE_ANIMATION = Aus` hat `xConfig_PULSE_STAERKE` keinen sichtbaren Effekt.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                   | Standard                                                                                             | Wirkung                                                                       |
@@ -764,6 +815,7 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 | `CONFIG.imageMaxWidthRem`  | `30`                                                                                                 | Maximale Breite in rem (Desktop).                                             |
 | `CONFIG.imageMaxWidthVw`   | `90`                                                                                                 | Maximale Breite in vw (Mobile).                                               |
 | `CONFIG.pulseDurationMs`   | `1400`                                                                                               | Pulsdauer in ms.                                                              |
+| `xConfig_PULSE_STAERKE`    | `1.04`                                                                                               | Puls-Amplitude: `1.02` (dezent), `1.04` (standard), `1.08` (stark).          |
 | `CONFIG.pulseScale`        | `1.04`                                                                                               | Maximaler Scale beim Puls.                                                    |
 | `CONFIG.fallbackTexts`     | `["Removing Darts", "Darts entfernen"]`                                                              | Text-Fallbacks, falls sich die Klasse ändert.                                 |
 | `CONFIG.searchShadowRoots` | `true`                                                                                               | Sucht zusätzlich in offenen Shadow Roots.                                     |
@@ -871,6 +923,8 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 - `xConfig_MARKER_GROESSE`: `Klein`, `Standard`, `Groß`
 - `xConfig_MARKER_FARBE`: `Blau`, `Grün`, `Rot`, `Gelb`, `Weiß`
 - `xConfig_EFFEKT`: `Glow`, `Pulse`, `Kein Effekt`
+- `xConfig_MARKER_OPAZITAET`: `Dezent (65%)`, `Standard (85%)`, `Voll sichtbar (100%)`
+- `xConfig_OUTLINE`: `Aus`, `Weiß`, `Schwarz`
 
 ##### ⚙️ Konfiguration (Variablen)
 
@@ -879,6 +933,8 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 - `xConfig_MARKER_GROESSE`: Passt die Markergröße sichtbar an.
 - `xConfig_MARKER_FARBE`: Wählt die Marker-Farbe.
 - `xConfig_EFFEKT`: Aktiviert `Glow`, `Pulse` oder deaktiviert den Effekt.
+- `xConfig_MARKER_OPAZITAET`: Regelt die Grundsichtbarkeit der Marker.
+- `xConfig_OUTLINE`: Fügt optional einen weißen oder schwarzen Rand hinzu.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable          | Standard                                                    | Wirkung                                                            |
@@ -886,6 +942,8 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 | `MARKER_RADIUS`   | `6`                                                         | Radius der Treffer-Marker in px; größere Werte wirken auffälliger. |
 | `MARKER_FILL`     | `rgb(49, 130, 206)`                                         | Füllfarbe der Marker (CSS-Farbwert).                               |
 | `EFFECT`          | `glow`                                                      | Zusatz-Effekt: `pulse`, `glow`, `none`.                            |
+| `xConfig_MARKER_OPAZITAET` | `85`                                               | Grund-Opazität in Prozent: `65`, `85`, `100`.                      |
+| `xConfig_OUTLINE` | `aus`                                                       | Outline-Rand: `aus`, `weiß`, `schwarz`.                            |
 | `MARKER_SELECTOR` | `circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]` | Selector für Board-Marker; bei SVG-Änderungen anpassen.            |
 
 ##### 🖼️ Beispiele/Screenshots
@@ -895,6 +953,7 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 ##### ℹ️ Weitere Hinweise
 
 - Wenn Marker nicht erkannt werden, prüfe/aktualisiere `MARKER_SELECTOR`.
+- Kombi-Hinweis: Wenn `Autodarts Animate Dart Marker Darts` die Option `Original-Marker ausblenden` auf `An` hat, sind diese Marker (und damit Emphasis) bewusst nicht sichtbar.
 
 ---
 
@@ -914,16 +973,30 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `DART_DESIGN = "Dart_red.png"`
-- `ANIMATE_DARTS = true` oder `false`
-- `CONFIG.hideMarkers = true` oder `false`
-- `CONFIG.dartTransparency = 0` oder `0.3`
-- `CONFIG.animationStyle = "arc"` oder `"linear"`
+- `xConfig_DART_DESIGN`: z.B. `Dart_red.png`
+- `xConfig_ANIMATE_DARTS`: `Aktiv` oder `Inaktiv`
+- `xConfig_DART_GROESSE`: `Klein (90%)`, `Standard (100%)`, `Groß (115%)`
+- `xConfig_ORIGINAL_MARKER_AUSBLENDEN`: `An` oder `Aus`
+- `xConfig_FLUGGESCHWINDIGKEIT`: `Schnell`, `Standard`, `Cinematic`
 
 ##### ⚙️ Konfiguration (Variablen)
 
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_DART_DESIGN`: Wählt direkt das Dart-Bild.
+- `xConfig_ANIMATE_DARTS`: Schaltet Flug- und Einschlag-Animation an oder aus.
+- `xConfig_DART_GROESSE`: Verkleinert oder vergrößert die Dart-Bilder.
+- `xConfig_ORIGINAL_MARKER_AUSBLENDEN`: Blendet die runden Original-Marker aus, damit nur Dart-Bilder sichtbar sind.
+- `xConfig_FLUGGESCHWINDIGKEIT`: Steuert das Animationstempo (`Schnell`, `Standard`, `Cinematic`).
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
+
 | Variable                          | Standard                                                                                                                                                                                                                    | Wirkung                                                       |
 | :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------ |
+| `xConfig_DART_DESIGN`             | `Dart_autodarts.png`                                                                                                                                                                                                        | Dateiname des Dart-Designs (über AD xConfig auswählbar).     |
+| `xConfig_ANIMATE_DARTS`           | `true`                                                                                                                                                                                                                      | Aktiviert oder deaktiviert Flug- und Einschlag-Animation.    |
+| `xConfig_DART_GROESSE`            | `100`                                                                                                                                                                                                                       | Dartgröße in Prozent (`90`, `100`, `115`).                   |
+| `xConfig_ORIGINAL_MARKER_AUSBLENDEN` | `false`                                                                                                                                                                                                                  | Blendet runde Original-Marker bei Dart-Bildern aus.          |
+| `xConfig_FLUGGESCHWINDIGKEIT`     | `standard`                                                                                                                                                                                                                  | Flugtempo-Preset: `schnell`, `standard`, `cinematic`.        |
 | `DART_DESIGN`                     | `Dart_autodarts.png`                                                                                                                                                                                                        | Dateiname des Dart-Designs (siehe Liste unten).               |
 | `DART_BASE_URL`                   | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/`                                                                                                                                   | Basis-URL für die Dart-Designs (bei Fork/Lokal anpassen).     |
 | `ANIMATE_DARTS`                   | `true`                                                                                                                                                                                                                      | Schaltet die Flug-/Impact-Animation global an/aus.            |
@@ -980,6 +1053,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 
 - Wähle dein Dart-Design über `DART_DESIGN` im Skript.
 - Animation komplett deaktivieren: `ANIMATE_DARTS = false`.
+- Kombi-Hinweis: Bei `xConfig_ORIGINAL_MARKER_AUSBLENDEN = An` sind Marker-Effekte aus `Autodarts Animate Dart Marker Emphasis` absichtlich nicht sichtbar.
 
 ---
 
@@ -1001,6 +1075,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 - `xConfig_ZIELUMFANG`: `Erstes Ziel` oder `Alle Ziele`
 - `xConfig_SINGLE_RING`: `Beide Ringe`, `Nur innen`, `Nur außen`
 - `xConfig_FARBTHEMA`: `Violett`, `Cyan`, `Amber`
+- `xConfig_KONTUR_INTENSITAET`: `Dezent`, `Standard`, `Stark`
 
 ##### ⚙️ Konfiguration (Variablen)
 
@@ -1010,6 +1085,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 - `xConfig_ZIELUMFANG`: Markiert nur das erste oder alle vorgeschlagenen Ziele.
 - `xConfig_SINGLE_RING`: Steuert die Single-Ring-Auswahl.
 - `xConfig_FARBTHEMA`: Wechselt Füll- und Konturfarben als Paket.
+- `xConfig_KONTUR_INTENSITAET`: Regelt, wie deutlich die weiße Kontur um Zielbereiche pulsiert.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                    | Standard                   | Wirkung                                                                                                                                                                       |
@@ -1021,6 +1097,7 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 | `CONFIG.effect`             | `pulse`                    | Effekt: `pulse`, `blink`, `glow`.                                                                                                                                             |
 | `CONFIG.color`              | `rgba(168, 85, 247, 0.85)` | Füllfarbe der Ziele.                                                                                                                                                          |
 | `CONFIG.strokeColor`        | `rgba(168, 85, 247, 0.95)` | Rahmenfarbe der Ziele.                                                                                                                                                        |
+| `xConfig_KONTUR_INTENSITAET`| `standard`                 | Kontur-Preset: `dezent`, `standard`, `stark`.                                                                                                                                 |
 | `CONFIG.strokeWidthRatio`   | `0.008`                    | Rahmenstärke relativ zum Board-Radius.                                                                                                                                        |
 | `CONFIG.animationMs`        | `1000`                     | Dauer der Animation in ms.                                                                                                                                                    |
 | `CONFIG.singleRing`         | `both`                     | `inner`, `outer` oder `both` für Single-Ringe.                                                                                                                                |
@@ -1040,6 +1117,7 @@ Varianten über:
 ##### ℹ️ Weitere Hinweise
 
 - Setze `CONFIG.highlightTargets` auf `all`, wenn alle Ziele gleichzeitig markiert werden sollen.
+- Bei Kombination mit `Autodarts Animate Checkout Score Pulse` ergänzen sich Board-Hinweis und Score-Hinweis bewusst.
 
 ---
 

@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
 // @xconfig-description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse.gif
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -26,6 +26,10 @@
 	const xConfig_EFFEKT = "scale";
 	// xConfig: {"type":"select","label":"Farbthema","description":"Farbton für Highlight und Glow des Scores.","options":[{"value":"159, 219, 88","label":"Grün (Standard)"},{"value":"56, 189, 248","label":"Cyan"},{"value":"245, 158, 11","label":"Amber"},{"value":"248, 113, 113","label":"Rot"}]}
 	const xConfig_FARBTHEMA = "159, 219, 88";
+	// xConfig: {"type":"select","label":"Intensität","description":"Steuert, wie deutlich der Checkout-Effekt angezeigt wird.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
+	const xConfig_INTENSITAET = "standard";
+	// xConfig: {"type":"select","label":"Trigger-Quelle","description":"Legt fest, ob der Effekt nach Checkout-Vorschlag, Score-Regel oder einer Kombination ausgelöst wird.","options":[{"value":"suggestion-first","label":"Vorschlag zuerst"},{"value":"score-only","label":"Nur Score"},{"value":"suggestion-only","label":"Nur Vorschlag"}]}
+	const xConfig_TRIGGER_QUELLE = "suggestion-first";
 
 	function resolveStringChoice(value, fallbackValue, allowedValues) {
 		const normalizedValue = String(value || "").trim();
@@ -41,6 +45,41 @@
 		"245, 158, 11",
 		"248, 113, 113",
 	]);
+	const INTENSITY_PRESETS = {
+		dezent: {
+			pulseScale: 1.06,
+			pulseMidOpacity: 0.96,
+			pulseShadowMaxAlpha: 0.55,
+			glowMinAlpha: 0.26,
+			glowMaxAlpha: 0.72,
+			glowMaxBlurPx: 11,
+			scaleMax: 1.04,
+			blinkMinOpacity: 0.55,
+		},
+		standard: {
+			pulseScale: 1.1,
+			pulseMidOpacity: 0.92,
+			pulseShadowMaxAlpha: 0.8,
+			glowMinAlpha: 0.35,
+			glowMaxAlpha: 0.9,
+			glowMaxBlurPx: 16,
+			scaleMax: 1.08,
+			blinkMinOpacity: 0.3,
+		},
+		stark: {
+			pulseScale: 1.14,
+			pulseMidOpacity: 0.88,
+			pulseShadowMaxAlpha: 1,
+			glowMinAlpha: 0.45,
+			glowMaxAlpha: 1,
+			glowMaxBlurPx: 22,
+			scaleMax: 1.12,
+			blinkMinOpacity: 0.18,
+		},
+	};
+	const RESOLVED_INTENSITY_KEY = resolveStringChoice(xConfig_INTENSITAET, "standard", ["dezent", "standard", "stark"]);
+	const INTENSITY = INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] || INTENSITY_PRESETS.standard;
+	const RESOLVED_TRIGGER_SOURCE = resolveStringChoice(xConfig_TRIGGER_QUELLE, "suggestion-first", ["suggestion-first", "score-only", "suggestion-only"]);
 
 	const {ensureStyle, createRafScheduler, observeMutations, isX01Variant} = window.autodartsAnimationShared;
 	const gameStateShared = window.autodartsGameStateShared || null;
@@ -78,9 +117,9 @@
     text-shadow: 0 0 2px rgba(${PULSE_COLOR}, 0.2);
   }
   50% {
-    transform: scale(1.1);
-    opacity: 0.92;
-    text-shadow: 0 0 16px rgba(${PULSE_COLOR}, 0.8);
+    transform: scale(${INTENSITY.pulseScale});
+    opacity: ${INTENSITY.pulseMidOpacity};
+    text-shadow: 0 0 ${INTENSITY.glowMaxBlurPx}px rgba(${PULSE_COLOR}, ${INTENSITY.pulseShadowMaxAlpha});
   }
   100% {
     transform: scale(1);
@@ -120,13 +159,13 @@
 
 @keyframes ad-ext-checkout-glow {
   0% {
-    text-shadow: 0 0 4px rgba(${PULSE_COLOR}, 0.35);
+    text-shadow: 0 0 4px rgba(${PULSE_COLOR}, ${INTENSITY.glowMinAlpha});
   }
   50% {
-    text-shadow: 0 0 16px rgba(${PULSE_COLOR}, 0.9);
+    text-shadow: 0 0 ${INTENSITY.glowMaxBlurPx}px rgba(${PULSE_COLOR}, ${INTENSITY.glowMaxAlpha});
   }
   100% {
-    text-shadow: 0 0 4px rgba(${PULSE_COLOR}, 0.35);
+    text-shadow: 0 0 4px rgba(${PULSE_COLOR}, ${INTENSITY.glowMinAlpha});
   }
 }
 
@@ -135,7 +174,7 @@
     transform: scale(1);
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(${INTENSITY.scaleMax});
   }
   100% {
     transform: scale(1);
@@ -147,7 +186,7 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.3;
+    opacity: ${INTENSITY.blinkMinOpacity};
   }
   100% {
     opacity: 1;
@@ -176,7 +215,7 @@
 		}
 
 		const node = document.querySelector(ACTIVE_SCORE_SELECTOR) || document.querySelector(SCORE_SELECTOR);
-		return parseScore(node ?. textContent || "");
+		return parseScore(node?.textContent || "");
 	}
 
 	function isCheckoutPossibleFromScore(score) {
@@ -225,7 +264,7 @@
 		return document.querySelectorAll(SCORE_SELECTOR);
 	}
 
-	// Prefer the checkout suggestion text; fall back to score math in X01.
+	// Trigger mode can prioritize suggestion text or pure score math in X01.
 	function updateScoreHighlights() {
 		const isX01 = gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
 			allowMissing: true,
@@ -237,7 +276,16 @@
 			allowNumeric: true
 		});
 		const suggestionState = getCheckoutSuggestionState();
-		const shouldHighlight = isX01 ? suggestionState !== null ? suggestionState : isCheckoutPossibleFromScore(getActiveScoreValue()) : false;
+		let shouldHighlight = false;
+		if (isX01) {
+			if (RESOLVED_TRIGGER_SOURCE === "score-only") {
+				shouldHighlight = isCheckoutPossibleFromScore(getActiveScoreValue());
+			} else if (RESOLVED_TRIGGER_SOURCE === "suggestion-only") {
+				shouldHighlight = suggestionState === true;
+			} else {
+				shouldHighlight = suggestionState !== null ? suggestionState : isCheckoutPossibleFromScore(getActiveScoreValue());
+			}
+		}
 		const effectClass = EFFECT_CLASSES[EFFECT] || EFFECT_CLASSES.pulse;
 		const effectClassList = Object.values(EFFECT_CLASSES);
 		const scoreNodes = getScoreNodes();
@@ -263,3 +311,4 @@
 
 	observeMutations({onChange: scheduleUpdate});
 })();
+

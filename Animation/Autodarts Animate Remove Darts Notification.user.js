@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.3
+// @version      2.4
 // @description  Ersetzt die TakeOut-Notifikation aus „Tools für Autodarts“ durch eine Hand-Grafik, damit sie schöner und besser erkennbar ist.
 // @xconfig-description  Ersetzt die TakeOut-Notifikation aus „Tools für Autodarts“ durch eine Hand-Grafik, damit sie schöner und besser erkennbar ist.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
 // @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -25,6 +25,8 @@
 	const xConfig_BILDGROESSE = "standard";
 	// xConfig: {"type":"toggle","label":"Pulse-Animation","description":"Aktiviert oder deaktiviert den leichten Puls-Effekt des Bildes.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_PULSE_ANIMATION = true;
+	// xConfig: {"type":"select","label":"Pulse-Stärke","description":"Bestimmt, wie stark das Bild bei der Pulse-Animation skaliert wird.","options":[{"value":1.02,"label":"Dezent"},{"value":1.04,"label":"Standard"},{"value":1.08,"label":"Stark"}]}
+	const xConfig_PULSE_STAERKE = 1.04;
 
 	function resolveToggle(value, fallbackValue) {
 		if (typeof value === "boolean") {
@@ -55,6 +57,13 @@
 			: fallbackValue;
 	}
 
+	function resolveNumberChoice(value, fallbackValue, allowedValues) {
+		const numericValue = Number(value);
+		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
+			? numericValue
+			: fallbackValue;
+	}
+
 	const IMAGE_SIZE_PRESETS = {
 		compact: {
 			imageMaxWidthRem: 24,
@@ -76,6 +85,7 @@
 		"large",
 	]);
 	const RESOLVED_PULSE_ANIMATION = resolveToggle(xConfig_PULSE_ANIMATION, true);
+	const RESOLVED_PULSE_SCALE = resolveNumberChoice(xConfig_PULSE_STAERKE, 1.04, [1.02, 1.04, 1.08]);
 	const IMAGE_SIZE = IMAGE_SIZE_PRESETS[RESOLVED_IMAGE_SIZE] || IMAGE_SIZE_PRESETS.standard;
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
@@ -124,7 +134,7 @@
 		imageMaxWidthRem: IMAGE_SIZE.imageMaxWidthRem,
 		imageMaxWidthVw: IMAGE_SIZE.imageMaxWidthVw,
 		pulseDurationMs: 1400,
-		pulseScale: 1.04
+		pulseScale: RESOLVED_PULSE_SCALE
 	};
 
 	const STYLE_ID = "ad-ext-takeout-style";

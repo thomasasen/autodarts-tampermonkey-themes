@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Theme Bull-off.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.2
+// @version      1.3
 // @description  Layout- und Farb-Theme fuer Bull-off mit Fokus auf aktive Scores und Board-Kontrast.
 // @xconfig-description  Aktiviert ein Bull-off Theme mit bull-fokussierter Farbgebung und verbessertem Score-Kontrast.
 // @xconfig-variant      bull-off
 // @xconfig-readme-anchor  template-autodarts-theme-bull-off
 // @xconfig-background     assets/template-theme-bull-off-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -30,6 +31,62 @@
 
 	const STYLE_ID = "autodarts-bull-off-custom-style";
 	const VARIANT_NAME = "bull-off";
+	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und Flächenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"Kraeftig"}]}
+	const xConfig_KONTRAST_PRESET = "standard";
+
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
+	const KONTRAST_PRESET = {
+		soft: {
+			variantBorderAlpha: 0.12,
+			turnBorderAlpha: 0.1,
+			turnGradientAlpha: 0.1,
+			activeBorderAlpha: 0.72,
+			activeShadowAlpha: 0.24,
+			activeInsetAlpha: 0.16,
+			activeOverlayAlpha: 0.76,
+			inactiveBorderAlpha: 0.26,
+			scoreShadowAlpha: 0.42,
+			panelBorderAlpha: 0.09,
+			panelInsetAlpha: 0.03,
+			buttonBorderAlpha: 0.11,
+		},
+		standard: {
+			variantBorderAlpha: 0.18,
+			turnBorderAlpha: 0.13,
+			turnGradientAlpha: 0.14,
+			activeBorderAlpha: 0.9,
+			activeShadowAlpha: 0.36,
+			activeInsetAlpha: 0.24,
+			activeOverlayAlpha: 0.88,
+			inactiveBorderAlpha: 0.36,
+			scoreShadowAlpha: 0.55,
+			panelBorderAlpha: 0.12,
+			panelInsetAlpha: 0.04,
+			buttonBorderAlpha: 0.15,
+		},
+		high: {
+			variantBorderAlpha: 0.26,
+			turnBorderAlpha: 0.22,
+			turnGradientAlpha: 0.22,
+			activeBorderAlpha: 1,
+			activeShadowAlpha: 0.48,
+			activeInsetAlpha: 0.34,
+			activeOverlayAlpha: 0.94,
+			inactiveBorderAlpha: 0.52,
+			scoreShadowAlpha: 0.72,
+			panelBorderAlpha: 0.22,
+			panelInsetAlpha: 0.1,
+			buttonBorderAlpha: 0.24,
+		},
+	};
+	const RESOLVED_KONTRAST_PRESET = resolveStringChoice(xConfig_KONTRAST_PRESET, "standard", ["soft", "standard", "high"]);
+	const KONTRAST_VALUES = KONTRAST_PRESET[RESOLVED_KONTRAST_PRESET] || KONTRAST_PRESET.standard;
 
 	// Preview placement: "standard" or "under-throws".
 	const PREVIEW_PLACEMENT = "standard";
@@ -59,6 +116,18 @@
   --theme-alt-bg: #1f2e25;
   --bull-green: #66bb6a;
   --bull-red: #ef5350;
+  --bull-variant-border-alpha: ${KONTRAST_VALUES.variantBorderAlpha};
+  --bull-turn-border-alpha: ${KONTRAST_VALUES.turnBorderAlpha};
+  --bull-turn-gradient-alpha: ${KONTRAST_VALUES.turnGradientAlpha};
+  --bull-active-border-alpha: ${KONTRAST_VALUES.activeBorderAlpha};
+  --bull-active-shadow-alpha: ${KONTRAST_VALUES.activeShadowAlpha};
+  --bull-active-inset-alpha: ${KONTRAST_VALUES.activeInsetAlpha};
+  --bull-active-overlay-alpha: ${KONTRAST_VALUES.activeOverlayAlpha};
+  --bull-inactive-border-alpha: ${KONTRAST_VALUES.inactiveBorderAlpha};
+  --bull-score-shadow-alpha: ${KONTRAST_VALUES.scoreShadowAlpha};
+  --bull-panel-border-alpha: ${KONTRAST_VALUES.panelBorderAlpha};
+  --bull-panel-inset-alpha: ${KONTRAST_VALUES.panelInsetAlpha};
+  --bull-button-border-alpha: ${KONTRAST_VALUES.buttonBorderAlpha};
 }
 
 div.css-gmuwbf,
@@ -73,7 +142,7 @@ div.css-nfhdnc {
 #ad-ext-game-variant{
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, var(--bull-variant-border-alpha));
   border-radius: 999px;
   padding: 0.1rem 0.75rem;
   background: linear-gradient(90deg, rgba(102, 187, 106, 0.26), rgba(239, 83, 80, 0.24));
@@ -82,9 +151,9 @@ div.css-nfhdnc {
 #ad-ext-turn > .score,
 #ad-ext-turn > .ad-ext-turn-throw,
 #ad-ext-turn > .suggestion{
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, var(--bull-turn-border-alpha));
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(102, 187, 106, 0.14), rgba(239, 83, 80, 0.14));
+  background: linear-gradient(90deg, rgba(102, 187, 106, var(--bull-turn-gradient-alpha)), rgba(239, 83, 80, var(--bull-turn-gradient-alpha)));
 }
 
 #ad-ext-player-display .ad-ext-player{
@@ -94,23 +163,23 @@ div.css-nfhdnc {
 }
 
 #ad-ext-player-display .ad-ext-player.ad-ext-player-active{
-  border: 2px solid rgba(102, 187, 106, 0.9) !important;
+  border: 2px solid rgba(102, 187, 106, var(--bull-active-border-alpha)) !important;
   box-shadow:
-    0 10px 26px rgba(0, 0, 0, 0.36),
-    inset 0 0 0 1px rgba(102, 187, 106, 0.24);
+    0 10px 26px rgba(0, 0, 0, var(--bull-active-shadow-alpha)),
+    inset 0 0 0 1px rgba(102, 187, 106, var(--bull-active-inset-alpha));
   background:
     linear-gradient(135deg, rgba(102, 187, 106, 0.12), rgba(239, 83, 80, 0.16)),
-    rgba(12, 16, 21, 0.88);
+    rgba(12, 16, 21, var(--bull-active-overlay-alpha));
 }
 
 #ad-ext-player-display .ad-ext-player.ad-ext-player-inactive{
-  border-color: rgba(239, 83, 80, 0.36) !important;
+  border-color: rgba(239, 83, 80, var(--bull-inactive-border-alpha)) !important;
 }
 
 #ad-ext-player-display .ad-ext-player .ad-ext-player-score{
   font-size: 7.2em !important;
   letter-spacing: 0.03em;
-  text-shadow: 0 0 18px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 0 18px rgba(0, 0, 0, var(--bull-score-shadow-alpha));
 }
 
 #ad-ext-player-display .ad-ext-player.ad-ext-player-active .ad-ext-player-score{
@@ -128,13 +197,13 @@ span.css-3fr5p8{
 
 .css-1kejrvi .css-tqsk66,
 .css-14xtjvc .css-tqsk66{
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, var(--bull-panel-border-alpha));
   border-radius: 16px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, var(--bull-panel-inset-alpha));
 }
 
 .css-7bjx6y .chakra-button{
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, var(--bull-button-border-alpha));
   background-color: rgba(23, 28, 35, 0.82);
 }
 

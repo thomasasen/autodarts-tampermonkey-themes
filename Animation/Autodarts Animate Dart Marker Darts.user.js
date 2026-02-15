@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.4
+// @version      2.5
 // @description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar.
 // @xconfig-description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar, inklusive optionalem Flugeffekt, als wären es echte Darts. Bilder der auswählbaren Designs findest du über „📖 Anleitung“.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -142,9 +142,25 @@
 	const xConfig_DART_DESIGN = "Dart_autodarts.png";
 	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Aktiviert Flug-, Einschlag- und Wobble-Animation für neue Darts.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
 	const xConfig_ANIMATE_DARTS = true;
+	// xConfig: {"type":"select","label":"Dart-Größe","description":"Skaliert die Dart-Bilder auf dem Board kleiner oder größer.","options":[{"value":"90","label":"Klein (90%)"},{"value":"100","label":"Standard (100%)"},{"value":"115","label":"Groß (115%)"}]}
+	const xConfig_DART_GROESSE = "100";
+	// xConfig: {"type":"toggle","label":"Original-Marker ausblenden","description":"Blendet die originalen runden Trefferpunkte aus, wenn Dart-Bilder angezeigt werden.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	const xConfig_ORIGINAL_MARKER_AUSBLENDEN = false;
+	// xConfig: {"type":"select","label":"Fluggeschwindigkeit","description":"Bestimmt, wie schnell die Dart-Fluganimation abgespielt wird.","options":[{"value":"schnell","label":"Schnell"},{"value":"standard","label":"Standard"},{"value":"cinematic","label":"Cinematic"}]}
+	const xConfig_FLUGGESCHWINDIGKEIT = "standard";
 
 	const DART_DESIGN = resolveXConfigSelect("xConfig_DART_DESIGN", xConfig_DART_DESIGN, DART_DESIGN_OPTIONS);
 	const ANIMATE_DARTS = resolveXConfigToggle("xConfig_ANIMATE_DARTS", xConfig_ANIMATE_DARTS);
+	const DART_SIZE_PERCENT = Number(resolveXConfigSelect("xConfig_DART_GROESSE", xConfig_DART_GROESSE, ["90", "100", "115"]));
+	const DART_SIZE_MULTIPLIER = Number.isFinite(DART_SIZE_PERCENT) ? DART_SIZE_PERCENT / 100 : 1;
+	const HIDE_ORIGINAL_MARKERS = resolveXConfigToggle("xConfig_ORIGINAL_MARKER_AUSBLENDEN", xConfig_ORIGINAL_MARKER_AUSBLENDEN);
+	const FLIGHT_SPEED_PRESETS = {
+		schnell: 250,
+		standard: 320,
+		cinematic: 460,
+	};
+	const RESOLVED_FLIGHT_SPEED_KEY = resolveXConfigSelect("xConfig_FLUGGESCHWINDIGKEIT", xConfig_FLUGGESCHWINDIGKEIT, ["schnell", "standard", "cinematic"]);
+	const RESOLVED_FLIGHT_DURATION_MS = FLIGHT_SPEED_PRESETS[RESOLVED_FLIGHT_SPEED_KEY] || FLIGHT_SPEED_PRESETS.standard;
 
 	/**
    * Konfiguration für die Dart-Bildplatzierung (ANIMATE_DARTS oben umschalten).
@@ -179,17 +195,17 @@
    */
 	const CONFIG = {
 		dartImageUrl: `${DART_BASE_URL}${DART_DESIGN}`,
-		dartLengthRatio: 0.416,
+		dartLengthRatio: 0.416 * DART_SIZE_MULTIPLIER,
 		dartAspectRatio: 472 / 198,
 		tipOffsetXRatio: 0,
 		tipOffsetYRatio: 130 / 198,
 		rotateToCenter: true,
 		baseAngleDeg: 180,
 		dartTransparency: 0,
-		hideMarkers: false,
+		hideMarkers: HIDE_ORIGINAL_MARKERS,
 		animateDarts: ANIMATE_DARTS,
 		animationStyle: "arc",
-		flightDurationMs: 320,
+		flightDurationMs: RESOLVED_FLIGHT_DURATION_MS,
 		flightDistanceRatio: 1.2,
 		arcHeightRatio: 0.16,
 		variationArcRatio: 0.1,

@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Dart Marker Emphasis
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Macht Dart-Trefferpunkte sichtbarer durch Größe, Farbe und optionalen Glow/Pulse.
 // @xconfig-description  Passt Dart-Marker auf dem Board an und kann sie mit Glow oder Pulse hervorheben.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-emphasis
 // @xconfig-background     assets/animation-dart-marker-emphasis-xConfig.gif
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -27,6 +27,10 @@
 	const xConfig_MARKER_FARBE = "rgb(49, 130, 206)";
 	// xConfig: {"type":"select","label":"Effekt","description":"Legt die Hervorhebung der Marker fest.","options":[{"value":"glow","label":"Glow"},{"value":"pulse","label":"Pulse"},{"value":"none","label":"Kein Effekt"}]}
 	const xConfig_EFFEKT = "glow";
+	// xConfig: {"type":"select","label":"Marker-Sichtbarkeit","description":"Regelt, wie deutlich die Marker insgesamt sichtbar sind.","options":[{"value":65,"label":"Dezent (65%)"},{"value":85,"label":"Standard (85%)"},{"value":100,"label":"Voll sichtbar (100%)"}]}
+	const xConfig_MARKER_OPAZITAET = 85;
+	// xConfig: {"type":"select","label":"Outline-Farbe","description":"Optionaler Rand um die Marker für bessere Erkennbarkeit.","options":[{"value":"aus","label":"Aus"},{"value":"weiß","label":"Weiß"},{"value":"schwarz","label":"Schwarz"}]}
+	const xConfig_OUTLINE = "aus";
 
 	function resolveNumberChoice(value, fallbackValue, allowedValues) {
 		const numericValue = Number(value);
@@ -51,6 +55,15 @@
 		"rgb(255, 255, 255)",
 	]);
 	const EFFECT = resolveStringChoice(xConfig_EFFEKT, "glow", ["glow", "pulse", "none"]);
+	const MARKER_OPACITY_PERCENT = resolveNumberChoice(xConfig_MARKER_OPAZITAET, 85, [65, 85, 100]);
+	const MARKER_OPACITY = MARKER_OPACITY_PERCENT / 100;
+	const OUTLINE_KEY = resolveStringChoice(xConfig_OUTLINE, "aus", ["aus", "weiß", "schwarz"]);
+	const OUTLINE_COLOR_BY_KEY = {
+		aus: "",
+		"weiß": "rgb(255, 255, 255)",
+		schwarz: "rgb(0, 0, 0)",
+	};
+	const MARKER_OUTLINE_COLOR = OUTLINE_COLOR_BY_KEY[OUTLINE_KEY] || "";
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
@@ -65,11 +78,20 @@
 	const STYLE_ID = "autodarts-size-strokes-style";
 	// Matches board hit markers rendered with the shadow filter.
 	const MARKER_SELECTOR = 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]';
+	const MARKER_HIDDEN_DATASET_KEY = "adExtOriginalOpacity";
 	const BASE_CLASS = "ad-ext-dart-marker";
 	const EFFECT_CLASSES = {
 		pulse: "ad-ext-dart-marker--pulse",
 		glow: "ad-ext-dart-marker--glow"
 	};
+
+	function isHiddenByDartOverlay(marker) {
+		return Boolean(
+			marker &&
+			marker.dataset &&
+			Object.prototype.hasOwnProperty.call(marker.dataset, MARKER_HIDDEN_DATASET_KEY)
+		);
+	}
 
 	/**
    * Injects CSS rules for the marker effects.
@@ -117,11 +139,20 @@
 	function applyMarkerStyles(marker) {
 		marker.setAttribute("r", String(MARKER_RADIUS));
 		marker.style.fill = MARKER_FILL;
+		const isHiddenByOverlay = isHiddenByDartOverlay(marker);
+		marker.style.opacity = isHiddenByOverlay ? "0" : String(MARKER_OPACITY);
+		if (! isHiddenByOverlay && MARKER_OUTLINE_COLOR) {
+			marker.style.stroke = MARKER_OUTLINE_COLOR;
+			marker.style.strokeWidth = "1.5";
+		} else {
+			marker.style.stroke = "none";
+			marker.style.strokeWidth = "0";
+		}
 		marker.classList.add(BASE_CLASS);
 		Object.values(EFFECT_CLASSES).forEach((effectClass) => {
 			marker.classList.remove(effectClass);
 		});
-		if (EFFECT !== "none" && EFFECT_CLASSES[EFFECT]) {
+		if (! isHiddenByOverlay && EFFECT !== "none" && EFFECT_CLASSES[EFFECT]) {
 			marker.classList.add(EFFECT_CLASSES[EFFECT]);
 		}
 	}

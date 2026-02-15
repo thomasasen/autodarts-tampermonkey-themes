@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.1
+// @version      2.2
 // @description  Zeigt bei AVG-Änderungen kurz einen Trendpfeil nach oben oder unten.
 // @xconfig-description  Visualisiert AVG-Änderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
 // @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -23,6 +23,8 @@
 
 	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie lange der Trendpfeil sichtbar animiert wird.","options":[{"value":220,"label":"Schnell"},{"value":320,"label":"Standard"},{"value":500,"label":"Langsam"}]}
 	const xConfig_ANIMATIONSDAUER_MS = 320;
+	// xConfig: {"type":"select","label":"Pfeil-Größe","description":"Legt fest, wie groß der Auf/Ab-Pfeil neben dem AVG angezeigt wird.","options":[{"value":"klein","label":"Klein"},{"value":"standard","label":"Standard"},{"value":"groß","label":"Groß"}]}
+	const xConfig_PFEIL_GROESSE = "standard";
 
 	function resolveNumberChoice(value, fallbackValue, allowedValues) {
 		const numericValue = Number(value);
@@ -31,11 +33,37 @@
 			: fallbackValue;
 	}
 
+	function resolveStringChoice(value, fallbackValue, allowedValues) {
+		const normalizedValue = String(value || "").trim();
+		return allowedValues.includes(normalizedValue)
+			? normalizedValue
+			: fallbackValue;
+	}
+
 	const ANIMATION_MS = resolveNumberChoice(xConfig_ANIMATIONSDAUER_MS, 320, [
 		220,
 		320,
 		500,
 	]);
+	const ARROW_SIZE_PRESETS = {
+		klein: {
+			marginLeftPx: 4,
+			arrowHalfWidthPx: 4,
+			arrowHeightPx: 6,
+		},
+		standard: {
+			marginLeftPx: 6,
+			arrowHalfWidthPx: 5,
+			arrowHeightPx: 8,
+		},
+		"groß": {
+			marginLeftPx: 8,
+			arrowHalfWidthPx: 6,
+			arrowHeightPx: 10,
+		},
+	};
+	const RESOLVED_ARROW_SIZE_KEY = resolveStringChoice(xConfig_PFEIL_GROESSE, "standard", ["klein", "standard", "groß"]);
+	const ARROW_SIZE = ARROW_SIZE_PRESETS[RESOLVED_ARROW_SIZE_KEY] || ARROW_SIZE_PRESETS.standard;
 
 	const {ensureStyle, createRafScheduler, observeMutations} = window.autodartsAnimationShared;
 
@@ -75,7 +103,7 @@
   display: inline-block;
   width: 0;
   height: 0;
-  margin-left: 6px;
+  margin-left: ${ARROW_SIZE.marginLeftPx}px;
   vertical-align: middle;
   opacity: 0;
   transition: opacity 120ms ease-out;
@@ -86,15 +114,15 @@
 }
 
 .${UP_CLASS} {
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 8px solid #9fdb58;
+  border-left: ${ARROW_SIZE.arrowHalfWidthPx}px solid transparent;
+  border-right: ${ARROW_SIZE.arrowHalfWidthPx}px solid transparent;
+  border-bottom: ${ARROW_SIZE.arrowHeightPx}px solid #9fdb58;
 }
 
 .${DOWN_CLASS} {
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 8px solid #f87171;
+  border-left: ${ARROW_SIZE.arrowHalfWidthPx}px solid transparent;
+  border-right: ${ARROW_SIZE.arrowHalfWidthPx}px solid transparent;
+  border-top: ${ARROW_SIZE.arrowHeightPx}px solid #f87171;
 }
 
 .${ANIMATE_CLASS} {

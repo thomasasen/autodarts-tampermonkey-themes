@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.3
+// @version      2.4
 // @description  Vollständiges X01-Theme mit Fokus auf klare Scores, Player-Karten und Navigation.
 // @xconfig-description  Setzt in X01 ein umfassendes visuelles Theme für Lesbarkeit, Struktur und konsistente Darstellung.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  template-autodarts-theme-x01
 // @xconfig-background     assets/template-theme-x01-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -31,6 +32,8 @@
 	// Style tag identifier and expected variant name.
 	const STYLE_ID = "autodarts-x01-custom-style";
 	const VARIANT_NAME = "x01";
+	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Blendet den AVG-Wert im X01-Theme ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	const xConfig_AVG_ANZEIGE = true;
 
 	// Preview placement: "standard" or "under-throws".
 	const PREVIEW_PLACEMENT = "under-throws";
@@ -46,6 +49,30 @@
 	const STAT_AVG_ARROW_HEIGHT_PX = 23;
 	const STAT_AVG_ARROW_MARGIN_LEFT_PX = 8;
 	const INACTIVE_STAT_SCALE = 0.6;
+
+	function resolveToggle(value, fallbackValue) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		if (value === 1 || value === "1") {
+			return true;
+		}
+		if (value === 0 || value === "0") {
+			return false;
+		}
+		if (typeof value === "string") {
+			const normalized = value.trim().toLowerCase();
+			if (["true", "yes", "on", "aktiv", "active"].includes(normalized)) {
+				return true;
+			}
+			if (["false", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+				return false;
+			}
+		}
+		return fallbackValue;
+	}
+
+	const RESOLVED_SHOW_AVG = resolveToggle(xConfig_AVG_ANZEIGE, true);
 
 
 	// X01-spezifische Layout-Overrides.
@@ -83,6 +110,16 @@ div.chakra-stack.navigation.css-ege71s,
 	}px;
 }
 ` : "";
+
+	const avgVisibilityCss = RESOLVED_SHOW_AVG ? "" : `
+p.chakra-text.css-1j0bqop{
+  display: none !important;
+}
+
+.ad-ext-avg-trend-arrow{
+  display: none !important;
+}
+`;
 
 	const statsSizingCss = `
 .ad-ext-player {
@@ -129,7 +166,7 @@ span.chakra-badge.css-1c4630i {
 	const buildCss = createCssBuilder({
 		fallbackThemeCss: commonThemeCss,
 		fallbackLayoutCss: commonLayoutCss,
-		extraCss: navigationOverride + previewPlacementCss + statsSizingCss + x01LayoutOverrides
+		extraCss: navigationOverride + previewPlacementCss + avgVisibilityCss + statsSizingCss + x01LayoutOverrides
 	});
 
 	attachTheme({styleId: STYLE_ID, variantName: VARIANT_NAME, buildCss});

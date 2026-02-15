@@ -1,12 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Layout- und Farb-Theme für Cricket mit aufgeräumter Board- und Spieleransicht.
 // @xconfig-description  Aktiviert ein visuelles Cricket-Theme auf Basis des Shared-Helpers für Farben, Abstände und Struktur.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  template-autodarts-theme-cricket
 // @xconfig-background     assets/template-theme-cricket-xConfig.png
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -23,6 +24,32 @@
 	const {attachTheme, initPreviewPlacement} = window.autodartsThemeShared;
 	const STYLE_ID = "autodarts-cricket-custom-style";
 	const VARIANT_NAME = "cricket";
+	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Blendet den AVG-Wert im Cricket-Theme ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	const xConfig_AVG_ANZEIGE = true;
+
+	function resolveToggle(value, fallbackValue) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		if (value === 1 || value === "1") {
+			return true;
+		}
+		if (value === 0 || value === "0") {
+			return false;
+		}
+		if (typeof value === "string") {
+			const normalized = value.trim().toLowerCase();
+			if (["true", "yes", "on", "aktiv", "active"].includes(normalized)) {
+				return true;
+			}
+			if (["false", "no", "off", "inaktiv", "inactive"].includes(normalized)) {
+				return false;
+			}
+		}
+		return fallbackValue;
+	}
+
+	const RESOLVED_SHOW_AVG = resolveToggle(xConfig_AVG_ANZEIGE, true);
 
 	// Preview placement: "standard" or "under-throws".
 	const PREVIEW_PLACEMENT = "under-throws";
@@ -37,6 +64,16 @@
 	}px;
 }
 ` : "";
+
+	const avgVisibilityCss = RESOLVED_SHOW_AVG ? "" : `
+p.chakra-text.css-1j0bqop{
+  display: none !important;
+}
+
+.ad-ext-avg-trend-arrow{
+  display: none !important;
+}
+`;
 
 	const customCss = `
 :root{
@@ -187,7 +224,7 @@ span.chakra-switch__track.css-v4l15v {
 	attachTheme({
 		styleId: STYLE_ID,
 		variantName: VARIANT_NAME,
-		buildCss: () => customCss + previewPlacementCss
+		buildCss: () => customCss + avgVisibilityCss + previewPlacementCss
 	});
 
 	if (PREVIEW_PLACEMENT === "under-throws") {

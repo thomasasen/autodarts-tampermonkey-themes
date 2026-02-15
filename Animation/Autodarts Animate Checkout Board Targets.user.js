@@ -1,13 +1,13 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.3
 // @description  Hebt mögliche Checkout-Ziele auf dem Board hervor und animiert sie in X01.
 // @xconfig-description  Markiert mögliche Checkout-Felder (Double/Bull) auf dem Dartboard und animiert sie mit Blink, Pulse oder Glow in X01.
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
 // @xconfig-background     assets/animation-checkout-board-targets.gif
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -30,6 +30,8 @@
 	const xConfig_SINGLE_RING = "both";
 	// xConfig: {"type":"select","label":"Farbthema","description":"Farbthema für Füllung und Kontur der Zielbereiche.","options":[{"value":"violet","label":"Violett (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"amber","label":"Amber"}]}
 	const xConfig_FARBTHEMA = "violet";
+	// xConfig: {"type":"select","label":"Kontur-Intensität","description":"Steuert, wie deutlich die weiße Ziel-Kontur dargestellt wird.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
+	const xConfig_KONTUR_INTENSITAET = "standard";
 
 	function resolveStringChoice(value, fallbackValue, allowedValues) {
 		const normalizedValue = String(value || "").trim();
@@ -52,12 +54,40 @@
 			strokeColor: "rgba(251, 191, 36, 0.95)",
 		},
 	};
+	const OUTLINE_INTENSITY_PRESETS = {
+		dezent: {
+			strokeAlpha: 0.68,
+			baseOpacity: 0.45,
+			pulseMinOpacity: 0.22,
+			pulseMaxOpacity: 0.8,
+			widthDownPx: 0.8,
+			widthUpPx: 0.8,
+		},
+		standard: {
+			strokeAlpha: 0.9,
+			baseOpacity: 0.6,
+			pulseMinOpacity: 0.35,
+			pulseMaxOpacity: 1,
+			widthDownPx: 0.5,
+			widthUpPx: 1.5,
+		},
+		stark: {
+			strokeAlpha: 1,
+			baseOpacity: 0.8,
+			pulseMinOpacity: 0.45,
+			pulseMaxOpacity: 1,
+			widthDownPx: 0.35,
+			widthUpPx: 2.2,
+		},
+	};
 
 	const RESOLVED_EFFECT = resolveStringChoice(xConfig_EFFEKT, "pulse", ["pulse", "blink", "glow"]);
 	const RESOLVED_TARGET_SCOPE = resolveStringChoice(xConfig_ZIELUMFANG, "first", ["first", "all"]);
 	const RESOLVED_SINGLE_RING = resolveStringChoice(xConfig_SINGLE_RING, "both", ["both", "inner", "outer"]);
 	const RESOLVED_THEME_KEY = resolveStringChoice(xConfig_FARBTHEMA, "violet", ["violet", "cyan", "amber"]);
+	const RESOLVED_OUTLINE_INTENSITY_KEY = resolveStringChoice(xConfig_KONTUR_INTENSITAET, "standard", ["dezent", "standard", "stark"]);
 	const RESOLVED_THEME = BOARD_THEME_PRESETS[RESOLVED_THEME_KEY] || BOARD_THEME_PRESETS.violet;
+	const RESOLVED_OUTLINE_INTENSITY = OUTLINE_INTENSITY_PRESETS[RESOLVED_OUTLINE_INTENSITY_KEY] || OUTLINE_INTENSITY_PRESETS.standard;
 
 	const gameStateShared = window.autodartsGameStateShared || null;
 
@@ -143,9 +173,9 @@
 
 .${OUTLINE_CLASS} {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.9);
+  stroke: rgba(255, 255, 255, var(--ad-ext-target-outline-stroke-alpha));
   stroke-width: var(--ad-ext-target-outline-width);
-  opacity: 0.6;
+  opacity: var(--ad-ext-target-outline-base-opacity);
   pointer-events: none;
   animation: ad-ext-checkout-outline-pulse var(--ad-ext-target-duration) ease-in-out infinite;
 }
@@ -195,16 +225,16 @@
 
 @keyframes ad-ext-checkout-outline-pulse {
   0% {
-    stroke-opacity: 0.35;
-    stroke-width: calc(var(--ad-ext-target-outline-width) - 0.5px);
+    stroke-opacity: var(--ad-ext-target-outline-pulse-min-opacity);
+    stroke-width: calc(var(--ad-ext-target-outline-width) - var(--ad-ext-target-outline-width-down-px));
   }
   50% {
-    stroke-opacity: 1;
-    stroke-width: calc(var(--ad-ext-target-outline-width) + 1.5px);
+    stroke-opacity: var(--ad-ext-target-outline-pulse-max-opacity);
+    stroke-width: calc(var(--ad-ext-target-outline-width) + var(--ad-ext-target-outline-width-up-px));
   }
   100% {
-    stroke-opacity: 0.35;
-    stroke-width: calc(var(--ad-ext-target-outline-width) - 0.5px);
+    stroke-opacity: var(--ad-ext-target-outline-pulse-min-opacity);
+    stroke-width: calc(var(--ad-ext-target-outline-width) - var(--ad-ext-target-outline-width-down-px));
   }
 }
 `;
@@ -329,6 +359,12 @@
 		element.style.setProperty("--ad-ext-target-duration", `${
 			CONFIG.animationMs
 		}ms`);
+		element.style.setProperty("--ad-ext-target-outline-stroke-alpha", String(RESOLVED_OUTLINE_INTENSITY.strokeAlpha));
+		element.style.setProperty("--ad-ext-target-outline-base-opacity", String(RESOLVED_OUTLINE_INTENSITY.baseOpacity));
+		element.style.setProperty("--ad-ext-target-outline-pulse-min-opacity", String(RESOLVED_OUTLINE_INTENSITY.pulseMinOpacity));
+		element.style.setProperty("--ad-ext-target-outline-pulse-max-opacity", String(RESOLVED_OUTLINE_INTENSITY.pulseMaxOpacity));
+		element.style.setProperty("--ad-ext-target-outline-width-down-px", `${RESOLVED_OUTLINE_INTENSITY.widthDownPx}px`);
+		element.style.setProperty("--ad-ext-target-outline-width-up-px", `${RESOLVED_OUTLINE_INTENSITY.widthUpPx}px`);
 		if (element.dataset.noStroke === "true") {
 			element.style.stroke = "none";
 			element.style.strokeWidth = "0";
@@ -366,6 +402,12 @@
 		element.style.setProperty("--ad-ext-target-duration", `${
 			CONFIG.animationMs
 		}ms`);
+		element.style.setProperty("--ad-ext-target-outline-stroke-alpha", String(RESOLVED_OUTLINE_INTENSITY.strokeAlpha));
+		element.style.setProperty("--ad-ext-target-outline-base-opacity", String(RESOLVED_OUTLINE_INTENSITY.baseOpacity));
+		element.style.setProperty("--ad-ext-target-outline-pulse-min-opacity", String(RESOLVED_OUTLINE_INTENSITY.pulseMinOpacity));
+		element.style.setProperty("--ad-ext-target-outline-pulse-max-opacity", String(RESOLVED_OUTLINE_INTENSITY.pulseMaxOpacity));
+		element.style.setProperty("--ad-ext-target-outline-width-down-px", `${RESOLVED_OUTLINE_INTENSITY.widthDownPx}px`);
+		element.style.setProperty("--ad-ext-target-outline-width-up-px", `${RESOLVED_OUTLINE_INTENSITY.widthUpPx}px`);
 	}
 
 	/**
@@ -427,7 +469,7 @@
    */
 	function updateTargets() {
 		const suggestionEl = document.querySelector(CONFIG.suggestionSelector);
-		const text = suggestionEl ?. textContent ?. trim() || "";
+		const text = suggestionEl?.textContent?.trim() || "";
 
 		const isX01 = CONFIG.requireX01 ? gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
 			allowMissing: false,
@@ -491,3 +533,4 @@
 	// Observes text and DOM changes to update checkout targets.
 	observeMutations({onChange: scheduleUpdate});
 })();
+
