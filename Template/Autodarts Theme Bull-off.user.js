@@ -31,7 +31,7 @@
 
 	const STYLE_ID = "autodarts-bull-off-custom-style";
 	const VARIANT_NAME = "bull-off";
-	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und Flächenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"Kraeftig"}]}
+	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und Flächenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"Kräftig"}]}
 	const xConfig_KONTRAST_PRESET = "standard";
 
 	function resolveStringChoice(value, fallbackValue, allowedValues) {
