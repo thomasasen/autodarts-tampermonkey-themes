@@ -20,6 +20,7 @@
   "use strict";
 
   const MENU_LABEL = "AD xConfig";
+  const MENU_LABEL_COLLAPSE_WIDTH = 120;
   const STORAGE_KEY = "ad-xconfig:config";
   const CONFIG_VERSION = 7;
   const MODULE_CACHE_STORAGE_KEY = "ad-xconfig:module-cache:v1";
@@ -2498,8 +2499,8 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-#${MENU_ITEM_ID} { cursor: pointer; display: flex !important; align-items: center; min-height: 2.5rem; }
-#${MENU_ITEM_ID} .xcfg-menu-inner { display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; }
+#${MENU_ITEM_ID} { cursor: pointer; min-height: 2.5rem; }
+#${MENU_ITEM_ID} .xcfg-menu-icon { display: inline-flex; align-items: center; flex-shrink: 0; margin-inline-end: 0.5rem; }
 #${MENU_ITEM_ID}[data-active="true"] { background: rgba(32,111,185,0.28) !important; border-color: rgba(255,255,255,0.16) !important; }
 #${MENU_ITEM_ID} .xcfg-menu-label { white-space: nowrap; }
 
@@ -2828,6 +2829,18 @@
     return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M3 6.5A1.5 1.5 0 0 1 4.5 5h10A1.5 1.5 0 0 1 16 6.5v1A1.5 1.5 0 0 1 14.5 9h-10A1.5 1.5 0 0 1 3 7.5zm0 10A1.5 1.5 0 0 1 4.5 15h6A1.5 1.5 0 0 1 12 16.5v1a1.5 1.5 0 0 1-1.5 1.5h-6A1.5 1.5 0 0 1 3 17.5zM18 4a3 3 0 0 1 3 3a3 3 0 0 1-3 3a3 3 0 0 1-3-3a3 3 0 0 1 3-3m0 10a3 3 0 0 1 3 3a3 3 0 0 1-3 3a3 3 0 0 1-3-3a3 3 0 0 1 3-3\"/></svg>";
   }
 
+  function buildMenuIconElement(template) {
+    const icon = document.createElement("span");
+    const templateIcon = template instanceof Element ? template.querySelector(".chakra-button__icon") : null;
+    if (templateIcon && templateIcon.className) {
+      icon.className = `${templateIcon.className} xcfg-menu-icon`;
+    } else {
+      icon.className = "xcfg-menu-icon";
+    }
+    icon.innerHTML = getMenuIcon();
+    return icon;
+  }
+
   function syncMenuButtonState() {
     const button = state.menuButton || document.getElementById(MENU_ITEM_ID);
     if (!button) {
@@ -2855,7 +2868,7 @@
     }
 
     const width = sidebar.getBoundingClientRect().width;
-    label.style.display = width < 185 ? "none" : "inline";
+    label.style.display = width < MENU_LABEL_COLLAPSE_WIDTH ? "none" : "inline";
   }
 
 
@@ -2900,7 +2913,11 @@
       const template = boardsButton || sidebar.querySelector("a[href]") || sidebar.lastElementChild;
       item = template ? template.cloneNode(true) : document.createElement("button");
       item.id = MENU_ITEM_ID;
-      item.innerHTML = `<span class="xcfg-menu-inner">${getMenuIcon()}<span class="xcfg-menu-label">${MENU_LABEL}</span></span>`;
+      const icon = buildMenuIconElement(template);
+      const label = document.createElement("span");
+      label.className = "xcfg-menu-label";
+      label.textContent = MENU_LABEL;
+      item.replaceChildren(icon, label);
       item.setAttribute("role", "button");
       item.setAttribute("tabindex", "0");
       item.style.cursor = "pointer";
