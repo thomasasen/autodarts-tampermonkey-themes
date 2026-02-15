@@ -17,49 +17,52 @@ Viele Skripte aktivieren sich je nach Spielvariante automatisch und lassen sich 
 - Optionale Animations- und Effekt-Skripte für bessere Lesbarkeit.
 - Skripte reagieren automatisch, wenn sich die Spielansicht dynamisch ändert.
 - DartsZoom-Vorschau optional unter den Würfen; Platz wird nur reserviert, wenn die Vorschau sichtbar ist.
-- Bevorzugte Nutzung über **AD xConfig**; direkte Einzelinstallation bleibt optional möglich.
+- Es gibt genau eine Installationsmethode: **AD xConfig Auto Loader**.
 
 ### 🗂️ Ordnerstruktur
 
 - `Template/`: Themes (Layout/Farben) je Spielvariante.
 - `Animation/`: Animationen und Effekte.
-- `Config/`: zentrale Steuerung und Loader (`AD xConfig.user.js`).
+- `Config/`: zentrale Steuerung (`AD xConfig.user.js`) und Auto-Loader (`AD xConfig Auto Loader.user.js`).
 - `Template/autodarts-theme-shared.js`: gemeinsamer Helfer für die Themes (wird per `@require` geladen).
 - `Animation/autodarts-animation-shared.js`: gemeinsamer Helfer für Animationen (wird per `@require` geladen).
 - `assets/`: Screenshots, GIFs, Sounds und Design-Bilder.
 
 ### 🧭 Leseführung
 
-- Erst Tampermonkey, Installation und Updates.
-- Danach zuerst **AD xConfig** einrichten (empfohlen) und anschließend bei Bedarf die einzelnen Skriptabschnitte nutzen.
+- Erst Tampermonkey installieren, dann den **AD xConfig Auto Loader** installieren.
+- Danach AD xConfig öffnen und Module aktivieren.
 - Am Ende: Feedback, Testumgebung, Lizenz und Haftungsausschluss.
 
 ## 🚀 Schnellstart
 
 1. Tampermonkey installieren (Chrome/Edge/Chromium): [tampermonkey.net](https://www.tampermonkey.net/index.php?browser=chrome)
-2. **Empfohlen:** `AD xConfig` installieren (zentrale Verwaltung für Themes/Animationen).
-3. In Autodarts über den Hauptmenü-Button **AD xConfig** die Module laden und aktivieren.
-4. Autodarts neu laden.
+2. **AD xConfig Auto Loader** installieren (einziger Installationsweg).
+3. `https://play.autodarts.io` öffnen oder neu laden.
+4. Im Hauptmenü **AD xConfig** öffnen und auf **„🔄 Skripte & Loader-Cache laden“** klicken.
+5. Gewünschte Module auf **An** stellen und optional über **⚙ Einstellungen** anpassen.
 
-Tipp: In **AD xConfig** zuerst **„🔄 Skripte & Loader-Cache laden“**, dann ein Theme aktivieren und anschließend gewünschte Animationen ergänzen.
+Kurz gesagt: Installieren, Seite öffnen, fertig. Module und Updates kommen automatisch.
 
-## ⭐ Empfohlene Methode: AD xConfig
+## ⭐ Einzige Installationsmethode: AD xConfig Auto Loader
 
-Die bevorzugte Implementierung ist **`Config/AD xConfig.user.js`**.
-Damit verwaltest du Themes und Animationen zentral über eine Oberfläche in Autodarts, statt viele Einzelskripte manuell zu installieren und einzeln zu pflegen.
+Die einzige und empfohlene Implementierung ist **`Config/AD xConfig Auto Loader.user.js`**.
+Der Loader lädt bei jedem Seitenstart automatisch die neueste `AD xConfig.user.js`, führt sie aus und nutzt bei Netzproblemen die zuletzt erfolgreiche Version aus dem lokalen Cache.
 
-- Datei: `Config/AD xConfig.user.js`
+- Datei: `Config/AD xConfig Auto Loader.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Config/AD%20xConfig.user.js)
+[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Config/AD%20xConfig%20Auto%20Loader.user.js)
+
 
 ![AD xConfig](assets/AD-xConfig.png)
 
 ### Warum diese Methode bevorzugt ist
 
 - **Einfachheit:** Eine zentrale Oberfläche statt vieler einzelner Skript-Konfigurationen.
-- **Weniger Pflegeaufwand:** Du musst nicht mehr jedes einzelne Theme-/Animations-Skript separat aktualisieren.
+- **Weniger Pflegeaufwand:** Du musst keine einzelnen Theme-/Animations-Skripte installieren oder pflegen.
 - **Live-Ladung aus GitHub:** Die Module werden direkt aus dem Repository geladen (über **„🔄 Skripte & Loader-Cache laden“**).
-- **Zentrale Updates:** In der Regel muss maximal `AD xConfig.user.js` aktuell gehalten werden.
+- **Automatische Aktualität:** Der Auto Loader lädt bei jedem Start die aktuelle AD xConfig-Version.
+- **Ausfallsicher:** Bei kurzen Verbindungsproblemen wird die zuletzt erfolgreiche Version aus dem Cache verwendet.
 - **Transparenz:** Laufzeitstatus, Versionen, Varianten und konfigurierbare Felder sind direkt sichtbar.
 
 ### Key-Features (besonders wichtig)
@@ -71,13 +74,18 @@ Damit verwaltest du Themes und Animationen zentral über eine Oberfläche in Aut
 
 ### Installation und Nutzung
 
-1. `AD xConfig.user.js` über den Installationsbutton installieren.
+1. `AD xConfig Auto Loader.user.js` über den Installationsbutton installieren.
 2. `https://play.autodarts.io` öffnen oder neu laden.
 3. Im Hauptmenü erscheint der neue Button **AD xConfig**.
 4. Im xConfig-Panel auf **„🔄 Skripte & Loader-Cache laden“** klicken.
 5. Über die Schalter **An/Aus** die gewünschten Module aktivieren.
 6. Optional pro Modul **`⚙ Einstellungen`** öffnen und eigene Konfiguration speichern.
 7. Über **`📖 Anleitung`** direkt die zugehörige README-Stelle öffnen.
+
+### Migration (wichtig)
+
+Wenn `Config/AD xConfig.user.js` bereits direkt in Tampermonkey installiert ist, bitte deaktivieren oder deinstallieren.
+Nutze nur den **AD xConfig Auto Loader**, damit keine Doppel-Ausführung entsteht.
 
 ### Tabs „Themen“ und „Animationen“
 
@@ -115,7 +123,7 @@ Technisch werden die Werte über Tampermonkey-Storage (bzw. Fallback `localStora
 
 - [📖 Einführung](#einführung)
 - [🚀 Schnellstart](#schnellstart)
-- [⭐ Empfohlene Methode: AD xConfig](#-empfohlene-methode-ad-xconfig)
+- [⭐ Einzige Installationsmethode: AD xConfig Auto Loader](#-einzige-installationsmethode-ad-xconfig-auto-loader)
 - [🧰 Tampermonkey](#tampermonkey)
 - [📦 Installation](#installation)
 - [🔄 Updates](#updates)
@@ -158,43 +166,37 @@ Weiterführende Links:
 - [Dokumentation](https://www.tampermonkey.net/documentation.php)
 
 Nach der Installation findest du das Tampermonkey-Icon in der Browser-Toolbar.
-Dort kannst du die installierten Skripte öffnen, aktivieren/deaktivieren und aktualisieren.
-Variablen ändern (klassische Einzelinstallation): Tampermonkey-Icon -> Dashboard -> Skript öffnen -> im Editor die Variablen anpassen -> Speichern. Danach die Autodarts-Seite neu laden.
-Hinweis: Bei Nutzung von **AD xConfig** ist das in der Regel nicht nötig, da Einstellungen zentral im xConfig-Panel vorgenommen und gespeichert werden.
+Dort kannst du prüfen, ob der **AD xConfig Auto Loader** aktiv ist.
+Einstellungen werden danach direkt in AD xConfig vorgenommen, nicht im Skriptcode.
 
 ## 📦 Installation
 
-### Empfohlen: zentrale Installation mit AD xConfig
+1. Installiere Tampermonkey.
+2. Klicke oben auf den Installationsbutton für `Config/AD xConfig Auto Loader.user.js`.
+3. Bestätige im Tampermonkey-Dialog mit „Installieren“.
+4. Öffne `https://play.autodarts.io`.
+5. Öffne im Hauptmenü **AD xConfig**.
+6. Klicke auf **„🔄 Skripte & Loader-Cache laden“**.
+7. Aktiviere gewünschte Module mit **An** und passe bei Bedarf **⚙ Einstellungen** an.
 
-1. Installiere `Config/AD xConfig.user.js` über den Installationsbutton oben.
-2. Öffne Autodarts und gehe über den Menüpunkt **AD xConfig** in die Modulverwaltung.
-3. Klicke auf **„🔄 Skripte & Loader-Cache laden“**.
-4. Aktiviere gewünschte Module mit **`An`** und passe bei Bedarf **`⚙ Einstellungen`** an.
-
-### Optional: klassische Einzelinstallation
-
-1. Wähle unten ein einzelnes Skript und klicke auf den jeweiligen Installationsbutton.
-2. Tampermonkey öffnet den Installationsdialog.
-3. Klicke auf „Installieren“ und lasse automatische Updates aktiviert.
-
-Hinweis: Der Button führt direkt zur Skriptdatei. Beim Öffnen zeigt Tampermonkey den Installationsdialog.
-Wenn kein Dialog erscheint, ist Tampermonkey nicht installiert oder deaktiviert.
+Troubleshooting:
+- Wenn kein Installationsdialog erscheint, ist Tampermonkey nicht installiert oder deaktiviert.
+- Wenn AD xConfig nicht sichtbar ist, Seite neu laden und prüfen, ob der Loader in Tampermonkey aktiviert ist.
 
 ## 🔄 Updates
 
-- Automatisch: Tampermonkey aktualisiert installierte Skripte, wenn `@updateURL`/`@downloadURL` erreichbar sind.
-- Manuell: Skript im Tampermonkey-Dashboard öffnen und auf „Nach Updates suchen“ klicken.
-- Lokale Datei: Wenn du ein lokales Skript nutzt, aktualisiere die Datei und speichere sie erneut in Tampermonkey.
+- Der **AD xConfig Auto Loader** lädt bei jedem Seitenstart die aktuelle AD xConfig-Version aus GitHub.
+- Bei Verbindungsproblemen verwendet der Loader automatisch die zuletzt erfolgreiche Cache-Version.
+- In der Praxis reicht die einmalige Installation des Auto Loaders.
 
 ## 🧩 Skripte
 
 Hinweis für die meisten Nutzer:
-Die Konfiguration erfolgt bevorzugt zentral über **AD xConfig** (Ein/Aus, Einstellungen, Updates, Laufzeitstatus).
+Die Konfiguration erfolgt vollständig über **AD xConfig** (Ein/Aus, Einstellungen, Laufzeitstatus).
 
-Hinweis für technisch Versierte (klassische Einzelinstallation):
-Jedes Skript hat zusätzlich einen Konfigurationsblock nahe am Dateianfang.
-Ändere nur diese Variablen im jeweiligen Skript, speichere es in Tampermonkey und lade die Autodarts-Seite neu.
-Die Design-Vorlagen liegen in `Template/`, die Animationen in `Animation/`.
+Hinweis für technisch Versierte:
+Die Tabellen unten dokumentieren die internen Variablen der einzelnen Skripte.
+Im Alltag solltest du trotzdem die AD-xConfig-Oberfläche nutzen.
 
 Kennzeichnung: Jede Skriptsektion enthält einen Block **Einfache Variablen (Beispiele)**.
 Diese Werte kannst du ohne technisches Vorwissen ändern; alle anderen Variablen richten sich an technisch Versierte.
@@ -226,7 +228,6 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 - Bezeichnung: Autodarts Theme X01
 - Datei: `Template/Autodarts Theme X01.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20X01.user.js)
 
 ##### 📝 Beschreibung
 
@@ -282,7 +283,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Bezeichnung: Autodarts Theme Shanghai
 - Datei: `Template/Autodarts Theme Shanghai.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Shanghai.user.js)
 
 ##### 📝 Beschreibung
 
@@ -325,7 +325,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Bezeichnung: Autodarts Theme Bermuda
 - Datei: `Template/Autodarts Theme Bermuda.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Bermuda.user.js)
 
 ##### 📝 Beschreibung
 
@@ -369,7 +368,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Bezeichnung: Autodarts Theme Cricket
 - Datei: `Template/Autodarts Theme Cricket.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js)
 
 ##### 📝 Beschreibung
 
@@ -420,7 +418,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Bezeichnung: Autodarts Animate Triple Double Bull Hits
 - Datei: `Animation/Autodarts Animate Triple Double Bull Hits.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Triple%20Double%20Bull%20Hits.user.js)
 
 ##### 📝 Beschreibung
 
@@ -470,7 +467,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Bezeichnung: Autodarts Animate Single Bull Sound
 - Datei: `Animation/Autodarts Animate Single Bull Sound.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Single%20Bull%20Sound.user.js)
 
 ##### 📝 Beschreibung
 
@@ -520,7 +516,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Checkout Score Pulse
 - Datei: `Animation/Autodarts Animate Checkout Score Pulse.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Score%20Pulse.user.js)
 
 ##### 📝 Beschreibung
 
@@ -568,7 +563,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Turn Points Count
 - Datei: `Animation/Autodarts Animate Turn Points Count.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Points%20Count.user.js)
 
 ##### 📝 Beschreibung
 
@@ -607,7 +601,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Average Trend Arrow
 - Datei: `Animation/Autodarts Animate Average Trend Arrow.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Average%20Trend%20Arrow.user.js)
 
 ##### 📝 Beschreibung
 
@@ -652,7 +645,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Turn Start Sweep
 - Datei: `Animation/Autodarts Animate Turn Start Sweep.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Turn%20Start%20Sweep.user.js)
 
 ##### 📝 Beschreibung
 
@@ -698,7 +690,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Remove Darts Notification
 - Datei: `Animation/Autodarts Animate Remove Darts Notification.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Remove%20Darts%20Notification.user.js)
 
 ##### 📝 Beschreibung
 
@@ -748,7 +739,6 @@ Sound-Beispiel: [singlebull.mp3](assets/singlebull.mp3)
 - Bezeichnung: Autodarts Animate Winner Fireworks
 - Datei: `Animation/Autodarts Animate Winner Fireworks.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js)
 
 ##### 📝 Beschreibung
 
@@ -824,7 +814,6 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 - Bezeichnung: Autodarts Animate Dart Marker Emphasis
 - Datei: `Animation/Autodarts Animate Dart Marker Emphasis.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Emphasis.user.js)
 
 ##### 📝 Beschreibung
 
@@ -869,7 +858,6 @@ Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
 - Bezeichnung: Autodarts Animate Dart Marker Darts
 - Datei: `Animation/Autodarts Animate Dart Marker Darts.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js)
 
 ##### 📝 Beschreibung
 
@@ -955,7 +943,6 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 - Bezeichnung: Autodarts Animate Checkout Board Targets
 - Datei: `Animation/Autodarts Animate Checkout Board Targets.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js)
 
 ##### 📝 Beschreibung
 
@@ -1016,7 +1003,6 @@ Aktuell gibt es kein eigenes Bild/GIF für dieses Modul.
 - Bezeichnung: Autodarts Style Checkout Suggestions
 - Datei: `Animation/Autodarts Style Checkout Suggestions.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js)
 
 ##### 📝 Beschreibung
 
@@ -1080,7 +1066,6 @@ Varianten:
 - Bezeichnung: Autodarts Animate Cricket Target Highlighter
 - Datei: `Animation/Autodarts Animate Cricket Target Highlighter.user.js`
 
-[![Installieren](https://img.shields.io/badge/Installieren-Tampermonkey-2ea44f?style=for-the-badge)](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js)
 
 ##### 📝 Beschreibung
 
