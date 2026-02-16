@@ -725,6 +725,42 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 ---
 
+### Animation: Autodarts Animate TV Board Zoom
+
+- Gilt für: `X01`
+- Was das Skript macht: Simuliert TV-ähnliche Board-Zooms vor Dart 3 in klaren Situationen (`T20,T20` oder eindeutiger 1-Dart-Checkout).
+
+**xConfig-Einstellungen erklärt**
+
+- `xConfig_ZOOM_STUFE` (`Zoom-Stufe`)  
+  Optionen: `Dezent (2.35x)`, `Mittel (2.75x)`, `Nah (3.15x)`  
+  Wirkung: Bestimmt, wie nah das Zielsegment im Boardausschnitt erscheint.  
+  Praxis: `Mittel` ist der beste Allround-Standard; `Dezent` wirkt ruhiger, `Nah` ist sehr fokussiert.
+
+- `xConfig_ZOOM_GESCHWINDIGKEIT` (`Zoom-Geschwindigkeit`)  
+  Optionen: `Schnell`, `Mittel`, `Langsam`  
+  Wirkung: Regelt Ein-/Auszoom-Dauer und die kurze Haltezeit nach Dart 3 als Preset.  
+  Praxis: `Mittel` für Alltag, `Schnell` für Turnierfluss, `Langsam` für Show-/Stream-Optik.
+
+- `xConfig_CHECKOUT_ZOOM` (`Checkout-Zoom`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Aktiviert Zoom bei eindeutigem 1-Dart-Checkout (`D1`–`D20`/`Bull`).  
+  Praxis: `An` empfohlen, damit Finish-Felder priorisiert gezeigt werden.
+
+**Screenshots / Varianten**
+
+- ![TV Board Zoom](assets/animation-Autodarts-Animate-TV-Board-Zoom.gif)
+
+**Hinweise & Kombinationen**
+
+- Checkout-Zoom wird gegenüber `T20,T20` immer bevorzugt.
+- Bei `T20,T20` wird nur gezoomt, wenn ein dritter `T20` kein Bust wäre.
+- Passt gut zu `Autodarts Animate Checkout Board Targets` (Zielhilfe + Kamera-Fokus).
+
+- Technische Details: [Animation: Autodarts Animate TV Board Zoom](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-tv-board-zoom)
+
+---
+
 ### Animation: Autodarts Style Checkout Suggestions
 
 - Gilt für: `X01`

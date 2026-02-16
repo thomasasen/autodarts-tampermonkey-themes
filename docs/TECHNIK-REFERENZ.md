@@ -936,6 +936,62 @@ Varianten über:
 
 ---
 
+#### Animation: Autodarts Animate TV Board Zoom
+
+- Bezeichnung: Autodarts Animate TV Board Zoom
+- Datei: `Animation/Autodarts Animate TV Board Zoom.user.js`
+
+
+##### 📝 Beschreibung
+
+- Zweck: Simuliert TV-ähnliche Kamera-Zooms auf relevante Zielbereiche vor Dart 3 in X01.
+- Trigger/Erkennung: `T20,T20`-Setup (nur wenn ein dritter `T20` nicht bustet) oder eindeutiger 1-Dart-Checkout (`D1`–`D20`/`Bull`).
+- Änderungen: Transformiert den Board-Container per `translate(...) scale(...)`, inklusive sauberem Clip-Host und Rückbau beim Deaktivieren.
+
+##### ✅ Einfache Variablen (Beispiele)
+
+- `xConfig_ZOOM_STUFE`: `Dezent (2.35x)`, `Mittel (2.75x)`, `Nah (3.15x)`
+- `xConfig_ZOOM_GESCHWINDIGKEIT`: `Schnell`, `Mittel`, `Langsam`
+- `xConfig_CHECKOUT_ZOOM`: `An` oder `Aus`
+
+##### ⚙️ Konfiguration (Variablen)
+
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_ZOOM_STUFE`: Wählt die Zoom-Stufe (`2.35x`, `2.75x`, `3.15x`).
+- `xConfig_ZOOM_GESCHWINDIGKEIT`: Schaltet Presets für Ein-/Auszoom und Haltezeit (`schnell`, `mittel`, `langsam`).
+- `xConfig_CHECKOUT_ZOOM`: Aktiviert die Checkout-Priorität (Finish-Felder werden vor `T20,T20` bevorzugt).
+- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
+
+| Variable                                   | Standard                  | Wirkung                                                                                                                                         |
+| :----------------------------------------- | :------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `xConfig_ZOOM_STUFE`                       | `"2.75"`                  | Zoomfaktor-Preset: `2.35`, `2.75`, `3.15`.                                                                                                     |
+| `xConfig_ZOOM_GESCHWINDIGKEIT`             | `"mittel"`                | Geschwindigkeits-Preset: `schnell`, `mittel`, `langsam`.                                                                                       |
+| `xConfig_CHECKOUT_ZOOM`                    | `true`                    | Aktiviert Zoom auf klaren 1-Dart-Checkouts (`D1`–`D20`, `Bull`).                                                                               |
+| `ZOOM_SPEED_PRESETS.schnell.zoomInMs`      | `140`                     | Einzoom-Dauer im schnellen Preset.                                                                                                              |
+| `ZOOM_SPEED_PRESETS.mittel.zoomInMs`       | `180`                     | Einzoom-Dauer im Standard-Preset.                                                                                                               |
+| `ZOOM_SPEED_PRESETS.langsam.zoomInMs`      | `240`                     | Einzoom-Dauer im langsamen Preset.                                                                                                              |
+| `CONFIG.zoomOutMs`                         | Preset-basiert            | Auszoom-Dauer (`180`/`220`/`300` ms je Preset).                                                                                                 |
+| `CONFIG.holdAfterThirdMs`                  | Preset-basiert            | Haltezeit nach Dart 3 (`320`/`450`/`620` ms je Preset).                                                                                         |
+| `CONFIG.zoomLevel`                         | `2.75`                    | Ziel-Zoomfaktor (wird intern gegen vorhandene Basisskalierung kompensiert).                                                                    |
+| `STYLE_ID`                                 | `ad-ext-tv-board-zoom-style` | Style-Tag für Zoom-/Host-Klassen.                                                                                                            |
+| `ZOOM_CLASS`                               | `ad-ext-tv-board-zoom`    | Klasse für transformierten Zoom-Container.                                                                                                      |
+| `ZOOM_HOST_CLASS`                          | `ad-ext-tv-board-zoom-host` | Klasse für Clip-Container mit `overflow: hidden`.                                                                                           |
+| `ACTIVE_REMAINING_SCORE_SELECTOR`          | (Selector-Liste)          | Liest den sichtbaren Restwert des aktiven Spielers für Checkout-Entscheidung.                                                                  |
+| `STRICT_ACTIVE_REMAINING_SCORE_SELECTOR`   | (Selector-Liste)          | Priorisierte Selektoren für robuste Restwert-Erkennung bei unterschiedlichen Theme-Klassen.                                                    |
+
+##### 🖼️ Beispiele/Screenshots
+
+![Animate TV Board Zoom](../assets/animation-Autodarts-Animate-TV-Board-Zoom.gif)
+
+##### ℹ️ Weitere Hinweise
+
+- Checkout-Zoom wird immer vor `T20,T20` geprüft.
+- Bei Restwert `< 62` wird ein drittes `T20` unterdrückt (Bust-Vermeidung).
+- Für reine Zielvisualisierung ohne Kamerafahrt eignet sich zusätzlich `Autodarts Animate Checkout Board Targets`.
+
+---
+
 #### Animation: Autodarts Style Checkout Suggestions
 
 - Bezeichnung: Autodarts Style Checkout Suggestions

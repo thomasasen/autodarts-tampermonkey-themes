@@ -72,6 +72,7 @@
     "Animation/Autodarts Animate Cricket Target Highlighter.user.js": "a-cricket-target",
     "Animation/Autodarts Animate Checkout Score Pulse.user.js": "a-checkout-pulse",
     "Animation/Autodarts Animate Checkout Board Targets.user.js": "a-checkout-board",
+    "Animation/Autodarts Animate TV Board Zoom.user.js": "a-tv-board-zoom",
     "Animation/Autodarts Animate Average Trend Arrow.user.js": "a-average-arrow",
     "Animation/Autodarts Animate Dart Marker Darts.user.js": "a-marker-darts",
     "Animation/Autodarts Style Checkout Suggestions.user.js": "a-checkout-style",
@@ -920,6 +921,22 @@
         break;
       case "a-checkout-board":
         removeElementById("ad-ext-checkout-targets");
+        break;
+      case "a-tv-board-zoom":
+        removeElementById("ad-ext-tv-board-zoom-style");
+        removeClassesFromSelector(".ad-ext-tv-board-zoom", ["ad-ext-tv-board-zoom"]);
+        removeClassesFromSelector(".ad-ext-tv-board-zoom-host", ["ad-ext-tv-board-zoom-host"]);
+        removeStylePropertiesFromSelector(".ad-ext-tv-board-zoom", [
+          "transform",
+          "transition",
+          "transform-origin",
+          "will-change",
+        ]);
+        removeStylePropertiesFromSelector(".ad-ext-tv-board-zoom-host", [
+          "overflow",
+          "overflow-x",
+          "overflow-y",
+        ]);
         break;
       case "a-checkout-pulse":
         removeClassesFromSelector(
