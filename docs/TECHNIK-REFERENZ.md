@@ -1205,4 +1205,86 @@ Varianten:
 - Das Modul ist fest mit `Template: Autodarts Theme Cricket` gekoppelt (kein eigener Schalter dafür).
 - Die Effekte sind unabhängig schaltbar, um Side-Effekte zwischen den Features zu minimieren.
 
+---
+
+## ⚙️ Konfigurationskern: AD xConfig.user.js (403-Absicherung)
+
+- Datei: `Config/AD xConfig.user.js`
+- Relevante Version: `1.0.1`
+- Ziel der Änderungen: GitHub-`403` (Rate-Limit/Throttle) robust behandeln, ohne dass Aktivierung/Konfiguration der Module ausfällt.
+
+### 🧠 Problemhintergrund
+
+- AD xConfig lädt Modul-Metadaten und Skriptinhalte aus dem GitHub-Repo.
+- Bei zu vielen API-Requests antwortet GitHub mit `403` (oder `429`/`Retry-After`).
+- Ohne Gegenmaßnahmen führt das zu wiederholten Fehlschlägen beim Skriptabgleich.
+
+### ✅ Technische Maßnahmen gegen 403
+
+#### 1) Strukturierte HTTP-Fehlerauswertung
+
+- Requests erzeugen jetzt ein erweitertes Fehlerobjekt (`createRequestError(...)`) statt nur einem generischen Statusfehler.
+- Ausgelesene Header:
+- `X-RateLimit-Reset` -> Zeitpunkt für erneute API-Nutzung.
+- `Retry-After` -> serverseitig geforderte Wartezeit.
+- Ergebnis: AD xConfig kann gezielt reagieren statt blind neu zu versuchen.
+
+#### 2) Persistenter API-Backoff
+
+- Neuer Storage-Key: `ad-xconfig:git-api-backoff-until:v1`.
+- Bei `403`, `429` oder gesetztem `Retry-After` wird eine Backoff-Zeit gesetzt.
+- Während Backoff aktiv ist, werden API-Aufrufe übersprungen und direkt Fallback-Pfade verwendet.
+- Backoff bleibt über Reloads erhalten (LocalStorage), damit nicht jede Seite sofort wieder gegen das Limit läuft.
+
+#### 3) Reduzierte API-Last im Normalfall
+
+- Modul-Discovery bevorzugt jetzt `git/trees/{branch}?recursive=1` (ein zentraler API-Call) statt mehrfacher `contents`-Aufrufe.
+- Dependency-Inhalte werden bevorzugt über RAW geladen, sodass zusätzliche API-Endpunkte entlastet werden.
+- Ergebnis: deutlich weniger API-Treffer pro Sync.
+
+#### 4) RAW-Fallback bei API-Problemen
+
+- Wenn API nicht verfügbar/limitiert ist, lädt AD xConfig Skripte direkt über `raw.githubusercontent.com`.
+- Dafür werden bekannte Modulpfade aus mehreren Quellen zusammengeführt:
+- Legacy-Mapping,
+- aktueller Module-Cache,
+- persistenter Source-Index (`ad-xconfig:managed-source-index:v1`).
+- Ergebnis: xConfig bleibt in der Regel nutzbar, auch wenn API blockiert ist.
+
+#### 5) Cache-Fallback als letzte Stufe
+
+- Wenn Live-API und RAW-Fallback nicht verfügbar sind, wird die Registry aus dem lokalen Module-Cache rekonstruiert.
+- Dadurch bleiben bekannte Module und deren xConfig-Felder weiterhin bedienbar.
+
+### 🔁 Fallback-Reihenfolge (Laufzeit)
+
+- Schritt 1: Prüfe API-Backoff.
+- Schritt 2: Wenn kein Backoff: versuche GitHub-API-Live-Sync.
+- Schritt 3: Bei API-Fehler oder aktivem Backoff: versuche RAW-Fallback.
+- Schritt 4: Falls RAW scheitert: nutze Cache-Fallback.
+- Schritt 5: Aktualisiere Status/Notice im UI passend zur tatsächlich genutzten Quelle.
+
+### 🧾 UI-Statusmeldungen (neu/verbessert)
+
+- Verbindungsbanner unterscheidet nun sauber:
+- Live-Sync erfolgreich (`github-live`),
+- RAW-Fallback aktiv (`github-raw-fallback`),
+- API-Backoff aktiv mit Zeitfenster,
+- Cache-Fallback aktiv,
+- echter Fehler ohne nutzbare Daten.
+- Dadurch ist für Nutzer sofort sichtbar, ob gerade live, aus RAW oder aus Cache gearbeitet wird.
+
+### 🧩 Zukunftssicherheit für neue Skripte
+
+- Der xConfig-Parser in AD xConfig wurde robuster gemacht:
+- `xConfig:`-Kommentar wird case-insensitive erkannt (`xconfig:` ebenfalls gültig).
+- Feld-Declaration akzeptiert `const`, `let`, `var` und optionales Semikolon.
+- Wirkung: neue Skripte mit leicht abweichendem Stil bleiben kompatibel, solange das `xConfig_...`-Schema eingehalten wird.
+
+### 🔐 Wirkung auf bestehende Module (inkl. Cricket Grid FX)
+
+- Aktivieren/Deaktivieren und Konfigurieren über AD xConfig bleibt unverändert möglich.
+- Speziell bei temporären GitHub-API-Limits führt der Sync nicht mehr sofort zu einem Totalausfall.
+- `Autodarts Animate Cricket Grid FX.user.js` bleibt dadurch auch unter Rate-Limit-Bedingungen in der Regel steuerbar.
+
 
