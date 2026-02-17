@@ -7,7 +7,7 @@
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
-// @xconfig-settings-version 1
+// @xconfig-settings-version 2
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -26,7 +26,6 @@
   const gameState = window.autodartsGameStateShared || null;
 
   const TARGETS = ["20", "19", "18", "17", "16", "15", "BULL"];
-  const TARGET_SET = new Set(TARGETS);
   const CRICKET_THEME_STYLE_ID = "autodarts-cricket-custom-style";
   const VARIANT_ID = "ad-ext-game-variant";
 
@@ -49,8 +48,6 @@
   const SPARK_CLASS = "ad-ext-crfx-spark";
   const WIPE_CLASS = "ad-ext-crfx-wipe";
 
-  // xConfig: {"type":"toggle","label":"Nur mit Theme Cricket","description":"Aktiviert Effekte nur, wenn Autodarts Theme Cricket aktiv ist.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
-  const xConfig_NUR_MIT_CRICKET_THEME = true;
   // xConfig: {"type":"toggle","label":"Row Rail Pulse","description":"Effekt 1: Zeilen-Sweep bei Mark-Zuwachs oder wichtigem Statuswechsel.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROW_RAIL_PULSE = true;
   // xConfig: {"type":"toggle","label":"Badge Beacon","description":"Effekt 2: Linkes Badge wird bei relevanten Zeilen hervorgehoben.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
@@ -74,7 +71,6 @@
 
   /*
     Variablen und gesteuerter Effekt:
-    - xConfig_NUR_MIT_CRICKET_THEME: Nur aktiv mit "Autodarts Theme Cricket.user.js".
     - xConfig_ROW_RAIL_PULSE: Effekt 1, Zeilen-Sweep bei relevanten Triggern.
     - xConfig_BADGE_BEACON: Effekt 2, linkes Badge wird hervorgehoben.
     - xConfig_MARK_PROGRESS_ANIMATOR: Effekt 3, Symbol-Progress Animation.
@@ -110,7 +106,6 @@
   }
 
   const CFG = {
-    onlyWithTheme: asBool(xConfig_NUR_MIT_CRICKET_THEME, true),
     rowRailPulse: asBool(xConfig_ROW_RAIL_PULSE, true),
     badgeBeacon: asBool(xConfig_BADGE_BEACON, true),
     markProgress: asBool(xConfig_MARK_PROGRESS_ANIMATOR, true),
@@ -205,9 +200,7 @@
     if (!isCricketVariantActive()) {
       return false;
     }
-    if (!CFG.onlyWithTheme) {
-      return true;
-    }
+    // Fixed scope: this FX module is intentionally bound to Theme Cricket.
     return Boolean(document.getElementById(CRICKET_THEME_STYLE_ID));
   }
 

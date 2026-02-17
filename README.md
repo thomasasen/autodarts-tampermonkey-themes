@@ -838,63 +838,69 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `Cricket`
 - Was das Skript macht: Ergänzt die Cricket-Zielmatrix um modulare Grid-Effekte (Zeilen-Sweeps, Badge-Fokus, Mark-Progress, Threat/Score/Pressure-Hinweise, Delta-Chips und Turn-Wipe), damit Zustände schneller erfassbar sind.
+- Feste Voraussetzung: Das Modul ist dauerhaft an `Template: Autodarts Theme Cricket` gebunden (keine separate Ein/Aus-Option dafür).
 
 **xConfig-Einstellungen erklärt**
 
-- `xConfig_NUR_MIT_CRICKET_THEME` (`Nur mit Theme Cricket`)  
-  Optionen: `An`, `Aus`  
-  Wirkung: Steuert, ob das Modul nur zusammen mit `Template: Autodarts Theme Cricket` aktiv ist.  
-  Praxis: `An` empfohlen, wenn du den exakt abgestimmten Look nutzen willst; `Aus` nur für bewusstes Testen ohne Theme.
-
 - `xConfig_ROW_RAIL_PULSE` (`Row Rail Pulse`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Spielt einen kurzen Sweep über betroffene Zeilen bei relevanten Zustandswechseln.  
-  Praxis: `An` für schnelle Blickführung, `Aus` für ruhigeres UI.
+  Wirkung: Spielt bei Treffer- oder Statuswechsel einen horizontalen Sweep über die gesamte betroffene Zeile.  
+  Sichtbild: Die Zeile bekommt einen kurzen „Lichtlauf“, der den Blick sofort auf das relevante Ziel lenkt.  
+  Praxis: `An` für klare Live-Orientierung, `Aus` für ein ruhigeres, statischeres Bild.
 
 - `xConfig_BADGE_BEACON` (`Badge Beacon`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Hebt das linke Zahlen-/Bull-Badge bei Score/Danger/Pressure hervor.  
-  Praxis: Besonders hilfreich auf größeren Displays oder bei größerem Sitzabstand.
+  Wirkung: Hebt das linke Ziel-Badge (20..15/Bull) hervor, wenn die Zeile taktisch wichtig ist.  
+  Sichtbild: Das Badge wird deutlicher „nach vorne“ gezogen und bekommt bei Triggern einen kurzen Burst.  
+  Praxis: Hilfreich bei Distanz zum Display oder wenn du sehr schnell zwischen Zahlen wechseln musst.
 
 - `xConfig_MARK_PROGRESS_ANIMATOR` (`Mark Progress Animator`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Animiert Mark-Symbole bei neuem Fortschritt (z. B. von offen auf geschlossen).  
-  Praxis: `An` für Trainings-/Analysefokus, `Aus` für minimalistischen Stil.
+  Wirkung: Animiert das jeweilige Mark-Symbol, sobald sich ein Zielstand erhöht.  
+  Sichtbild: Neues Mark wirkt wie ein kurzes „Setzen“ mit klarer Progress-Rückmeldung (inkl. Intensität je Mark-Level).  
+  Praxis: Sehr nützlich im Training, wenn du Fortschritt pro Feld direkt lesen willst.
 
 - `xConfig_THREAT_EDGE` (`Threat Edge`)  
   Optionen: `An`, `Aus`  
   Wirkung: Markiert Danger-Zeilen über seitliche Warnkanten.  
-  Praxis: Gut für defensives Spiel, um kritische Ziele sofort zu sehen.
+  Sichtbild: Links/rechts in der Zeile erscheinen klare Warnlinien statt flächiger Überblendung.  
+  Praxis: Defensiv stark, weil kritische Ziele ohne „Farbbrei“ auffallen.
 
 - `xConfig_SCORING_LANE_HIGHLIGHT` (`Scoring Lane Highlight`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Hebt Zeilen hervor, auf denen du aktuell punkten kannst.  
-  Praxis: Sinnvoll für offensiven Spielfluss und schnellere Zielentscheidung.
+  Wirkung: Hebt Zeilen hervor, auf denen du aktuell score-fähig bist.  
+  Sichtbild: Dezente grüne Lane über die komplette Zielzeile statt nur punktueller Marker.  
+  Praxis: Unterstützt offensiven Rhythmus und schnelle Zielpriorisierung.
 
 - `xConfig_DEAD_ROW_COLLAPSE` (`Dead Row Collapse`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Reduziert visuell Zeilen, die für alle Spieler bereits geschlossen sind.  
-  Praxis: `An` für klaren Fokus auf aktive Ziele.
+  Wirkung: Dämpft Zeilen, die für alle Spieler geschlossen sind.  
+  Sichtbild: Dead-Zeilen werden entsättigt/abgeschwächt und treten visuell in den Hintergrund.  
+  Praxis: Reduziert kognitive Last und hält den Fokus auf spielrelevanten Feldern.
 
 - `xConfig_DELTA_CHIPS` (`Delta Chips`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Zeigt bei neuen Marks kurz `+1/+2/+3` in der betroffenen Zelle.  
-  Praxis: Nützlich für unmittelbares Trefferfeedback in Training und Streams.
+  Wirkung: Zeigt bei Mark-Zuwachs kurz `+1`, `+2` oder `+3` in der betroffenen Zelle.  
+  Sichtbild: Kurzes, klares Delta-Popup direkt am Ereignisort.  
+  Praxis: Ideal für sofortige Trefferbestätigung in Training, Observer und Stream.
 
 - `xConfig_HIT_SPARK` (`Hit Spark`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Kurzer Impact-Spark bei neuem Mark.  
-  Praxis: Optionaler Akzent; bei sehr ruhigem Setup auf `Aus`.
+  Wirkung: Zusätzlicher Impact-Spark bei neuem Mark.  
+  Sichtbild: Sehr kurzer radialer „Hit-Impuls“, der den Trefferpunkt betont.  
+  Praxis: Für mehr Direktfeedback; bei sehr ruhigem Setup auf `Aus`.
 
 - `xConfig_ROUND_TRANSITION_WIPE` (`Round Transition Wipe`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Kurzer Wipe beim erkannten Turn-/Zugwechsel.  
-  Praxis: Hilft bei Szenenwechseln, insbesondere im Observer-/Stream-Betrieb.
+  Wirkung: Spielt beim erkannten Turn-/Zugwechsel einen dezenten Wipe über das Grid.  
+  Sichtbild: Kurze Übergangsbewegung, die den Phasenwechsel visuell „zusammenbindet“.  
+  Praxis: Sehr gut für Observer-/Stream-Ansichten mit häufigen Spielerwechseln.
 
 - `xConfig_OPPONENT_PRESSURE_OVERLAY` (`Opponent Pressure Overlay`)  
   Optionen: `An`, `Aus`  
-  Wirkung: Zeigt Defensiv-Druck, wenn Gegner auf einem Ziel bereits geschlossen hat und du dort noch weit offen bist.  
-  Praxis: Unterstützt priorisierte Defensiventscheidungen.
+  Wirkung: Markiert Defensivdruck, wenn Gegner auf einem Feld bereits geschlossen hat und du dort noch offen bist.  
+  Sichtbild: Auffälliges Pressure-Overlay nur auf den akut kritischen Zeilen.  
+  Praxis: Hilft bei der Entscheidung, welche Felder du zuerst „zumachen“ solltest.
 
 **Screenshots / Varianten**
 
@@ -902,7 +908,8 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 **Hinweise & Kombinationen**
 
-- Dieses Modul ist auf Cricket ausgelegt und reagiert nicht in anderen Varianten.
+- Dieses Modul ist strikt auf Cricket ausgelegt und reagiert nicht in anderen Varianten.
+- Das Modul läuft nur mit aktivem `Template: Autodarts Theme Cricket` (fest integriert, nicht als separate Einstellung).
 - Empfohlene Kombination: `Template: Autodarts Theme Cricket` + `Autodarts Animate Cricket Grid FX` (+ optional `Autodarts Animate Cricket Target Highlighter`).
 - Alle Effekte sind getrennt schaltbar; dadurch kannst du von minimal bis „voll aktiv“ stufenlos konfigurieren.
 

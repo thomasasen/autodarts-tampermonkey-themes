@@ -1129,12 +1129,11 @@ Varianten:
 ##### 📝 Beschreibung
 
 - Zweck: Ergänzt die Cricket-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Score/Pressure, Delta-Chips, Turn-Wipe).
-- Trigger/Erkennung: Nur Variante `cricket`; optional zusätzlich nur aktiv, wenn `Template/Autodarts Theme Cricket.user.js` geladen ist.
+- Trigger/Erkennung: Nur Variante `cricket` und nur bei aktivem `Template/Autodarts Theme Cricket.user.js` (feste Modul-Bindung, kein separater Toggle).
 - Änderungen: Setzt ausschließlich modul-eigene CSS-Klassen/Overlays auf der Cricket-Matrix und entfernt diese beim Verlassen der Variante wieder.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `xConfig_NUR_MIT_CRICKET_THEME`: `An` oder `Aus`
 - `xConfig_ROW_RAIL_PULSE`: `An` oder `Aus`
 - `xConfig_BADGE_BEACON`: `An` oder `Aus`
 - `xConfig_MARK_PROGRESS_ANIMATOR`: `An` oder `Aus`
@@ -1150,22 +1149,30 @@ Varianten:
 
 **AD xConfig-Einstellungen (empfohlen)**
 
-- `xConfig_NUR_MIT_CRICKET_THEME`: Aktiv nur zusammen mit dem Cricket-Theme (`autodarts-cricket-custom-style`).
 - `xConfig_ROW_RAIL_PULSE`: Sweep über die komplette betroffene Zeile.
+  Sichtbild: Ein kurzer Lichtlauf zieht über die Zeile und macht Zustandswechsel sofort sichtbar.
 - `xConfig_BADGE_BEACON`: Hervorhebung des linken Ziel-Badges (20..15/Bull).
+  Sichtbild: Badge wird deutlicher in den Vordergrund gesetzt; Burst-Effekt bei relevanten Triggern.
 - `xConfig_MARK_PROGRESS_ANIMATOR`: Progress-Animation am Mark-Symbol bei Trefferzuwachs.
+  Sichtbild: Mark-Symbol „setzt“ sich sichtbar mit kurzer, levelabhängiger Intensität.
 - `xConfig_THREAT_EDGE`: Seitliche Warnkanten bei Danger-Zielen.
+  Sichtbild: Schmale Warnkanten links/rechts statt großer Flächen-Overlays.
 - `xConfig_SCORING_LANE_HIGHLIGHT`: Grüne Lane bei aktiven Scoring-Zielen.
+  Sichtbild: Dezentes, aber durchgehendes Scoring-Band über die gesamte Zeile.
 - `xConfig_DEAD_ROW_COLLAPSE`: Dämpft komplett geschlossene Ziele.
+  Sichtbild: Dead-Zeilen werden entsättigt/abgeblendet und treten in den Hintergrund.
 - `xConfig_DELTA_CHIPS`: Kurzzeit-Overlay `+1/+2/+3` pro Trefferzuwachs.
+  Sichtbild: Delta erscheint direkt am Ereignisort und verschwindet automatisch wieder.
 - `xConfig_HIT_SPARK`: Impact-Spark bei Trefferzuwachs.
+  Sichtbild: Sehr kurzer radialer Trefferimpuls als zusätzliches Direktfeedback.
 - `xConfig_ROUND_TRANSITION_WIPE`: Wipe bei erkanntem Turn-Wechsel.
+  Sichtbild: Kurzer Übergangseffekt über das Grid zur besseren Phasenorientierung.
 - `xConfig_OPPONENT_PRESSURE_OVERLAY`: Overlay bei Defensivdruck (Gegner geschlossen, eigener Mark-Stand niedrig).
+  Sichtbild: Kritische Zeilen werden klar als „sofort beachten“ markiert.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                                 | Standard | Wirkung                                                                                                 |
 | :--------------------------------------- | :------- | :------------------------------------------------------------------------------------------------------ |
-| `xConfig_NUR_MIT_CRICKET_THEME`          | `true`   | Begrenzung auf Cricket + aktives Theme Cricket.                                                         |
 | `xConfig_ROW_RAIL_PULSE`                 | `true`   | Aktiviert den Zeilen-Sweep bei relevanten Statuswechseln.                                               |
 | `xConfig_BADGE_BEACON`                   | `true`   | Aktiviert Badge-Hervorhebung und Badge-Burst.                                                           |
 | `xConfig_MARK_PROGRESS_ANIMATOR`         | `true`   | Aktiviert Mark-Progress-Animation auf Symbolen.                                                         |
@@ -1177,7 +1184,7 @@ Varianten:
 | `xConfig_ROUND_TRANSITION_WIPE`          | `true`   | Aktiviert Wipe-Overlay beim Turn-Wechsel.                                                               |
 | `xConfig_OPPONENT_PRESSURE_OVERLAY`      | `true`   | Aktiviert Pressure-Overlay bei Defensivdruck.                                                           |
 | `TARGETS`                                | `15..20,BULL` | Verarbeitete Cricket-Zielzeilen.                                                                    |
-| `CRICKET_THEME_STYLE_ID`                 | `autodarts-cricket-custom-style` | Prüft Theme Cricket bei aktivem Theme-Only-Modus.                                       |
+| `CRICKET_THEME_STYLE_ID`                 | `autodarts-cricket-custom-style` | Feste Theme-Voraussetzung: Modul läuft nur bei aktivem Theme Cricket.                          |
 | `VARIANT_ID`                             | `ad-ext-game-variant` | Quelle der Varianten-Erkennung.                                                               |
 | `STYLE_ID`                               | `ad-ext-crfx-style` | Style-Tag für alle Modul-CSS-Regeln.                                                          |
 | `setInterval(schedule, 900)`             | aktiv    | Zusätzlicher Watchdog neben MutationObserver/RAF für robuste Live-Updates.                            |
@@ -1195,7 +1202,7 @@ Varianten:
 ##### ℹ️ Weitere Hinweise
 
 - Das Modul ist strikt Cricket-spezifisch und entfernt seine Klassen/Overlays beim Variantenwechsel.
+- Das Modul ist fest mit `Template: Autodarts Theme Cricket` gekoppelt (kein eigener Schalter dafür).
 - Die Effekte sind unabhängig schaltbar, um Side-Effekte zwischen den Features zu minimieren.
-- Für den vorgesehenen Look `xConfig_NUR_MIT_CRICKET_THEME = An` belassen.
 
 
