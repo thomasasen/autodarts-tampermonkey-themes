@@ -834,6 +834,82 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 ---
 
+### Animation: Autodarts Animate Cricket Grid FX
+
+- Gilt für: `Cricket`
+- Was das Skript macht: Ergänzt die Cricket-Zielmatrix um modulare Grid-Effekte (Zeilen-Sweeps, Badge-Fokus, Mark-Progress, Threat/Score/Pressure-Hinweise, Delta-Chips und Turn-Wipe), damit Zustände schneller erfassbar sind.
+
+**xConfig-Einstellungen erklärt**
+
+- `xConfig_NUR_MIT_CRICKET_THEME` (`Nur mit Theme Cricket`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Steuert, ob das Modul nur zusammen mit `Template: Autodarts Theme Cricket` aktiv ist.  
+  Praxis: `An` empfohlen, wenn du den exakt abgestimmten Look nutzen willst; `Aus` nur für bewusstes Testen ohne Theme.
+
+- `xConfig_ROW_RAIL_PULSE` (`Row Rail Pulse`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Spielt einen kurzen Sweep über betroffene Zeilen bei relevanten Zustandswechseln.  
+  Praxis: `An` für schnelle Blickführung, `Aus` für ruhigeres UI.
+
+- `xConfig_BADGE_BEACON` (`Badge Beacon`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Hebt das linke Zahlen-/Bull-Badge bei Score/Danger/Pressure hervor.  
+  Praxis: Besonders hilfreich auf größeren Displays oder bei größerem Sitzabstand.
+
+- `xConfig_MARK_PROGRESS_ANIMATOR` (`Mark Progress Animator`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Animiert Mark-Symbole bei neuem Fortschritt (z. B. von offen auf geschlossen).  
+  Praxis: `An` für Trainings-/Analysefokus, `Aus` für minimalistischen Stil.
+
+- `xConfig_THREAT_EDGE` (`Threat Edge`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Markiert Danger-Zeilen über seitliche Warnkanten.  
+  Praxis: Gut für defensives Spiel, um kritische Ziele sofort zu sehen.
+
+- `xConfig_SCORING_LANE_HIGHLIGHT` (`Scoring Lane Highlight`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Hebt Zeilen hervor, auf denen du aktuell punkten kannst.  
+  Praxis: Sinnvoll für offensiven Spielfluss und schnellere Zielentscheidung.
+
+- `xConfig_DEAD_ROW_COLLAPSE` (`Dead Row Collapse`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Reduziert visuell Zeilen, die für alle Spieler bereits geschlossen sind.  
+  Praxis: `An` für klaren Fokus auf aktive Ziele.
+
+- `xConfig_DELTA_CHIPS` (`Delta Chips`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Zeigt bei neuen Marks kurz `+1/+2/+3` in der betroffenen Zelle.  
+  Praxis: Nützlich für unmittelbares Trefferfeedback in Training und Streams.
+
+- `xConfig_HIT_SPARK` (`Hit Spark`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Kurzer Impact-Spark bei neuem Mark.  
+  Praxis: Optionaler Akzent; bei sehr ruhigem Setup auf `Aus`.
+
+- `xConfig_ROUND_TRANSITION_WIPE` (`Round Transition Wipe`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Kurzer Wipe beim erkannten Turn-/Zugwechsel.  
+  Praxis: Hilft bei Szenenwechseln, insbesondere im Observer-/Stream-Betrieb.
+
+- `xConfig_OPPONENT_PRESSURE_OVERLAY` (`Opponent Pressure Overlay`)  
+  Optionen: `An`, `Aus`  
+  Wirkung: Zeigt Defensiv-Druck, wenn Gegner auf einem Ziel bereits geschlossen hat und du dort noch weit offen bist.  
+  Praxis: Unterstützt priorisierte Defensiventscheidungen.
+
+**Screenshots / Varianten**
+
+- ![Autodarts Animate Cricket Grid FX](assets/Autodarts-Animate-Cricket-Grid-FX.png)
+
+**Hinweise & Kombinationen**
+
+- Dieses Modul ist auf Cricket ausgelegt und reagiert nicht in anderen Varianten.
+- Empfohlene Kombination: `Template: Autodarts Theme Cricket` + `Autodarts Animate Cricket Grid FX` (+ optional `Autodarts Animate Cricket Target Highlighter`).
+- Alle Effekte sind getrennt schaltbar; dadurch kannst du von minimal bis „voll aktiv“ stufenlos konfigurieren.
+
+- Technische Details: [Animation: Autodarts Animate Cricket Grid FX](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-cricket-grid-fx)
+
+---
+
 ## ❓ FAQ
 
 **Muss ich einzelne Skripte separat installieren?**  

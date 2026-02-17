@@ -79,6 +79,7 @@
     "Animation/Autodarts Animate Winner Fireworks.user.js": "a-winner-fireworks",
     "Animation/Autodarts Animate Turn Start Sweep.user.js": "a-turn-sweep",
     "Animation/Autodarts Animate Remove Darts Notification.user.js": "a-remove-darts",
+    "Animation/Autodarts Animate Cricket Grid FX.user.js": "a-cricket-grid-fx",
   };
   const LEGACY_SOURCE_BY_FEATURE_ID = Object.entries(LEGACY_FEATURE_ID_BY_SOURCE).reduce((acc, [source, featureId]) => {
     if (!acc[featureId]) {
