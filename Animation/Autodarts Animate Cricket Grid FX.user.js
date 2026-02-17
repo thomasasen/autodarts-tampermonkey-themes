@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.1
-// @description  Cricket-Grid-FX fuer Theme Cricket: zeigt Mark-Fortschritt, Zeilen-Fokus, Threat/Score/Pressure sowie Turn- und Trefferfeedback direkt in der Zielmatrix.
+// @version      1.0.2
+// @description  Cricket-Grid-FX fuer Theme Cricket: zeigt Mark-Fortschritt, Zeilen-Fokus, Threat/Score/Pressure sowie Turn- und Trefferfeedback direkt in der Zielmatrix (standalone ohne Pflicht-@require).
 // @xconfig-description  Dieses Modul erweitert die Cricket-Zielmatrix um klar getrennte Live-Effekte (Zeilen-Sweep, Badge-Fokus, Mark-Progress, Threat/Score/Pressure, Delta-Chips, Hit-Spark, Turn-Wipe) fuer schnellere Entscheidungen bei gleichbleibend lesbarem Layout.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
@@ -12,8 +12,6 @@
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
-// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
-// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Grid%20FX.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Cricket%20Grid%20FX.user.js

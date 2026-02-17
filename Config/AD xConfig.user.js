@@ -1,8 +1,8 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.0
-// @description  Adds a central AD xConfig menu with script discovery and configurable xConfig_ settings.
+// @version      1.0.1
+// @description  Adds a central AD xConfig menu with script discovery, configurable xConfig_ settings, and GitHub rate-limit aware RAW/cache fallback.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -24,6 +24,7 @@
   const STORAGE_KEY = "ad-xconfig:config";
   const CONFIG_VERSION = 7;
   const MODULE_CACHE_STORAGE_KEY = "ad-xconfig:module-cache:v1";
+  const MANAGED_SOURCE_INDEX_STORAGE_KEY = "ad-xconfig:managed-source-index:v1";
   const MODULE_CACHE_VERSION = 1;
   const LOADER_MODE = "xconfig-authoritative";
   const CONFIG_PATH = "/ad-xconfig";
@@ -34,6 +35,9 @@
   const REPO_README_URL = `${REPO_BASE_URL}/blob/${REPO_BRANCH}/README.md`;
   const REPO_API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
   const REPO_RAW_BASE = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}`;
+  const GIT_API_BACKOFF_STORAGE_KEY = "ad-xconfig:git-api-backoff-until:v1";
+  const GIT_API_BACKOFF_DEFAULT_MS = 10 * 60 * 1000;
+  const GIT_API_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
 
   const STYLE_ID = "ad-xconfig-style";
   const MENU_ITEM_ID = "ad-xconfig-menu-item";
@@ -103,7 +107,7 @@
     pollTimer: null,
     noticeTimer: null,
     notice: { type: "", message: "" },
-    gitLoad: { loading: false, source: "not-loaded", lastError: "", lastSuccessAt: null, lastSuccessCount: 0, promise: null },
+    gitLoad: { loading: false, source: "not-loaded", lastError: "", lastSuccessAt: null, lastSuccessCount: 0, promise: null, apiBackoffUntil: 0 },
     lastNonConfigRoute: "/lobbies",
     lastRoute: routeKey(),
     runtime: {
@@ -403,6 +407,128 @@
       console.warn("AD xConfig Loader: failed to bootstrap module cache", error);
       state.runtime.moduleCache = createEmptyModuleCache();
     }
+  }
+
+  function normalizeManagedSourcePathList(sourcePaths) {
+    const seen = new Set();
+    const normalized = [];
+    if (!Array.isArray(sourcePaths)) {
+      return normalized;
+    }
+
+    sourcePaths.forEach((sourcePath) => {
+      const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+      if (!isManagedFeatureSourcePath(normalizedPath) || seen.has(normalizedPath)) {
+        return;
+      }
+      seen.add(normalizedPath);
+      normalized.push(normalizedPath);
+    });
+
+    return normalized.sort((left, right) => left.localeCompare(right));
+  }
+
+  function readManagedSourcePathIndexFromStorage() {
+    try {
+      const raw = localStorage.getItem(MANAGED_SOURCE_INDEX_STORAGE_KEY);
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw);
+      return normalizeManagedSourcePathList(parsed);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function persistManagedSourcePathIndexToStorage(sourcePaths) {
+    const normalized = normalizeManagedSourcePathList(sourcePaths);
+    try {
+      if (normalized.length) {
+        localStorage.setItem(MANAGED_SOURCE_INDEX_STORAGE_KEY, JSON.stringify(normalized));
+      } else {
+        localStorage.removeItem(MANAGED_SOURCE_INDEX_STORAGE_KEY);
+      }
+    } catch (_) {
+      // Ignore storage issues for source-path hints.
+    }
+    return normalized;
+  }
+
+  function updateManagedSourcePathIndex(sourcePaths) {
+    const current = readManagedSourcePathIndexFromStorage();
+    const merged = normalizeManagedSourcePathList([...(Array.isArray(current) ? current : []), ...(Array.isArray(sourcePaths) ? sourcePaths : [])]);
+    return persistManagedSourcePathIndexToStorage(merged);
+  }
+
+  function readGitApiBackoffUntilFromStorage() {
+    try {
+      const raw = localStorage.getItem(GIT_API_BACKOFF_STORAGE_KEY);
+      const parsed = Number.parseInt(String(raw || ""), 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function persistGitApiBackoffUntilToStorage(untilMs) {
+    try {
+      if (Number.isFinite(untilMs) && untilMs > Date.now()) {
+        localStorage.setItem(GIT_API_BACKOFF_STORAGE_KEY, String(Math.trunc(untilMs)));
+      } else {
+        localStorage.removeItem(GIT_API_BACKOFF_STORAGE_KEY);
+      }
+    } catch (_) {
+      // Ignore storage write issues for backoff hints.
+    }
+  }
+
+  function getGitApiBackoffUntil() {
+    const inMemory = Number(state.gitLoad.apiBackoffUntil || 0);
+    if (Number.isFinite(inMemory) && inMemory > Date.now()) {
+      return inMemory;
+    }
+
+    const fromStorage = readGitApiBackoffUntilFromStorage();
+    if (fromStorage > Date.now()) {
+      state.gitLoad.apiBackoffUntil = fromStorage;
+      return fromStorage;
+    }
+
+    state.gitLoad.apiBackoffUntil = 0;
+    persistGitApiBackoffUntilToStorage(0);
+    return 0;
+  }
+
+  function setGitApiBackoffUntil(untilMs) {
+    const now = Date.now();
+    const minUntil = now + 1000;
+    const maxUntil = now + GIT_API_BACKOFF_MAX_MS;
+    const normalized = Math.min(Math.max(Number(untilMs) || minUntil, minUntil), maxUntil);
+    state.gitLoad.apiBackoffUntil = normalized;
+    persistGitApiBackoffUntilToStorage(normalized);
+    return normalized;
+  }
+
+  function clearGitApiBackoff() {
+    state.gitLoad.apiBackoffUntil = 0;
+    persistGitApiBackoffUntilToStorage(0);
+  }
+
+  function computeGitApiBackoffUntilFromError(error) {
+    const now = Date.now();
+    const retryAfterMs = Number(error?.retryAfterMs || 0);
+    if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+      return now + retryAfterMs;
+    }
+
+    const resetAtMs = Number(error?.rateLimitResetAt || 0);
+    if (Number.isFinite(resetAtMs) && resetAtMs > now) {
+      return resetAtMs + 3000;
+    }
+
+    return now + GIT_API_BACKOFF_DEFAULT_MS;
   }
 
   function normalizeStackHintText(value) {
@@ -1761,7 +1887,7 @@
         continue;
       }
 
-      const metaMatch = trimmed.match(/^\/\/\s*xConfig:\s*(\{.*\})\s*$/);
+      const metaMatch = trimmed.match(/^\/\/\s*xconfig:\s*(\{.*\})\s*$/i);
       if (metaMatch) {
         try {
           const parsed = JSON.parse(metaMatch[1]);
@@ -1793,7 +1919,7 @@
     const seenVariables = new Set();
 
     for (let index = 0; index < lines.length; index += 1) {
-      const declarationMatch = lines[index].match(/^\s*const\s+(xConfig_[A-Za-z0-9_]+)\s*=\s*(.+?)\s*;\s*$/);
+      const declarationMatch = lines[index].match(/^\s*(?:const|let|var)\s+(xConfig_[A-Za-z0-9_]+)\s*=\s*(.+?)\s*;?\s*$/);
       if (!declarationMatch) {
         continue;
       }
@@ -1963,6 +2089,83 @@
     };
   }
 
+  function parseHeadersFromRawString(rawHeaders) {
+    const headers = {};
+    String(rawHeaders || "")
+      .split(/\r?\n/)
+      .forEach((line) => {
+        const separatorIndex = line.indexOf(":");
+        if (separatorIndex <= 0) {
+          return;
+        }
+        const key = line.slice(0, separatorIndex).trim().toLowerCase();
+        const value = line.slice(separatorIndex + 1).trim();
+        if (key && value) {
+          headers[key] = value;
+        }
+      });
+    return headers;
+  }
+
+  function parseHeadersFromFetchResponse(response) {
+    const headers = {};
+    if (!response || !response.headers || typeof response.headers.forEach !== "function") {
+      return headers;
+    }
+    response.headers.forEach((value, key) => {
+      headers[String(key || "").toLowerCase()] = String(value || "");
+    });
+    return headers;
+  }
+
+  function parseRateLimitResetAtMs(rawValue) {
+    const parsed = Number.parseInt(String(rawValue || "").trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+    return parsed > 1e12 ? parsed : parsed * 1000;
+  }
+
+  function parseRetryAfterMs(rawValue) {
+    const parsed = Number.parseInt(String(rawValue || "").trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+    return parsed * 1000;
+  }
+
+  function createRequestError(statusCode, url, headers, responseText) {
+    const status = Number(statusCode || 0);
+    const error = new Error(`Request failed with status ${status || "unknown"}`);
+    error.status = status;
+    error.url = String(url || "");
+    error.headers = headers && typeof headers === "object" ? headers : {};
+
+    const resetAt = parseRateLimitResetAtMs(error.headers["x-ratelimit-reset"]);
+    if (resetAt > 0) {
+      error.rateLimitResetAt = resetAt;
+    }
+
+    const retryAfterMs = parseRetryAfterMs(error.headers["retry-after"]);
+    if (retryAfterMs > 0) {
+      error.retryAfterMs = retryAfterMs;
+    }
+
+    const body = String(responseText || "").trim();
+    if (body) {
+      try {
+        const parsedBody = JSON.parse(body);
+        if (parsedBody && typeof parsedBody === "object" && typeof parsedBody.message === "string") {
+          error.message = `${error.message}: ${parsedBody.message}`;
+        }
+      } catch (_) {
+        // Ignore non-JSON bodies; base message is enough.
+      }
+    }
+
+    return error;
+  }
+
   function requestText(url) {
     if (typeof GM_xmlhttpRequest === "function") {
       return new Promise((resolve, reject) => {
@@ -1975,7 +2178,8 @@
               resolve(response.responseText || "");
               return;
             }
-            reject(new Error(`Request failed with status ${response.status}`));
+            const headers = parseHeadersFromRawString(response.responseHeaders || "");
+            reject(createRequestError(response.status, url, headers, response.responseText || ""));
           },
           onerror: () => reject(new Error("Network request failed")),
           ontimeout: () => reject(new Error("Network request timed out")),
@@ -1988,11 +2192,12 @@
       headers: { Accept: "application/vnd.github+json" },
       cache: "no-store",
       credentials: "omit",
-    }).then((response) => {
+    }).then(async (response) => {
+      const responseText = await response.text();
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw createRequestError(response.status, url, parseHeadersFromFetchResponse(response), responseText);
       }
-      return response.text();
+      return responseText;
     });
   }
 
@@ -2005,10 +2210,21 @@
     }
   }
 
-  async function fetchRepoFileWithSha(repoPath) {
+  async function fetchRepoFileWithSha(repoPath, shaHint = "", options = {}) {
+    const { preferApi = true } = options;
     const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
     if (!normalizedPath) {
       throw new Error("Missing repository path");
+    }
+
+    if (typeof shaHint === "string" && shaHint.trim()) {
+      const content = await requestText(buildRepoRawUrl(normalizedPath));
+      return { sha: shaHint.trim(), content };
+    }
+
+    if (!preferApi) {
+      const content = await requestText(buildRepoRawUrl(normalizedPath));
+      return { sha: "", content };
     }
 
     const contentsUrl = buildRepoContentsApiUrl(normalizedPath);
@@ -2057,6 +2273,17 @@
     };
   }
 
+  function createManagedEntryRecord(sourcePath, shaValue) {
+    const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+    return {
+      path: normalizedPath,
+      name: normalizedPath.split("/").pop() || normalizedPath,
+      type: "file",
+      sha: String(shaValue || ""),
+      download_url: buildRepoRawUrl(normalizedPath),
+    };
+  }
+
   async function fetchCategoryEntriesFromGit(directoryName) {
     const url = `${REPO_API_BASE}/contents/${encodeURIComponent(directoryName)}?ref=${encodeURIComponent(REPO_BRANCH)}`;
     const json = await requestJson(url);
@@ -2072,20 +2299,213 @@
     });
   }
 
-  async function fetchFeatureRegistryFromGit() {
+  async function fetchManagedEntriesFromGitTree() {
+    const url = `${REPO_API_BASE}/git/trees/${encodeURIComponent(REPO_BRANCH)}?recursive=1`;
+    const json = await requestJson(url);
+    const treeEntries = Array.isArray(json?.tree) ? json.tree : null;
+    if (!treeEntries) {
+      throw new Error("Unexpected tree response from GitHub API");
+    }
+
+    const jobs = [];
+    treeEntries.forEach((treeEntry) => {
+      const type = String(treeEntry?.type || "").toLowerCase();
+      if (type !== "blob") {
+        return;
+      }
+
+      const sourcePath = normalizeSourcePath(treeEntry?.path || "").replace(/^\/+/, "");
+      if (!isManagedFeatureSourcePath(sourcePath)) {
+        return;
+      }
+
+      const category = inferFeatureCategoryFromSourcePath(sourcePath);
+      if (!category) {
+        return;
+      }
+
+      jobs.push({
+        category,
+        entry: createManagedEntryRecord(sourcePath, String(treeEntry?.sha || "")),
+      });
+    });
+
+    if (!jobs.length) {
+      throw new Error("No managed userscript files found in Git tree");
+    }
+
+    return jobs;
+  }
+
+  async function fetchManagedEntriesFromGitContents() {
     const [templateEntries, animationEntries] = await Promise.all([
       fetchCategoryEntriesFromGit("Template"),
       fetchCategoryEntriesFromGit("Animation"),
     ]);
 
     const jobs = [];
+    templateEntries.forEach((entry) => jobs.push({ category: "themes", entry }));
+    animationEntries.forEach((entry) => jobs.push({ category: "animations", entry }));
+    return jobs;
+  }
 
-    templateEntries.forEach((entry) => {
-      jobs.push({ category: "themes", entry });
+  function buildManagedFeatureSourcePathList() {
+    const sourcePaths = new Set();
+
+    Object.keys(LEGACY_FEATURE_ID_BY_SOURCE).forEach((sourcePath) => {
+      const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+      if (isManagedFeatureSourcePath(normalizedPath)) {
+        sourcePaths.add(normalizedPath);
+      }
     });
 
-    animationEntries.forEach((entry) => {
-      jobs.push({ category: "animations", entry });
+    Object.values(state.runtime.moduleCache?.featureSources || {}).forEach((sourcePath) => {
+      const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+      if (isManagedFeatureSourcePath(normalizedPath)) {
+        sourcePaths.add(normalizedPath);
+      }
+    });
+
+    Object.keys(state.runtime.moduleCache?.files || {}).forEach((sourcePath) => {
+      const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+      if (isManagedFeatureSourcePath(normalizedPath)) {
+        sourcePaths.add(normalizedPath);
+      }
+    });
+
+    readManagedSourcePathIndexFromStorage().forEach((sourcePath) => {
+      const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+      if (isManagedFeatureSourcePath(normalizedPath)) {
+        sourcePaths.add(normalizedPath);
+      }
+    });
+
+    return Array.from(sourcePaths);
+  }
+
+  async function fetchFeatureRegistryFromRawSources() {
+    const sourcePaths = buildManagedFeatureSourcePathList();
+    if (!sourcePaths.length) {
+      throw new Error("No managed source paths available for RAW fallback");
+    }
+
+    const jobs = sourcePaths
+      .map((sourcePath) => {
+        const category = inferFeatureCategoryFromSourcePath(sourcePath);
+        if (!category) {
+          return null;
+        }
+        return {
+          category,
+          entry: createManagedEntryRecord(sourcePath, ""),
+        };
+      })
+      .filter(Boolean);
+
+    if (!jobs.length) {
+      throw new Error("No managed jobs available for RAW fallback");
+    }
+
+    const moduleCache = createEmptyModuleCache();
+    moduleCache.syncedAt = new Date().toISOString();
+
+    const dependencyQueue = [];
+    const queuedDependencies = new Set();
+    function enqueueDependencyPath(repoPath) {
+      const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
+      if (!normalizedPath || queuedDependencies.has(normalizedPath)) {
+        return;
+      }
+      queuedDependencies.add(normalizedPath);
+      dependencyQueue.push(normalizedPath);
+    }
+
+    const features = await Promise.all(jobs.map(async (job) => {
+      const rawUrl = job.entry.download_url || `${REPO_RAW_BASE}/${toRawPath(job.entry.path || "")}`;
+
+      try {
+        const scriptText = await requestText(rawUrl);
+        const feature = normalizeFeatureFromSource(job.category, job.entry, scriptText);
+        const sourcePath = normalizeSourcePath(job.entry.path || "").replace(/^\/+/, "");
+        if (feature?.id && sourcePath) {
+          moduleCache.featureSources[feature.id] = sourcePath;
+        }
+        const requireInfo = parseScriptRequirePaths(scriptText);
+        moduleCache.files[sourcePath] = {
+          sha: String(job.entry.sha || ""),
+          content: scriptText,
+          requires: requireInfo.requires,
+          blockedRequires: requireInfo.blockedRequires,
+          fetchedAt: moduleCache.syncedAt,
+        };
+        requireInfo.requires.forEach(enqueueDependencyPath);
+        return feature;
+      } catch (_) {
+        // RAW fallback may contain stale paths; skip missing files and continue.
+        return null;
+      }
+    }));
+
+    while (dependencyQueue.length) {
+      const dependencyPath = dependencyQueue.shift();
+      if (!dependencyPath || moduleCache.files[dependencyPath]) {
+        continue;
+      }
+
+      try {
+        const dependencyFile = await fetchRepoFileWithSha(dependencyPath, "", { preferApi: false });
+        const requireInfo = parseScriptRequirePaths(dependencyFile.content);
+        moduleCache.files[dependencyPath] = {
+          sha: String(dependencyFile.sha || ""),
+          content: dependencyFile.content,
+          requires: requireInfo.requires,
+          blockedRequires: requireInfo.blockedRequires,
+          fetchedAt: moduleCache.syncedAt,
+        };
+        requireInfo.requires.forEach(enqueueDependencyPath);
+      } catch (error) {
+        console.warn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
+      }
+    }
+
+    const sortedFeatures = features
+      .filter(Boolean)
+      .sort((left, right) => {
+        if (left.category !== right.category) {
+          return left.category.localeCompare(right.category);
+        }
+        return left.title.localeCompare(right.title);
+      });
+
+    if (!sortedFeatures.length) {
+      throw new Error("No module data returned from raw sources");
+    }
+
+    return {
+      features: sortedFeatures,
+      moduleCache: normalizeModuleCache(moduleCache) || createEmptyModuleCache(),
+      source: "raw-fallback",
+    };
+  }
+
+  async function fetchFeatureRegistryFromGit() {
+    let jobs = [];
+    try {
+      jobs = await fetchManagedEntriesFromGitTree();
+    } catch (error) {
+      if (Number(error?.status || 0) === 403) {
+        throw error;
+      }
+      jobs = await fetchManagedEntriesFromGitContents();
+    }
+
+    const sourceShaByPath = new Map();
+    jobs.forEach((job) => {
+      const sourcePath = normalizeSourcePath(job?.entry?.path || "").replace(/^\/+/, "");
+      if (!sourcePath) {
+        return;
+      }
+      sourceShaByPath.set(sourcePath, String(job?.entry?.sha || ""));
     });
 
     const moduleCache = createEmptyModuleCache();
@@ -2103,8 +2523,7 @@
     }
 
     const features = await Promise.all(jobs.map(async (job) => {
-      const rawUrl = job.entry.download_url
-        || `${REPO_RAW_BASE}/${toRawPath(job.entry.path || "")}`;
+      const rawUrl = job.entry.download_url || `${REPO_RAW_BASE}/${toRawPath(job.entry.path || "")}`;
       const scriptText = await requestText(rawUrl);
       const feature = normalizeFeatureFromSource(job.category, job.entry, scriptText);
       const sourcePath = normalizeSourcePath(job.entry.path || "").replace(/^\/+/, "");
@@ -2130,7 +2549,7 @@
       }
 
       try {
-        const dependencyFile = await fetchRepoFileWithSha(dependencyPath);
+        const dependencyFile = await fetchRepoFileWithSha(dependencyPath, sourceShaByPath.get(dependencyPath) || "", { preferApi: false });
         const requireInfo = parseScriptRequirePaths(dependencyFile.content);
         moduleCache.files[dependencyPath] = {
           sha: String(dependencyFile.sha || ""),
@@ -2139,6 +2558,9 @@
           blockedRequires: requireInfo.blockedRequires,
           fetchedAt: moduleCache.syncedAt,
         };
+        if (dependencyFile.sha && !sourceShaByPath.has(dependencyPath)) {
+          sourceShaByPath.set(dependencyPath, dependencyFile.sha);
+        }
         requireInfo.requires.forEach(enqueueDependencyPath);
       } catch (error) {
         console.warn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
@@ -2158,6 +2580,82 @@
       features: sortedFeatures,
       moduleCache: normalizeModuleCache(moduleCache) || createEmptyModuleCache(),
     };
+  }
+
+  function inferFeatureCategoryFromSourcePath(sourcePath) {
+    const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+    if (!normalizedPath) {
+      return "";
+    }
+    const lowerPath = normalizedPath.toLowerCase();
+    if (lowerPath.startsWith("template/")) {
+      return "themes";
+    }
+    if (lowerPath.startsWith("animation/")) {
+      return "animations";
+    }
+    return "";
+  }
+
+  function isManagedFeatureSourcePath(sourcePath) {
+    const normalizedPath = normalizeSourcePath(sourcePath || "").replace(/^\/+/, "");
+    if (!normalizedPath || !normalizedPath.toLowerCase().endsWith(".user.js")) {
+      return false;
+    }
+
+    const category = inferFeatureCategoryFromSourcePath(normalizedPath);
+    if (!category) {
+      return false;
+    }
+
+    return normalizedPath.toLowerCase() !== "config/ad xconfig.user.js";
+  }
+
+  function buildFeatureRegistryFromModuleCache() {
+    const files = state.runtime.moduleCache?.files;
+    if (!files || typeof files !== "object") {
+      return [];
+    }
+
+    const features = [];
+    const seenIds = new Set();
+
+    Object.keys(files).forEach((rawPath) => {
+      const sourcePath = normalizeSourcePath(rawPath || "").replace(/^\/+/, "");
+      if (!isManagedFeatureSourcePath(sourcePath)) {
+        return;
+      }
+
+      const category = inferFeatureCategoryFromSourcePath(sourcePath);
+      if (!category) {
+        return;
+      }
+
+      const entry = files[sourcePath];
+      const scriptText = typeof entry?.content === "string" ? entry.content : "";
+      if (!scriptText) {
+        return;
+      }
+
+      try {
+        const feature = normalizeFeatureFromSource(category, { path: sourcePath, sha: String(entry?.sha || "") }, scriptText);
+        if (!feature || !feature.id || seenIds.has(feature.id)) {
+          return;
+        }
+        seenIds.add(feature.id);
+        feature.remoteSha = String(entry?.sha || "");
+        features.push(feature);
+      } catch (_) {
+        // Ignore malformed cache entries and continue with remaining files.
+      }
+    });
+
+    return features.sort((left, right) => {
+      if (left.category !== right.category) {
+        return left.category.localeCompare(right.category);
+      }
+      return left.title.localeCompare(right.title);
+    });
   }
 
   function applyModuleCache(moduleCacheValue) {
@@ -2702,6 +3200,106 @@
     renderPanel();
 
     const job = (async () => {
+      const tryRawFallback = async (reasonMessage) => {
+        try {
+          const rawPayload = await fetchFeatureRegistryFromRawSources();
+          const features = Array.isArray(rawPayload?.features) ? rawPayload.features : [];
+          const moduleCache = rawPayload?.moduleCache;
+          const applied = applyFeatureRegistry(features);
+          const cacheApplied = applyModuleCache(moduleCache);
+
+          if (!applied || !cacheApplied) {
+            throw new Error("No module data returned from raw sources");
+          }
+
+          const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+          updateManagedSourcePathIndex([
+            ...features.map((feature) => normalizeSourcePath(feature?.source || "").replace(/^\/+/, "")),
+            ...Object.keys(state.runtime.moduleCache?.files || {}),
+          ]);
+          state.gitLoad.source = "github-raw-fallback";
+          state.gitLoad.lastError = String(reasonMessage || "").trim();
+          state.gitLoad.lastSuccessAt = new Date().toISOString();
+          state.gitLoad.lastSuccessCount = features.length;
+          console.info(`AD xConfig Loader: RAW fallback aktiv (${features.length} Module, ${cacheCount} Cache-Dateien).`);
+
+          executeEnabledFeaturesFromCache("post-sync");
+
+          if (state.config) {
+            state.config.git.connected = true;
+            state.config.git.lastError = state.gitLoad.lastError;
+            await saveConfig();
+          }
+
+          if (!silent) {
+            if (state.gitLoad.lastError) {
+              setNotice("info", `${state.gitLoad.lastError} RAW-Fallback: ${features.length} Module, ${cacheCount} Cache-Dateien.`);
+            } else {
+              setNotice("success", `${features.length} Module und ${cacheCount} Cache-Dateien geladen (RAW-Fallback).`);
+            }
+          } else {
+            renderPanel();
+          }
+
+          return { ok: true, count: features.length, cacheFiles: cacheCount, fromRaw: true, warning: state.gitLoad.lastError || "" };
+        } catch (rawError) {
+          console.warn("AD xConfig Loader: RAW fallback failed", rawError);
+          return null;
+        }
+      };
+
+      const applyCacheFallback = async (reasonMessage) => {
+        const message = String(reasonMessage || "Unknown error");
+        const cachedFeatures = buildFeatureRegistryFromModuleCache();
+        const hasCacheFallback = applyFeatureRegistry(cachedFeatures);
+
+        if (!hasCacheFallback) {
+          state.featureRegistry = [];
+        }
+        state.gitLoad.source = hasCacheFallback ? "cache-fallback" : "error";
+        state.gitLoad.lastError = message;
+        state.gitLoad.lastSuccessCount = hasCacheFallback ? cachedFeatures.length : 0;
+        if (hasCacheFallback) {
+          const cachedSyncedAt = String(state.runtime.moduleCache?.syncedAt || "").trim();
+          state.gitLoad.lastSuccessAt = cachedSyncedAt || state.gitLoad.lastSuccessAt || new Date().toISOString();
+          updateManagedSourcePathIndex(cachedFeatures.map((feature) => normalizeSourcePath(feature?.source || "").replace(/^\/+/, "")));
+        }
+
+        if (state.config) {
+          state.config.git.connected = false;
+          state.config.git.lastError = message;
+          await saveConfig();
+        }
+
+        if (!silent) {
+          if (hasCacheFallback) {
+            setNotice("info", `GitHub-Laden fehlgeschlagen (${message}). Cache-Fallback aktiv: ${cachedFeatures.length} Module.`);
+          } else {
+            setNotice("error", `GitHub-Laden fehlgeschlagen: ${message}`);
+          }
+        } else {
+          renderPanel();
+        }
+
+        if (hasCacheFallback) {
+          const cacheFiles = Object.keys(state.runtime.moduleCache?.files || {}).length;
+          return { ok: true, count: cachedFeatures.length, cacheFiles, fromCache: true, warning: message };
+        }
+
+        return { ok: false, count: 0, error: message };
+      };
+
+      const activeBackoffUntil = getGitApiBackoffUntil();
+      if (activeBackoffUntil > Date.now()) {
+        const backoffLabel = formatDateTime(new Date(activeBackoffUntil).toISOString());
+        const backoffReason = `GitHub-API pausiert bis ${backoffLabel}.`;
+        const rawBackoffResult = await tryRawFallback(backoffReason);
+        if (rawBackoffResult) {
+          return rawBackoffResult;
+        }
+        return applyCacheFallback(`${backoffReason} RAW-Fallback fehlgeschlagen.`);
+      }
+
       try {
         const gitPayload = await fetchFeatureRegistryFromGit();
         const features = Array.isArray(gitPayload?.features) ? gitPayload.features : [];
@@ -2717,6 +3315,11 @@
         state.gitLoad.lastError = "";
         state.gitLoad.lastSuccessAt = new Date().toISOString();
         state.gitLoad.lastSuccessCount = features.length;
+        updateManagedSourcePathIndex([
+          ...features.map((feature) => normalizeSourcePath(feature?.source || "").replace(/^\/+/, "")),
+          ...Object.keys(state.runtime.moduleCache?.files || {}),
+        ]);
+        clearGitApiBackoff();
         console.info(`AD xConfig Loader: Git sync erfolgreich (${features.length} Module, ${Object.keys(state.runtime.moduleCache?.files || {}).length} Cache-Dateien).`);
 
         executeEnabledFeaturesFromCache("post-sync");
@@ -2736,24 +3339,22 @@
 
         return { ok: true, count: features.length, cacheFiles: Object.keys(state.runtime.moduleCache?.files || {}).length };
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        state.featureRegistry = [];
-        state.gitLoad.source = "error";
-        state.gitLoad.lastError = message;
-
-        if (state.config) {
-          state.config.git.connected = false;
-          state.config.git.lastError = message;
-          await saveConfig();
+        let message = error instanceof Error ? error.message : "Unknown error";
+        const statusCode = Number(error?.status || 0);
+        const shouldBackoff = statusCode === 403 || statusCode === 429 || Number(error?.retryAfterMs || 0) > 0;
+        if (shouldBackoff) {
+          const backoffUntil = setGitApiBackoffUntil(computeGitApiBackoffUntilFromError(error));
+          const backoffLabel = formatDateTime(new Date(backoffUntil).toISOString());
+          const statusLabel = statusCode > 0 ? String(statusCode) : "unbekannt";
+          message = `GitHub-API derzeit limitiert/gedrosselt (${statusLabel}), pausiert bis ${backoffLabel}. ${message}`;
         }
 
-        if (!silent) {
-          setNotice("error", `GitHub-Laden fehlgeschlagen: ${message}`);
-        } else {
-          renderPanel();
+        const rawResult = await tryRawFallback(message);
+        if (rawResult) {
+          return rawResult;
         }
 
-        return { ok: false, count: 0, error: message };
+        return applyCacheFallback(message);
       } finally {
         state.gitLoad.loading = false;
         state.gitLoad.promise = null;
@@ -3385,6 +3986,33 @@
       return "<div class=\"xcfg-conn xcfg-conn--warn\">GitHub-Verbindung wird aufgebaut. Skriptinformationen werden geladen ...</div>";
     }
 
+    const activeBackoffUntil = getGitApiBackoffUntil();
+    if (activeBackoffUntil > Date.now()) {
+      const untilLabel = formatDateTime(new Date(activeBackoffUntil).toISOString());
+      const count = Number(state.gitLoad.lastSuccessCount || 0);
+      const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+      if (count > 0) {
+        return `<div class="xcfg-conn xcfg-conn--warn">GitHub-API ist bis ${escapeHtml(untilLabel)} pausiert (Rate-Limit). RAW-/Cache-Daten aktiv: ${count} Module, ${cacheCount} Cache-Dateien.</div>`;
+      }
+      return `<div class="xcfg-conn xcfg-conn--warn">GitHub-API ist bis ${escapeHtml(untilLabel)} pausiert (Rate-Limit). Bitte später erneut laden.</div>`;
+    }
+
+    if (state.gitLoad.source === "github-raw-fallback" && Number(state.gitLoad.lastSuccessCount || 0) > 0) {
+      const count = Number(state.gitLoad.lastSuccessCount || 0);
+      const loadedAt = formatDateTime(state.gitLoad.lastSuccessAt);
+      const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+      if (state.gitLoad.lastError) {
+        return `<div class="xcfg-conn xcfg-conn--warn">${escapeHtml(state.gitLoad.lastError)} RAW-Fallback aktiv: ${count} Skripte, Loader-Cache: ${cacheCount} Dateien (Stand: ${escapeHtml(loadedAt)}).</div>`;
+      }
+      return `<div class="xcfg-conn xcfg-conn--warn">GitHub API wurde umgangen (RAW-Fallback aktiv): ${count} Skripte, Loader-Cache: ${cacheCount} Dateien (Stand: ${escapeHtml(loadedAt)}).</div>`;
+    }
+
+    if (state.gitLoad.lastError && getFeatureRegistry().length) {
+      const count = getFeatureRegistry().length;
+      const cacheCount = Object.keys(state.runtime.moduleCache?.files || {}).length;
+      return `<div class="xcfg-conn xcfg-conn--warn">GitHub-Verbindung fehlgeschlagen (${escapeHtml(state.gitLoad.lastError)}). Cache-Fallback aktiv: ${count} Module, ${cacheCount} Cache-Dateien.</div>`;
+    }
+
     if (state.gitLoad.lastError) {
       return `<div class="xcfg-conn xcfg-conn--error">GitHub-Verbindung fehlgeschlagen: ${escapeHtml(state.gitLoad.lastError)}. Bitte auf <b>🔄 Skripte & Loader-Cache laden</b> klicken, sobald die Verbindung wieder verfügbar ist.</div>`;
     }
@@ -3889,7 +4517,13 @@
 
     if (syncResult.ok) {
       const cacheFiles = Number(syncResult.cacheFiles || 0);
-      setNotice("success", `Skripte geladen: ${syncResult.count} Module, ${cacheFiles} Loader-Cache-Dateien.`);
+      if (syncResult.warning) {
+        setNotice("info", `${syncResult.warning} Skripte geladen: ${syncResult.count} Module, ${cacheFiles} Loader-Cache-Dateien.`);
+      } else if (syncResult.fromRaw) {
+        setNotice("info", `RAW-Fallback aktiv. Skripte geladen: ${syncResult.count} Module, ${cacheFiles} Loader-Cache-Dateien.`);
+      } else {
+        setNotice("success", `Skripte geladen: ${syncResult.count} Module, ${cacheFiles} Loader-Cache-Dateien.`);
+      }
     } else {
       setNotice("error", `Skriptabgleich fehlgeschlagen. Grund: ${syncResult.error}`);
     }
@@ -4120,6 +4754,7 @@
   async function init() {
     ensureStyles();
     bootstrapModuleCacheFromLocalStorage();
+    state.gitLoad.apiBackoffUntil = readGitApiBackoffUntilFromStorage();
     await loadConfig();
     ensureFeatureStatesForRegistry();
     initRuntimeLayer();
