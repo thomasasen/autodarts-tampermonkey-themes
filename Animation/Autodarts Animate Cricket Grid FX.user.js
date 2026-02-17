@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.0
-// @description  Kombinierbare Cricket-Grid-Effekte fuer das Autodarts Theme Cricket (Rows, Badges, Marks, Threat, Score, Pressure).
-// @xconfig-description  Modulares Cricket-Grid-FX-Set mit einzeln schaltbaren Effekten, optimiert fuer Theme Cricket.
+// @version      1.0.1
+// @description  Cricket-Grid-FX fuer Theme Cricket: zeigt Mark-Fortschritt, Zeilen-Fokus, Threat/Score/Pressure sowie Turn- und Trefferfeedback direkt in der Zielmatrix.
+// @xconfig-description  Dieses Modul erweitert die Cricket-Zielmatrix um klar getrennte Live-Effekte (Zeilen-Sweep, Badge-Fokus, Mark-Progress, Threat/Score/Pressure, Delta-Chips, Hit-Spark, Turn-Wipe) fuer schnellere Entscheidungen bei gleichbleibend lesbarem Layout.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -48,25 +48,25 @@
   const SPARK_CLASS = "ad-ext-crfx-spark";
   const WIPE_CLASS = "ad-ext-crfx-wipe";
 
-  // xConfig: {"type":"toggle","label":"Row Rail Pulse","description":"Effekt 1: Zeilen-Sweep bei Mark-Zuwachs oder wichtigem Statuswechsel.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Row Rail Pulse","description":"Spielt bei Trefferzuwachs oder relevanten Statuswechseln einen horizontalen Lichtlauf ueber die komplette betroffene Zeile. Sichtbar als kurzer Sweep, der sofort zeigt: Diese Zahl hat sich gerade geaendert.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROW_RAIL_PULSE = true;
-  // xConfig: {"type":"toggle","label":"Badge Beacon","description":"Effekt 2: Linkes Badge wird bei relevanten Zeilen hervorgehoben.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Badge Beacon","description":"Hebt das linke Ziel-Badge (20..15/Bull) bei Score, Danger oder Pressure deutlich hervor. Sichtbar als klarer Fokuspunkt vorne links inklusive kurzem Burst bei neuen Ereignissen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BADGE_BEACON = true;
-  // xConfig: {"type":"toggle","label":"Mark Progress Animator","description":"Effekt 3: Mark-Symbole animieren bei Fortschritt.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Mark Progress Animator","description":"Animiert das jeweilige Mark-Symbol, wenn der Zielstand steigt (z. B. offen -> 1 Mark -> 2 Marks -> geschlossen). Sichtbar als kurzes Setz-/Pop-Feedback direkt am Symbol.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_MARK_PROGRESS_ANIMATOR = true;
-  // xConfig: {"type":"toggle","label":"Threat Edge","description":"Effekt 4: Danger-Zeilen bekommen seitliche Warnkanten.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Threat Edge","description":"Markiert Danger-Zeilen mit seitlichen Warnkanten, sobald ein Gegner dort bereits geschlossen hat und du noch offen bist. Sichtbar als klare Randwarnung statt grossen Flaechen-Overlay.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_THREAT_EDGE = true;
-  // xConfig: {"type":"toggle","label":"Scoring Lane Highlight","description":"Effekt 5: Score-Zeilen bekommen eine gruene Lane-Hervorhebung.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Scoring Lane Highlight","description":"Hebt Zeilen hervor, auf denen du aktuell scoren kannst. Sichtbar als dezente gruene Lane ueber die ganze Zeile, damit offensive Ziele sofort erkennbar sind.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_SCORING_LANE_HIGHLIGHT = true;
-  // xConfig: {"type":"toggle","label":"Dead Row Collapse","description":"Effekt 6: Vollstaendig geschlossene Zeilen werden optisch reduziert.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Dead Row Collapse","description":"Dimmt Zeilen, die fuer alle Spieler bereits geschlossen sind. Sichtbar als entsaettigte/abgeschwaechte Zeilen, damit aktive Ziele staerker in den Vordergrund ruecken.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DEAD_ROW_COLLAPSE = true;
-  // xConfig: {"type":"toggle","label":"Delta Chips","description":"Effekt 8: Bei neuen Marks erscheint kurz +1/+2/+3 in der Zelle.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Delta Chips","description":"Zeigt bei jedem Mark-Zuwachs ein kurzes +1/+2/+3 direkt in der betroffenen Zelle. Sichtbar als schnelles Delta-Popup fuer unmittelbares Trefferfeedback.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DELTA_CHIPS = true;
-  // xConfig: {"type":"toggle","label":"Hit Spark","description":"Effekt 10: Impact-Spark bei neuem Mark.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Hit Spark","description":"Ergaenzt bei neuem Mark einen sehr kurzen radialen Trefferimpuls. Sichtbar als kleiner Impact-Flash am Ereignisort, der das Delta-Feedback unterstuetzt.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_HIT_SPARK = true;
-  // xConfig: {"type":"toggle","label":"Round Transition Wipe","description":"Effekt 13: Kurzer Wipe beim Turn-Wechsel.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Round Transition Wipe","description":"Spielt bei erkanntem Turn-/Zugwechsel einen dezenten Wipe ueber das Cricket-Grid. Sichtbar als kurzer Uebergangseffekt fuer bessere Phasenorientierung.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROUND_TRANSITION_WIPE = true;
-  // xConfig: {"type":"toggle","label":"Opponent Pressure Overlay","description":"Effekt 15: Overlay bei Defensiv-Druck durch geschlossene Gegnerziele.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Opponent Pressure Overlay","description":"Markiert akuten Defensivdruck, wenn Gegner auf einem Ziel bereits geschlossen hat und du dort noch deutlich offen bist. Sichtbar als auffaelliges Pressure-Overlay auf den kritischen Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_OPPONENT_PRESSURE_OVERLAY = true;
 
   /*
