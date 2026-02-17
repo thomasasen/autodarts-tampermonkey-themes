@@ -358,6 +358,63 @@ div.css-y3hfdd > .css-1igwmid{
     };
   }
 
+  const PREVIEW_SPACE_MANAGER_KEY = "__autodartsThemePreviewSpaceManager";
+
+  function getPreviewSpaceManager() {
+    if (global[PREVIEW_SPACE_MANAGER_KEY]) {
+      return global[PREVIEW_SPACE_MANAGER_KEY];
+    }
+
+    const placements = new Map();
+    const knownClasses = new Set();
+
+    function syncPreviewSpace() {
+      const turnEl = document.getElementById("ad-ext-turn");
+      if (!turnEl) {
+        return;
+      }
+
+      const activeClasses = new Set();
+      placements.forEach((entry) => {
+        if (!entry || !entry.className) {
+          return;
+        }
+        if (entry.enabled) {
+          activeClasses.add(entry.className);
+        }
+      });
+
+      knownClasses.forEach((className) => {
+        turnEl.classList.toggle(className, activeClasses.has(className));
+      });
+    }
+
+    const manager = {
+      set(instanceId, className, enabled) {
+        if (!instanceId || !className) {
+          return;
+        }
+        knownClasses.add(className);
+        placements.set(instanceId, {
+          className,
+          enabled: Boolean(enabled),
+        });
+        syncPreviewSpace();
+      },
+      remove(instanceId) {
+        if (!instanceId) {
+          return;
+        }
+        placements.delete(instanceId);
+        syncPreviewSpace();
+      },
+      sync: syncPreviewSpace,
+    };
+
+    global[PREVIEW_SPACE_MANAGER_KEY] = manager;
+    return manager;
+  }
+
   function initPreviewPlacement(options = {}) {
     const {
       variantName,
@@ -377,6 +434,8 @@ div.css-y3hfdd > .css-1igwmid{
     const cardOverrides = new WeakMap();
     let lastCards = [];
     const normalizedVariant = variantName.trim().toLowerCase();
+    const previewSpaceManager = getPreviewSpaceManager();
+    const previewPlacementId = `preview:${normalizedVariant}:${matchMode}:${previewSpaceClass}`;
 
     function scheduleUpdate() {
       if (scheduled) return;
@@ -440,9 +499,7 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function setPreviewSpace(enabled) {
-      const turnEl = document.getElementById("ad-ext-turn");
-      if (!turnEl) return;
-      turnEl.classList.toggle(previewSpaceClass, enabled);
+      previewSpaceManager.set(previewPlacementId, previewSpaceClass, enabled);
     }
 
     function isEffectivelyHidden(node) {
@@ -666,9 +723,10 @@ div.css-y3hfdd > .css-1igwmid{
     let lastUrl = location.href;
     setInterval(() => {
       const currentUrl = location.href;
-      if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
+      if (currentUrl === lastUrl) {
+        return;
       }
+      lastUrl = currentUrl;
       scheduleEvaluation();
     }, 1000);
   }

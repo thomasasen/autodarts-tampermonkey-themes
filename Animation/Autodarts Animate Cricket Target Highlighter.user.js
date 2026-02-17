@@ -783,15 +783,16 @@ function getMarksFromText (text) {
 	if (! text) {
 		return null;
 	}
-	const cleaned = text.replace(/\s+/g, "").toUpperCase();
+	const normalized = String(text).normalize("NFKC");
+	const cleaned = normalized.replace(/\s+/g, "").toUpperCase();
 	if (! cleaned) {
 		return null;
 	}
 
-	if (cleaned.includes("â¨‚") || cleaned.includes("âŠ—")) {
+	if (/[\u2A02\u2297\u29BB]/u.test(cleaned)) {
 		return 3;
 	}
-	if (cleaned.includes("Ã—") || cleaned.includes("X")) {
+	if (/[\u00D7X\u2715\u2716\u2573]/u.test(cleaned)) {
 		return 2;
 	}
 	if (cleaned.includes("/")) {
@@ -1178,7 +1179,12 @@ function updateTargets () {
 		board.group.id || "board"
 	}`;
 	const stateKey = buildStateKey(stateMap);
-	if (stateKey === lastStateKey && boardKey === lastBoardKey) {
+	const existingOverlay = board.group && typeof board.group.querySelector === "function"
+		? board.group.querySelector(`#${OVERLAY_ID}`)
+		: null;
+	const overlayNeedsRefresh = ! existingOverlay || ! existingOverlay.isConnected || existingOverlay.childElementCount === 0;
+
+	if (stateKey === lastStateKey && boardKey === lastBoardKey && ! overlayNeedsRefresh) {
 		debugLog("updateTargets: no changes");
 		return;
 	}

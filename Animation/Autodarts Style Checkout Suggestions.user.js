@@ -24,15 +24,26 @@
 	const shared = window.autodartsAnimationShared || {};
 
 	function ensureStyleFallback(styleId, cssText) {
-		if (!styleId || document.getElementById(styleId)) {
+		if (!styleId) {
 			return false;
+		}
+
+		const target = document.head || document.documentElement;
+		const existingStyle = document.getElementById(styleId);
+		if (existingStyle) {
+			if (existingStyle.textContent !== cssText) {
+				existingStyle.textContent = cssText;
+			}
+			if (target && existingStyle.parentElement !== target) {
+				target.appendChild(existingStyle);
+			}
+			return true;
 		}
 
 		const style = document.createElement("style");
 		style.id = styleId;
 		style.textContent = cssText;
 
-		const target = document.head || document.documentElement;
 		if (target) {
 			target.appendChild(style);
 			return true;
@@ -439,8 +450,69 @@
 
 	const scheduleUpdate = createRafScheduler(updateSuggestions);
 
+	function mutationTouchesSuggestions(mutation) {
+		if (!mutation) {
+			return false;
+		}
+
+		const isRelevantElement = (element) => {
+			if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+				return false;
+			}
+			if (element.matches(CONFIG.suggestionSelector)) {
+				return true;
+			}
+			if (element.id === CONFIG.variantElementId) {
+				return true;
+			}
+			return Boolean(
+				element.querySelector(CONFIG.suggestionSelector) ||
+				element.querySelector(`#${CONFIG.variantElementId}`)
+			);
+		};
+
+		if (mutation.type === "characterData") {
+			const parent = mutation.target && mutation.target.parentElement;
+			return isRelevantElement(parent);
+		}
+
+		if (mutation.type === "attributes") {
+			return isRelevantElement(mutation.target);
+		}
+
+		if (mutation.type === "childList") {
+			if (isRelevantElement(mutation.target)) {
+				return true;
+			}
+			for (const node of mutation.addedNodes || []) {
+				if (isRelevantElement(node)) {
+					return true;
+				}
+			}
+			for (const node of mutation.removedNodes || []) {
+				if (isRelevantElement(node)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateSuggestions();
 
-	observeMutations({onChange: scheduleUpdate});
+	observeMutations({
+		target: document.body || document.documentElement,
+		types: ["childList", "characterData", "attributes"],
+		attributeFilter: ["class", "id", "style", "data-state", "aria-hidden"],
+		onChange: (mutation, mutations) => {
+			const mutationList = Array.isArray(mutations) && mutations.length
+				? mutations
+				: [mutation];
+			if (mutationList.some(mutationTouchesSuggestions)) {
+				scheduleUpdate();
+			}
+		}
+	});
 })();

@@ -78,6 +78,11 @@
 	const lastPlayedAt = new WeakMap();
 	const observedRoots = new WeakSet();
 	const pendingRows = new Set();
+	const ROOT_CACHE_TTL_MS = 2000;
+	const ROOT_REFRESH_WHEN_PENDING_MS = 5000;
+	let cachedRoots = [document];
+	let lastRootCollectionTs = 0;
+	let lastPendingRootRefreshTs = 0;
 
 	const audio = new Audio(CONFIG.soundUrl);
 	audio.preload = "auto";
@@ -97,19 +102,29 @@
    * Collects DOM roots (document + open shadow roots).
    * @returns {Array<Document | ShadowRoot>}
    */
-	function collectRoots() {
+	function collectRoots(force) {
+		const now = performance.now();
+		if (! force && cachedRoots.length && now - lastRootCollectionTs < ROOT_CACHE_TTL_MS) {
+			return cachedRoots;
+		}
+
 		const roots = [document];
+		const seenRoots = new Set([document]);
 		const rootNode = document.documentElement;
 		if (rootNode) {
 			const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_ELEMENT);
 			while (walker.nextNode()) {
 				const node = walker.currentNode;
-				if (node.shadowRoot) {
+				if (node.shadowRoot && ! seenRoots.has(node.shadowRoot)) {
+					seenRoots.add(node.shadowRoot);
 					roots.push(node.shadowRoot);
 				}
 			}
 		}
-		return roots;
+
+		cachedRoots = roots;
+		lastRootCollectionTs = now;
+		return cachedRoots;
 	}
 
 	/**
@@ -242,16 +257,31 @@
    * @returns {void}
    */
 	function scanThrows(silent) {
-		const roots = collectRoots();
 		let rows = [];
+		let rootsForObservation = null;
 		if (pendingRows.size) {
-			rows = Array.from(pendingRows);
+			rows = Array.from(pendingRows).filter((row) => row && row.isConnected);
+			const now = performance.now();
+			if (now - lastPendingRootRefreshTs >= ROOT_REFRESH_WHEN_PENDING_MS) {
+				rootsForObservation = collectRoots(true);
+				lastPendingRootRefreshTs = now;
+			}
 		} else {
+			const roots = collectRoots(false);
+			rootsForObservation = roots;
 			roots.forEach((root) => {
 				rows = rows.concat(Array.from(root.querySelectorAll(CONFIG.selectors.throwRow)));
 			});
-		} pendingRows.clear();
-		roots.forEach((root) => observeRoot(root));
+		}
+		pendingRows.clear();
+
+		if (rootsForObservation) {
+			rootsForObservation.forEach((root) => observeRoot(root));
+		}
+
+		const uniqueRows = new Set(rows);
+		rows = Array.from(uniqueRows);
+
 		const now = performance.now();
 		rows.forEach((row) => {
 			const normalized = getThrowText(row);
@@ -298,6 +328,9 @@
 				}
 				return;
 			}
+			if (mutation.type === "childList" && (mutation.addedNodes.length || mutation.removedNodes.length)) {
+				lastRootCollectionTs = 0;
+			}
 			mutation.addedNodes.forEach((node) => {
 				if (node.nodeType !== Node.ELEMENT_NODE) {
 					return;
@@ -326,7 +359,7 @@
 			capture: true
 		});
 		scanThrows(true);
-		observeRoot(document);
+		collectRoots(true).forEach((root) => observeRoot(root));
 
 		if (CONFIG.pollIntervalMs > 0) {
 			setInterval(() => scanThrows(false), CONFIG.pollIntervalMs);

@@ -22,6 +22,16 @@
 (function () {
   "use strict";
 
+  const INSTANCE_KEY = "__adExtTvBoardZoomInstance";
+  const existingInstance = window[INSTANCE_KEY];
+  if (existingInstance && typeof existingInstance.cleanup === "function") {
+    try {
+      existingInstance.cleanup();
+    } catch (_) {
+      // Ignore stale instance cleanup errors.
+    }
+  }
+
   const {
     ensureStyle,
     createRafScheduler,
@@ -213,6 +223,7 @@
     dismissedTurnId: "",
     dismissedThrowCount: -1,
     dismissedUntilTs: 0,
+    releaseTimeoutId: 0,
   };
 
   const originalStyleCache = new WeakMap();
@@ -1233,7 +1244,14 @@
     state.activeZoomIntent = zoomIntent;
   }
 
-  function resetZoom() {
+  function resetZoom(options = {}) {
+    const immediate = Boolean(options.immediate);
+
+    if (state.releaseTimeoutId) {
+      clearTimeout(state.releaseTimeoutId);
+      state.releaseTimeoutId = 0;
+    }
+
     if (!state.zoomedElement) {
       state.activeZoomIntent = null;
       state.lastAppliedTransform = "";
@@ -1245,13 +1263,26 @@
     }
 
     const zoomTarget = state.zoomedElement;
+    if (immediate) {
+      restoreStyle(zoomTarget);
+      state.zoomedElement = null;
+      state.lastAppliedTransform = "";
+      if (state.zoomHost) {
+        restoreHostStyle(state.zoomHost);
+        state.zoomHost = null;
+      }
+      state.activeZoomIntent = null;
+      return;
+    }
+
     zoomTarget.style.transition = `transform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
     zoomTarget.style.transform = "";
 
     const releaseDelay = CONFIG.zoomOutMs + 40;
     const expectedTarget = zoomTarget;
     const expectedHost = state.zoomHost;
-    setTimeout(() => {
+    state.releaseTimeoutId = setTimeout(() => {
+      state.releaseTimeoutId = 0;
       if (state.zoomedElement === expectedTarget) {
         restoreStyle(expectedTarget);
         state.zoomedElement = null;
@@ -1436,16 +1467,7 @@
   }
 
   function onBeforeUnload() {
-    resetZoom();
-    if (state.zoomedElement) {
-      restoreStyle(state.zoomedElement);
-      state.zoomedElement = null;
-      state.lastAppliedTransform = "";
-    }
-    if (state.zoomHost) {
-      restoreHostStyle(state.zoomHost);
-      state.zoomHost = null;
-    }
+    resetZoom({ immediate: true });
     clearDismissState();
   }
 
@@ -1453,13 +1475,14 @@
 
   const scheduleUpdate = createRafScheduler(update);
 
-  observeMutations({
+  const domObserver = observeMutations({
     target: document.documentElement,
     onChange: scheduleUpdate,
   });
 
+  let unsubscribeGameState = null;
   if (gameStateShared && typeof gameStateShared.subscribe === "function") {
-    gameStateShared.subscribe(scheduleUpdate);
+    unsubscribeGameState = gameStateShared.subscribe(scheduleUpdate);
   }
 
   window.addEventListener("resize", scheduleUpdate, { passive: true });
@@ -1468,8 +1491,55 @@
   document.addEventListener("visibilitychange", scheduleUpdate);
   window.addEventListener("beforeunload", onBeforeUnload);
 
+  let domReadyListener = null;
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", scheduleUpdate, { once: true });
+    domReadyListener = () => {
+      scheduleUpdate();
+    };
+    document.addEventListener("DOMContentLoaded", domReadyListener, { once: true });
   }
+
+  let cleanedUp = false;
+  const instanceId = Symbol("adExtTvBoardZoom");
+  function cleanupInstance() {
+    if (cleanedUp) {
+      return;
+    }
+    cleanedUp = true;
+
+    if (domObserver && typeof domObserver.disconnect === "function") {
+      domObserver.disconnect();
+    }
+
+    if (typeof unsubscribeGameState === "function") {
+      unsubscribeGameState();
+      unsubscribeGameState = null;
+    }
+
+    window.removeEventListener("resize", scheduleUpdate);
+    window.removeEventListener("orientationchange", scheduleUpdate);
+    window.removeEventListener("pointerdown", onPointerDown, true);
+    document.removeEventListener("visibilitychange", scheduleUpdate);
+    window.removeEventListener("beforeunload", onBeforeUnload);
+    if (domReadyListener) {
+      document.removeEventListener("DOMContentLoaded", domReadyListener);
+      domReadyListener = null;
+    }
+
+    onBeforeUnload();
+
+    if (window[INSTANCE_KEY] && window[INSTANCE_KEY].id === instanceId) {
+      delete window[INSTANCE_KEY];
+    }
+  }
+
+  window[INSTANCE_KEY] = {
+    id: instanceId,
+    cleanup: cleanupInstance,
+  };
+
+  window.addEventListener("pagehide", cleanupInstance, { once: true });
+  window.addEventListener("beforeunload", cleanupInstance, { once: true });
+
   scheduleUpdate();
 })();

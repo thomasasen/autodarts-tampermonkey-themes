@@ -474,11 +474,11 @@
 		const isX01 = CONFIG.requireX01 ? gameStateShared && typeof gameStateShared.isX01Variant === "function" ? gameStateShared.isX01Variant({
 			allowMissing: false,
 			allowEmpty: false,
-			allowNumeric: false
+			allowNumeric: true
 		}) : isX01Variant(CONFIG.variantElementId, {
 			allowMissing: false,
 			allowEmpty: false,
-			allowNumeric: false
+			allowNumeric: true
 		}) : true;
 
 		if (! isX01) {

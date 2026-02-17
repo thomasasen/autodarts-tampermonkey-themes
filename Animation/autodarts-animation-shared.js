@@ -11,15 +11,26 @@
   ];
 
   function ensureStyle(styleId, cssText) {
-    if (!styleId || document.getElementById(styleId)) {
+    if (!styleId) {
       return false;
+    }
+
+    const target = document.head || document.documentElement;
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      if (existingStyle.textContent !== cssText) {
+        existingStyle.textContent = cssText;
+      }
+      if (target && existingStyle.parentElement !== target) {
+        target.appendChild(existingStyle);
+      }
+      return true;
     }
 
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = cssText;
 
-    const target = document.head || document.documentElement;
     if (target) {
       target.appendChild(style);
       return true;

@@ -76,8 +76,8 @@
    */
 
 	const STYLE_ID = "autodarts-size-strokes-style";
-	// Matches board hit markers rendered with the shadow filter.
-	const MARKER_SELECTOR = 'circle[style*="shadow-2dp"], circle[filter*="shadow-2dp"]';
+	const MARKER_SELECTOR = 'svg[viewBox="0 0 1000 1000"] circle';
+	const EXCLUDED_OVERLAY_SELECTOR = "#ad-ext-checkout-targets, #ad-ext-cricket-targets, #ad-ext-dart-image-overlay, #ad-ext-winner-fireworks";
 	const MARKER_HIDDEN_DATASET_KEY = "adExtOriginalOpacity";
 	const BASE_CLASS = "ad-ext-dart-marker";
 	const EFFECT_CLASSES = {
@@ -157,13 +157,60 @@
 		}
 	}
 
+	function getCircleClassName(marker) {
+		if (!marker || !marker.className) {
+			return "";
+		}
+		if (typeof marker.className === "string") {
+			return marker.className;
+		}
+		if (typeof marker.className.baseVal === "string") {
+			return marker.className.baseVal;
+		}
+		return "";
+	}
+
+	function isLikelyDartMarker(marker) {
+		if (!(marker instanceof SVGCircleElement)) {
+			return false;
+		}
+		if (marker.closest(EXCLUDED_OVERLAY_SELECTOR)) {
+			return false;
+		}
+
+		const radius = Number.parseFloat(marker.getAttribute("r"));
+		if (Number.isFinite(radius) && radius > 18) {
+			return false;
+		}
+
+		const className = getCircleClassName(marker).toLowerCase();
+		const styleAttr = String(marker.getAttribute("style") || "").toLowerCase();
+		const filterAttr = String(marker.getAttribute("filter") || "").toLowerCase();
+		const datasetKeys = Object.keys(marker.dataset || {}).join(" ").toLowerCase();
+		const markerLike =
+			styleAttr.includes("shadow-2dp") ||
+			filterAttr.includes("shadow-2dp") ||
+			filterAttr.includes("shadow") ||
+			className.includes("dart") ||
+			className.includes("marker") ||
+			className.includes("hit") ||
+			datasetKeys.includes("hit") ||
+			datasetKeys.includes("marker");
+
+		return markerLike;
+	}
+
 	/**
    * Finds all markers in the DOM and updates their styles.
    * @returns {void}
    */
 	function updateMarkers() {
 		const markers = document.querySelectorAll(MARKER_SELECTOR);
-		markers.forEach(applyMarkerStyles);
+		markers.forEach((marker) => {
+			if (isLikelyDartMarker(marker)) {
+				applyMarkerStyles(marker);
+			}
+		});
 	}
 
 	/**

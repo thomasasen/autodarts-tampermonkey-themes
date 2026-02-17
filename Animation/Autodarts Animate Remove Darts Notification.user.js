@@ -149,7 +149,6 @@
 	let fallbackAreasDirty = true;
 	let fallbackAreas = [];
 	let fallbackWindowOffset = 0;
-	const ATTACH_SHADOW_HOOK_FLAG = "__adExtTakeoutAttachShadowHook";
 
 	const STYLE_TEXT = `
 .${CARD_CLASS} {
@@ -164,7 +163,13 @@
   outline: 0 !important;
   width: auto !important;
   max-width: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
   pointer-events: none;
+}
+
+.${CARD_CLASS} > :not(.${IMAGE_CLASS}) {
+  display: none !important;
 }
 
 .${CARD_CLASS} .${IMAGE_CLASS} {
@@ -233,6 +238,24 @@
 		fallbackAreasDirty = true;
 	}
 
+	function refreshKnownShadowRoots(rootNode) {
+		if (! CONFIG.searchShadowRoots) {
+			return;
+		}
+		const root = rootNode || document.documentElement;
+		trackShadowHost(document.documentElement);
+		trackShadowHost(document.body);
+		if (! root || typeof document.createTreeWalker !== "function") {
+			return;
+		}
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+		let current = walker.nextNode();
+		while (current) {
+			trackShadowHost(current);
+			current = walker.nextNode();
+		}
+	}
+
 	function trackShadowHost(host) {
 		if (! CONFIG.searchShadowRoots || ! host || host.nodeType !== Node.ELEMENT_NODE || seenShadowHosts.has(host)) {
 			return;
@@ -286,37 +309,12 @@
 		});
 	}
 
-	function installAttachShadowHook() {
-		if (! CONFIG.searchShadowRoots || typeof Element === "undefined") {
-			return;
-		}
-		const prototype = Element.prototype;
-		if (! prototype || typeof prototype.attachShadow !== "function") {
-			return;
-		}
-		const currentAttachShadow = prototype.attachShadow;
-		if (currentAttachShadow && currentAttachShadow[ATTACH_SHADOW_HOOK_FLAG]) {
-			return;
-		}
-		const wrappedAttachShadow = function (...args) {
-			const root = currentAttachShadow.apply(this, args);
-			trackShadowHost(this);
-			return root;
-		};
-		Object.defineProperty(wrappedAttachShadow, ATTACH_SHADOW_HOOK_FLAG, {value: true});
-		try {
-			prototype.attachShadow = wrappedAttachShadow;
-		} catch (error) { // Ignore: if patching is blocked, mutation-based tracking still works.
-		}
-	}
-
 	function getSearchRoots() {
 		const roots = [document];
 		if (! CONFIG.searchShadowRoots) {
 			return roots;
 		}
-		trackShadowHost(document.documentElement);
-		trackShadowHost(document.body);
+		refreshKnownShadowRoots();
 		shadowRoots.forEach((root) => {
 			if (root && root.host && root.host.isConnected) {
 				roots.push(root);
@@ -484,7 +482,7 @@
 		if (! notice || notice.nodeType !== Node.ELEMENT_NODE) {
 			return;
 		}
-		const card = notice.parentElement || notice;
+		const card = notice;
 		card.classList.add(CARD_CLASS);
 
 		let image = notice.querySelector(`.${IMAGE_CLASS}`);
@@ -495,12 +493,6 @@
 			image.src = CONFIG.imageUrl;
 			image.alt = CONFIG.imageAlt;
 		}
-
-		Array.from(notice.childNodes).forEach((child) => {
-			if (child !== image) {
-				child.remove();
-			}
-		});
 	}
 
 	function updateNotices() {
@@ -511,7 +503,7 @@
 
 	const scheduleUpdate = createRafScheduler(updateNotices);
 
-	installAttachShadowHook();
+	refreshKnownShadowRoots();
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateNotices();
 

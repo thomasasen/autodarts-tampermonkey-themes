@@ -21,6 +21,16 @@
 (function () {
 	"use strict";
 
+	const INSTANCE_KEY = "__adExtDartMarkerDartsInstance";
+	const existingInstance = window[INSTANCE_KEY];
+	if (existingInstance && typeof existingInstance.cleanup === "function") {
+		try {
+			existingInstance.cleanup();
+		} catch (_) {
+			// Ignore stale instance cleanup errors.
+		}
+	}
+
 	const {
 		ensureStyle,
 		createRafScheduler,
@@ -29,6 +39,7 @@
 		getBoardRadius
 	} = window.autodartsAnimationShared;
 
+	const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
 	const XCONFIG_STORAGE_KEY = "ad-xconfig:config";
 	const XCONFIG_FEATURE_ID = "a-marker-darts";
 	const XCONFIG_FEATURE_SOURCE = "Animation/Autodarts Animate Dart Marker Darts.user.js";
@@ -57,7 +68,31 @@
 			.replace(/^-+|-+$/g, "");
 	}
 
+	function readXConfigFeatureSettingsFromRuntime() {
+		const runtimeApi = window[RUNTIME_GLOBAL_KEY];
+		if (! runtimeApi || typeof runtimeApi.getFeatureState !== "function") {
+			return null;
+		}
+
+		const fallbackFeatureId = slugifyFeatureId(XCONFIG_FEATURE_SOURCE);
+		const runtimeFeatureState =
+			runtimeApi.getFeatureState(XCONFIG_FEATURE_ID) ||
+			runtimeApi.getFeatureState(XCONFIG_FEATURE_SOURCE) ||
+			runtimeApi.getFeatureState(fallbackFeatureId);
+
+		if (! runtimeFeatureState || typeof runtimeFeatureState !== "object") {
+			return null;
+		}
+		const settings = runtimeFeatureState.settings;
+		return settings && typeof settings === "object" ? settings : null;
+	}
+
 	function readXConfigFeatureSettings() {
+		const runtimeSettings = readXConfigFeatureSettingsFromRuntime();
+		if (runtimeSettings) {
+			return runtimeSettings;
+		}
+
 		try {
 			const rawConfig = localStorage.getItem(XCONFIG_STORAGE_KEY);
 			if (! rawConfig) {
@@ -1245,7 +1280,7 @@
 	// Funktion: watchLocationChanges
 	// Zweck: SPA-Navigation über Events/Observer beobachten.
 	// Parameter: keine.
-	// Rückgabe: void.
+	// Rückgabe: function (Cleanup).
 	// Nutzt: popstate/hashchange/currententrychange, MutationObserver, Fallback-Interval, handleLocationChange().
 	// Wird genutzt von: Initialisierung.
 	function watchLocationChanges() {
@@ -1340,14 +1375,55 @@
 
 		window.addEventListener("pagehide", cleanupLocationWatch, {once: true});
 		window.addEventListener("beforeunload", cleanupLocationWatch, {once: true});
+		return cleanupLocationWatch;
 	}
 
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateDarts();
 
-	observeMutations({onChange: scheduleUpdate});
+	const domObserver = observeMutations({onChange: scheduleUpdate});
 
 	window.addEventListener("resize", scheduleUpdate);
 	window.addEventListener("scroll", scheduleUpdate, true);
-	watchLocationChanges();
+	const cleanupLocationWatch = watchLocationChanges();
+
+	let cleanedUp = false;
+	const instanceId = Symbol("adExtDartMarkerDarts");
+	function cleanupInstance() {
+		if (cleanedUp) {
+			return;
+		}
+		cleanedUp = true;
+
+		if (retryTimer) {
+			window.clearTimeout(retryTimer);
+			retryTimer = 0;
+		}
+
+		if (domObserver && typeof domObserver.disconnect === "function") {
+			domObserver.disconnect();
+		}
+
+		window.removeEventListener("resize", scheduleUpdate);
+		window.removeEventListener("scroll", scheduleUpdate, true);
+
+		if (typeof cleanupLocationWatch === "function") {
+			cleanupLocationWatch();
+		}
+
+		removeOverlay();
+		resetMarkers();
+
+		if (window[INSTANCE_KEY] && window[INSTANCE_KEY].id === instanceId) {
+			delete window[INSTANCE_KEY];
+		}
+	}
+
+	window[INSTANCE_KEY] = {
+		id: instanceId,
+		cleanup: cleanupInstance
+	};
+
+	window.addEventListener("pagehide", cleanupInstance, {once: true});
+	window.addEventListener("beforeunload", cleanupInstance, {once: true});
 })();

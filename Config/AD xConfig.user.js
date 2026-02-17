@@ -121,6 +121,8 @@
       observerHandlesByFeature: new Map(),
       intervalHandlesByFeature: new Map(),
       timeoutHandlesByFeature: new Map(),
+      rafHandlesByFeature: new Map(),
+      listenerHandlesByFeature: new Map(),
       cleanupObserver: null,
       cleanupTimer: null,
       cleanupQueued: false,
@@ -131,6 +133,10 @@
         clearInterval: null,
         setTimeout: null,
         clearTimeout: null,
+        requestAnimationFrame: null,
+        cancelAnimationFrame: null,
+        addEventListener: null,
+        removeEventListener: null,
         mediaPlay: null,
       },
     },
@@ -813,6 +819,80 @@
     });
   }
 
+  function normalizeEventListenerCapture(options) {
+    if (typeof options === "boolean") {
+      return options;
+    }
+    if (options && typeof options === "object") {
+      return Boolean(options.capture);
+    }
+    return false;
+  }
+
+  function trackRuntimeListenerHandle(featureId, target, type, listener, options) {
+    if (!featureId || !target || !type || !listener) {
+      return;
+    }
+
+    let listeners = state.runtime.listenerHandlesByFeature.get(featureId);
+    if (!(listeners instanceof Set)) {
+      listeners = new Set();
+      state.runtime.listenerHandlesByFeature.set(featureId, listeners);
+    }
+
+    const capture = normalizeEventListenerCapture(options);
+    for (const entry of listeners) {
+      if (
+        entry &&
+        entry.target === target &&
+        entry.type === type &&
+        entry.listener === listener &&
+        entry.capture === capture
+      ) {
+        return;
+      }
+    }
+
+    listeners.add({
+      target,
+      type,
+      listener,
+      options,
+      capture,
+    });
+  }
+
+  function untrackRuntimeListenerHandle(target, type, listener, options) {
+    if (!target || !type || !listener) {
+      return;
+    }
+
+    const capture = normalizeEventListenerCapture(options);
+    state.runtime.listenerHandlesByFeature.forEach((listeners, featureId) => {
+      if (!(listeners instanceof Set)) {
+        return;
+      }
+
+      const matches = [];
+      listeners.forEach((entry) => {
+        if (
+          entry &&
+          entry.target === target &&
+          entry.type === type &&
+          entry.listener === listener &&
+          entry.capture === capture
+        ) {
+          matches.push(entry);
+        }
+      });
+      matches.forEach((entry) => listeners.delete(entry));
+
+      if (!listeners.size) {
+        state.runtime.listenerHandlesByFeature.delete(featureId);
+      }
+    });
+  }
+
   function clearRuntimeHandlesForFeature(featureId) {
     if (!featureId) {
       return;
@@ -856,6 +936,43 @@
         }
       });
       state.runtime.timeoutHandlesByFeature.delete(featureId);
+    }
+
+    const cancelAnimationFrameFn = state.runtime.native.cancelAnimationFrame
+      || (typeof window.cancelAnimationFrame === "function" ? window.cancelAnimationFrame.bind(window) : null);
+    const rafHandles = state.runtime.rafHandlesByFeature.get(featureId);
+    if (rafHandles instanceof Set) {
+      rafHandles.forEach((handle) => {
+        try {
+          if (cancelAnimationFrameFn) {
+            cancelAnimationFrameFn(handle);
+          }
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+      });
+      state.runtime.rafHandlesByFeature.delete(featureId);
+    }
+
+    const nativeRemoveEventListener = state.runtime.native.removeEventListener;
+    const listeners = state.runtime.listenerHandlesByFeature.get(featureId);
+    if (listeners instanceof Set) {
+      listeners.forEach((entry) => {
+        if (!entry || !entry.target || typeof entry.type !== "string" || !entry.listener) {
+          return;
+        }
+
+        try {
+          if (typeof nativeRemoveEventListener === "function") {
+            nativeRemoveEventListener.call(entry.target, entry.type, entry.listener, entry.options);
+          } else if (typeof entry.target.removeEventListener === "function") {
+            entry.target.removeEventListener(entry.type, entry.listener, entry.options);
+          }
+        } catch (_) {
+          // Ignore cleanup errors.
+        }
+      });
+      state.runtime.listenerHandlesByFeature.delete(featureId);
     }
   }
 
@@ -916,16 +1033,19 @@
       case "theme-cricket":
         removeElementById("autodarts-cricket-custom-style");
         break;
+      case "theme-bull-off":
+        removeElementById("autodarts-bull-off-custom-style");
+        break;
       case "a-average-arrow":
+        removeElementById("autodarts-average-trend-style");
         removeElementsBySelector(".ad-ext-avg-trend-arrow");
         break;
       case "a-checkout-board":
+        removeElementById("ad-ext-checkout-board-style");
         removeElementById("ad-ext-checkout-targets");
         break;
       case "a-tv-board-zoom":
         removeElementById("ad-ext-tv-board-zoom-style");
-        removeClassesFromSelector(".ad-ext-tv-board-zoom", ["ad-ext-tv-board-zoom"]);
-        removeClassesFromSelector(".ad-ext-tv-board-zoom-host", ["ad-ext-tv-board-zoom-host"]);
         removeStylePropertiesFromSelector(".ad-ext-tv-board-zoom", [
           "transform",
           "transition",
@@ -937,8 +1057,11 @@
           "overflow-x",
           "overflow-y",
         ]);
+        removeClassesFromSelector(".ad-ext-tv-board-zoom", ["ad-ext-tv-board-zoom"]);
+        removeClassesFromSelector(".ad-ext-tv-board-zoom-host", ["ad-ext-tv-board-zoom-host"]);
         break;
       case "a-checkout-pulse":
+        removeElementById("autodarts-animate-checkout-style");
         removeClassesFromSelector(
           ".ad-ext-checkout-possible, .ad-ext-checkout-possible--pulse, .ad-ext-checkout-possible--glow, .ad-ext-checkout-possible--scale, .ad-ext-checkout-possible--blink",
           [
@@ -951,15 +1074,18 @@
         );
         break;
       case "a-cricket-target":
+        removeElementById("autodarts-cricket-target-style");
         removeElementById("ad-ext-cricket-targets");
         break;
       case "a-dart-marker-emphasis":
+        removeElementById("autodarts-size-strokes-style");
         document.querySelectorAll("circle.ad-ext-dart-marker, circle.ad-ext-dart-marker--pulse, circle.ad-ext-dart-marker--glow").forEach((marker) => {
           marker.classList.remove("ad-ext-dart-marker", "ad-ext-dart-marker--pulse", "ad-ext-dart-marker--glow");
           marker.style.removeProperty("fill");
         });
         break;
       case "a-marker-darts":
+        removeElementById("ad-ext-dart-image-style");
         removeElementById("ad-ext-dart-image-overlay");
         document.querySelectorAll("circle[data-ad-ext-original-opacity]").forEach((marker) => {
           const originalOpacity = marker.getAttribute("data-ad-ext-original-opacity");
@@ -968,6 +1094,7 @@
         });
         break;
       case "a-checkout-style":
+        removeElementById("ad-ext-checkout-suggestion-style");
         removeClassesFromSelector(
           ".ad-ext-checkout-suggestion, .ad-ext-checkout-suggestion--no-label, .ad-ext-checkout-suggestion--badge, .ad-ext-checkout-suggestion--ribbon, .ad-ext-checkout-suggestion--stripe, .ad-ext-checkout-suggestion--ticket, .ad-ext-checkout-suggestion--outline, .suggestion",
           [
@@ -994,10 +1121,12 @@
         ]);
         break;
       case "a-remove-darts":
+        removeElementById("ad-ext-takeout-style");
         removeClassesFromSelector(".ad-ext-takeout-card", ["ad-ext-takeout-card"]);
         removeElementsBySelector("img.ad-ext-takeout-image");
         break;
       case "a-turn-sweep":
+        removeElementById("autodarts-turn-sweep-style");
         removeClassesFromSelector(".ad-ext-turn-sweep", ["ad-ext-turn-sweep"]);
         break;
       case "a-single-bull":
@@ -1042,6 +1171,7 @@
 
     const disabledFeatureIds = Array.from(state.runtime.knownFeatureIds).filter((featureId) => !isRuntimeFeatureEnabled(featureId));
     disabledFeatureIds.forEach((featureId) => {
+      clearRuntimeHandlesForFeature(featureId);
       cleanupFeatureArtifacts(featureId);
     });
 
@@ -1180,6 +1310,99 @@
       untrackRuntimeHandle(state.runtime.intervalHandlesByFeature, intervalId);
       return nativeClearInterval(intervalId);
     };
+
+    window.setTimeout = function wrappedSetTimeout(handler, timeout, ...args) {
+      const featureId = resolveFeatureIdFromCurrentStack();
+      const guardedHandler = featureId && typeof handler === "function"
+        ? function guardedTimeoutHandler(...timeoutArgs) {
+          if (!isRuntimeFeatureEnabled(featureId)) {
+            return;
+          }
+          return handler(...timeoutArgs);
+        }
+        : handler;
+
+      const timeoutId = nativeSetTimeout(guardedHandler, timeout, ...args);
+      if (featureId) {
+        trackRuntimeHandle(state.runtime.timeoutHandlesByFeature, featureId, timeoutId);
+      }
+      return timeoutId;
+    };
+
+    window.clearTimeout = function wrappedClearTimeout(timeoutId) {
+      untrackRuntimeHandle(state.runtime.timeoutHandlesByFeature, timeoutId);
+      return nativeClearTimeout(timeoutId);
+    };
+  }
+
+  function installRafHooks() {
+    if (state.runtime.native.requestAnimationFrame || typeof window.requestAnimationFrame !== "function") {
+      return;
+    }
+
+    const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
+    const nativeCancelAnimationFrame = typeof window.cancelAnimationFrame === "function"
+      ? window.cancelAnimationFrame.bind(window)
+      : null;
+
+    state.runtime.native.requestAnimationFrame = nativeRequestAnimationFrame;
+    state.runtime.native.cancelAnimationFrame = nativeCancelAnimationFrame;
+
+    window.requestAnimationFrame = function wrappedRequestAnimationFrame(callback) {
+      const featureId = resolveFeatureIdFromCurrentStack();
+      const guardedCallback = featureId && typeof callback === "function"
+        ? function guardedRafCallback(...rafArgs) {
+          if (!isRuntimeFeatureEnabled(featureId)) {
+            return;
+          }
+          return callback(...rafArgs);
+        }
+        : callback;
+
+      const handle = nativeRequestAnimationFrame(guardedCallback);
+      if (featureId) {
+        trackRuntimeHandle(state.runtime.rafHandlesByFeature, featureId, handle);
+      }
+      return handle;
+    };
+
+    if (nativeCancelAnimationFrame) {
+      window.cancelAnimationFrame = function wrappedCancelAnimationFrame(handle) {
+        untrackRuntimeHandle(state.runtime.rafHandlesByFeature, handle);
+        return nativeCancelAnimationFrame(handle);
+      };
+    }
+  }
+
+  function installEventListenerHooks() {
+    if (state.runtime.native.addEventListener || typeof EventTarget === "undefined" || !EventTarget.prototype) {
+      return;
+    }
+
+    const eventTargetProto = EventTarget.prototype;
+    if (typeof eventTargetProto.addEventListener !== "function" || typeof eventTargetProto.removeEventListener !== "function") {
+      return;
+    }
+
+    const nativeAddEventListener = eventTargetProto.addEventListener;
+    const nativeRemoveEventListener = eventTargetProto.removeEventListener;
+    state.runtime.native.addEventListener = nativeAddEventListener;
+    state.runtime.native.removeEventListener = nativeRemoveEventListener;
+
+    eventTargetProto.addEventListener = function wrappedAddEventListener(type, listener, options) {
+      const featureId = resolveFeatureIdFromCurrentStack();
+      if (featureId && typeof type === "string" && listener) {
+        trackRuntimeListenerHandle(featureId, this, type, listener, options);
+      }
+      return nativeAddEventListener.call(this, type, listener, options);
+    };
+
+    eventTargetProto.removeEventListener = function wrappedRemoveEventListener(type, listener, options) {
+      if (typeof type === "string" && listener) {
+        untrackRuntimeListenerHandle(this, type, listener, options);
+      }
+      return nativeRemoveEventListener.call(this, type, listener, options);
+    };
   }
 
   function installMediaPlayHook() {
@@ -1210,7 +1433,55 @@
     state.runtime.hooksInstalled = true;
     installMutationObserverHook();
     installTimerHooks();
+    installRafHooks();
+    installEventListenerHooks();
     installMediaPlayHook();
+  }
+
+  function restoreRuntimeHooks() {
+    const { native } = state.runtime;
+
+    if (native.MutationObserver && window.MutationObserver !== native.MutationObserver) {
+      window.MutationObserver = native.MutationObserver;
+    }
+    if (native.setInterval && window.setInterval !== native.setInterval) {
+      window.setInterval = native.setInterval;
+    }
+    if (native.clearInterval && window.clearInterval !== native.clearInterval) {
+      window.clearInterval = native.clearInterval;
+    }
+    if (native.setTimeout && window.setTimeout !== native.setTimeout) {
+      window.setTimeout = native.setTimeout;
+    }
+    if (native.clearTimeout && window.clearTimeout !== native.clearTimeout) {
+      window.clearTimeout = native.clearTimeout;
+    }
+    if (native.requestAnimationFrame && window.requestAnimationFrame !== native.requestAnimationFrame) {
+      window.requestAnimationFrame = native.requestAnimationFrame;
+    }
+    if (native.cancelAnimationFrame && window.cancelAnimationFrame !== native.cancelAnimationFrame) {
+      window.cancelAnimationFrame = native.cancelAnimationFrame;
+    }
+
+    if (typeof EventTarget !== "undefined" && EventTarget.prototype) {
+      if (native.addEventListener && EventTarget.prototype.addEventListener !== native.addEventListener) {
+        EventTarget.prototype.addEventListener = native.addEventListener;
+      }
+      if (native.removeEventListener && EventTarget.prototype.removeEventListener !== native.removeEventListener) {
+        EventTarget.prototype.removeEventListener = native.removeEventListener;
+      }
+    }
+
+    if (
+      native.mediaPlay &&
+      window.HTMLMediaElement &&
+      window.HTMLMediaElement.prototype &&
+      window.HTMLMediaElement.prototype.play !== native.mediaPlay
+    ) {
+      window.HTMLMediaElement.prototype.play = native.mediaPlay;
+    }
+
+    state.runtime.hooksInstalled = false;
   }
 
   function startRuntimeCleanupEngine() {
@@ -2372,11 +2643,11 @@
     }
 
     state.config = sanitizeConfig(parsed);
+    state.runtime.bootstrapLoaded = true;
     state.runtime.bootstrapConfig = state.config;
     refreshRuntimeFeatureIndex();
     publishRuntimeState("config-loaded");
     queueRuntimeCleanup();
-    executeEnabledFeaturesFromCache("config-change");
     if (!parsed || parsed.version !== CONFIG_VERSION) {
       await saveConfig();
     }
@@ -2388,6 +2659,7 @@
     }
     state.config.updatedAt = new Date().toISOString();
     await writeStore(STORAGE_KEY, state.config);
+    state.runtime.bootstrapLoaded = true;
     state.runtime.bootstrapConfig = state.config;
     publishRuntimeState("config-saved");
     queueRuntimeCleanup();
@@ -3489,8 +3761,20 @@
     }
 
     const featureState = ensureFeatureState(featureId);
+    const previousEnabled = Boolean(featureState.enabled);
     const enabled = Boolean(checked);
     featureState.enabled = enabled;
+
+    if (previousEnabled !== enabled) {
+      clearRuntimeHandlesForFeature(featureId);
+      cleanupFeatureArtifacts(featureId);
+      state.runtime.executedFeatures.delete(featureId);
+      const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
+      if (sourcePath) {
+        state.runtime.executedFiles.delete(sourcePath);
+      }
+    }
+
     executeEnabledFeaturesFromCache("config-change");
     queueRuntimeCleanup();
     renderPanel();
@@ -3824,6 +4108,7 @@
       clearRuntimeHandlesForFeature(featureId);
     });
     stopRuntimeCleanupEngine();
+    restoreRuntimeHooks();
 
     state.observerRoot = null;
 
@@ -3833,11 +4118,11 @@
 
   async function init() {
     ensureStyles();
-    initRuntimeLayer();
     bootstrapModuleCacheFromLocalStorage();
-    executeEnabledFeaturesFromCache("startup");
     await loadConfig();
     ensureFeatureStatesForRegistry();
+    initRuntimeLayer();
+    executeEnabledFeaturesFromCache("startup");
 
     if (!isConfigRoute()) {
       state.lastNonConfigRoute = currentRouteWithQueryAndHash();

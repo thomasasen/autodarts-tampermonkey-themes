@@ -142,6 +142,9 @@
   const BULL_TYPE = CONFIG.bull.enabled ? withDerivedProps(CONFIG.bull) : null;
   const DECORATABLE_TYPES = [...HIT_TYPES, ...(BULL_TYPE ? [BULL_TYPE] : [])];
   const GRADIENT_VARIANTS = DECORATABLE_TYPES.map((type) => type.gradientClass);
+  const ALL_GRADIENT_VARIANTS = Array.from(
+    new Set([...GRADIENT_VARIANTS, "animate-hit-triple", "animate-hit-double", "animate-hit-bull"])
+  );
 
   let stylesInjected = false;
   let initialized = false;
@@ -267,6 +270,20 @@
     }
   }
 
+  function resetHitDecoration(pElement) {
+    const throwRow = pElement.closest(CONFIG.selectors.throwRow);
+    if (throwRow) {
+      throwRow.classList.remove("animate-hit");
+      if (ALL_GRADIENT_VARIANTS.length) {
+        throwRow.classList.remove(...ALL_GRADIENT_VARIANTS);
+      }
+    }
+
+    if (pElement.querySelector("span.highlight, span[class*='highlight-']")) {
+      pElement.textContent = pElement.textContent.trim();
+    }
+  }
+
   /**
    * Finds all throw texts and decorates hit types.
    * @returns {void}
@@ -278,7 +295,9 @@
         const hitInfo = getHitMeta(pElement);
         if (hitInfo) {
           decorateHit(pElement, hitInfo.type, hitInfo.prefixChar);
+          return;
         }
+        resetHitDecoration(pElement);
       });
   }
 
