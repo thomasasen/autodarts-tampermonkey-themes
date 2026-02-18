@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.1
+// @version      1.0.2
 // @description  Adds a central AD xConfig menu with script discovery, configurable xConfig_ settings, and GitHub rate-limit aware RAW/cache fallback.
 // @author       Thomas Asen
 // @license      MIT
@@ -21,6 +21,16 @@
 
   const MENU_LABEL = "AD xConfig";
   const MENU_LABEL_COLLAPSE_WIDTH = 120;
+  const SIDEBAR_ROUTE_HINT_PATHS = Object.freeze([
+    "/lobbies",
+    "/boards",
+    "/matches",
+    "/tournaments",
+    "/statistics",
+    "/plus",
+    "/settings",
+  ]);
+  const SIDEBAR_ROUTE_HINTS = new Set(SIDEBAR_ROUTE_HINT_PATHS);
   const STORAGE_KEY = "ad-xconfig:config";
   const CONFIG_VERSION = 7;
   const MODULE_CACHE_STORAGE_KEY = "ad-xconfig:module-cache:v1";
@@ -3667,43 +3677,147 @@
   }
 
   function getSidebarElement() {
-    const exact = document.querySelector("#root > div > div > .chakra-stack.navigation");
-    if (exact) {
-      return exact;
+    const root = document.getElementById("root");
+    if (!root) {
+      return null;
     }
 
-    const candidates = Array.from(document.querySelectorAll("#root .chakra-stack"));
+    const preferred = [
+      document.querySelector("#root > div > div > .chakra-stack.navigation"),
+      document.querySelector("#root .navigation"),
+      document.querySelector("#root nav[aria-label]"),
+      document.querySelector("#root nav"),
+      document.querySelector("#root [role='navigation']"),
+    ].find((candidate) => candidate && scoreSidebarCandidate(candidate) >= 32);
+
+    if (preferred) {
+      return preferred;
+    }
+
+    const candidates = new Set(document.querySelectorAll("#root .navigation, #root nav, #root [role='navigation'], #root .chakra-stack, #root .chakra-vstack"));
+    Array.from(document.querySelectorAll("#root a[href]")).forEach((anchor) => {
+      const container = anchor.closest(".navigation, nav, [role='navigation'], .chakra-stack, .chakra-vstack");
+      if (container) {
+        candidates.add(container);
+      }
+    });
+
     let best = null;
     let bestScore = -1;
 
     candidates.forEach((candidate) => {
-      const text = (candidate.textContent || "").toLowerCase();
-      const width = candidate.getBoundingClientRect().width;
-      let score = 0;
-
-      if (text.includes("lobb") || text.includes("spiel") || text.includes("board") || text.includes("stat")) {
-        score += 8;
-      }
-
-      score += candidate.querySelectorAll("a[href]").length * 3;
-
-      if (candidate.classList.contains("navigation")) {
-        score += 6;
-      }
-
-      if (width > 0 && width < 450) {
-        score += 6;
-      } else if (width > 650) {
-        score -= 8;
-      }
-
+      const score = scoreSidebarCandidate(candidate);
       if (score > bestScore) {
         bestScore = score;
         best = candidate;
       }
     });
 
+    if (bestScore < 20) {
+      return null;
+    }
+
     return best;
+  }
+
+  function normalizeRoutePath(pathValue) {
+    let normalized = String(pathValue || "").trim().toLowerCase();
+    if (!normalized) {
+      return "";
+    }
+
+    if (!normalized.startsWith("/")) {
+      normalized = `/${normalized}`;
+    }
+
+    normalized = normalized
+      .replace(/\/{2,}/g, "/")
+      .replace(/[?#].*$/, "");
+
+    if (normalized.length > 1) {
+      normalized = normalized.replace(/\/+$/, "");
+    }
+
+    return normalized;
+  }
+
+  function toRoutePathname(hrefValue) {
+    const rawHref = String(hrefValue || "").trim();
+    if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("javascript:")) {
+      return "";
+    }
+
+    try {
+      const parsed = new URL(rawHref, window.location.origin);
+      if (parsed.origin !== window.location.origin) {
+        return "";
+      }
+      return normalizeRoutePath(parsed.pathname);
+    } catch (_) {
+      return normalizeRoutePath(rawHref);
+    }
+  }
+
+  function getAnchorRoutePath(anchor) {
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return "";
+    }
+    return toRoutePathname(anchor.getAttribute("href"));
+  }
+
+  function isSidebarRouteHint(pathValue) {
+    const path = normalizeRoutePath(pathValue);
+    if (!path) {
+      return false;
+    }
+
+    if (SIDEBAR_ROUTE_HINTS.has(path)) {
+      return true;
+    }
+
+    return SIDEBAR_ROUTE_HINT_PATHS.some((hint) => path.startsWith(`${hint}/`));
+  }
+
+  function scoreSidebarCandidate(candidate) {
+    if (!(candidate instanceof Element)) {
+      return -1;
+    }
+
+    const anchors = Array.from(candidate.querySelectorAll("a[href]"));
+    const routeHintMatches = anchors.reduce((count, anchor) => {
+      return count + (isSidebarRouteHint(getAnchorRoutePath(anchor)) ? 1 : 0);
+    }, 0);
+
+    let score = 0;
+    const text = (candidate.textContent || "").toLowerCase();
+    const width = candidate.getBoundingClientRect().width;
+
+    if (candidate.classList.contains("navigation")) {
+      score += 24;
+    }
+
+    if (candidate.matches("nav") || candidate.getAttribute("role") === "navigation") {
+      score += 18;
+    }
+
+    if (text.includes("lobb") || text.includes("spiel") || text.includes("board") || text.includes("stat")) {
+      score += 6;
+    }
+
+    score += routeHintMatches * 20;
+    score += Math.min(anchors.length, 10);
+
+    if (width > 0 && width < 520) {
+      score += 8;
+    } else if (width > 680) {
+      score -= 16;
+    }
+
+    if (routeHintMatches === 0 && anchors.length < 2) {
+      score -= 12;
+    }
+
+    return score;
   }
 
   function getContentElement() {
@@ -3796,12 +3910,14 @@
       return;
     }
 
-    const boardsButton = sidebar.querySelector('a[href="/boards"]');
+    const sidebarLinks = Array.from(sidebar.querySelectorAll("a[href]"));
+    const boardsButton = sidebarLinks.find((link) => getAnchorRoutePath(link) === "/boards") || null;
+    const insertionAnchor = boardsButton || sidebarLinks.find((link) => isSidebarRouteHint(getAnchorRoutePath(link))) || null;
 
     let item = document.getElementById(MENU_ITEM_ID);
 
     if (!item) {
-      const template = boardsButton || sidebar.querySelector("a[href]") || sidebar.lastElementChild;
+      const template = insertionAnchor || sidebar.querySelector("a[href], button, [role='button']") || sidebar.lastElementChild;
       item = template ? template.cloneNode(true) : document.createElement("button");
       item.id = MENU_ITEM_ID;
       const icon = buildMenuIconElement(template);
@@ -3811,10 +3927,14 @@
       item.replaceChildren(icon, label);
       item.setAttribute("role", "button");
       item.setAttribute("tabindex", "0");
+      item.setAttribute("aria-label", MENU_LABEL);
+      item.setAttribute("title", MENU_LABEL);
       item.style.cursor = "pointer";
 
       if (item.tagName.toLowerCase() === "a") {
         item.removeAttribute("href");
+      } else if (item.tagName.toLowerCase() === "button") {
+        item.setAttribute("type", "button");
       }
 
       item.addEventListener("click", (event) => {
@@ -3830,9 +3950,9 @@
       });
     }
 
-    if (boardsButton) {
-      if (boardsButton.nextElementSibling !== item) {
-        boardsButton.insertAdjacentElement("afterend", item);
+    if (insertionAnchor) {
+      if (insertionAnchor.nextElementSibling !== item) {
+        insertionAnchor.insertAdjacentElement("afterend", item);
       }
     } else {
       const profileSection = Array.from(sidebar.children).find((child) => {
