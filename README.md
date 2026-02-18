@@ -40,9 +40,14 @@ Viele Skripte aktivieren sich je nach Spielvariante automatisch und lassen sich 
 
 1. Tampermonkey installieren (Chrome/Edge/Chromium): [tampermonkey.net](https://www.tampermonkey.net/index.php?browser=chrome)
 2. **AD xConfig Auto Loader** installieren (einziger Installationsweg).
-3. `https://play.autodarts.io` öffnen oder neu laden.
-4. Im Hauptmenü **AD xConfig** öffnen und auf **„🔄 Skripte & Loader-Cache laden“** klicken.
-5. Gewünschte Module auf **An** stellen und optional über **⚙ Einstellungen** anpassen.
+3. Wenn danach in Tampermonkey die Meldung **„Please enable developer mode to allow userscript injection“** erscheint, **Developer Mode aktivieren** (Anleitung: [Tampermonkey FAQ Q209](https://www.tampermonkey.net/faq.php#Q209)).
+   ![Tampermonkey Injection-Hinweis](assets/tempermonkey-injection.png)
+4. `https://play.autodarts.io` öffnen oder neu laden.
+5. Im Hauptmenü **AD xConfig** öffnen und auf **„🔄 Skripte & Loader-Cache laden“** klicken.
+6. Gewünschte Module auf **An** stellen und optional über **⚙ Einstellungen** anpassen.
+
+Wichtig: Ohne diesen Schritt erscheint der Menüpunkt **AD xConfig** nicht und die Skripte funktionieren nicht.
+Wenn du die technischen Hintergründe wissen willst, siehe [Technik-Referenz: Tampermonkey-Injection (Developer Mode)](docs/TECHNIK-REFERENZ.md#tampermonkey-injection-developer-mode).
 
 Kurz gesagt: Installieren, Seite öffnen, fertig. Module und Updates kommen automatisch.
 
@@ -153,6 +158,7 @@ Einstellungen werden danach direkt in AD xConfig vorgenommen, nicht im Skriptcod
 Troubleshooting:
 - Wenn kein Installationsdialog erscheint, ist Tampermonkey nicht installiert oder deaktiviert.
 - Wenn AD xConfig nicht sichtbar ist, Seite neu laden und prüfen, ob der Loader in Tampermonkey aktiviert ist.
+- Wenn in Tampermonkey ein Hinweis zu **userscript injection** erscheint, bitte **Developer Mode** aktivieren: [FAQ Q209](https://www.tampermonkey.net/faq.php#Q209). Ohne diese Freigabe kann AD xConfig nicht geladen werden.
 
 
 ## 🔄 Updates

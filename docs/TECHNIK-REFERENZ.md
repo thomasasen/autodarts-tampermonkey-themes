@@ -1207,10 +1207,29 @@ Varianten:
 
 ---
 
+## Tampermonkey-Injection (Developer Mode)
+
+Diese Meldung ist erwartbar (siehe Tampermonkey FAQ: [Q209](https://www.tampermonkey.net/faq.php#Q209)):
+`Please enable developer mode to allow userscript injection`.
+
+Kurz gesagt: Ohne aktivierten Developer Mode darf Tampermonkey auf manchen Browsern keine Userscripts in die Seite injizieren.
+
+Warum dann **AD xConfig** nicht erscheint und nichts funktioniert:
+
+- `Config/AD xConfig Auto Loader.user.js` und `Config/AD xConfig.user.js` laufen beide als Userscript mit `@match *://play.autodarts.io/*` und `@run-at document-start`.
+- Wird die Injection blockiert, startet der Code gar nicht. Dann läuft weder `init()` noch die DOM-Synchronisierung.
+- Der Menüpunkt **AD xConfig** wird nur im Skript erzeugt (`ensureMenuButton()` in `Config/AD xConfig.user.js`).
+- Das Laden/Ausführen der Module passiert ebenfalls nur im Skript (`executeEnabledFeaturesFromCache(...)` und `executeModuleFileFromCache(...)` in `Config/AD xConfig.user.js`).
+- Der Auto Loader lädt `AD xConfig.user.js` dynamisch per `requestText(...)` und startet ihn per `executeCode(...)` (indirect `eval`) in `Config/AD xConfig Auto Loader.user.js`. Ohne Injection wird auch dieser Bootstrap nie ausgeführt.
+
+Ergebnis: Ohne die Freigabe aus Q209 gibt es keinen AD xConfig-Menüpunkt, keinen Loader-Cache-Sync und keine laufenden Theme-/Animationsmodule.
+
+---
+
 ## ⚙️ Konfigurationskern: AD xConfig.user.js (403-Absicherung)
 
 - Datei: `Config/AD xConfig.user.js`
-- Relevante Version: `1.0.1`
+- Relevante Version: `1.0.2`
 - Ziel der Änderungen: GitHub-`403` (Rate-Limit/Throttle) robust behandeln, ohne dass Aktivierung/Konfiguration der Module ausfällt.
 
 ### 🧠 Problemhintergrund
