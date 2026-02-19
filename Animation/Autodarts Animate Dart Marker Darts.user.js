@@ -2,8 +2,8 @@
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.5
-// @description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar.
-// @xconfig-description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar, inklusive optionalem Flugeffekt, als wären es echte Darts. Bilder der auswählbaren Designs findest du über „📖 Anleitung“.
+// @description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
+// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar, inklusive optionalem Flugeffekt, als wären es echte Darts. Bilder der auswählbaren Designs findest du über "📖 Anleitung".
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png

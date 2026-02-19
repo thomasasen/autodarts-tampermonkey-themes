@@ -590,6 +590,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Passt die Board-Marker visuell an und kann sie zusätzlich per Glow/Pulse hervorheben.
+- WICHTIG: Dieses Modul setzt das "virtuelle Dartboard" voraus und funktioniert nicht mit dem "Live Dartboard" (Liveansicht).
 
 **xConfig-Einstellungen erklärt**
 
@@ -634,6 +635,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `alle Modi`
 - Was das Skript macht: Ersetzt runde Treffer-Marker durch Dartbilder und animiert neue Treffer optional als Flug mit Einschlag.
+- WICHTIG: Dieses Modul setzt das "virtuelle Dartboard" voraus und funktioniert nicht mit dem "Live Dartboard" (Liveansicht).
 
 **xConfig-Einstellungen erklärt**
 
@@ -691,6 +693,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `X01`
 - Was das Skript macht: Markiert empfohlene Checkout-Zielbereiche direkt am Board (inkl. Single/Double/Bull-Logik).
+- WICHTIG: Dieses Modul setzt das "virtuelle Dartboard" voraus und funktioniert nicht mit dem "Live Dartboard" (Liveansicht).
 
 **xConfig-Einstellungen erklärt**
 
@@ -735,6 +738,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `X01`
 - Was das Skript macht: Simuliert TV-ähnliche Board-Zooms vor Dart 3 in klaren Situationen (`T20,T20` oder eindeutiger 1-Dart-Checkout).
+- WICHTIG: Dieses Modul setzt das "virtuelle Dartboard" voraus und funktioniert nicht mit dem "Live Dartboard" (Liveansicht).
 
 **xConfig-Einstellungen erklärt**
 
@@ -810,6 +814,7 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 
 - Gilt für: `Cricket`
 - Was das Skript macht: Visualisiert Board-Ziele im Cricket nach Zustand (z. B. Score/Danger/Dead), damit Entscheidungen schneller fallen.
+- WICHTIG: Dieses Modul setzt das "virtuelle Dartboard" voraus und funktioniert nicht mit dem "Live Dartboard" (Liveansicht).
 
 **xConfig-Einstellungen erklärt**
 

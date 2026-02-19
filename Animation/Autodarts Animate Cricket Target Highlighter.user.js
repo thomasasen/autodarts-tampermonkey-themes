@@ -2,8 +2,8 @@
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Zeigt im Cricket die Zielzustände (offen, geschlossen, punktbar, tot) als Board-Overlay.
-// @xconfig-description  Liest Cricket-Marks pro Spieler und visualisiert Zielzustände für 15-20 und Bull direkt auf dem Board.
+// @description  Zeigt im Cricket die Zielzustände (offen, geschlossen, punktbar, tot) als Board-Overlay. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
+// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Liest Cricket-Marks pro Spieler und visualisiert Zielzustände für 15-20 und Bull direkt auf dem Board.
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png

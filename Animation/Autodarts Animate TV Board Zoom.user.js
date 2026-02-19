@@ -2,8 +2,8 @@
 // @name         Autodarts Animate TV Board Zoom
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.22
-// @description  Simuliert TV-ähnliche Board-Zooms vor dem dritten Dart in X01 (strict).
-// @xconfig-description  Zoomt in X01 wie eine TV-Übertragung auf wahrscheinliche Zielbereiche vor Dart 3 (strict: T20,T20 oder klarer 1-Dart-Checkout).
+// @description  Simuliert TV-ähnliche Board-Zooms vor dem dritten Dart in X01 (strict). Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
+// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Zoomt in X01 wie eine TV-Übertragung auf wahrscheinliche Zielbereiche vor Dart 3 (strict: T20,T20 oder klarer 1-Dart-Checkout).
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-background     assets/animation-Autodarts-Animate-TV-Board-Zoom.gif
