@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.4
+// @version      1.5
 // @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
@@ -89,8 +89,15 @@
 	audio.volume = CONFIG.volume;
 	let audioPrimed = false;
 	let audioPriming = false;
-	let primeListenersAttached = false;
-	const PRIME_EVENTS = ["pointerdown", "keydown"];
+	let unlockListenersAttached = false;
+	const SILENT_AUDIO_DATA_URL = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+	const UNLOCK_EVENTS = ["click", "touchstart", "keydown"];
+	const AUTOPLAY_ERROR_HINTS = [
+		"failed because the user didn't interact with the document first",
+		"the play method is not allowed by the user agent",
+		"the request is not allowed by the user agent",
+		"notallowederror"
+	];
 
 	/**
    * Normalizes text content into a single line.
@@ -227,41 +234,44 @@
 		}
 		audioPriming = true;
 		try {
-			const previousVolume = audio.volume;
-			const previousMuted = audio.muted;
-			audio.volume = 0;
+			audio.src = SILENT_AUDIO_DATA_URL;
+			audio.volume = 0.01;
 			audio.muted = false;
 			try {
 				audio.currentTime = 0;
 			} catch (error) {
 			}
 			const result = audio.play();
-			const restoreAudio = () => {
+			const restoreSoundSource = () => {
 				audio.pause();
 				try {
 					audio.currentTime = 0;
 				} catch (error) {
 				}
-				audio.volume = previousVolume;
-				audio.muted = previousMuted;
+				audio.src = CONFIG.soundUrl;
+				audio.preload = "auto";
+				audio.volume = CONFIG.volume;
+				audio.muted = false;
+				audio.load();
 			};
 			const onPrimeSuccess = () => {
-				restoreAudio();
+				restoreSoundSource();
 				audioPrimed = true;
 				audioPriming = false;
-				detachPrimeListeners();
 			};
-			const onPrimeFailure = () => {
-				restoreAudio();
+			const onPrimeFailure = (error) => {
+				restoreSoundSource();
 				audioPriming = false;
+				attachUnlockListeners();
 			};
 			if (result && typeof result.then === "function") {
-				result.then(onPrimeSuccess).catch(() => onPrimeFailure());
+				result.then(onPrimeSuccess).catch((error) => onPrimeFailure(error));
 				return;
 			}
 			onPrimeSuccess();
 		} catch (error) { // Ignore autoplay restriction errors.
 			audioPriming = false;
+			attachUnlockListeners();
 		}
 	}
 
@@ -271,50 +281,68 @@
    */
 	function playSound() {
 		try {
+			if (! audio.src || audio.src.startsWith("data:audio/")) {
+				audio.src = CONFIG.soundUrl;
+				audio.preload = "auto";
+			}
 			audio.pause();
 			audio.volume = CONFIG.volume;
+			audio.muted = false;
 			try {
 				audio.currentTime = 0;
 			} catch (error) {
 			}
 			const result = audio.play();
 			if (result && typeof result.catch === "function") {
-				result.catch(() => {});
+				result.catch((error) => {
+					if (isAutoplayRestrictionError(error)) {
+						attachUnlockListeners();
+						primeAudio();
+					}
+				});
 			}
 		} catch (error) { // Ignore playback errors (autoplay restrictions).
+			if (isAutoplayRestrictionError(error)) {
+				attachUnlockListeners();
+				primeAudio();
+			}
 		}
+	}
+
+	/**
+   * Checks if playback failed because user interaction is required.
+   * @param {unknown} error - Playback failure object.
+   * @returns {boolean}
+   */
+	function isAutoplayRestrictionError(error) {
+		const message = String(error?.message || error || "").toLowerCase();
+		return AUTOPLAY_ERROR_HINTS.some((hint) => message.includes(hint));
+	}
+
+	/**
+   * Handles user gesture events used for audio unlock.
+   * @returns {void}
+   */
+	function onUnlockGesture() {
+		unlockListenersAttached = false;
+		primeAudio();
 	}
 
 	/**
    * Installs listeners that try to unlock audio on user gesture.
    * @returns {void}
    */
-	function attachPrimeListeners() {
-		if (primeListenersAttached) {
+	function attachUnlockListeners() {
+		if (unlockListenersAttached || audioPrimed) {
 			return;
 		}
-		primeListenersAttached = true;
-		PRIME_EVENTS.forEach((eventName) => {
-			window.addEventListener(eventName, primeAudio, {
+		unlockListenersAttached = true;
+		UNLOCK_EVENTS.forEach((eventName) => {
+			document.addEventListener(eventName, onUnlockGesture, {
+				once: true,
 				capture: true
 			});
 		});
-	}
-
-	/**
-   * Removes audio-priming listeners after successful unlock.
-   * @returns {void}
-   */
-	function detachPrimeListeners() {
-		if (! primeListenersAttached) {
-			return;
-		}
-		PRIME_EVENTS.forEach((eventName) => {
-			window.removeEventListener(eventName, primeAudio, {
-				capture: true
-			});
-		});
-		primeListenersAttached = false;
 	}
 
 	/**
@@ -416,7 +444,7 @@
    * @returns {void}
    */
 	function start() {
-		attachPrimeListeners();
+		attachUnlockListeners();
 		scanThrows(true);
 		collectRoots(true).forEach((root) => observeRoot(root));
 
@@ -431,5 +459,5 @@
 		start();
 	}
 
-	attachPrimeListeners();
+	attachUnlockListeners();
 })();
