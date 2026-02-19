@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.3
+// @version      1.4
 // @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
@@ -88,6 +88,9 @@
 	audio.preload = "auto";
 	audio.volume = CONFIG.volume;
 	let audioPrimed = false;
+	let audioPriming = false;
+	let primeListenersAttached = false;
+	const PRIME_EVENTS = ["pointerdown", "keydown"];
 
 	/**
    * Normalizes text content into a single line.
@@ -219,18 +222,46 @@
    * @returns {void}
    */
 	function primeAudio() {
-		if (audioPrimed) {
+		if (audioPrimed || audioPriming) {
 			return;
 		}
-		audioPrimed = true;
+		audioPriming = true;
 		try {
-			const probe = audio.cloneNode(true);
-			probe.muted = true;
-			const result = probe.play();
-			if (result && typeof result.catch === "function") {
-				result.catch(() => {});
+			const previousVolume = audio.volume;
+			const previousMuted = audio.muted;
+			audio.volume = 0;
+			audio.muted = false;
+			try {
+				audio.currentTime = 0;
+			} catch (error) {
 			}
+			const result = audio.play();
+			const restoreAudio = () => {
+				audio.pause();
+				try {
+					audio.currentTime = 0;
+				} catch (error) {
+				}
+				audio.volume = previousVolume;
+				audio.muted = previousMuted;
+			};
+			const onPrimeSuccess = () => {
+				restoreAudio();
+				audioPrimed = true;
+				audioPriming = false;
+				detachPrimeListeners();
+			};
+			const onPrimeFailure = () => {
+				restoreAudio();
+				audioPriming = false;
+			};
+			if (result && typeof result.then === "function") {
+				result.then(onPrimeSuccess).catch(() => onPrimeFailure());
+				return;
+			}
+			onPrimeSuccess();
 		} catch (error) { // Ignore autoplay restriction errors.
+			audioPriming = false;
 		}
 	}
 
@@ -240,15 +271,50 @@
    */
 	function playSound() {
 		try {
-			const sound = audio.cloneNode(true);
-			sound.volume = CONFIG.volume;
-			sound.currentTime = 0;
-			const result = sound.play();
+			audio.pause();
+			audio.volume = CONFIG.volume;
+			try {
+				audio.currentTime = 0;
+			} catch (error) {
+			}
+			const result = audio.play();
 			if (result && typeof result.catch === "function") {
 				result.catch(() => {});
 			}
 		} catch (error) { // Ignore playback errors (autoplay restrictions).
 		}
+	}
+
+	/**
+   * Installs listeners that try to unlock audio on user gesture.
+   * @returns {void}
+   */
+	function attachPrimeListeners() {
+		if (primeListenersAttached) {
+			return;
+		}
+		primeListenersAttached = true;
+		PRIME_EVENTS.forEach((eventName) => {
+			window.addEventListener(eventName, primeAudio, {
+				capture: true
+			});
+		});
+	}
+
+	/**
+   * Removes audio-priming listeners after successful unlock.
+   * @returns {void}
+   */
+	function detachPrimeListeners() {
+		if (! primeListenersAttached) {
+			return;
+		}
+		PRIME_EVENTS.forEach((eventName) => {
+			window.removeEventListener(eventName, primeAudio, {
+				capture: true
+			});
+		});
+		primeListenersAttached = false;
 	}
 
 	/**
@@ -322,7 +388,7 @@
 	const observer = new MutationObserver((mutations) => {
 		mutations.forEach((mutation) => {
 			if (mutation.type === "characterData") {
-				const row = mutation.target.parentElement ?. closest(CONFIG.selectors.throwRow);
+				const row = mutation.target.parentElement?.closest(CONFIG.selectors.throwRow);
 				if (row) {
 					pendingRows.add(row);
 				}
@@ -350,14 +416,7 @@
    * @returns {void}
    */
 	function start() {
-		window.addEventListener("pointerdown", primeAudio, {
-			once: true,
-			capture: true
-		});
-		window.addEventListener("keydown", primeAudio, {
-			once: true,
-			capture: true
-		});
+		attachPrimeListeners();
 		scanThrows(true);
 		collectRoots(true).forEach((root) => observeRoot(root));
 
@@ -371,4 +430,6 @@
 	} else {
 		start();
 	}
+
+	attachPrimeListeners();
 })();
