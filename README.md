@@ -373,16 +373,6 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
   Wirkung: Lautstärke des abgespielten Sounds.  
   Praxis: Bei Streams/Voice-Chat eher `Leise`/`Mittel`, sonst `Laut`.
 
-- `xConfig_WIEDERHOLSPERRE_MS` (`Wiederholsperre`)  
-  Optionen: `Kurz`, `Standard`, `Lang`  
-  Wirkung: Verhindert Doppeltrigger in kurzer Folge.  
-  Praxis: Bei doppelten Sounds den Wert erhöhen.
-
-- `xConfig_FALLBACK_SCAN_MS` (`Fallback-Scan`)  
-  Optionen: `Aus`, `Ein (robuster)`  
-  Wirkung: Aktiviert zusätzlichen Scan für seltene DOM-Sonderfälle.  
-  Praxis: Normalerweise `Aus`; nur bei unzuverlässiger Erkennung aktivieren.
-
 **Screenshots / Varianten**
 
 - Visuelles Primärsignal: keines (Audio-Modul).

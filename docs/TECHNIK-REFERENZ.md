@@ -370,21 +370,17 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 ##### ✅ Einfache Variablen (Beispiele)
 
 - `xConfig_LAUTSTAERKE`: `Leise`, `Mittel`, `Laut`, `Sehr laut`
-- `xConfig_WIEDERHOLSPERRE_MS`: `Kurz`, `Standard`, `Lang`
-- `xConfig_FALLBACK_SCAN_MS`: `Aus` oder `Ein (robuster)`
 
 ##### ⚙️ Konfiguration (Variablen)
 
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_LAUTSTAERKE`: Wählt die Sound-Lautstärke für den Single-Bull-Treffer.
-- `xConfig_WIEDERHOLSPERRE_MS`: Verhindert doppelte Auslösung in sehr kurzer Folge.
-- `xConfig_FALLBACK_SCAN_MS`: Schaltet den zusätzlichen Fallback-Scan für robuste Erkennung ein/aus.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                     | Standard                                                                                                | Wirkung                                                                     |
 | :--------------------------- | :------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------- |
-| `CONFIG.soundUrl`            | `https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/assets/singlebull.mp3` | Direkt-URL zur Sounddatei (MP3/OGG), muss öffentlich erreichbar sein.       |
+| `CONFIG.soundUrl`            | `https://raw.githubusercontent.com/thomasasen/autodarts-tampermonkey-themes/refs/heads/main/assets/singlebull.mp3` | Direkt-URL zur Sounddatei (MP3/OGG), muss öffentlich erreichbar sein.       |
 | `CONFIG.volume`              | `0.9`                                                                                                   | Lautstärke von 0..1; `1` ist volle Lautstärke.                              |
 | `CONFIG.targetPoints`        | `25`                                                                                                    | Punktwert für Single Bull (standardmäßig 25).                               |
 | `CONFIG.targetLabel`         | `BULL`                                                                                                  | Textlabel für Single Bull (Case-insensitive).                               |

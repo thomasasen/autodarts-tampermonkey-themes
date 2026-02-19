@@ -1,12 +1,12 @@
 ﻿// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.11
+// @version      1.12
 // @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -38,6 +38,21 @@
 		0.9,
 		1,
 	]);
+	// Keep backward compatibility if stale xConfig cache still injects legacy settings.
+	const RESOLVED_COOLDOWN_MS = resolveNumberChoice(
+		typeof xConfig_WIEDERHOLSPERRE_MS === "undefined"
+			? DEFAULT_COOLDOWN_MS
+			: xConfig_WIEDERHOLSPERRE_MS,
+		DEFAULT_COOLDOWN_MS,
+		[400, 700, 1000]
+	);
+	const RESOLVED_POLL_INTERVAL_MS = resolveNumberChoice(
+		typeof xConfig_FALLBACK_SCAN_MS === "undefined"
+			? DEFAULT_POLL_INTERVAL_MS
+			: xConfig_FALLBACK_SCAN_MS,
+		DEFAULT_POLL_INTERVAL_MS,
+		[0, 1200]
+	);
 	// Script goal: play a sound when a single bull (25/BULL) appears in the throw list.
 	/**
    * Configuration for the single bull sound trigger.
@@ -58,8 +73,8 @@
 			throwRow: ".ad-ext-turn-throw",
 			throwText: ".chakra-text"
 		},
-		cooldownMs: DEFAULT_COOLDOWN_MS,
-		pollIntervalMs: DEFAULT_POLL_INTERVAL_MS
+		cooldownMs: RESOLVED_COOLDOWN_MS,
+		pollIntervalMs: RESOLVED_POLL_INTERVAL_MS
 	};
 	const DEBUG = true;
 	const DEBUG_PREFIX = "[Autodarts Single Bull Sound]";
@@ -385,7 +400,7 @@ let loadingDecodedSound = false;
 	try {
 		window.__autodartsSingleBullSoundDebug = {
 			name: "Autodarts Animate Single Bull Sound",
-			version: "1.11",
+			version: "1.12",
 			loadedAt: new Date().toISOString(),
 			config: {
 				soundUrl: CONFIG.soundUrl,
@@ -396,7 +411,7 @@ let loadingDecodedSound = false;
 			state: debugState
 		};
 		debugError("BOOT", {
-			version: "1.11",
+			version: "1.12",
 			url: location.href,
 			readyState: document.readyState,
 			userAgent: navigator.userAgent
@@ -1170,6 +1185,9 @@ let loadingDecodedSound = false;
 			volume: CONFIG.volume,
 			cooldownMs: CONFIG.cooldownMs,
 			fallbackScanMs: CONFIG.pollIntervalMs,
+			legacyXConfigDetected:
+				typeof xConfig_WIEDERHOLSPERRE_MS !== "undefined" ||
+				typeof xConfig_FALLBACK_SCAN_MS !== "undefined",
 			userAgent: navigator.userAgent
 		});
 		ensureAudioContext();
