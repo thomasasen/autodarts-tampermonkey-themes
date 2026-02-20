@@ -1079,7 +1079,7 @@
       const ty = anchorYInParent - baseTop - zoom * targetLocal.y;
 
       return {
-        transform: 	ranslate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${zoom})`,
+        transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${zoom})`,
         signature: `${zoom.toFixed(4)}:${baseScale.toFixed(4)}:${tx.toFixed(2)}:${ty.toFixed(2)}`,
         clampedTarget: {
           x: targetPoint.x,
@@ -1095,7 +1095,7 @@
     const tyPercent = (0.5 - zoom * targetNormalizedY) * 100;
 
     return {
-      transform: 	ranslate(${txPercent.toFixed(4)}%, ${tyPercent.toFixed(4)}%) scale(${zoom})`,
+      transform: `translate(${txPercent.toFixed(4)}%, ${tyPercent.toFixed(4)}%) scale(${zoom})`,
       signature: `${zoom.toFixed(4)}:${baseScale.toFixed(4)}:${txPercent.toFixed(4)}:${tyPercent.toFixed(4)}`,
       clampedTarget: {
         x: targetPoint.x,
@@ -1267,7 +1267,7 @@
     zoomTarget.classList.add(ZOOM_CLASS);
     zoomTarget.style.transformOrigin = "0 0";
     zoomTarget.style.willChange = "transform";
-    zoomTarget.style.transition = 	ransform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
+    zoomTarget.style.transition = `transform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
 
     const baseTransform = getBaseTransform(zoomTarget);
     const composedTransform = baseTransform
@@ -1322,7 +1322,7 @@
       return;
     }
 
-    zoomTarget.style.transition = 	ransform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
+    zoomTarget.style.transition = `transform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
     zoomTarget.style.transform = "";
 
     const releaseDelay = CONFIG.zoomOutMs + 40;

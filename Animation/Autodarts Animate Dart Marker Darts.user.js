@@ -1026,7 +1026,7 @@
 		const offsets = getFlightOffsets(center, boardCenter, size, arcHeightRatio);
 		const flightKeyframes = [
 			{
-				transform: 	ranslate(${
+				transform: `translate(${
 					offsets.start.x
 				}px, ${
 					offsets.start.y
@@ -1034,7 +1034,7 @@
 				opacity: fadeFrom,
 				filter: `blur(${blurFrom}px)`
 			}, {
-				transform: 	ranslate(${
+				transform: `translate(${
 					offsets.mid.x
 				}px, ${
 					offsets.mid.y
