@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.2
+// @version      3.3
 // @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit canvas-confetti-Presets (z. B. Realistic, Fireworks, Stars, Snow).
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 5
+// @xconfig-settings-version 6
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -110,7 +110,8 @@
   });
 
   const CONFIG = Object.freeze({
-    winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
+    winnerSelector:
+      ".ad-ext_winner-animation, .ad-ext-player-winner, .ad-ext-player.ad-ext-player-winner",
     variantElementId: "ad-ext-game-variant",
     overlayId: "ad-ext-winner-fireworks",
     styleId: "ad-ext-winner-fireworks-style",
@@ -318,6 +319,33 @@
     confettiRunner(payload);
   }
 
+  function emitEntryBurst() {
+    emitConfetti({
+      particleCount: 54,
+      spread: 74,
+      startVelocity: 48,
+      decay: 0.91,
+      origin: { x: 0.5, y: 0.72 },
+      colors: COLOR_THEMES.autodarts,
+    });
+    emitConfetti({
+      particleCount: 26,
+      angle: 60,
+      spread: 54,
+      startVelocity: 38,
+      origin: { x: 0.02, y: 0.72 },
+      colors: COLOR_THEMES.skyburst,
+    });
+    emitConfetti({
+      particleCount: 26,
+      angle: 120,
+      spread: 54,
+      startVelocity: 38,
+      origin: { x: 0.98, y: 0.72 },
+      colors: COLOR_THEMES.skyburst,
+    });
+  }
+
   function cannonBurst() {
     const origin = { y: 0.64 };
     const colors = COLOR_THEMES.autodarts;
@@ -424,7 +452,7 @@
     let lastShotTs = 0;
     let lastCenterTs = 0;
 
-    scheduleFrameLoop((timestamp) => {
+    const shoot = (timestamp) => {
       if (timestamp - lastShotTs < frameIntervalMs) {
         return;
       }
@@ -461,6 +489,11 @@
           colors,
         });
       }
+    };
+
+    shoot(performance.now());
+    scheduleFrameLoop((timestamp) => {
+      shoot(timestamp);
     });
   }
 
@@ -641,7 +674,7 @@
     let skew = 1;
     let lastShotTs = 0;
 
-    scheduleFrameLoop((timestamp) => {
+    const shoot = (timestamp) => {
       if (timestamp - lastShotTs < frameIntervalMs) {
         return;
       }
@@ -684,6 +717,11 @@
       if (skew <= 0.8 && Math.random() > 0.9) {
         skew = 1;
       }
+    };
+
+    shoot(performance.now());
+    scheduleFrameLoop((timestamp) => {
+      shoot(timestamp);
     });
   }
 
@@ -694,7 +732,7 @@
     let lastShotTs = 0;
     let lastCenterTs = 0;
 
-    scheduleFrameLoop((timestamp) => {
+    const shoot = (timestamp) => {
       if (timestamp - lastShotTs < frameIntervalMs) {
         return;
       }
@@ -731,6 +769,11 @@
           colors: centerColors,
         });
       }
+    };
+
+    shoot(performance.now());
+    scheduleFrameLoop((timestamp) => {
+      shoot(timestamp);
     });
   }
 
@@ -795,6 +838,7 @@
       });
     }
 
+    emitEntryBurst();
     startPreset();
   }
 
@@ -869,6 +913,7 @@
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === "childList" || mutation.type === "attributes") {
+        checkWinner();
         scheduleCheck();
         break;
       }
@@ -900,4 +945,8 @@
       { once: true }
     );
   }
+
+  setInterval(scheduleCheck, 350);
+  window.addEventListener("resize", scheduleCheck, { passive: true });
+  document.addEventListener("visibilitychange", scheduleCheck, { passive: true });
 })();
