@@ -3547,6 +3547,11 @@
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
+#${PANEL_HOST_ID} .xcfg-badge--debug {
+  border-color: rgba(255, 118, 118, 0.66);
+  background: rgba(255, 108, 108, 0.2);
+  color: rgba(255, 232, 232, 0.98);
+}
 #${PANEL_HOST_ID} .xcfg-badge--runtime-ok { border-color: rgba(58,180,122,0.6); background: rgba(58,180,122,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--runtime-missing { border-color: rgba(255,198,92,0.6); background: rgba(255,198,92,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--runtime-blocked { border-color: rgba(255,120,120,0.64); background: rgba(255,120,120,0.2); }
@@ -4136,21 +4141,8 @@
         return;
       }
 
-      const debugFields = getFeatureSettingsSchema(feature)
-        .filter((field) => field && field.type === "toggle" && isDebugSettingField(field));
-      if (!debugFields.length) {
-        return;
-      }
-
       const featureState = ensureFeatureState(feature.id);
-      ensureFeatureSettingsDefaults(feature, featureState);
-
-      const hasActiveDebug = debugFields.some((field) => {
-        const value = resolveSettingValue(field, featureState.settings?.[field.variableName]);
-        return normalizeBooleanSettingValue(value) === true;
-      });
-
-      if (hasActiveDebug) {
+      if (isFeatureDebugEnabled(feature, featureState)) {
         matches.push({
           id: feature.id,
           title: feature.title || feature.id,
@@ -4161,6 +4153,28 @@
 
     matches.sort((a, b) => String(a.title).localeCompare(String(b.title), "de"));
     return matches;
+  }
+
+  function isFeatureDebugEnabled(feature, featureState = null) {
+    if (!feature || typeof feature !== "object" || !feature.id) {
+      return false;
+    }
+
+    const debugFields = getFeatureSettingsSchema(feature)
+      .filter((field) => field && field.type === "toggle" && isDebugSettingField(field));
+    if (!debugFields.length) {
+      return false;
+    }
+
+    const resolvedFeatureState = featureState && typeof featureState === "object"
+      ? featureState
+      : ensureFeatureState(feature.id);
+    ensureFeatureSettingsDefaults(feature, resolvedFeatureState);
+
+    return debugFields.some((field) => {
+      const value = resolveSettingValue(field, resolvedFeatureState.settings?.[field.variableName]);
+      return normalizeBooleanSettingValue(value) === true;
+    });
   }
 
   function renderDebugOverviewNoticeHtml() {
@@ -4482,6 +4496,9 @@
     if (hasConfigurableFields) {
       const settingLabel = settingsSchema.length === 1 ? "Einstellung" : "Einstellungen";
       badges.push(`<span class="xcfg-badge xcfg-badge--config">${settingsSchema.length} ${settingLabel}</span>`);
+    }
+    if (isFeatureDebugEnabled(feature, featureState)) {
+      badges.push(`<span class="xcfg-badge xcfg-badge--debug">Debug aktiv</span>`);
     }
     const runtimeBadge = getLoaderBadge(feature.id);
     if (runtimeBadge) {
