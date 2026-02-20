@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.0
+// @version      3.2
 // @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit canvas-confetti-Presets (z. B. Realistic, Fireworks, Stars, Snow).
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 3
+// @xconfig-settings-version 5
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -22,25 +22,18 @@
 (function () {
   "use strict";
 
-  // xConfig: {"type":"select","label":"Preset","description":"Wählt den Canvas-Confetti-Preset (orientiert an der canvas-confetti Demo).","options":[{"value":"realistic","label":"Realistic Burst (Standard)"},{"value":"fireworks","label":"Fireworks"},{"value":"stars","label":"Stars"},{"value":"cannon","label":"Cannon"},{"value":"random","label":"Random Direction"},{"value":"snow","label":"Snow"},{"value":"continuous","label":"Side Cannons"}]}
-  const xConfig_PRESET = "realistic";
-  // xConfig: {"type":"select","label":"Performance","description":"Regelt Partikelmenge und Taktung für schwächere/stärkere Geräte.","options":[{"value":"eco","label":"Schonend"},{"value":"balanced","label":"Ausgewogen"},{"value":"high","label":"Intensiv"}]}
+  // xConfig: {"type":"select","label":"Preset","description":"Waehlt ein Gewinner-Preset mit staerkerem Output und passender Farbpalette.","options":[{"value":"schoolpride","label":"School Pride Stream (rot/weiss, links/rechts)"},{"value":"fireworks","label":"Autodarts Skyburst (Blau/Violett/Weiss)"},{"value":"continuous","label":"Side Cannons XL (Autodarts)"},{"value":"realistic","label":"Grand Finale (mehrstufige Bursts)"},{"value":"cannon","label":"Arena Cannon (breite Salven)"},{"value":"stars","label":"Logo Starlight (Sterne in Cyan/Blau)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Seiten)"},{"value":"party","label":"Festival Mix (bunt und dicht)"},{"value":"snow","label":"Ice Rain (kuehles Blau-Weiss)"},{"value":"random","label":"Random (bei jedem Sieg neues Preset)"}]}
+  const xConfig_PRESET = "schoolpride";
+  // xConfig: {"type":"select","label":"Performance","description":"Regelt Partikelmenge und Taktung fuer schwaechere oder starke Geraete.","options":[{"value":"eco","label":"Schonend (weniger Last)"},{"value":"balanced","label":"Ausgewogen (empfohlen)"},{"value":"high","label":"Intensiv (sehr dicht)"}]}
   const xConfig_PERFORMANCE = "balanced";
-  // xConfig: {"type":"select","label":"Effektdauer","description":"Bestimmt, wie lange zeitbasierte Presets laufen.","options":[{"value":5000,"label":"Kurz"},{"value":9000,"label":"Standard"},{"value":14000,"label":"Lang"}]}
-  const xConfig_DAUER_MS = 9000;
+  // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Gewinner-Effekt auch in der Variante Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  const xConfig_BULLOUT_AKTIV = true;
   // xConfig: {"type":"toggle","label":"Klick beendet Effekt","description":"Blendet den Gewinner-Effekt per Klick/Tap aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_KLICK_ZUM_STOPPEN = true;
 
   function resolveStringChoice(value, fallbackValue, allowedValues) {
     const normalizedValue = String(value || "").trim();
     return allowedValues.includes(normalizedValue) ? normalizedValue : fallbackValue;
-  }
-
-  function resolveNumberChoice(value, fallbackValue, allowedValues) {
-    const numericValue = Number(value);
-    return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
-      ? numericValue
-      : fallbackValue;
   }
 
   function resolveToggle(value, fallbackValue) {
@@ -61,9 +54,9 @@
 
   const LEGACY_PRESET_BY_EFFECT = Object.freeze({
     firework: "fireworks",
-    confetti: "realistic",
+    confetti: "party",
     aurora: "stars",
-    pulse: "continuous",
+    pulse: "schoolpride",
   });
 
   const LEGACY_EFFECT =
@@ -74,60 +67,57 @@
 
   const RESOLVED_PRESET = resolveStringChoice(xConfig_PRESET, PRESET_FALLBACK, [
     "cannon",
+    "party",
     "random",
     "realistic",
+    "schoolpride",
     "fireworks",
     "stars",
     "snow",
     "continuous",
+    "victorystorm",
   ]);
   const RESOLVED_PERFORMANCE = resolveStringChoice(xConfig_PERFORMANCE, "balanced", [
     "eco",
     "balanced",
     "high",
   ]);
-  const RESOLVED_DURATION_MS = resolveNumberChoice(xConfig_DAUER_MS, 9000, [
-    5000,
-    9000,
-    14000,
-  ]);
+  const RESOLVED_INCLUDE_BULLOUT = resolveToggle(xConfig_BULLOUT_AKTIV, true);
   const RESOLVED_POINTER_DISMISS = resolveToggle(xConfig_KLICK_ZUM_STOPPEN, true);
 
   const PERFORMANCE_PRESETS = Object.freeze({
     eco: {
-      particleScale: 0.7,
+      particleScale: 0.85,
       intervalScale: 1.25,
     },
     balanced: {
-      particleScale: 1,
-      intervalScale: 1,
+      particleScale: 1.1,
+      intervalScale: 0.95,
     },
     high: {
-      particleScale: 1.35,
-      intervalScale: 0.8,
+      particleScale: 1.4,
+      intervalScale: 0.75,
     },
   });
 
   const PERFORMANCE = PERFORMANCE_PRESETS[RESOLVED_PERFORMANCE] || PERFORMANCE_PRESETS.balanced;
+  const COLOR_THEMES = Object.freeze({
+    autodarts: ["#ffffff", "#dbeafe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#4338ca"],
+    skyburst: ["#ffffff", "#bae6fd", "#7dd3fc", "#38bdf8", "#3b82f6", "#4f46e5"],
+    starlight: ["#ffffff", "#c4b5fd", "#93c5fd", "#60a5fa", "#22d3ee", "#0ea5e9"],
+    ice: ["#ffffff", "#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#1d4ed8"],
+    party: ["#ffffff", "#f59e0b", "#f43f5e", "#22c55e", "#3b82f6", "#a855f7", "#14b8a6"],
+  });
 
   const CONFIG = Object.freeze({
     winnerSelector: ".ad-ext_winner-animation, .ad-ext-player-winner",
+    variantElementId: "ad-ext-game-variant",
     overlayId: "ad-ext-winner-fireworks",
     styleId: "ad-ext-winner-fireworks-style",
     preset: RESOLVED_PRESET,
-    durationMs: RESOLVED_DURATION_MS,
+    includeBullOut: RESOLVED_INCLUDE_BULLOUT,
     pointerDismiss: RESOLVED_POINTER_DISMISS,
-    colors: [
-      "#FCE38A",
-      "#F38181",
-      "#EAFFD0",
-      "#95E1D3",
-      "#F08A5D",
-      "#60A5FA",
-      "#34D399",
-      "#FB7185",
-      "#FBBF24",
-    ],
+    colors: COLOR_THEMES.autodarts,
   });
 
   const STYLE_TEXT = `
@@ -256,21 +246,11 @@
     frameHandle = requestAnimationFrame(loop);
   }
 
-  function runTimedInterval(durationMs, intervalMs, callback, runImmediately = true) {
-    const endAt = Date.now() + Math.max(250, durationMs);
+  function runActiveInterval(intervalMs, callback, runImmediately = true) {
     if (runImmediately) {
-      callback(endAt - Date.now());
+      callback();
     }
-    let handle = 0;
-    handle = scheduleInterval(() => {
-      const timeLeft = endAt - Date.now();
-      if (timeLeft <= 0) {
-        clearInterval(handle);
-        intervalHandles.delete(handle);
-        return;
-      }
-      callback(timeLeft);
-    }, intervalMs);
+    scheduleInterval(callback, intervalMs);
   }
 
   function ensureOverlay() {
@@ -340,54 +320,181 @@
 
   function cannonBurst() {
     const origin = { y: 0.64 };
+    const colors = COLOR_THEMES.autodarts;
     emitConfetti({
-      particleCount: 100,
-      spread: 70,
-      startVelocity: 45,
+      particleCount: 140,
+      spread: 72,
+      startVelocity: 56,
+      decay: 0.9,
+      scalar: 1.02,
       origin,
+      colors,
     });
     scheduleTimeout(() => {
       emitConfetti({
-        particleCount: 60,
-        spread: 95,
-        startVelocity: 34,
-        decay: 0.92,
+        particleCount: 90,
+        spread: 98,
+        startVelocity: 40,
+        decay: 0.91,
         scalar: 0.95,
         origin,
+        colors,
       });
-    }, 140);
+    }, 120);
     scheduleTimeout(() => {
       emitConfetti({
-        particleCount: 38,
-        spread: 120,
-        startVelocity: 26,
-        decay: 0.94,
-        scalar: 1.1,
+        particleCount: 62,
+        spread: 124,
+        startVelocity: 30,
+        decay: 0.93,
+        scalar: 1.12,
         origin,
+        colors,
       });
-    }, 280);
+    }, 250);
+    scheduleTimeout(() => {
+      emitConfetti({
+        particleCount: 40,
+        spread: 145,
+        startVelocity: 22,
+        decay: 0.95,
+        scalar: 1.24,
+        origin,
+        colors,
+      });
+    }, 390);
   }
 
   function startCannonPreset() {
-    runTimedInterval(
-      CONFIG.durationMs,
-      Math.round(1500 * PERFORMANCE.intervalScale),
+    runActiveInterval(
+      Math.round(1050 * PERFORMANCE.intervalScale),
       () => cannonBurst(),
       true
     );
   }
 
-  function startRandomPreset() {
-    runTimedInterval(
-      CONFIG.durationMs,
-      Math.round(1200 * PERFORMANCE.intervalScale),
+  function startPartyPreset() {
+    runActiveInterval(
+      Math.round(620 * PERFORMANCE.intervalScale),
       () => {
         emitConfetti({
-          angle: randomInRange(55, 125),
-          spread: randomInRange(50, 75),
-          particleCount: randomInRange(55, 105),
-          origin: { y: 0.62 },
+          angle: randomInRange(32, 148),
+          spread: randomInRange(58, 108),
+          particleCount: randomInRange(84, 160),
+          startVelocity: randomInRange(36, 56),
+          origin: {
+            x: randomInRange(0.08, 0.92),
+            y: randomInRange(0.48, 0.72),
+          },
+          colors: COLOR_THEMES.party,
         });
+        emitConfetti({
+          angle: randomInRange(24, 156),
+          spread: randomInRange(64, 126),
+          particleCount: randomInRange(34, 76),
+          startVelocity: randomInRange(24, 40),
+          scalar: randomInRange(0.86, 1.2),
+          origin: {
+            x: randomInRange(0.06, 0.94),
+            y: randomInRange(0.45, 0.75),
+          },
+          colors: COLOR_THEMES.party,
+        });
+        if (Math.random() > 0.72) {
+          emitConfetti({
+            particleCount: randomInRange(18, 34),
+            angle: 90,
+            spread: randomInRange(82, 110),
+            startVelocity: randomInRange(36, 52),
+            origin: {
+              x: randomInRange(0.2, 0.8),
+              y: 0.76,
+            },
+            colors: COLOR_THEMES.party,
+          });
+        }
+      },
+      true
+    );
+  }
+
+  function startSchoolPridePreset() {
+    const frameIntervalMs = Math.round(62 * PERFORMANCE.intervalScale);
+    const colors = ["#bb0000", "#ffffff"];
+    let lastShotTs = 0;
+    let lastCenterTs = 0;
+
+    scheduleFrameLoop((timestamp) => {
+      if (timestamp - lastShotTs < frameIntervalMs) {
+        return;
+      }
+      lastShotTs = timestamp;
+
+      emitConfetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        startVelocity: 30,
+        decay: 0.91,
+        origin: { x: 0, y: 0.74 },
+        colors,
+      });
+      emitConfetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        startVelocity: 30,
+        decay: 0.91,
+        origin: { x: 1, y: 0.74 },
+        colors,
+      });
+
+      if (timestamp - lastCenterTs >= Math.round(760 * PERFORMANCE.intervalScale)) {
+        lastCenterTs = timestamp;
+        emitConfetti({
+          particleCount: 46,
+          angle: 90,
+          spread: 78,
+          startVelocity: 50,
+          decay: 0.9,
+          origin: { x: 0.5, y: 0.74 },
+          colors,
+        });
+      }
+    });
+  }
+
+  function startVictoryStormPreset() {
+    runActiveInterval(
+      Math.round(560 * PERFORMANCE.intervalScale),
+      () => {
+        emitConfetti({
+          particleCount: 70,
+          angle: 90,
+          spread: 82,
+          startVelocity: 54,
+          decay: 0.9,
+          origin: { x: randomInRange(0.42, 0.58), y: 0.74 },
+          colors: COLOR_THEMES.skyburst,
+        });
+        scheduleTimeout(() => {
+          emitConfetti({
+            particleCount: 38,
+            angle: randomInRange(52, 72),
+            spread: 62,
+            startVelocity: 44,
+            origin: { x: 0.1, y: 0.74 },
+            colors: COLOR_THEMES.autodarts,
+          });
+          emitConfetti({
+            particleCount: 38,
+            angle: randomInRange(108, 128),
+            spread: 62,
+            startVelocity: 44,
+            origin: { x: 0.9, y: 0.74 },
+            colors: COLOR_THEMES.autodarts,
+          });
+        }, 140);
       },
       true
     );
@@ -396,6 +503,7 @@
   function realisticBurst(baseCount) {
     const defaults = {
       origin: { y: 0.7 },
+      colors: COLOR_THEMES.autodarts,
     };
     const fire = (particleRatio, options) => {
       emitConfetti({
@@ -405,69 +513,88 @@
       });
     };
 
-    fire(0.25, {
-      spread: 26,
-      startVelocity: 55,
+    fire(0.28, {
+      spread: 30,
+      startVelocity: 58,
     });
-    fire(0.2, {
+    fire(0.24, {
       spread: 60,
+      startVelocity: 46,
     });
-    fire(0.35, {
-      spread: 100,
-      decay: 0.91,
-      scalar: 0.8,
+    fire(0.24, {
+      spread: 96,
+      decay: 0.9,
+      scalar: 0.88,
     });
-    fire(0.1, {
-      spread: 120,
-      startVelocity: 25,
+    fire(0.14, {
+      spread: 124,
+      startVelocity: 32,
       decay: 0.92,
-      scalar: 1.2,
+      scalar: 1.16,
     });
     fire(0.1, {
-      spread: 120,
-      startVelocity: 45,
+      spread: 145,
+      startVelocity: 22,
+      decay: 0.95,
+      scalar: 1.28,
     });
   }
 
   function startRealisticPreset() {
-    runTimedInterval(
-      CONFIG.durationMs,
-      Math.round(1600 * PERFORMANCE.intervalScale),
-      () => realisticBurst(200),
+    runActiveInterval(
+      Math.round(980 * PERFORMANCE.intervalScale),
+      () => {
+        realisticBurst(260);
+        scheduleTimeout(() => realisticBurst(110), 220);
+      },
       true
     );
   }
 
   function startFireworksPreset() {
     const defaults = {
-      startVelocity: 30,
+      startVelocity: 34,
       spread: 360,
-      ticks: 60,
+      ticks: 70,
+      decay: 0.91,
     };
-    const intervalMs = Math.round(250 * PERFORMANCE.intervalScale);
+    const intervalMs = Math.round(170 * PERFORMANCE.intervalScale);
 
-    runTimedInterval(
-      CONFIG.durationMs,
+    runActiveInterval(
       intervalMs,
-      (timeLeft) => {
-        const ratio = Math.max(0.2, timeLeft / CONFIG.durationMs);
-        const particleCount = Math.max(12, Math.floor(50 * ratio));
+      () => {
+        const particleCount = Math.round(randomInRange(28, 74));
         emitConfetti({
           ...defaults,
           particleCount,
+          colors: COLOR_THEMES.skyburst,
           origin: {
-            x: randomInRange(0.1, 0.3),
-            y: Math.random() - 0.2,
+            x: randomInRange(0.08, 0.32),
+            y: randomInRange(0.03, 0.35),
           },
         });
         emitConfetti({
           ...defaults,
           particleCount,
+          colors: COLOR_THEMES.skyburst,
           origin: {
-            x: randomInRange(0.7, 0.9),
-            y: Math.random() - 0.2,
+            x: randomInRange(0.68, 0.92),
+            y: randomInRange(0.03, 0.35),
           },
         });
+        if (Math.random() > 0.66) {
+          emitConfetti({
+            ...defaults,
+            particleCount: Math.round(randomInRange(18, 44)),
+            spread: 300,
+            startVelocity: 46,
+            colors: COLOR_THEMES.autodarts,
+            origin: {
+              x: randomInRange(0.4, 0.6),
+              y: randomInRange(0.04, 0.26),
+            },
+          });
+        }
       },
       true
     );
@@ -476,118 +603,165 @@
   function starsBurst() {
     const defaults = {
       spread: 360,
-      ticks: 50,
-      gravity: 0,
-      decay: 0.94,
-      startVelocity: 30,
-      colors: ["#FFE400", "#FFBD00", "#E89400", "#FFCA6C", "#FDFFB8"],
+      ticks: 78,
+      gravity: 0.12,
+      decay: 0.93,
+      startVelocity: 34,
+      colors: COLOR_THEMES.starlight,
     };
 
     emitConfetti({
       ...defaults,
-      particleCount: 40,
-      scalar: 1.2,
+      particleCount: 68,
+      scalar: 1.3,
       shapes: ["star"],
     });
     emitConfetti({
       ...defaults,
-      particleCount: 10,
-      scalar: 0.75,
+      particleCount: 24,
+      scalar: 0.88,
       shapes: ["circle"],
     });
   }
 
   function startStarsPreset() {
-    runTimedInterval(
-      CONFIG.durationMs,
-      Math.round(1150 * PERFORMANCE.intervalScale),
+    runActiveInterval(
+      Math.round(900 * PERFORMANCE.intervalScale),
       () => {
         starsBurst();
-        scheduleTimeout(starsBurst, 110);
-        scheduleTimeout(starsBurst, 220);
+        scheduleTimeout(starsBurst, 90);
+        scheduleTimeout(starsBurst, 180);
       },
       true
     );
   }
 
   function startSnowPreset() {
-    const endAt = performance.now() + CONFIG.durationMs;
-    const frameIntervalMs = Math.round(38 * PERFORMANCE.intervalScale);
+    const frameIntervalMs = Math.round(24 * PERFORMANCE.intervalScale);
     let skew = 1;
     let lastShotTs = 0;
 
     scheduleFrameLoop((timestamp) => {
-      const timeLeft = endAt - performance.now();
-      if (timeLeft <= 0) {
-        clearFrameLoop();
-        return;
-      }
       if (timestamp - lastShotTs < frameIntervalMs) {
         return;
       }
       lastShotTs = timestamp;
 
-      const ticks = Math.max(180, 500 * (timeLeft / CONFIG.durationMs));
-      skew = Math.max(0.8, skew - 0.001);
+      const ticks = Math.round(randomInRange(260, 540));
+      const particleCount = Math.random() > 0.58 ? 2 : 1;
+      skew = Math.max(0.8, skew - 0.0008);
 
       emitConfetti({
-        particleCount: 1,
+        particleCount,
         startVelocity: 0,
         ticks,
         origin: {
           x: Math.random(),
           y: Math.random() * skew - 0.2,
         },
-        colors: ["#ffffff", "#dbeafe"],
+        colors: COLOR_THEMES.ice,
         shapes: ["circle"],
-        gravity: randomInRange(0.4, 0.6),
-        scalar: randomInRange(0.4, 1),
-        drift: randomInRange(-0.4, 0.4),
+        gravity: randomInRange(0.28, 0.52),
+        scalar: randomInRange(0.44, 1.08),
+        drift: randomInRange(-0.55, 0.55),
       });
+      if (Math.random() > 0.76) {
+        emitConfetti({
+          particleCount: 1,
+          startVelocity: 0,
+          ticks: Math.max(260, ticks),
+          origin: {
+            x: Math.random(),
+            y: -0.04,
+          },
+          colors: COLOR_THEMES.ice,
+          shapes: ["circle"],
+          gravity: randomInRange(0.3, 0.45),
+          scalar: randomInRange(0.58, 1.15),
+          drift: randomInRange(-0.46, 0.46),
+        });
+      }
+      if (skew <= 0.8 && Math.random() > 0.9) {
+        skew = 1;
+      }
     });
   }
 
   function startContinuousPreset() {
-    const endAt = performance.now() + CONFIG.durationMs;
-    const frameIntervalMs = Math.round(90 * PERFORMANCE.intervalScale);
-    const colors = ["#bb0000", "#ffffff"];
+    const frameIntervalMs = Math.round(58 * PERFORMANCE.intervalScale);
+    const sideColors = COLOR_THEMES.autodarts;
+    const centerColors = COLOR_THEMES.skyburst;
     let lastShotTs = 0;
+    let lastCenterTs = 0;
 
     scheduleFrameLoop((timestamp) => {
-      if (timestamp >= endAt) {
-        clearFrameLoop();
-        return;
-      }
       if (timestamp - lastShotTs < frameIntervalMs) {
         return;
       }
       lastShotTs = timestamp;
 
       emitConfetti({
-        particleCount: 2,
+        particleCount: 6,
         angle: 60,
-        spread: 55,
+        spread: 58,
+        startVelocity: 34,
+        decay: 0.91,
         origin: { x: 0, y: 0.72 },
-        colors,
+        colors: sideColors,
       });
       emitConfetti({
-        particleCount: 2,
+        particleCount: 6,
         angle: 120,
-        spread: 55,
+        spread: 58,
+        startVelocity: 34,
+        decay: 0.91,
         origin: { x: 1, y: 0.72 },
-        colors,
+        colors: sideColors,
       });
+
+      if (timestamp - lastCenterTs >= Math.round(780 * PERFORMANCE.intervalScale)) {
+        lastCenterTs = timestamp;
+        emitConfetti({
+          particleCount: 54,
+          angle: 90,
+          spread: 76,
+          startVelocity: 48,
+          decay: 0.9,
+          origin: { x: 0.5, y: 0.72 },
+          colors: centerColors,
+        });
+      }
     });
+  }
+
+  function startRandomPreset() {
+    const randomPool = [
+      "schoolpride",
+      "fireworks",
+      "continuous",
+      "realistic",
+      "cannon",
+      "stars",
+      "victorystorm",
+      "party",
+      "snow",
+    ];
+    const selectedPreset = randomPool[Math.floor(Math.random() * randomPool.length)];
+    const runner = PRESET_RUNNERS[selectedPreset] || PRESET_RUNNERS.fireworks;
+    runner();
   }
 
   const PRESET_RUNNERS = Object.freeze({
     cannon: startCannonPreset,
+    party: startPartyPreset,
     random: startRandomPreset,
     realistic: startRealisticPreset,
+    schoolpride: startSchoolPridePreset,
     fireworks: startFireworksPreset,
     stars: startStarsPreset,
     snow: startSnowPreset,
     continuous: startContinuousPreset,
+    victorystorm: startVictoryStormPreset,
   });
 
   function startPreset() {
@@ -641,16 +815,41 @@
     return node.getClientRects().length > 0;
   }
 
+  function getVariantText() {
+    if (typeof shared.getVariantText === "function") {
+      return String(shared.getVariantText(CONFIG.variantElementId) || "").trim().toLowerCase();
+    }
+    const node = document.getElementById(CONFIG.variantElementId);
+    return String(node?.textContent || "").trim().toLowerCase();
+  }
+
+  function isBullOutVariant(variantText) {
+    const variant = String(variantText || "").toLowerCase();
+    return (
+      variant.includes("bull-off") ||
+      variant.includes("bull off") ||
+      variant.includes("bullout") ||
+      variant.includes("bull-out")
+    );
+  }
+
+  function shouldRunForCurrentVariant() {
+    if (CONFIG.includeBullOut) {
+      return true;
+    }
+    return !isBullOutVariant(getVariantText());
+  }
+
   function checkWinner() {
-    const visible = isWinnerVisible();
-    if (visible && !lastWinnerVisible) {
+    const activeWinnerVisible = isWinnerVisible() && shouldRunForCurrentVariant();
+    if (activeWinnerVisible && !lastWinnerVisible) {
       dismissedForCurrentWin = false;
       showEffect();
-    } else if (!visible && lastWinnerVisible) {
+    } else if (!activeWinnerVisible && lastWinnerVisible) {
       dismissedForCurrentWin = false;
       hideEffect();
     }
-    lastWinnerVisible = visible;
+    lastWinnerVisible = activeWinnerVisible;
   }
 
   let scheduled = false;
