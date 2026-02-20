@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.6
+// @version      3.7
 // @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 5 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 10
+// @xconfig-settings-version 11
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -29,6 +29,8 @@
   const xConfig_FARBE = "autodarts";
   // xConfig: {"type":"select","label":"Intensitaet","description":"Steuert Dichte und Geschwindigkeit des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
   const xConfig_INTENSITAET = "standard";
+  // xConfig: {"type":"action","label":"Test-Button","description":"Testet den Effekt direkt mit den aktuell eingestellten Werten.","buttonLabel":"Effekt jetzt testen","action":"preview","prominent":true}
+  const xConfig_TEST_BUTTON = "preview";
   // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Gewinner-Effekt auch in der Variante Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULLOUT_AKTIV = true;
   // xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
@@ -130,6 +132,11 @@
       : xConfig_DEBUG_LOGS;
   const RESOLVED_DEBUG = resolveToggle(xConfig_DEBUG, resolveToggle(LEGACY_DEBUG_VALUE, false));
   const RESOLVED_POINTER_DISMISS = resolveToggle(xConfig_KLICK_ZUM_STOPPEN, true);
+  const XCONFIG_ACTION_EVENT_NAME = "ad-xconfig:setting-action";
+  const XCONFIG_FEATURE_ID = "a-winner-fireworks";
+  const XCONFIG_TEST_SETTING_KEY = "xConfig_TEST_BUTTON";
+  const XCONFIG_TEST_ACTION = "preview";
+  const OVERLAY_Z_INDEX = 2147483646;
 
   const INTENSITY_PRESETS = Object.freeze({
     dezent: {
@@ -236,7 +243,7 @@
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 999999;
+  z-index: ${OVERLAY_Z_INDEX};
 }
 
 #${CONFIG.overlayId} canvas {
@@ -265,6 +272,7 @@
   let intervalHandles = new Set();
   let frameHandle = 0;
   let lastDebugSignalKey = "";
+  let previewStopHandle = 0;
 
   function debugLog(event, payload) {
     if (!CONFIG.debug) {
@@ -359,6 +367,29 @@
     clearTimeouts();
     clearIntervals();
     clearFrameLoop();
+  }
+
+  function clearPreviewStopTimer() {
+    if (!previewStopHandle) {
+      return;
+    }
+    clearTimeout(previewStopHandle);
+    previewStopHandle = 0;
+  }
+
+  function schedulePreviewStop(reason, delayMs) {
+    clearPreviewStopTimer();
+    const safeDelay = Math.max(900, Number(delayMs) || 0);
+    previewStopHandle = setTimeout(() => {
+      previewStopHandle = 0;
+      const winnerStillVisible = shouldRunForVariant(getVariantText())
+        && (getWinnerDomInfo().visible || hasWinnerFromGameState());
+      if (winnerStillVisible) {
+        debugLog("preview-auto-stop-skipped", { reason });
+        return;
+      }
+      hideEffect(`${reason}:auto-stop`);
+    }, safeDelay);
   }
 
   function scheduleTimeout(callback, delayMs) {
@@ -475,7 +506,7 @@
     const payload = {
       ...options,
       disableForReducedMotion: true,
-      zIndex: 999999,
+      zIndex: OVERLAY_Z_INDEX,
     };
 
     if (typeof payload.particleCount === "number") {
@@ -824,6 +855,7 @@
     if (dismissHandler) {
       document.removeEventListener("pointerdown", dismissHandler, true);
     }
+    clearPreviewStopTimer();
     clearSchedulers();
     if (running) {
       debugLog("hide", { reason });
@@ -907,6 +939,44 @@
     return !isBullOutVariant(variantText);
   }
 
+  function startPreview(reason = "xconfig-action") {
+    clearPreviewStopTimer();
+    dismissedForCurrentWin = false;
+    hideEffect(`${reason}:reset`);
+    showEffect(reason);
+    schedulePreviewStop(reason, Math.round(2900 * INTENSITY.intervalScale));
+  }
+
+  function isMatchingXConfigAction(detail) {
+    if (!detail || typeof detail !== "object") {
+      return false;
+    }
+
+    const featureId = String(detail.featureId || "").trim().toLowerCase();
+    const settingKey = String(detail.settingKey || "").trim();
+    if (featureId !== XCONFIG_FEATURE_ID && settingKey !== XCONFIG_TEST_SETTING_KEY) {
+      return false;
+    }
+
+    const actionName = String(detail.action || "").trim().toLowerCase();
+    return settingKey === XCONFIG_TEST_SETTING_KEY || actionName === XCONFIG_TEST_ACTION;
+  }
+
+  function onXConfigSettingAction(event) {
+    const detail = event && typeof event === "object" ? event.detail : null;
+    if (!isMatchingXConfigAction(detail)) {
+      return;
+    }
+
+    debugLog("preview-action", {
+      detail,
+      style: CONFIG.style,
+      farbe: CONFIG.colorTheme,
+      intensitaet: CONFIG.intensity,
+    });
+    startPreview("xconfig-action");
+  }
+
   function checkWinner(source = "check") {
     const winnerDomInfo = getWinnerDomInfo();
     const domWinnerVisible = winnerDomInfo.visible;
@@ -954,6 +1024,7 @@
     });
   }
 
+  window.addEventListener(XCONFIG_ACTION_EVENT_NAME, onXConfigSettingAction);
   checkWinner("boot");
 
   const observer = new MutationObserver((mutations) => {
@@ -1011,5 +1082,6 @@
     pointerDismiss: CONFIG.pointerDismiss,
     debug: CONFIG.debug,
     hasGameStateShared: Boolean(gameStateShared),
+    actionEvent: XCONFIG_ACTION_EVENT_NAME,
   });
 })();

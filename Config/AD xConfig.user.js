@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.2
+// @version      1.0.3
 // @description  Adds a central AD xConfig menu with script discovery, configurable xConfig_ settings, and GitHub rate-limit aware RAW/cache fallback.
 // @author       Thomas Asen
 // @license      MIT
@@ -54,6 +54,7 @@
   const PANEL_HOST_ID = "ad-xconfig-panel-host";
   const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
   const RUNTIME_EVENT_NAME = "ad-xconfig:changed";
+  const SETTING_ACTION_EVENT_NAME = "ad-xconfig:setting-action";
   const RUNTIME_CLEANUP_INTERVAL_MS = 450;
   function debugLog(message, ...args) {
     console.info(`[xConfig] ${message}`, ...args);
@@ -1793,6 +1794,9 @@
     if (["select", "choice", "enum", "dropdown"].includes(type)) {
       return "select";
     }
+    if (["action", "button", "test", "preview"].includes(type)) {
+      return "action";
+    }
     return "";
   }
 
@@ -1978,7 +1982,7 @@
             { value: true, label: "Aktiv" },
             { value: false, label: "Inaktiv" },
           ];
-      } else if (!options.length) {
+      } else if (type === "select" && !options.length) {
         if (["string", "number", "boolean"].includes(typeof declarationDefault)) {
           options = [{
             value: declarationDefault,
@@ -1987,15 +1991,28 @@
         } else {
           continue;
         }
+      } else if (type === "action") {
+        options = [];
       }
 
       const label = String(meta.label || settingKey.replaceAll("_", " ")).trim() || settingKey;
       const description = String(meta.description || meta.help || "").trim();
-      const defaultValue = resolveSettingValue({
-        type,
-        options,
-        defaultValue: declarationDefault,
-      }, declarationDefault);
+      const defaultValue = type === "action"
+        ? declarationDefault
+        : resolveSettingValue({
+          type,
+          options,
+          defaultValue: declarationDefault,
+        }, declarationDefault);
+      const actionName = type === "action"
+        ? String(meta.action || meta.event || meta.command || settingKey).trim() || settingKey
+        : "";
+      const buttonLabel = type === "action"
+        ? String(meta.buttonLabel || meta.cta || meta.actionLabel || "Aktion ausfuehren").trim() || "Aktion ausfuehren"
+        : "";
+      const prominent = type === "action"
+        ? normalizeBooleanSettingValue(meta.prominent) === true
+        : false;
 
       fields.push({
         key: settingKey,
@@ -2005,6 +2022,9 @@
         description,
         options,
         defaultValue,
+        actionName,
+        buttonLabel,
+        prominent,
       });
     }
 
@@ -2771,6 +2791,14 @@
       return scriptText;
     }
 
+    const actionVariableNames = new Set();
+    const feature = getFeatureById(featureId);
+    getFeatureSettingsSchema(feature).forEach((field) => {
+      if (field?.type === "action" && field.variableName) {
+        actionVariableNames.add(String(field.variableName));
+      }
+    });
+
     const overrides = new Map();
     Object.keys(featureSettings).forEach((key) => {
       const rawKey = String(key || "").trim();
@@ -2783,6 +2811,11 @@
         return;
       }
       if (typeof rawValue === "number" && !Number.isFinite(rawValue)) {
+        return;
+      }
+
+      const variableKey = rawKey.startsWith("xConfig_") ? rawKey : `xConfig_${rawKey}`;
+      if (actionVariableNames.has(variableKey)) {
         return;
       }
 
@@ -2978,6 +3011,9 @@
     }
 
     getFeatureSettingsSchema(feature).forEach((field) => {
+      if (field.type === "action") {
+        return;
+      }
       featureState.settings[field.variableName] = resolveSettingValue(field, featureState.settings[field.variableName]);
     });
   }
@@ -3690,6 +3726,59 @@
 }
 #${PANEL_HOST_ID} .xcfg-setting-toggle-btn:hover { background: rgba(255,255,255,0.15); }
 #${PANEL_HOST_ID} .xcfg-setting-toggle-btn.is-active { background: rgba(148,214,255,0.3); color: #fff; }
+#${PANEL_HOST_ID} .xcfg-setting-action {
+  display: grid;
+  gap: 0.45rem;
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 10px;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.8rem;
+  background: rgba(22, 38, 82, 0.72);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease, border-color .16s ease;
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn:hover {
+  background: rgba(38, 62, 128, 0.88);
+  border-color: rgba(170, 220, 255, 0.82);
+  box-shadow: 0 8px 20px rgba(8, 18, 46, 0.36);
+  transform: translateY(-1px);
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn:focus-visible {
+  outline: none;
+  border-color: rgba(173, 232, 255, 0.98);
+  box-shadow: 0 0 0 2px rgba(109, 193, 255, 0.45), 0 10px 24px rgba(8, 18, 46, 0.36);
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn--prominent {
+  border-color: rgba(255, 226, 137, 0.92);
+  background: linear-gradient(145deg, rgba(255, 188, 74, 0.55), rgba(255, 126, 44, 0.68));
+  box-shadow: 0 10px 22px rgba(94, 38, 5, 0.34), inset 0 0 0 1px rgba(255, 245, 205, 0.24);
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-btn--prominent:hover {
+  background: linear-gradient(145deg, rgba(255, 206, 97, 0.68), rgba(255, 139, 53, 0.8));
+  border-color: rgba(255, 236, 167, 0.98);
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-state {
+  margin: 0;
+  font-size: 0.74rem;
+  color: rgba(234, 244, 255, 0.9);
+}
+#${PANEL_HOST_ID} .xcfg-setting-action-state--disabled {
+  color: rgba(255, 212, 212, 0.9);
+}
 
 @media (max-width: 1180px) {
   #${PANEL_HOST_ID} .xcfg-grid { grid-template-columns: 1fr; }
@@ -3702,6 +3791,7 @@
   #${PANEL_HOST_ID} .xcfg-modal { width: 100%; padding: 0.85rem; }
   #${PANEL_HOST_ID} .xcfg-setting-toggle { width: 100%; }
   #${PANEL_HOST_ID} .xcfg-setting-toggle-btn { flex: 1 1 50%; min-width: 0; }
+  #${PANEL_HOST_ID} .xcfg-setting-action-btn { width: 100%; }
 }
 `;
 
@@ -4315,6 +4405,9 @@
     if (!feature || !field) {
       return;
     }
+    if (field.type === "action") {
+      return;
+    }
 
     const featureState = ensureFeatureState(featureId);
     ensureFeatureSettingsDefaults(feature, featureState);
@@ -4345,6 +4438,55 @@
       debugError("AD xConfig: failed to store feature setting", error);
       setNotice("error", "Einstellung konnte nicht gespeichert werden.");
     });
+  }
+
+  function triggerFeatureSettingAction(featureId, settingKey, requestedAction = "") {
+    if (!featureId || !settingKey || !state.config) {
+      return;
+    }
+
+    const feature = getFeatureById(featureId);
+    const field = getFeatureSettingField(featureId, settingKey);
+    if (!feature || !field || field.type !== "action") {
+      return;
+    }
+
+    const featureState = ensureFeatureState(featureId);
+    if (!featureState.enabled) {
+      setNotice("info", `${feature.title}: Zum Testen zuerst das Skript aktivieren.`);
+      renderPanel();
+      return;
+    }
+
+    const actionName = String(requestedAction || field.actionName || settingKey).trim()
+      || String(settingKey);
+    const detail = {
+      source: "ad-xconfig",
+      featureId,
+      featureTitle: String(feature.title || featureId),
+      sourcePath: normalizeSourcePath(feature.source || ""),
+      settingKey: field.variableName || settingKey,
+      action: actionName,
+      triggeredAt: new Date().toISOString(),
+    };
+
+    let dispatched = false;
+    if (typeof window.CustomEvent === "function") {
+      try {
+        window.dispatchEvent(new window.CustomEvent(SETTING_ACTION_EVENT_NAME, { detail }));
+        dispatched = true;
+      } catch (_) {
+        // Ignore dispatch errors and report a generic failure.
+      }
+    }
+
+    if (!dispatched) {
+      setNotice("error", `${feature.title}: Aktion konnte nicht ausgeloest werden.`);
+      return;
+    }
+
+    const actionLabel = String(field.buttonLabel || field.label || "Aktion").trim() || "Aktion";
+    setNotice("success", `${feature.title}: ${actionLabel} ausgefuehrt.`);
   }
 
   function openFeatureConfig(featureId) {
@@ -4429,6 +4571,39 @@
             <select id="${selectId}" class="xcfg-setting-select" data-setting-select="true" data-feature-id="${featureId}" data-setting-key="${settingKey}">
               ${optionsHtml}
             </select>
+          </div>
+        </div>
+      `;
+    }
+
+    if (field.type === "action") {
+      const featureState = ensureFeatureState(feature.id);
+      const enabled = Boolean(featureState.enabled);
+      const buttonLabel = escapeHtml(
+        String(field.buttonLabel || field.label || "Aktion ausfuehren").trim()
+          || "Aktion ausfuehren",
+      );
+      const actionName = escapeHtml(String(field.actionName || field.key || field.variableName || "").trim());
+      const buttonClass = field.prominent
+        ? "xcfg-setting-action-btn xcfg-setting-action-btn--prominent"
+        : "xcfg-setting-action-btn";
+      const helperClass = enabled
+        ? "xcfg-setting-action-state"
+        : "xcfg-setting-action-state xcfg-setting-action-state--disabled";
+      const helperText = enabled
+        ? "Fuehrt den Test sofort aus."
+        : "Skript ist derzeit aus. Zum Testen zuerst auf \"An\" stellen.";
+      const disabledAttr = enabled ? "" : " disabled";
+
+      return `
+        <div class="${rowClass}">
+          <label class="xcfg-setting-label">${fieldLabel}</label>
+          ${descriptionHtml}
+          <div class="xcfg-setting-input">
+            <div class="xcfg-setting-action">
+              <button type="button" class="${buttonClass}" data-action="trigger-setting-action" data-feature-id="${featureId}" data-setting-key="${settingKey}" data-setting-action="${actionName}"${disabledAttr}>${buttonLabel}</button>
+              <p class="${helperClass}">${helperText}</p>
+            </div>
           </div>
         </div>
       `;
@@ -4590,6 +4765,11 @@
       if (boolValue !== null) {
         setFeatureSettingValue(featureId, payload.settingKey, boolValue);
       }
+      return;
+    }
+
+    if (action === "trigger-setting-action" && featureId && payload.settingKey) {
+      triggerFeatureSettingAction(featureId, payload.settingKey, payload.settingAction || "");
       return;
     }
 
@@ -4814,6 +4994,7 @@
       const featureId = actionEl.getAttribute("data-feature-id");
       const settingKey = actionEl.getAttribute("data-setting-key");
       const settingValue = actionEl.getAttribute("data-setting-value");
+      const settingAction = actionEl.getAttribute("data-setting-action");
       if (action === "set-feature" && featureId) {
         const enabledRaw = actionEl.getAttribute("data-feature-enabled");
         if (enabledRaw === "true" || enabledRaw === "false") {
@@ -4823,7 +5004,11 @@
       }
 
       if (action) {
-        handlePanelAction(action, featureId, { settingKey, settingValue });
+        handlePanelAction(action, featureId, {
+          settingKey,
+          settingValue,
+          settingAction,
+        });
       }
 
       return;
