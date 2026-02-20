@@ -3465,6 +3465,11 @@
 #${PANEL_HOST_ID} .xcfg-notice--success { background: rgba(58,180,122,0.17); border-color: rgba(58,180,122,0.52); }
 #${PANEL_HOST_ID} .xcfg-notice--error { background: rgba(255,84,84,0.15); border-color: rgba(255,84,84,0.5); }
 #${PANEL_HOST_ID} .xcfg-notice--info { background: rgba(74,178,255,0.18); border-color: rgba(74,178,255,0.5); }
+#${PANEL_HOST_ID} .xcfg-notice--debug {
+  background: linear-gradient(145deg, rgba(255, 88, 88, 0.16), rgba(255, 128, 128, 0.1));
+  border-color: rgba(255, 118, 118, 0.48);
+}
+#${PANEL_HOST_ID} .xcfg-notice-label { font-weight: 700; }
 #${PANEL_HOST_ID} .xcfg-conn { margin-top: 0.85rem; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.84rem; border: 1px solid transparent; }
 #${PANEL_HOST_ID} .xcfg-conn--ok { background: rgba(58,180,122,0.17); border-color: rgba(58,180,122,0.52); }
 #${PANEL_HOST_ID} .xcfg-conn--warn { background: rgba(255,198,92,0.14); border-color: rgba(255,198,92,0.45); }
@@ -3635,6 +3640,17 @@
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.04);
   padding: 0.75rem;
+}
+#${PANEL_HOST_ID} .xcfg-setting-row--debug {
+  border-color: rgba(255, 128, 128, 0.36);
+  background: linear-gradient(145deg, rgba(255, 96, 96, 0.14), rgba(255, 120, 120, 0.07));
+  box-shadow: inset 0 0 0 1px rgba(255, 166, 166, 0.18);
+}
+#${PANEL_HOST_ID} .xcfg-setting-row--debug .xcfg-setting-label {
+  color: rgba(255, 226, 226, 0.98);
+}
+#${PANEL_HOST_ID} .xcfg-setting-row--debug .xcfg-setting-desc {
+  color: rgba(255, 214, 214, 0.82);
 }
 #${PANEL_HOST_ID} .xcfg-setting-label { display: block; font-weight: 700; font-size: 0.86rem; color: rgba(255,255,255,0.96); }
 #${PANEL_HOST_ID} .xcfg-setting-desc { margin: 0.32rem 0 0; color: rgba(255,255,255,0.73); font-size: 0.79rem; line-height: 1.35; }
@@ -4112,6 +4128,58 @@
     return `<div class="xcfg-notice xcfg-notice--${type}">${escapeHtml(state.notice.message)}</div>`;
   }
 
+  function getFeaturesWithActiveDebug() {
+    const matches = [];
+
+    getFeatureRegistry().forEach((feature) => {
+      if (!feature || typeof feature !== "object" || !feature.id) {
+        return;
+      }
+
+      const debugFields = getFeatureSettingsSchema(feature)
+        .filter((field) => field && field.type === "toggle" && isDebugSettingField(field));
+      if (!debugFields.length) {
+        return;
+      }
+
+      const featureState = ensureFeatureState(feature.id);
+      ensureFeatureSettingsDefaults(feature, featureState);
+
+      const hasActiveDebug = debugFields.some((field) => {
+        const value = resolveSettingValue(field, featureState.settings?.[field.variableName]);
+        return normalizeBooleanSettingValue(value) === true;
+      });
+
+      if (hasActiveDebug) {
+        matches.push({
+          id: feature.id,
+          title: feature.title || feature.id,
+          enabled: Boolean(featureState.enabled),
+        });
+      }
+    });
+
+    matches.sort((a, b) => String(a.title).localeCompare(String(b.title), "de"));
+    return matches;
+  }
+
+  function renderDebugOverviewNoticeHtml() {
+    const activeDebugFeatures = getFeaturesWithActiveDebug();
+    if (!activeDebugFeatures.length) {
+      return "";
+    }
+
+    const names = activeDebugFeatures.map((entry) => {
+      if (entry.enabled) {
+        return escapeHtml(entry.title);
+      }
+      return `${escapeHtml(entry.title)} <span>(Skript aus)</span>`;
+    }).join(", ");
+
+    const countLabel = activeDebugFeatures.length === 1 ? "Skript" : "Skripten";
+    return `<div class="xcfg-notice xcfg-notice--debug"><span class="xcfg-notice-label">Debug aktiv:</span> In ${activeDebugFeatures.length} ${countLabel}: ${names}</div>`;
+  }
+
   function renderGitConnectionHtml() {
     if (state.gitLoad.loading) {
       return "<div class=\"xcfg-conn xcfg-conn--warn\">GitHub-Verbindung wird aufgebaut. Skriptinformationen werden geladen ...</div>";
@@ -4193,6 +4261,36 @@
     return options.length ? 0 : -1;
   }
 
+  function isDebugSettingField(field) {
+    if (!field || typeof field !== "object") {
+      return false;
+    }
+
+    const variableName = String(field.variableName || "").trim().toLowerCase();
+    const key = String(field.key || "").trim().toLowerCase();
+    const label = String(field.label || "").trim().toLowerCase();
+
+    return variableName.includes("debug") || key === "debug" || label.includes("debug");
+  }
+
+  function getOrderedSettingsSchemaForModal(feature) {
+    const settingsSchema = getFeatureSettingsSchema(feature);
+    if (!settingsSchema.length) {
+      return settingsSchema;
+    }
+
+    const regularFields = [];
+    const debugFields = [];
+    settingsSchema.forEach((field) => {
+      if (isDebugSettingField(field)) {
+        debugFields.push(field);
+        return;
+      }
+      regularFields.push(field);
+    });
+    return regularFields.concat(debugFields);
+  }
+
   function setFeatureSettingValue(featureId, settingKey, rawValue) {
     if (!featureId || !settingKey || !state.config) {
       return;
@@ -4265,6 +4363,9 @@
     const fieldLabel = escapeHtml(field.label || field.key || field.variableName || "Setting");
     const settingKey = escapeHtml(field.variableName || "");
     const featureId = escapeHtml(feature.id);
+    const rowClass = isDebugSettingField(field)
+      ? "xcfg-setting-row xcfg-setting-row--debug"
+      : "xcfg-setting-row";
     const description = String(field.description || "").trim();
     const descriptionHtml = description
       ? `<p class="xcfg-setting-desc">${escapeHtml(description)}</p>`
@@ -4283,7 +4384,7 @@
       const offClass = isEnabled ? "" : "is-active";
 
       return `
-        <div class="xcfg-setting-row">
+        <div class="${rowClass}">
           <label class="xcfg-setting-label">${fieldLabel}</label>
           ${descriptionHtml}
           <div class="xcfg-setting-input">
@@ -4307,7 +4408,7 @@
       }).join("");
 
       return `
-        <div class="xcfg-setting-row">
+        <div class="${rowClass}">
           <label class="xcfg-setting-label" for="${selectId}">${fieldLabel}</label>
           ${descriptionHtml}
           <div class="xcfg-setting-input">
@@ -4333,7 +4434,7 @@
       return "";
     }
 
-    const settingsSchema = getFeatureSettingsSchema(feature);
+    const settingsSchema = getOrderedSettingsSchemaForModal(feature);
     if (!settingsSchema.length) {
       state.activeConfigFeatureId = "";
       return "";
@@ -4569,6 +4670,7 @@
 
     const contentHtml = renderFeatureGridHtml(activeTab);
     const modalHtml = renderConfigModalHtml();
+    const debugOverviewNoticeHtml = renderDebugOverviewNoticeHtml();
 
     state.panelHost.innerHTML = `
       <div class="xcfg-page">
@@ -4588,6 +4690,7 @@
           </header>
           ${renderGitConnectionHtml()}
           ${renderNoticeHtml()}
+          ${debugOverviewNoticeHtml}
           <nav class="xcfg-tabs">${tabsHtml}</nav>
           <div class="xcfg-content">${contentHtml}</div>
           ${modalHtml}
