@@ -2008,7 +2008,7 @@
         ? String(meta.action || meta.event || meta.command || settingKey).trim() || settingKey
         : "";
       const buttonLabel = type === "action"
-        ? String(meta.buttonLabel || meta.cta || meta.actionLabel || "Aktion ausfuehren").trim() || "Aktion ausfuehren"
+        ? String(meta.buttonLabel || meta.cta || meta.actionLabel || "Aktion ausführen").trim() || "Aktion ausführen"
         : "";
       const prominent = type === "action"
         ? normalizeBooleanSettingValue(meta.prominent) === true
@@ -4481,12 +4481,12 @@
     }
 
     if (!dispatched) {
-      setNotice("error", `${feature.title}: Aktion konnte nicht ausgeloest werden.`);
+      setNotice("error", `${feature.title}: Aktion konnte nicht ausgelöst werden.`);
       return;
     }
 
     const actionLabel = String(field.buttonLabel || field.label || "Aktion").trim() || "Aktion";
-    setNotice("success", `${feature.title}: ${actionLabel} ausgefuehrt.`);
+    setNotice("success", `${feature.title}: ${actionLabel} ausgeführt.`);
   }
 
   function openFeatureConfig(featureId) {
@@ -4580,8 +4580,8 @@
       const featureState = ensureFeatureState(feature.id);
       const enabled = Boolean(featureState.enabled);
       const buttonLabel = escapeHtml(
-        String(field.buttonLabel || field.label || "Aktion ausfuehren").trim()
-          || "Aktion ausfuehren",
+        String(field.buttonLabel || field.label || "Aktion ausführen").trim()
+          || "Aktion ausführen",
       );
       const actionName = escapeHtml(String(field.actionName || field.key || field.variableName || "").trim());
       const buttonClass = field.prominent
@@ -4591,7 +4591,7 @@
         ? "xcfg-setting-action-state"
         : "xcfg-setting-action-state xcfg-setting-action-state--disabled";
       const helperText = enabled
-        ? "Fuehrt den Test sofort aus."
+        ? "Führt den Test sofort aus."
         : "Skript ist derzeit aus. Zum Testen zuerst auf \"An\" stellen.";
       const disabledAttr = enabled ? "" : " disabled";
 

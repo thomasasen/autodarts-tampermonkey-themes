@@ -668,15 +668,16 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ##### 📝 Beschreibung
 
-- Zweck: Overlay-Effekt bei Gewinner mit 5 abgestimmten Styles, konfigurierbarer Farbpalette und Intensität.
+- Zweck: Overlay-Effekt bei Gewinner mit 6 abgestimmten Styles, konfigurierbarer Farbpalette und Intensität.
 - Trigger/Erkennung: Sichtbarkeit von `CONFIG.winnerSelector`.
-- Änderungen: Fullscreen-Canvas-Overlay, Klick blendet aus; sorgt für einen klaren „Win“-Moment.
+- Änderungen: Fullscreen-Canvas-Overlay, Klick blendet aus; zusätzlicher xConfig-Test-Button zum direkten Vorschau-Start.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`
+- `xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`, `sides`
 - `xConfig_FARBE`: `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`
 - `xConfig_INTENSITAET`: `dezent`, `standard`, `stark`
+- `xConfig_TEST_BUTTON`: `preview` (Action-Button in AD xConfig)
 - `xConfig_BULLOUT_AKTIV`: `An` oder `Aus`
 - `xConfig_KLICK_ZUM_STOPPEN`: `An` oder `Aus`
 - `xConfig_DEBUG`: `Aus` oder `An` (nur zur Diagnose)
@@ -685,9 +686,10 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 **AD xConfig-Einstellungen (empfohlen)**
 
-- `xConfig_STYLE`: Wechselt zwischen den 5 Gewinner-Styles.
+- `xConfig_STYLE`: Wechselt zwischen den 6 Gewinner-Styles.
 - `xConfig_FARBE`: Wählt die globale Farbpalette für alle Bursts.
 - `xConfig_INTENSITAET`: Steuert Dichte/Taktung/Dynamik (`dezent`, `standard`, `stark`).
+- `xConfig_TEST_BUTTON`: Führt den aktuell eingestellten Effekt sofort als Vorschau aus.
 - `xConfig_BULLOUT_AKTIV`: Aktiviert den Effekt auch bei Bull-Out/Bull-Off-Varianten.
 - `xConfig_KLICK_ZUM_STOPPEN`: Klick/Tap blendet den Effekt sofort aus.
 - `xConfig_DEBUG`: Schreibt Diagnose-Logs in die Konsole.
@@ -698,22 +700,23 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 | `CONFIG.winnerSelector` | `.ad-ext_winner-animation, .ad-ext-player-winner, .ad-ext-player.ad-ext-player-winner` | Selector für den Gewinner-Block; sobald sichtbar, startet der Effekt.                       |
 | `CONFIG.overlayId`      | `ad-ext-winner-fireworks`                                                            | ID für das Overlay-Element.                                                                  |
 | `CONFIG.styleId`        | `ad-ext-winner-fireworks-style`                                                      | ID für das injizierte Style-Tag.                                                             |
-| `CONFIG.style`          | `realistic`                                                                          | Gewählter Style: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`.              |
+| `CONFIG.style`          | `realistic`                                                                          | Gewählter Style: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`, `sides`.     |
 | `CONFIG.colorTheme`     | `autodarts`                                                                          | Farbpalette: `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`.                     |
 | `CONFIG.intensity`      | `standard`                                                                           | Intensitätsprofil: `dezent`, `standard`, `stark`.                                           |
+| `xConfig_TEST_BUTTON`   | `preview`                                                                            | Action-Button in AD xConfig für sofortigen Effekt-Test mit der aktuellen Konfiguration.     |
 | `CONFIG.includeBullOut` | `true`                                                                               | Wenn `true`, läuft der Effekt auch in Bull-Out/Bull-Off-Situationen.                        |
 | `CONFIG.debug`          | `false`                                                                              | Wenn `true`, werden Diagnose-Logs (`[xConfig][Winner Fireworks]`) geschrieben.              |
 | `CONFIG.pointerDismiss` | `true`                                                                               | Wenn `true`, beendet ein Klick/Tap den Effekt sofort.                                        |
 | `INTENSITY_PRESETS`     | `dezent`, `standard`, `stark`                                                        | Skaliert Partikelmenge, Taktung sowie Dynamik (`particleScale`, `intervalScale`, `velocityScale`, `scalarScale`). |
 | `COLOR_THEMES`          | `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`                            | Liefert je Palette abgestimmte Farbsets (`primary`, `accent`, `special`) für alle Styles.  |
-| `STYLE_TUNING`          | style-spezifische Werte                                                              | Enthält die pro Style optimierten Intervalle/Burst-Größen für stabile, gut unterscheidbare Wirkung. |
+| `STYLE_TUNING`          | style-spezifische Werte                                                              | Enthält pro Style optimierte Werte (inkl. `sides` mit seitlichem Dauerfluss).               |
 
 ##### 🖼️ Beispiele/Screenshots
 
-![Winner Fireworks (xConfig)](../assets/animation-winner-fireworks-xConfig.gif)
+![Winner Fireworks (xConfig)](../assets/animation-animate-winner-fireworks.gif)
 
 Varianten:
-`xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`.
+`xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`, `sides`.
 
 ##### ℹ️ Weitere Hinweise
 

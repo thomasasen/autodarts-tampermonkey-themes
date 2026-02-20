@@ -546,32 +546,44 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 ### Animation: Autodarts Animate Winner Fireworks
 
 - Gilt für: `alle Modi`
-- Was das Skript macht: Zeigt beim Gewinner ein Overlay mit 5 abgestimmten Styles, wählbarer Farbpalette und Intensität.
+- Was das Skript macht: Zeigt beim Gewinner ein Overlay mit 6 abgestimmten Styles, wählbarer Farbpalette und Intensität.
 
 **xConfig-Einstellungen erklärt**
 
 - `xConfig_STYLE` (`Style`)  
-  Optionen: `Grand Finale`, `Skyburst`, `Arena Cannon`, `Victory Storm`, `Starlight`  
+  Optionen: `Grand Finale`, `Skyburst`, `Arena Cannon`, `Victory Storm`, `Starlight`, `Side Cannons`  
   Wirkung: Wählt den Ablauf/Charakter des Gewinner-Effekts.  
-  Praxis: `Grand Finale` als Allrounder, `Starlight` als ruhigere Variante.
+  Praxis:  
+  `Grand Finale` = ausgewogener Mehrfach-Burst,  
+  `Skyburst` = schnelle Luft-Bursts,  
+  `Arena Cannon` = druckvolle Bursts von unten,  
+  `Victory Storm` = Zentrum plus Flanken,  
+  `Starlight` = ruhiger Sternen-Look,  
+  `Side Cannons` = 15 Sekunden seitlicher Konfetti-Strom.
 
 - `xConfig_FARBE` (`Farbe`)  
   Optionen: `Autodarts`, `Rot-Weiß`, `Ice`, `Sunset`, `Neon`, `Gold`  
   Wirkung: Legt die Farbpalette über alle Styles fest.  
-  Praxis: Für Team-/Vereinslook z. B. `Rot-Weiß`, sonst `Autodarts` als Standard.
+  Praxis: `Autodarts` nutzt jetzt vorwiegend Blautöne (`#0C5B9C`, `#374091`) mit weniger Weißanteil.
 
 - `xConfig_INTENSITAET` (`Intensität`)  
   Optionen: `Dezent`, `Standard`, `Stark`  
   Wirkung: Steuert Dichte, Taktung und Dynamik des Effekts.  
   Praxis: Bei älterer Hardware `Dezent`, sonst `Standard` als Startpunkt.
 
+- `xConfig_TEST_BUTTON` (`Test-Button`)  
+  Wirkung: Führt den aktuell konfigurierten Effekt direkt aus, ohne auf einen Sieger warten zu müssen.  
+  Praxis: Nutze den Button nach jeder Änderung von `Style`, `Farbe` oder `Intensität`, um das Ergebnis sofort zu prüfen.
+
 **Screenshots / Varianten**
 
-- ![Winner Fireworks](assets/animation-winner-fireworks-xConfig.gif)
+- ![Winner Fireworks](assets/animation-animate-winner-fireworks.gif)
+- ![xConfig Test-Button](assets/xConfig-testbutton.png)
 
 **Hinweise & Kombinationen**
 
 - Für maximale Kontrolle immer in der Reihenfolge einstellen: `Style` -> `Farbe` -> `Intensität`.
+- Der `Test-Button` zeigt den Effekt auch im geöffneten xConfig-Fenster sauber im Vordergrund.
 - Alte Konfigurationen werden automatisch übernommen (Legacy-Migration aktiv).
 
 - Technische Details: [Animation: Autodarts Animate Winner Fireworks](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-winner-fireworks)

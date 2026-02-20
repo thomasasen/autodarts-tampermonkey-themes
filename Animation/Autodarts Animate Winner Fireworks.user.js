@@ -3,10 +3,10 @@
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      3.8
 // @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 6 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
-// @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
+// @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; inkl. xConfig-Test-Button und Klick zum Ausblenden.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
-// @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
+// @xconfig-background     assets/animation-animate-winner-fireworks.gif
 // @xconfig-settings-version 12
 // @author       Thomas Asen
 // @license      MIT
