@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.7
-// @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 5 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
+// @version      3.8
+// @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 6 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 11
+// @xconfig-settings-version 12
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -23,9 +23,9 @@
 (function () {
   "use strict";
 
-  // xConfig: {"type":"select","label":"Style","description":"Waehlt einen von 5 Gewinner-Styles mit klar unterscheidbarem Ablauf.","options":[{"value":"realistic","label":"Grand Finale (ausgewogen)"},{"value":"fireworks","label":"Skyburst (schnelle Luft-Bursts)"},{"value":"cannon","label":"Arena Cannon (druckvoll von unten)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Flanken)"},{"value":"stars","label":"Starlight (Sterne, ruhiger Ausklang)"}]}
+  // xConfig: {"type":"select","label":"Style","description":"Waehlt einen von 6 Gewinner-Styles mit klar unterscheidbarem Ablauf.","options":[{"value":"realistic","label":"Grand Finale (ausgewogen)"},{"value":"fireworks","label":"Skyburst (schnelle Luft-Bursts)"},{"value":"cannon","label":"Arena Cannon (druckvoll von unten)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Flanken)"},{"value":"stars","label":"Starlight (Sterne, ruhiger Ausklang)"},{"value":"sides","label":"Side Cannons (Konfetti von den Seiten)"}]}
   const xConfig_STYLE = "realistic";
-  // xConfig: {"type":"select","label":"Farbe","description":"Farbpalette fuer den Gewinner-Effekt.","options":[{"value":"autodarts","label":"Autodarts (Blau/Weiss)"},{"value":"redwhite","label":"Rot-Weiss"},{"value":"ice","label":"Ice (Cyan/Blau/Weiss)"},{"value":"sunset","label":"Sunset (Amber/Rose/Violett)"},{"value":"neon","label":"Neon (Lime/Cyan/Pink)"},{"value":"gold","label":"Gold (Gold/Amber/Weiss)"}]}
+  // xConfig: {"type":"select","label":"Farbe","description":"Farbpalette fuer den Gewinner-Effekt.","options":[{"value":"autodarts","label":"Autodarts (Blau dominant)"},{"value":"redwhite","label":"Rot-Weiss"},{"value":"ice","label":"Ice (Cyan/Blau/Weiss)"},{"value":"sunset","label":"Sunset (Amber/Rose/Violett)"},{"value":"neon","label":"Neon (Lime/Cyan/Pink)"},{"value":"gold","label":"Gold (Gold/Amber/Weiss)"}]}
   const xConfig_FARBE = "autodarts";
   // xConfig: {"type":"select","label":"Intensitaet","description":"Steuert Dichte und Geschwindigkeit des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
   const xConfig_INTENSITAET = "standard";
@@ -92,6 +92,7 @@
     "fireworks",
     "stars",
     "victorystorm",
+    "sides",
   ]);
 
   const LEGACY_COLOR_THEME =
@@ -162,9 +163,9 @@
   const INTENSITY = INTENSITY_PRESETS[RESOLVED_INTENSITY] || INTENSITY_PRESETS.standard;
   const COLOR_THEMES = Object.freeze({
     autodarts: {
-      primary: ["#ffffff", "#dbeafe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#4338ca"],
-      accent: ["#ffffff", "#bae6fd", "#7dd3fc", "#38bdf8", "#3b82f6", "#4f46e5"],
-      special: ["#ffffff", "#c4b5fd", "#93c5fd", "#60a5fa", "#22d3ee", "#0ea5e9"],
+      primary: ["#0c5b9c", "#0f4f8a", "#1267ad", "#1c6fb8", "#2a75c2", "#374091", "#2f4ea2", "#ffffff"],
+      accent: ["#0c5b9c", "#1267ad", "#1d73c3", "#2d83d7", "#374091", "#4d58b0", "#ffffff"],
+      special: ["#374091", "#2f4ea2", "#0c5b9c", "#1b69b5", "#5d8fd1", "#9ec2e6", "#ffffff"],
     },
     redwhite: {
       primary: ["#ffffff", "#fee2e2", "#fca5a5", "#ef4444", "#dc2626", "#991b1b"],
@@ -218,6 +219,15 @@
       intervalMs: 980,
       echoDelayA: 130,
       echoDelayB: 260,
+    },
+    sides: {
+      intervalMs: 16,
+      durationMs: 15000,
+      particleCount: 2,
+      leftAngle: 60,
+      rightAngle: 120,
+      spread: 55,
+      originY: 0.5,
     },
   });
 
@@ -796,12 +806,49 @@
     );
   }
 
+  function startSidesPreset() {
+    const tuning = STYLE_TUNING.sides;
+    const colors = getThemeColors("primary");
+    const intervalMs = Math.max(16, Math.round(tuning.intervalMs * INTENSITY.intervalScale));
+    const durationMs = Math.max(1200, Number(tuning.durationMs) || 15000);
+    let lastTimestamp = 0;
+
+    const emit = () => {
+      emitConfetti({
+        particleCount: tuning.particleCount,
+        angle: tuning.leftAngle,
+        spread: tuning.spread,
+        origin: { x: 0, y: tuning.originY },
+        colors,
+      });
+      emitConfetti({
+        particleCount: tuning.particleCount,
+        angle: tuning.rightAngle,
+        spread: tuning.spread,
+        origin: { x: 1, y: tuning.originY },
+        colors,
+      });
+    };
+
+    emit();
+    scheduleFrameLoop((timestamp) => {
+      if (!lastTimestamp || timestamp - lastTimestamp >= intervalMs) {
+        lastTimestamp = timestamp;
+        emit();
+      }
+    });
+    scheduleTimeout(() => {
+      clearFrameLoop();
+    }, durationMs);
+  }
+
   const STYLE_RUNNERS = Object.freeze({
     cannon: startCannonPreset,
     realistic: startRealisticPreset,
     fireworks: startFireworksPreset,
     stars: startStarsPreset,
     victorystorm: startVictoryStormPreset,
+    sides: startSidesPreset,
   });
 
   function startStyle() {
