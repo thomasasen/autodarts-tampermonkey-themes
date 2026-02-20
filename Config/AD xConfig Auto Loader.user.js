@@ -31,17 +31,17 @@
   }
   window[EXEC_GUARD_KEY] = true;
 
-  const prefix = "AD xConfig Auto Loader:";
+  const prefix = "[xConfig][AD xConfig Auto Loader]";
 
-  function logInfo(message, ...args) {
+  function debugLog(message, ...args) {
     console.info(`${prefix} ${message}`, ...args);
   }
 
-  function logWarn(message, ...args) {
+  function debugWarn(message, ...args) {
     console.warn(`${prefix} ${message}`, ...args);
   }
 
-  function logError(message, ...args) {
+  function debugError(message, ...args) {
     console.error(`${prefix} ${message}`, ...args);
   }
 
@@ -58,7 +58,7 @@
         }
       }
     } catch (error) {
-      logWarn(`GM_getValue fehlgeschlagen (${key}), nutze Fallback.`, error);
+      debugWarn(`GM_getValue fehlgeschlagen (${key}), nutze Fallback.`, error);
     }
 
     try {
@@ -79,7 +79,7 @@
         await toPromise(GM_setValue(key, value));
       }
     } catch (error) {
-      logWarn(`GM_setValue fehlgeschlagen (${key}), nutze Fallback.`, error);
+      debugWarn(`GM_setValue fehlgeschlagen (${key}), nutze Fallback.`, error);
     }
 
     try {
@@ -146,7 +146,7 @@
 
   async function executeWithCacheFallback() {
     if (window[RUNTIME_GLOBAL_KEY]) {
-      logInfo("AD xConfig ist bereits aktiv, Ausführung übersprungen.");
+      debugLog("AD xConfig ist bereits aktiv, Ausführung übersprungen.");
       return;
     }
 
@@ -169,18 +169,18 @@
       await writeStore(CACHE_META_KEY, meta);
 
       executeCode(remoteCode, "ad-xconfig-auto-loader/remote/AD xConfig.user.js");
-      logInfo(`Remote geladen${meta.versionHint ? ` (v${meta.versionHint})` : ""}.`);
+      debugLog(`Remote geladen${meta.versionHint ? ` (v${meta.versionHint})` : ""}.`);
       return;
     } catch (error) {
       remoteError = error;
-      logWarn("Remote-Laden fehlgeschlagen, versuche Cache-Fallback.", error);
+      debugWarn("Remote-Laden fehlgeschlagen, versuche Cache-Fallback.", error);
     }
 
     const cachedCode = await readStore(CACHE_CODE_KEY, "");
     const cachedMeta = await readStore(CACHE_META_KEY, null);
 
     if (!isValidAdXConfigCode(cachedCode)) {
-      logError("Kein gültiger Cache verfügbar. Bitte mit aktiver Internetverbindung neu laden.", remoteError);
+      debugError("Kein gültiger Cache verfügbar. Bitte mit aktiver Internetverbindung neu laden.", remoteError);
       return;
     }
 
@@ -192,13 +192,13 @@
         cachedVersion ? `v${cachedVersion}` : "",
         cachedAt ? `Stand ${cachedAt}` : "",
       ].filter(Boolean).join(", ");
-      logInfo(`Cache-Fallback geladen${details ? ` (${details})` : ""}.`);
+      debugLog(`Cache-Fallback geladen${details ? ` (${details})` : ""}.`);
     } catch (error) {
-      logError("Ausführung des Cache-Codes fehlgeschlagen.", error);
+      debugError("Ausführung des Cache-Codes fehlgeschlagen.", error);
     }
   }
 
   executeWithCacheFallback().catch((error) => {
-    logError("Unerwarteter Loader-Fehler.", error);
+    debugError("Unerwarteter Loader-Fehler.", error);
   });
 })();

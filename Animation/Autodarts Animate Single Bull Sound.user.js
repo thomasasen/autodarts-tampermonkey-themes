@@ -6,7 +6,7 @@
 // @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -22,6 +22,8 @@
 
 	// xConfig: {"type":"select","label":"Lautstärke","description":"Legt die Lautstärke des Single-Bull-Sounds fest.","options":[{"value":0.5,"label":"Leise"},{"value":0.75,"label":"Mittel"},{"value":0.9,"label":"Laut"},{"value":1,"label":"Sehr laut"}]}
 	const xConfig_LAUTSTAERKE = 0.9;
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
 	const DEFAULT_COOLDOWN_MS = 700;
 	const DEFAULT_POLL_INTERVAL_MS = 0;
 
@@ -30,6 +32,14 @@
 		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
 			? numericValue
 			: fallbackValue;
+	}
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
 	}
 
 	const RESOLVED_VOLUME = resolveNumberChoice(xConfig_LAUTSTAERKE, 0.9, [
@@ -76,8 +86,8 @@
 		cooldownMs: RESOLVED_COOLDOWN_MS,
 		pollIntervalMs: RESOLVED_POLL_INTERVAL_MS
 	};
-	const DEBUG = true;
-	const DEBUG_PREFIX = "[Autodarts Single Bull Sound]";
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Single Bull Sound]";
 	const debugState = {
 		unlockAttempts: 0,
 		unlockSuccess: 0,
@@ -152,25 +162,37 @@ let loadingDecodedSound = false;
 		"notallowederror"
 	];
 
-	function debugLog(...args) {
-		if (! DEBUG) {
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
 			return;
 		}
-		console.log(DEBUG_PREFIX, ...args);
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
 	}
 
-	function debugWarn(...args) {
-		if (! DEBUG) {
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
 			return;
 		}
-		console.warn(DEBUG_PREFIX, ...args);
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
 	}
 
-	function debugError(...args) {
-		if (! DEBUG) {
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
 			return;
 		}
-		console.error(DEBUG_PREFIX, ...args);
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
 	}
 
 	function getErrorDetails(error) {
@@ -417,7 +439,7 @@ let loadingDecodedSound = false;
 			userAgent: navigator.userAgent
 		});
 	} catch (error) {
-		console.error("[Autodarts Single Bull Sound] BOOT failed", error);
+		console.error("[xConfig][Single Bull Sound] BOOT failed", error);
 	}
 
 	/**
@@ -789,7 +811,7 @@ let loadingDecodedSound = false;
 			return;
 		}
 		debugState.wsPayloads += 1;
-		if (DEBUG && (debugState.wsPayloads <= 5 || debugState.wsPayloads % 100 === 0)) {
+		if (DEBUG_ENABLED && (debugState.wsPayloads <= 5 || debugState.wsPayloads % 100 === 0)) {
 			debugLog("ws payload", {
 				wsPayloads: debugState.wsPayloads,
 				topic: String(parsed.topic || "")
@@ -1092,7 +1114,7 @@ let loadingDecodedSound = false;
 
 		const uniqueRows = new Set(rows);
 		rows = Array.from(uniqueRows);
-		if (DEBUG && (debugState.scans <= 8 || debugState.scans % 50 === 0)) {
+		if (DEBUG_ENABLED && (debugState.scans <= 8 || debugState.scans % 50 === 0)) {
 			debugLog("scanThrows", {
 				scan: debugState.scans,
 				silent: Boolean(silent),
@@ -1203,6 +1225,12 @@ let loadingDecodedSound = false;
 		}
 		setTimeout(attachSharedStateSubscription, 1500);
 	}
+
+	debugLog("init", {
+		debug: DEBUG_ENABLED,
+		cooldownMs: CONFIG.cooldownMs,
+		fallbackScanMs: CONFIG.pollIntervalMs,
+	});
 
 	if (document.readyState === "loading") {
 		window.addEventListener("load", start);

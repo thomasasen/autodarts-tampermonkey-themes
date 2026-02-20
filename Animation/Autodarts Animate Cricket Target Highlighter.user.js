@@ -7,7 +7,7 @@
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -27,6 +27,8 @@
 		const xConfig_FARBTHEMA = "standard";
 		// xConfig: {"type":"select","label":"Intensität","description":"Steuert Deckkraft und Kontrast der Overlay-Hervorhebungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
 		const xConfig_INTENSITAET = "normal";
+		// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+		const xConfig_DEBUG = false;
 
 		function resolveToggle(value, fallbackValue) {
 			if (typeof value === "boolean") {
@@ -55,6 +57,14 @@
 			return allowedValues.includes(normalizedValue)
 				? normalizedValue
 				: fallbackValue;
+		}
+
+		function resolveDebugToggle(value) {
+			if (typeof value === "boolean") {
+				return value;
+			}
+			const normalized = String(value || "").trim().toLowerCase();
+			return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
 		}
 
 		const CRICKET_THEME_PRESETS = {
@@ -96,6 +106,7 @@
 		const RESOLVED_INTENSITY_KEY = resolveStringChoice(xConfig_INTENSITAET, "normal", ["subtle", "normal", "strong"]);
 		const RESOLVED_THEME = CRICKET_THEME_PRESETS[RESOLVED_THEME_KEY] || CRICKET_THEME_PRESETS.standard;
 		const RESOLVED_INTENSITY = CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] || CRICKET_INTENSITY_PRESETS.normal;
+		const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
 
 		const {
 			ensureStyle,
@@ -182,7 +193,6 @@
 				doubleInner: 0.711112,
 				doubleOuter: 0.755556
 			},
-			debug: false
 		};
 
 		const TARGETS = [
@@ -241,13 +251,63 @@
 		let cachedGridRoot = null;
 		let lastStateKey = null;
 		let lastBoardKey = null;
-		const logPrefix = "[Autodarts Cricket Highlighter]";
+		const DEBUG_PREFIX = "[xConfig][Cricket Target Highlighter]";
 
-		function debugLog(...args) {
-			if (! CONFIG.debug) {
+		function debugLog(event, payload) {
+			if (!DEBUG_ENABLED) {
 				return;
 			}
-			console.log(logPrefix, ...args);
+			if (typeof event === "undefined") {
+				return;
+			}
+			if (typeof payload === "undefined") {
+				console.log(`${DEBUG_PREFIX} ${event}`);
+				return;
+			}
+			const extraArgs = Array.prototype.slice.call(arguments, 2);
+			if (!extraArgs.length) {
+				console.log(`${DEBUG_PREFIX} ${event}`, payload);
+				return;
+			}
+			console.log(`${DEBUG_PREFIX} ${event}`, payload, ...extraArgs);
+		}
+
+		function debugWarn(event, payload) {
+			if (!DEBUG_ENABLED) {
+				return;
+			}
+			if (typeof event === "undefined") {
+				return;
+			}
+			if (typeof payload === "undefined") {
+				console.warn(`${DEBUG_PREFIX} ${event}`);
+				return;
+			}
+			const extraArgs = Array.prototype.slice.call(arguments, 2);
+			if (!extraArgs.length) {
+				console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+				return;
+			}
+			console.warn(`${DEBUG_PREFIX} ${event}`, payload, ...extraArgs);
+		}
+
+		function debugError(event, payload) {
+			if (!DEBUG_ENABLED) {
+				return;
+			}
+			if (typeof event === "undefined") {
+				return;
+			}
+			if (typeof payload === "undefined") {
+				console.error(`${DEBUG_PREFIX} ${event}`);
+				return;
+			}
+			const extraArgs = Array.prototype.slice.call(arguments, 2);
+			if (!extraArgs.length) {
+				console.error(`${DEBUG_PREFIX} ${event}`, payload);
+				return;
+			}
+			console.error(`${DEBUG_PREFIX} ${event}`, payload, ...extraArgs);
 		}
 
 		/**
@@ -1201,10 +1261,17 @@ function updateTargets () {
    */
 		const scheduleUpdate = createRafScheduler(updateTargets);
 
+		debugLog("init", {
+			debug: DEBUG_ENABLED,
+			showDeadTargets: RESOLVED_SHOW_DEAD_TARGETS,
+			theme: RESOLVED_THEME_KEY,
+			intensity: RESOLVED_INTENSITY_KEY,
+		});
 		ensureStyle(STYLE_ID, STYLE_TEXT);
 		updateTargets();
 
 		// Beobachtet DOM-Ã„nderungen der Cricket-Tabelle und des aktiven Spielers.
+		debugLog("applied");
 		observeMutations({
 			onChange: scheduleUpdate
 		});

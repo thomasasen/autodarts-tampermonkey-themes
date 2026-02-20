@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.1
 // @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste mit Animation.
@@ -6,7 +6,7 @@
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @xconfig-background     assets/animation-animate-triple-double-bull-hits.gif
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @match        *://play.autodarts.io/*
 // @grant        none
@@ -29,6 +29,53 @@
   // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Wählt zwischen reinem Live-Observer oder zusätzlichem Polling für hohe Kompatibilität.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
   const xConfig_AKTUALISIERUNGSMODUS = 3000;
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Triple Double Bull Hits]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
   function resolveToggle(value, fallbackValue) {
     if (typeof value === "boolean") {
       return value;
@@ -289,16 +336,21 @@
    * @returns {void}
    */
   function animateHits() {
+    let hitsDetected = 0;
     document
       .querySelectorAll(CONFIG.selectors.throwText)
       .forEach((pElement) => {
         const hitInfo = getHitMeta(pElement);
         if (hitInfo) {
+          hitsDetected += 1;
           decorateHit(pElement, hitInfo.type, hitInfo.prefixChar);
           return;
         }
         resetHitDecoration(pElement);
       });
+    if (hitsDetected > 0) {
+      debugLog("trigger", { hitsDetected });
+    }
   }
 
   /**
@@ -344,6 +396,12 @@
       subtree: true,
       characterData: true,
     });
+    debugLog("applied", {
+      pollIntervalMs: CONFIG.pollIntervalMs,
+      tripleEnabled: RESOLVED_TRIPLE_HERVORHEBEN,
+      doubleEnabled: RESOLVED_DOUBLE_HERVORHEBEN,
+      bullEnabled: RESOLVED_BULL_HERVORHEBEN,
+    });
 
     if (CONFIG.pollIntervalMs > 0) {
       setInterval(animateHits, CONFIG.pollIntervalMs);
@@ -355,4 +413,5 @@
   } else {
     start();
   }
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

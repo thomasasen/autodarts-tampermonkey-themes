@@ -2,12 +2,12 @@
 // @name         Autodarts Animate TV Board Zoom
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.22
-// @description  Simuliert TV-ähnliche Board-Zooms vor dem dritten Dart in X01 (strict). Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Zoomt in X01 wie eine TV-Übertragung auf wahrscheinliche Zielbereiche vor Dart 3 (strict: T20,T20 oder klarer 1-Dart-Checkout).
+// @description  Simuliert TV-Ã¤hnliche Board-Zooms vor dem dritten Dart in X01 (strict). Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
+// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Zoomt in X01 wie eine TV-Ãœbertragung auf wahrscheinliche Zielbereiche vor Dart 3 (strict: T20,T20 oder klarer 1-Dart-Checkout).
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-background     assets/animation-Autodarts-Animate-TV-Board-Zoom.gif
-// @xconfig-settings-version 8
+// @xconfig-settings-version 9
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -49,6 +49,9 @@
   const xConfig_ZOOM_GESCHWINDIGKEIT = "mittel";
   // xConfig: {"type":"toggle","label":"Checkout-Zoom","description":"Aktiviert Zoom bei eindeutigem 1-Dart-Checkout (D1-D20/BULL).","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_CHECKOUT_ZOOM = true;
+
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
 
   const RING_RATIOS = {
     outerBullInner: 0.031112,
@@ -229,6 +232,50 @@
   const originalStyleCache = new WeakMap();
   const originalHostStyleCache = new WeakMap();
 
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][TV Board Zoom]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
   function resolveToggle(value, fallbackValue) {
     if (typeof value === "boolean") {
       return value;
@@ -1032,7 +1079,7 @@
       const ty = anchorYInParent - baseTop - zoom * targetLocal.y;
 
       return {
-        transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${zoom})`,
+        transform: 	ranslate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${zoom})`,
         signature: `${zoom.toFixed(4)}:${baseScale.toFixed(4)}:${tx.toFixed(2)}:${ty.toFixed(2)}`,
         clampedTarget: {
           x: targetPoint.x,
@@ -1048,7 +1095,7 @@
     const tyPercent = (0.5 - zoom * targetNormalizedY) * 100;
 
     return {
-      transform: `translate(${txPercent.toFixed(4)}%, ${tyPercent.toFixed(4)}%) scale(${zoom})`,
+      transform: 	ranslate(${txPercent.toFixed(4)}%, ${tyPercent.toFixed(4)}%) scale(${zoom})`,
       signature: `${zoom.toFixed(4)}:${baseScale.toFixed(4)}:${txPercent.toFixed(4)}:${tyPercent.toFixed(4)}`,
       clampedTarget: {
         x: targetPoint.x,
@@ -1220,7 +1267,7 @@
     zoomTarget.classList.add(ZOOM_CLASS);
     zoomTarget.style.transformOrigin = "0 0";
     zoomTarget.style.willChange = "transform";
-    zoomTarget.style.transition = `transform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
+    zoomTarget.style.transition = 	ransform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
 
     const baseTransform = getBaseTransform(zoomTarget);
     const composedTransform = baseTransform
@@ -1275,7 +1322,7 @@
       return;
     }
 
-    zoomTarget.style.transition = `transform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
+    zoomTarget.style.transition = 	ransform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
     zoomTarget.style.transform = "";
 
     const releaseDelay = CONFIG.zoomOutMs + 40;
@@ -1475,6 +1522,7 @@
 
   const scheduleUpdate = createRafScheduler(update);
 
+	debugLog("applied");
   const domObserver = observeMutations({
     target: document.documentElement,
     onChange: scheduleUpdate,
@@ -1542,4 +1590,5 @@
   window.addEventListener("beforeunload", cleanupInstance, { once: true });
 
   scheduleUpdate();
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

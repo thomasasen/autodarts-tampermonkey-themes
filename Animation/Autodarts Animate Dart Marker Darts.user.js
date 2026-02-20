@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.5
@@ -7,7 +7,7 @@
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -184,6 +184,9 @@
 	// xConfig: {"type":"select","label":"Fluggeschwindigkeit","description":"Bestimmt, wie schnell die Dart-Fluganimation abgespielt wird.","options":[{"value":"schnell","label":"Schnell"},{"value":"standard","label":"Standard"},{"value":"cinematic","label":"Cinematic"}]}
 	const xConfig_FLUGGESCHWINDIGKEIT = "standard";
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
 	const DART_DESIGN = resolveXConfigSelect("xConfig_DART_DESIGN", xConfig_DART_DESIGN, DART_DESIGN_OPTIONS);
 	const ANIMATE_DARTS = resolveXConfigToggle("xConfig_ANIMATE_DARTS", xConfig_ANIMATE_DARTS);
 	const DART_SIZE_PERCENT = Number(resolveXConfigSelect("xConfig_DART_GROESSE", xConfig_DART_GROESSE, ["90", "100", "115"]));
@@ -314,6 +317,50 @@
 	// Rückgabe: number (Skalierungsfaktor, Fallback 1).
 	// Nutzt: svg.getScreenCTM().
 	// Wird genutzt von: updateDarts().
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Dart Marker Darts]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
 	function getSvgScale(svg) {
 		const matrix = svg.getScreenCTM();
 		if (! matrix) {
@@ -979,7 +1026,7 @@
 		const offsets = getFlightOffsets(center, boardCenter, size, arcHeightRatio);
 		const flightKeyframes = [
 			{
-				transform: `translate(${
+				transform: 	ranslate(${
 					offsets.start.x
 				}px, ${
 					offsets.start.y
@@ -987,7 +1034,7 @@
 				opacity: fadeFrom,
 				filter: `blur(${blurFrom}px)`
 			}, {
-				transform: `translate(${
+				transform: 	ranslate(${
 					offsets.mid.x
 				}px, ${
 					offsets.mid.y
@@ -1381,6 +1428,7 @@
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateDarts();
 
+	debugLog("applied");
 	const domObserver = observeMutations({onChange: scheduleUpdate});
 
 	window.addEventListener("resize", scheduleUpdate);
@@ -1426,4 +1474,5 @@
 
 	window.addEventListener("pagehide", cleanupInstance, {once: true});
 	window.addEventListener("beforeunload", cleanupInstance, {once: true});
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

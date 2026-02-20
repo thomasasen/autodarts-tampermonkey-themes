@@ -1,18 +1,19 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.3
+// @version      3.4
 // @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit canvas-confetti-Presets (z. B. Realistic, Fireworks, Stars, Snow).
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 6
+// @xconfig-settings-version 8
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-game-state-shared.js
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/vendor/canvas-confetti.browser.js
 // @grant        none
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js
@@ -28,6 +29,8 @@
   const xConfig_PERFORMANCE = "balanced";
   // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Gewinner-Effekt auch in der Variante Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULLOUT_AKTIV = true;
+  // xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+  const xConfig_DEBUG = false;
   // xConfig: {"type":"toggle","label":"Klick beendet Effekt","description":"Blendet den Gewinner-Effekt per Klick/Tap aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_KLICK_ZUM_STOPPEN = true;
 
@@ -83,6 +86,11 @@
     "high",
   ]);
   const RESOLVED_INCLUDE_BULLOUT = resolveToggle(xConfig_BULLOUT_AKTIV, true);
+  const LEGACY_DEBUG_VALUE =
+    typeof xConfig_DEBUG_LOGS === "undefined"
+      ? false
+      : xConfig_DEBUG_LOGS;
+  const RESOLVED_DEBUG = resolveToggle(xConfig_DEBUG, resolveToggle(LEGACY_DEBUG_VALUE, false));
   const RESOLVED_POINTER_DISMISS = resolveToggle(xConfig_KLICK_ZUM_STOPPEN, true);
 
   const PERFORMANCE_PRESETS = Object.freeze({
@@ -117,6 +125,7 @@
     styleId: "ad-ext-winner-fireworks-style",
     preset: RESOLVED_PRESET,
     includeBullOut: RESOLVED_INCLUDE_BULLOUT,
+    debug: RESOLVED_DEBUG,
     pointerDismiss: RESOLVED_POINTER_DISMISS,
     colors: COLOR_THEMES.autodarts,
   });
@@ -140,9 +149,11 @@
 `;
 
   const shared = window.autodartsAnimationShared || {};
+  const gameStateShared = window.autodartsGameStateShared || null;
   const ensureStyle = typeof shared.ensureStyle === "function"
     ? shared.ensureStyle
     : fallbackEnsureStyle;
+  const DEBUG_PREFIX = "[xConfig][Winner Fireworks]";
 
   let overlay = null;
   let canvas = null;
@@ -154,6 +165,40 @@
   let timeoutHandles = new Set();
   let intervalHandles = new Set();
   let frameHandle = 0;
+  let lastDebugSignalKey = "";
+
+  function debugLog(event, payload) {
+    if (!CONFIG.debug) {
+      return;
+    }
+    if (typeof payload === "undefined") {
+      console.log(`${DEBUG_PREFIX} ${event}`);
+      return;
+    }
+    console.log(`${DEBUG_PREFIX} ${event}`, payload);
+  }
+
+  function debugWarn(event, payload) {
+    if (!CONFIG.debug) {
+      return;
+    }
+    if (typeof payload === "undefined") {
+      console.warn(`${DEBUG_PREFIX} ${event}`);
+      return;
+    }
+    console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+  }
+
+  function debugError(event, payload) {
+    if (!CONFIG.debug) {
+      return;
+    }
+    if (typeof payload === "undefined") {
+      console.error(`${DEBUG_PREFIX} ${event}`);
+      return;
+    }
+    console.error(`${DEBUG_PREFIX} ${event}`, payload);
+  }
 
   function fallbackEnsureStyle(styleId, cssText) {
     if (!styleId) {
@@ -260,11 +305,15 @@
     }
 
     if (typeof window.confetti !== "function") {
+      debugLog("overlay-missing-confetti", {
+        confettiType: typeof window.confetti,
+      });
       return false;
     }
 
     const container = document.body || document.documentElement;
     if (!container) {
+      debugLog("overlay-missing-container");
       return false;
     }
 
@@ -277,6 +326,10 @@
     confettiRunner = window.confetti.create(canvas, {
       resize: true,
       useWorker: false,
+    });
+    debugLog("overlay-created", {
+      preset: CONFIG.preset,
+      performance: RESOLVED_PERFORMANCE,
     });
 
     return true;
@@ -812,8 +865,13 @@
     runner();
   }
 
-  function showEffect() {
+  function showEffect(reason = "unknown") {
     if (running || dismissedForCurrentWin) {
+      debugLog("show-skipped", {
+        reason,
+        running,
+        dismissedForCurrentWin,
+      });
       return;
     }
 
@@ -824,12 +882,18 @@
 
     running = true;
     clearSchedulers();
+    debugLog("show-start", {
+      reason,
+      preset: CONFIG.preset,
+      includeBullOut: CONFIG.includeBullOut,
+      performance: RESOLVED_PERFORMANCE,
+    });
 
     if (CONFIG.pointerDismiss) {
       if (!dismissHandler) {
         dismissHandler = () => {
           dismissedForCurrentWin = true;
-          hideEffect();
+          hideEffect("pointer-dismiss");
         };
       }
       document.addEventListener("pointerdown", dismissHandler, {
@@ -842,29 +906,74 @@
     startPreset();
   }
 
-  function hideEffect() {
+  function hideEffect(reason = "unknown") {
     if (dismissHandler) {
       document.removeEventListener("pointerdown", dismissHandler, true);
     }
     clearSchedulers();
+    if (running) {
+      debugLog("hide", { reason });
+    }
     running = false;
     destroyOverlay();
   }
 
-  function isWinnerVisible() {
+  function getWinnerDomInfo() {
     const node = document.querySelector(CONFIG.winnerSelector);
     if (!node) {
-      return false;
+      return {
+        found: false,
+        visible: false,
+        selector: CONFIG.winnerSelector,
+      };
     }
-    return node.getClientRects().length > 0;
+    const rectCount = node.getClientRects().length;
+    const style = window.getComputedStyle(node);
+    return {
+      found: true,
+      visible: rectCount > 0,
+      rectCount,
+      display: style.display,
+      visibility: style.visibility,
+      opacity: style.opacity,
+      tag: node.tagName,
+      className: String(node.className || ""),
+    };
   }
 
   function getVariantText() {
+    let variantText = "";
     if (typeof shared.getVariantText === "function") {
-      return String(shared.getVariantText(CONFIG.variantElementId) || "").trim().toLowerCase();
+      variantText = String(shared.getVariantText(CONFIG.variantElementId) || "").trim().toLowerCase();
+      if (variantText) {
+        return variantText;
+      }
+    }
+    if (gameStateShared && typeof gameStateShared.getVariant === "function") {
+      variantText = String(gameStateShared.getVariant() || "").trim().toLowerCase();
+      if (variantText) {
+        return variantText;
+      }
     }
     const node = document.getElementById(CONFIG.variantElementId);
     return String(node?.textContent || "").trim().toLowerCase();
+  }
+
+  function hasWinnerFromGameState() {
+    if (!gameStateShared || typeof gameStateShared.getState !== "function") {
+      return false;
+    }
+    const snapshot = gameStateShared.getState();
+    const match = snapshot?.match;
+    if (!match || typeof match !== "object") {
+      return false;
+    }
+    const gameWinner = Number(match.gameWinner);
+    const matchWinner = Number(match.winner);
+    return (
+      (Number.isFinite(gameWinner) && gameWinner >= 0) ||
+      (Number.isFinite(matchWinner) && matchWinner >= 0)
+    );
   }
 
   function isBullOutVariant(variantText) {
@@ -877,21 +986,42 @@
     );
   }
 
-  function shouldRunForCurrentVariant() {
+  function shouldRunForVariant(variantText) {
     if (CONFIG.includeBullOut) {
       return true;
     }
-    return !isBullOutVariant(getVariantText());
+    return !isBullOutVariant(variantText);
   }
 
-  function checkWinner() {
-    const activeWinnerVisible = isWinnerVisible() && shouldRunForCurrentVariant();
+  function checkWinner(source = "check") {
+    const winnerDomInfo = getWinnerDomInfo();
+    const domWinnerVisible = winnerDomInfo.visible;
+    const stateWinnerVisible = hasWinnerFromGameState();
+    const variantText = getVariantText();
+    const variantAllowed = shouldRunForVariant(variantText);
+    const activeWinnerVisible = (domWinnerVisible || stateWinnerVisible) && variantAllowed;
+
+    const signalKey = `${domWinnerVisible}|${stateWinnerVisible}|${variantAllowed}|${variantText}`;
+    if (signalKey !== lastDebugSignalKey) {
+      debugLog("winner-signal", {
+        source,
+        domWinnerVisible,
+        winnerDomInfo,
+        stateWinnerVisible,
+        variantAllowed,
+        variantText,
+        running,
+        preset: CONFIG.preset,
+      });
+      lastDebugSignalKey = signalKey;
+    }
+
     if (activeWinnerVisible && !lastWinnerVisible) {
       dismissedForCurrentWin = false;
-      showEffect();
+      showEffect(source);
     } else if (!activeWinnerVisible && lastWinnerVisible) {
       dismissedForCurrentWin = false;
-      hideEffect();
+      hideEffect(source);
     }
     lastWinnerVisible = activeWinnerVisible;
   }
@@ -904,16 +1034,16 @@
     scheduled = true;
     requestAnimationFrame(() => {
       scheduled = false;
-      checkWinner();
+      checkWinner("raf");
     });
   }
 
-  checkWinner();
+  checkWinner("boot");
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === "childList" || mutation.type === "attributes") {
-        checkWinner();
+        checkWinner(`mutation:${mutation.type}`);
         scheduleCheck();
         break;
       }
@@ -949,4 +1079,20 @@
   setInterval(scheduleCheck, 350);
   window.addEventListener("resize", scheduleCheck, { passive: true });
   document.addEventListener("visibilitychange", scheduleCheck, { passive: true });
+
+  if (gameStateShared && typeof gameStateShared.subscribe === "function") {
+    gameStateShared.subscribe(() => {
+      checkWinner("state:subscribe");
+      scheduleCheck();
+    });
+  }
+
+  debugLog("init", {
+    preset: CONFIG.preset,
+    performance: RESOLVED_PERFORMANCE,
+    includeBullOut: CONFIG.includeBullOut,
+    pointerDismiss: CONFIG.pointerDismiss,
+    debug: CONFIG.debug,
+    hasGameStateShared: Boolean(gameStateShared),
+  });
 })();

@@ -7,7 +7,7 @@
 // @xconfig-variant      bull-off
 // @xconfig-readme-anchor  template-autodarts-theme-bull-off
 // @xconfig-background     assets/template-theme-bull-off-xConfig.png
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -31,9 +31,56 @@
 
 	const STYLE_ID = "autodarts-bull-off-custom-style";
 	const VARIANT_NAME = "bull-off";
-	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und Flächenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"Kräftig"}]}
+	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und FlÃ¤chenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"KrÃ¤ftig"}]}
 	const xConfig_KONTRAST_PRESET = "standard";
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Theme Bull-off]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
 	function resolveStringChoice(value, fallbackValue, allowedValues) {
 		const normalizedValue = String(value || "").trim();
 		return allowedValues.includes(normalizedValue)
@@ -295,6 +342,7 @@ span.css-3fr5p8{
 		matchMode: "includes",
 		buildCss
 	});
+	debugLog("applied", { styleId: STYLE_ID, variant: VARIANT_NAME });
 
 	if (PREVIEW_PLACEMENT === "under-throws") {
 		initPreviewPlacement({
@@ -306,4 +354,5 @@ span.css-3fr5p8{
 		});
 	}
 
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

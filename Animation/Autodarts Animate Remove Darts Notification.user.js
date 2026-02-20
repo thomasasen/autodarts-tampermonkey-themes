@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.4
@@ -7,7 +7,7 @@
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
 // @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -28,6 +28,53 @@
 	// xConfig: {"type":"select","label":"Pulse-Stärke","description":"Bestimmt, wie stark das Bild bei der Pulse-Animation skaliert wird.","options":[{"value":1.02,"label":"Dezent"},{"value":1.04,"label":"Standard"},{"value":1.08,"label":"Stark"}]}
 	const xConfig_PULSE_STAERKE = 1.04;
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Remove Darts Notification]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
 	function resolveToggle(value, fallbackValue) {
 		if (typeof value === "boolean") {
 			return value;
@@ -507,10 +554,12 @@
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateNotices();
 
+	debugLog("applied");
 	observeMutations({
 		onChange: (mutation, mutations) => {
 			collectShadowRootsFromMutations(mutations || [mutation]);
 			scheduleUpdate();
 		}
 	});
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

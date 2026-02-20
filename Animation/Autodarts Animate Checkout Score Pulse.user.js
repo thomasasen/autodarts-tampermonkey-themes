@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
@@ -7,7 +7,7 @@
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse.gif
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -31,6 +31,53 @@
 	// xConfig: {"type":"select","label":"Trigger-Quelle","description":"Legt fest, ob der Effekt nach Checkout-Vorschlag, Score-Regel oder einer Kombination ausgelöst wird.","options":[{"value":"suggestion-first","label":"Vorschlag zuerst"},{"value":"score-only","label":"Nur Score"},{"value":"suggestion-only","label":"Nur Vorschlag"}]}
 	const xConfig_TRIGGER_QUELLE = "suggestion-first";
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Checkout Score Pulse]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
 	function resolveStringChoice(value, fallbackValue, allowedValues) {
 		const normalizedValue = String(value || "").trim();
 		return allowedValues.includes(normalizedValue)
@@ -309,6 +356,7 @@
 	ensureStyle(STYLE_ID, STYLE_TEXT);
 	updateScoreHighlights();
 
+	debugLog("applied");
 	observeMutations({onChange: scheduleUpdate});
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();
-

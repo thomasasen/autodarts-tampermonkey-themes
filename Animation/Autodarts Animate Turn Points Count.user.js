@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
@@ -7,7 +7,7 @@
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-points-count
 // @xconfig-background     assets/animation-turn-points-count-detail-readme.gif
-// @xconfig-settings-version 2
+// @xconfig-settings-version 3
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -24,6 +24,53 @@
 	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie schnell die Turn-Punkte hoch bzw. runter zählen.","options":[{"value":260,"label":"Schnell"},{"value":416,"label":"Standard"},{"value":650,"label":"Langsam"}]}
 	const xConfig_ANIMATIONSDAUER_MS = 416;
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Turn Points Count]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
 	function resolveNumberChoice(value, fallbackValue, allowedValues) {
 		const numericValue = Number(value);
 		return Number.isFinite(numericValue) && allowedValues.includes(numericValue)
@@ -182,5 +229,7 @@
 	updateScores();
 
 	// Observes text/DOM changes to detect new turn points.
+	debugLog("applied");
 	observeMutations({onChange: scheduleUpdate});
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();

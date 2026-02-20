@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0.2
@@ -55,6 +55,17 @@
   const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
   const RUNTIME_EVENT_NAME = "ad-xconfig:changed";
   const RUNTIME_CLEANUP_INTERVAL_MS = 450;
+  function debugLog(message, ...args) {
+    console.info(`[xConfig] ${message}`, ...args);
+  }
+
+  function debugWarn(message, ...args) {
+    console.warn(`[xConfig] ${message}`, ...args);
+  }
+
+  function debugError(message, ...args) {
+    console.error(`[xConfig] ${message}`, ...args);
+  }
   const SINGLE_BULL_AUDIO_TOKEN = "/assets/singlebull.mp3";
   const THEME_PREVIEW_SPACE_CLASS = "ad-ext-turn-preview-space";
   const THEME_FEATURE_IDS = ["theme-x01", "theme-shanghai", "theme-bermuda", "theme-cricket", "theme-bull-off"];
@@ -397,7 +408,7 @@
       localStorage.setItem(MODULE_CACHE_STORAGE_KEY, JSON.stringify(normalized));
       return true;
     } catch (error) {
-      console.warn("AD xConfig Loader: failed to persist module cache", error);
+      debugWarn("AD xConfig Loader: failed to persist module cache", error);
       return false;
     }
   }
@@ -414,7 +425,7 @@
       const normalized = normalizeModuleCache(parsed);
       state.runtime.moduleCache = normalized || createEmptyModuleCache();
     } catch (error) {
-      console.warn("AD xConfig Loader: failed to bootstrap module cache", error);
+      debugWarn("AD xConfig Loader: failed to bootstrap module cache", error);
       state.runtime.moduleCache = createEmptyModuleCache();
     }
   }
@@ -2474,7 +2485,7 @@
         };
         requireInfo.requires.forEach(enqueueDependencyPath);
       } catch (error) {
-        console.warn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
+        debugWarn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
       }
     }
 
@@ -2573,7 +2584,7 @@
         }
         requireInfo.requires.forEach(enqueueDependencyPath);
       } catch (error) {
-        console.warn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
+        debugWarn(`AD xConfig Loader: failed to cache dependency ${dependencyPath}`, error);
       }
     }
 
@@ -2810,7 +2821,7 @@
     );
 
     if (appliedCount > 0) {
-      console.info(`AD xConfig Loader: ${featureId} xConfig-Overrides angewendet (${appliedCount}) [${normalizeSourcePath(sourcePath || "")}]`);
+      debugLog(`AD xConfig Loader: ${featureId} xConfig-Overrides angewendet (${appliedCount}) [${normalizeSourcePath(sourcePath || "")}]`);
     }
 
     return patchedText;
@@ -2923,12 +2934,12 @@
       if (executionResult.ok) {
         state.runtime.executedFeatures.add(featureId);
         setLoaderStatus(featureId, LOADER_STATUS.LOADED, executionResult.message);
-        console.info(`AD xConfig Loader: ${featureId} geladen (${reason}).`);
+        debugLog(`AD xConfig Loader: ${featureId} geladen (${reason}).`);
         return;
       }
 
       setLoaderStatus(featureId, executionResult.status || LOADER_STATUS.ERROR, executionResult.message || "Unbekannter Loader-Fehler.");
-      console.error(`AD xConfig Loader: ${featureId} konnte nicht geladen werden (${reason}).`, executionResult.message);
+      debugError(`AD xConfig Loader: ${featureId} konnte nicht geladen werden (${reason}).`, executionResult.message);
     });
 
     publishRuntimeState(`loader-${reason}`);
@@ -3104,7 +3115,7 @@
         }
       }
     } catch (error) {
-      console.warn("AD xConfig: GM_getValue failed, fallback to localStorage", error);
+      debugWarn("AD xConfig: GM_getValue failed, fallback to localStorage", error);
     }
 
     try {
@@ -3113,7 +3124,7 @@
         return JSON.parse(raw);
       }
     } catch (error) {
-      console.warn("AD xConfig: localStorage read failed", error);
+      debugWarn("AD xConfig: localStorage read failed", error);
     }
 
     if (gmLoaded && gmValue !== undefined && gmValue !== null) {
@@ -3129,13 +3140,13 @@
         await toPromise(GM_setValue(key, value));
       }
     } catch (error) {
-      console.warn("AD xConfig: GM_setValue failed, fallback to localStorage", error);
+      debugWarn("AD xConfig: GM_setValue failed, fallback to localStorage", error);
     }
 
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.warn("AD xConfig: localStorage write failed", error);
+      debugWarn("AD xConfig: localStorage write failed", error);
     }
   }
 
@@ -3231,7 +3242,7 @@
           state.gitLoad.lastError = String(reasonMessage || "").trim();
           state.gitLoad.lastSuccessAt = new Date().toISOString();
           state.gitLoad.lastSuccessCount = features.length;
-          console.info(`AD xConfig Loader: RAW fallback aktiv (${features.length} Module, ${cacheCount} Cache-Dateien).`);
+          debugLog(`AD xConfig Loader: RAW fallback aktiv (${features.length} Module, ${cacheCount} Cache-Dateien).`);
 
           executeEnabledFeaturesFromCache("post-sync");
 
@@ -3253,7 +3264,7 @@
 
           return { ok: true, count: features.length, cacheFiles: cacheCount, fromRaw: true, warning: state.gitLoad.lastError || "" };
         } catch (rawError) {
-          console.warn("AD xConfig Loader: RAW fallback failed", rawError);
+          debugWarn("AD xConfig Loader: RAW fallback failed", rawError);
           return null;
         }
       };
@@ -3330,7 +3341,7 @@
           ...Object.keys(state.runtime.moduleCache?.files || {}),
         ]);
         clearGitApiBackoff();
-        console.info(`AD xConfig Loader: Git sync erfolgreich (${features.length} Module, ${Object.keys(state.runtime.moduleCache?.files || {}).length} Cache-Dateien).`);
+        debugLog(`AD xConfig Loader: Git sync erfolgreich (${features.length} Module, ${Object.keys(state.runtime.moduleCache?.files || {}).length} Cache-Dateien).`);
 
         executeEnabledFeaturesFromCache("post-sync");
 
@@ -4219,7 +4230,7 @@
       executeEnabledFeaturesFromCache("config-change");
       queueRuntimeCleanup();
     }).catch((error) => {
-      console.error("AD xConfig: failed to store feature setting", error);
+      debugError("AD xConfig: failed to store feature setting", error);
       setNotice("error", "Einstellung konnte nicht gespeichert werden.");
     });
   }
@@ -4466,7 +4477,7 @@
 
     if (action === "reset") {
       resetConfig().catch((error) => {
-        console.error("AD xConfig: reset failed", error);
+        debugError("AD xConfig: reset failed", error);
         setNotice("error", "Zurücksetzen fehlgeschlagen.");
       });
       return;
@@ -4479,7 +4490,7 @@
       }
 
       runGitSyncDummy().catch((error) => {
-        console.error("AD xConfig: sync failed", error);
+        debugError("AD xConfig: sync failed", error);
         setNotice("error", "Skriptabgleich fehlgeschlagen.");
       });
       return;
@@ -4529,7 +4540,7 @@
     renderPanel();
 
     saveConfig().catch((error) => {
-      console.error("AD xConfig: failed to save feature state", error);
+      debugError("AD xConfig: failed to save feature state", error);
       setNotice("error", "Status konnte nicht gespeichert werden.");
     });
   }
@@ -4597,7 +4608,7 @@
     try {
       await saveConfig();
     } catch (error) {
-      console.error("AD xConfig: failed to persist active tab", error);
+      debugError("AD xConfig: failed to persist active tab", error);
       setNotice("error", "Tab-Auswahl konnte nicht gespeichert werden.");
     }
   }
@@ -4703,7 +4714,7 @@
       const tabId = tabEl.getAttribute("data-tab");
       if (tabId) {
         setActiveTab(tabId).catch((error) => {
-          console.error("AD xConfig: failed to switch tab", error);
+          debugError("AD xConfig: failed to switch tab", error);
         });
       }
     }
@@ -4888,7 +4899,7 @@
     syncRoutePanelState();
 
     loadFeatureRegistryFromGit({ silent: true }).catch((error) => {
-      console.error("AD xConfig: initial GitHub load failed", error);
+      debugError("AD xConfig: initial GitHub load failed", error);
     });
 
     state.pollTimer = window.setInterval(() => {
@@ -4910,6 +4921,6 @@
   }
 
   init().catch((error) => {
-    console.error("AD xConfig: initialization failed", error);
+    debugError("AD xConfig: initialization failed", error);
   });
 })();

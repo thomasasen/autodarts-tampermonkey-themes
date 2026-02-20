@@ -27,6 +27,24 @@ Begriffe in den Tabellen:
 Medien-Hinweis: Alle Bilder/GIFs und Sounds liegen in `assets/`. PNGs sind statisch, GIFs zeigen Bewegung.
 Kleine Variantenbilder sind als Vorschau eingebettet.
 
+## 🐞 Debugging (einfach für Nicht-Techniker)
+
+Wenn ein Modul nicht wie erwartet funktioniert, kannst du so verwertbare Debug-Infos liefern:
+
+1. Öffne in Autodarts das Menü **AD xConfig**.
+2. Öffne das betroffene Modul und stelle den Schalter **`Debug`** auf **An**.
+3. Öffne die Browser-Entwicklertools:
+   - Windows/Linux: `F12` oder `Strg + Shift + I`
+   - macOS: `Cmd + Option + I`
+4. Wechsle in den Tab **Console**.
+5. Leere die Console (Papierkorb-Symbol oder Rechtsklick -> `Clear console`).
+6. Führe den fehlerhaften Ablauf erneut aus (z. B. Match starten, Wurf auslösen, Effekt prüfen).
+7. Filtere optional nach **`[xConfig]`**, damit nur relevante Logs sichtbar sind.
+8. Kopiere den Console-Inhalt und füge ihn in dein GitHub-Issue/Ticket ein.
+9. Stelle den Schalter **`Debug`** danach wieder auf **Aus**.
+
+Hinweis: Bitte Debug nur auf Anweisung aktivieren, da je nach Modul viele technische Logs entstehen können.
+
 ### 🧱 Templates
 
 Diese Skripte verändern Layout und Farben und aktivieren sich automatisch je Spielvariante.
@@ -1096,7 +1114,7 @@ Varianten:
 | `CONFIG.highlight.score`      | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Score-Ziele (Spieler kann punkten) inkl. Kontur-Boost.                 |
 | `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele (Gegner kann punkten) inkl. Kontur-Boost.                 |
 | `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius.       |
-| `CONFIG.debug`                | `false`                   | Aktiviert Debug-Logs in der Konsole.                                                                                              |
+| `xConfig_DEBUG`               | `false`                   | Aktiviert technische Debug-Logs in der Konsole (nur bei Bedarf einschalten).                                                     |
 
 ##### 🖼️ Beispiele/Screenshots
 
@@ -1113,7 +1131,7 @@ Varianten:
 
 ##### ℹ️ Weitere Hinweise
 
-- Debug-Ausgaben kannst du über `CONFIG.debug` abschalten.
+- Debug-Ausgaben kannst du über `xConfig_DEBUG` in AD xConfig aktivieren/deaktivieren.
 
 ---
 

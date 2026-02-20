@@ -7,7 +7,7 @@
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -67,6 +67,9 @@
   // xConfig: {"type":"toggle","label":"Opponent Pressure Overlay","description":"Markiert akuten Defensivdruck, wenn Gegner auf einem Ziel bereits geschlossen hat und du dort noch deutlich offen bist. Sichtbar als auffaelliges Pressure-Overlay auf den kritischen Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_OPPONENT_PRESSURE_OVERLAY = true;
 
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	const xConfig_DEBUG = false;
+
   /*
     Variablen und gesteuerter Effekt:
     - xConfig_ROW_RAIL_PULSE: Effekt 1, Zeilen-Sweep bei relevanten Triggern.
@@ -81,6 +84,50 @@
     - xConfig_OPPONENT_PRESSURE_OVERLAY: Effekt 15, Pressure-Overlay.
   */
 
+
+	function resolveDebugToggle(value) {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		const normalized = String(value || "").trim().toLowerCase();
+		return ["1", "true", "yes", "on", "aktiv", "active"].includes(normalized);
+	}
+
+	const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+	const DEBUG_PREFIX = "[xConfig][Cricket Grid FX]";
+
+	function debugLog(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.log(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.log(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugWarn(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.warn(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.warn(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function debugError(event, payload) {
+		if (!DEBUG_ENABLED) {
+			return;
+		}
+		if (typeof payload === "undefined") {
+			console.error(`${DEBUG_PREFIX} ${event}`);
+			return;
+		}
+		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
   function asBool(value, fallbackValue) {
     if (typeof value === "boolean") {
       return value;
@@ -122,6 +169,7 @@
     rowStateByLabel: new Map(),
     turnToken: "",
   };
+  let loggedVariantSkip = false;
 
   const ensureStyle = shared.ensureStyle || function fallbackEnsureStyle(id, css) {
     if (!id) {
@@ -541,9 +589,14 @@
 
   function apply() {
     if (!isContextActive()) {
+      if (!loggedVariantSkip) {
+        debugLog("variant-skip", { reason: "not-cricket-context" });
+        loggedVariantSkip = true;
+      }
       reset();
       return;
     }
+    loggedVariantSkip = false;
 
     const root = findGridRoot();
     if (!root) {
@@ -571,10 +624,12 @@
     const turnToken = getTurnToken(activeCol);
     if (CFG.roundWipe && state.turnToken && turnToken !== state.turnToken) {
       addWipe(root);
+      debugLog("trigger", { type: "turn-change", turnToken });
     }
     state.turnToken = turnToken;
 
     const seen = new Set();
+    let changedRows = 0;
 
     rows.forEach((row) => {
       seen.add(row.label);
@@ -617,9 +672,11 @@
       }
 
       if (increased) {
+        changedRows += 1;
         pulseRow(row);
         burstBadge(row);
       } else if (CFG.rowRailPulse && prevState && prevState.key !== st.key && (st.score || st.danger || st.pressure)) {
+        changedRows += 1;
         pulseRow(row);
       }
 
@@ -637,6 +694,9 @@
         state.rowStateByLabel.delete(label);
       }
     });
+    if (changedRows > 0) {
+      debugLog("trigger", { changedRows, rowsScanned: rows.length });
+    }
   }
 
   const CSS = `
@@ -675,6 +735,7 @@
 
   ensureStyle(STYLE_ID, CSS);
   const schedule = makeScheduler(apply);
+  debugLog("applied", { effectsEnabled: Object.values(CFG).filter(Boolean).length });
   schedule();
 
   observe({ onChange: schedule });
@@ -684,4 +745,5 @@
   window.addEventListener("resize", schedule, { passive: true });
   document.addEventListener("visibilitychange", schedule, { passive: true });
   setInterval(schedule, 900);
+	debugLog("init", { debug: DEBUG_ENABLED });
 })();
