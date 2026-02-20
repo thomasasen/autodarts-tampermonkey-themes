@@ -546,31 +546,33 @@ Hier bekommst du pro Modul eine vollständige Anwender-Erklärung. Für interne 
 ### Animation: Autodarts Animate Winner Fireworks
 
 - Gilt für: `alle Modi`
-- Was das Skript macht: Zeigt beim Gewinner ein Overlay mit wählbarem Effekt an.
+- Was das Skript macht: Zeigt beim Gewinner ein Overlay mit 5 abgestimmten Styles, wählbarer Farbpalette und Intensität.
 
 **xConfig-Einstellungen erklärt**
 
-- `xConfig_EFFEKT` (`Effekt`)  
-  Optionen: `Firework`, `Confetti`, `Aurora`, `Pulse`  
-  Wirkung: Wählt den visuellen Gewinner-Effekt.  
-  Praxis: `Confetti`/`Pulse` sind meist ruhiger als `Firework`.
+- `xConfig_STYLE` (`Style`)  
+  Optionen: `Grand Finale`, `Skyburst`, `Arena Cannon`, `Victory Storm`, `Starlight`  
+  Wirkung: Wählt den Ablauf/Charakter des Gewinner-Effekts.  
+  Praxis: `Grand Finale` als Allrounder, `Starlight` als ruhigere Variante.
 
-- `xConfig_PERFORMANCE` (`Performance`)  
-  Optionen: `Schonend`, `Ausgewogen`, `Intensiv`  
-  Wirkung: Regelt Partikeldichte und Renderlast.  
-  Praxis: Bei älterer Hardware `Schonend`, sonst `Ausgewogen` als Standard.
+- `xConfig_FARBE` (`Farbe`)  
+  Optionen: `Autodarts`, `Rot-Weiß`, `Ice`, `Sunset`, `Neon`, `Gold`  
+  Wirkung: Legt die Farbpalette über alle Styles fest.  
+  Praxis: Für Team-/Vereinslook z. B. `Rot-Weiß`, sonst `Autodarts` als Standard.
+
+- `xConfig_INTENSITAET` (`Intensität`)  
+  Optionen: `Dezent`, `Standard`, `Stark`  
+  Wirkung: Steuert Dichte, Taktung und Dynamik des Effekts.  
+  Praxis: Bei älterer Hardware `Dezent`, sonst `Standard` als Startpunkt.
 
 **Screenshots / Varianten**
 
-- ![Winner Fireworks Standard (Firework)](assets/animation-winner-fireworks-xConfig.gif)
-- Varianten:
-- ![Winner Fireworks Aurora](assets/animation-winner-fireworks-aurora-readme.gif)
-- ![Winner Fireworks Confetti](assets/animation-winner-fireworks-confetti-readme.gif)
-- ![Winner Fireworks Pulse](assets/animation-winner-fireworks-pulse-readme.gif)
+- ![Winner Fireworks](assets/animation-winner-fireworks-xConfig.gif)
 
 **Hinweise & Kombinationen**
 
-- Wenn das Overlay zu „schwer“ wirkt, zuerst `Performance` auf `Schonend` reduzieren.
+- Für maximale Kontrolle immer in der Reihenfolge einstellen: `Style` -> `Farbe` -> `Intensität`.
+- Alte Konfigurationen werden automatisch übernommen (Legacy-Migration aktiv).
 
 - Technische Details: [Animation: Autodarts Animate Winner Fireworks](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-winner-fireworks)
 

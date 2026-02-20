@@ -668,70 +668,58 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ##### 📝 Beschreibung
 
-- Zweck: Overlay-Effekt bei Gewinner (Firework, Confetti, Aurora oder Pulse).
+- Zweck: Overlay-Effekt bei Gewinner mit 5 abgestimmten Styles, konfigurierbarer Farbpalette und Intensität.
 - Trigger/Erkennung: Sichtbarkeit von `CONFIG.winnerSelector`.
 - Änderungen: Fullscreen-Canvas-Overlay, Klick blendet aus; sorgt für einen klaren „Win“-Moment.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
-- `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`
-- `xConfig_PERFORMANCE`: `Schonend`, `Ausgewogen`, `Intensiv`
+- `xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`
+- `xConfig_FARBE`: `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`
+- `xConfig_INTENSITAET`: `dezent`, `standard`, `stark`
+- `xConfig_BULLOUT_AKTIV`: `An` oder `Aus`
+- `xConfig_KLICK_ZUM_STOPPEN`: `An` oder `Aus`
+- `xConfig_DEBUG`: `Aus` oder `An` (nur zur Diagnose)
 
 ##### ⚙️ Konfiguration (Variablen)
 
 **AD xConfig-Einstellungen (empfohlen)**
 
-- `xConfig_EFFEKT`: Wechselt den Gewinner-Effekt direkt.
-- `xConfig_PERFORMANCE`: Regelt Dichte/Leistung (`Schonend`, `Ausgewogen`, `Intensiv`).
+- `xConfig_STYLE`: Wechselt zwischen den 5 Gewinner-Styles.
+- `xConfig_FARBE`: Wählt die globale Farbpalette für alle Bursts.
+- `xConfig_INTENSITAET`: Steuert Dichte/Taktung/Dynamik (`dezent`, `standard`, `stark`).
+- `xConfig_BULLOUT_AKTIV`: Aktiviert den Effekt auch bei Bull-Out/Bull-Off-Varianten.
+- `xConfig_KLICK_ZUM_STOPPEN`: Klick/Tap blendet den Effekt sofort aus.
+- `xConfig_DEBUG`: Schreibt Diagnose-Logs in die Konsole.
 - Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
-| Variable                     | Standard                                          | Wirkung                                                                                                        |
-| :--------------------------- | :------------------------------------------------ | :------------------------------------------------------------------------------------------------------------- |
-| `CONFIG.winnerSelector`      | `.ad-ext_winner-animation, .ad-ext-player-winner` | Selector für den Gewinner-Block; sobald sichtbar, startet der Effekt.                                          |
-| `CONFIG.overlayId`           | `ad-ext-winner-fireworks`                         | ID für das Overlay-Element.                                                                                    |
-| `CONFIG.styleId`             | `ad-ext-winner-fireworks-style`                   | ID für das injizierte Style-Tag.                                                                               |
-| `CONFIG.effect`              | `confetti`                                        | Effektart: `firework`, `confetti`, `aurora`, `pulse`.                                                          |
-| `CONFIG.autoReduceParticles` | `true`                                            | Reduziert Partikel automatisch auf schwächeren Geräten oder bei Reduced Motion.                                |
-| `CONFIG.minQualityScale`     | `0.45`                                            | Untergrenze für das automatische Qualitäts-Scaling.                                                            |
-| `CONFIG.dynamicFps`          | `true`                                            | Passt das FPS-Ziel dynamisch an, wenn die Render-Performance schwankt.                                         |
-| `CONFIG.fpsHigh`             | `60`                                              | Oberes FPS-Ziel für die dynamische Drosselung.                                                                 |
-| `CONFIG.fpsLow`              | `30`                                              | Unteres FPS-Ziel für die dynamische Drosselung.                                                                |
-| `CONFIG.fpsDownshiftMs`      | `22`                                              | Durchschnittliche Frame-Zeit in ms, ab der auf `fpsLow` gewechselt wird.                                       |
-| `CONFIG.fpsUpshiftMs`        | `18`                                              | Durchschnittliche Frame-Zeit in ms, ab der wieder auf `fpsHigh` gewechselt wird.                               |
-| `CONFIG.fpsAdjustCooldownMs` | `900`                                             | Mindestabstand zwischen FPS-Umschaltungen (ms).                                                                |
-| `CONFIG.colors`              | Farb-Liste                                        | Array mit CSS-Farben (Hex/RGB); steuert die Farbpalette für Partikel/Glows. Mehr Farben = abwechslungsreicher. |
-| `CONFIG.rocketIntervalMs`    | `360`                                             | Abstand zwischen Feuerwerks-Raketen; kleiner = häufiger.                                                       |
-| `CONFIG.maxRockets`          | `7`                                               | Maximale gleichzeitige Raketen (Performance-Hebel).                                                            |
-| `CONFIG.maxParticles`        | `480`                                             | Maximale Partikelanzahl insgesamt (Dichte/Performance).                                                        |
-| `CONFIG.burstParticlesMin`   | `36`                                              | Minimale Partikel pro Explosion.                                                                               |
-| `CONFIG.burstParticlesMax`   | `60`                                              | Maximale Partikel pro Explosion.                                                                               |
-| `CONFIG.rocketSpeedMin`      | `6.6`                                             | Minimale Startgeschwindigkeit der Raketen.                                                                     |
-| `CONFIG.rocketSpeedMax`      | `9.4`                                             | Maximale Startgeschwindigkeit der Raketen.                                                                     |
-| `CONFIG.burstSpeedMin`       | `1.6`                                             | Minimale Partikelgeschwindigkeit beim Burst.                                                                   |
-| `CONFIG.burstSpeedMax`       | `4.9`                                             | Maximale Partikelgeschwindigkeit beim Burst.                                                                   |
-| `CONFIG.particleLifeMinMs`   | `1000`                                            | Minimale Lebensdauer der Partikel in ms.                                                                       |
-| `CONFIG.particleLifeMaxMs`   | `1700`                                            | Maximale Lebensdauer der Partikel in ms.                                                                       |
-| `CONFIG.gravity`             | `0.06`                                            | Schwerkraft pro Frame; höher = schnelleres Absinken.                                                           |
-| `CONFIG.friction`            | `0.985`                                           | Reibung pro Frame; kleiner = schnelleres Abbremsen.                                                            |
-| `CONFIG.confettiCount`       | `150`                                             | Anzahl der Konfetti-Stücke beim Confetti-Effekt.                                                               |
-| `CONFIG.auroraBandCount`     | `3`                                               | Anzahl der Aurora-Bänder.                                                                                      |
-| `CONFIG.auroraStarCount`     | `80`                                              | Anzahl der Sterne für den Aurora-Effekt.                                                                       |
-| `CONFIG.pulseIntervalMs`     | `520`                                             | Abstand zwischen Pulsringen.                                                                                   |
+| Variable                | Standard                                                                             | Wirkung                                                                                      |
+| :---------------------- | :----------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
+| `CONFIG.winnerSelector` | `.ad-ext_winner-animation, .ad-ext-player-winner, .ad-ext-player.ad-ext-player-winner` | Selector für den Gewinner-Block; sobald sichtbar, startet der Effekt.                       |
+| `CONFIG.overlayId`      | `ad-ext-winner-fireworks`                                                            | ID für das Overlay-Element.                                                                  |
+| `CONFIG.styleId`        | `ad-ext-winner-fireworks-style`                                                      | ID für das injizierte Style-Tag.                                                             |
+| `CONFIG.style`          | `realistic`                                                                          | Gewählter Style: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`.              |
+| `CONFIG.colorTheme`     | `autodarts`                                                                          | Farbpalette: `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`.                     |
+| `CONFIG.intensity`      | `standard`                                                                           | Intensitätsprofil: `dezent`, `standard`, `stark`.                                           |
+| `CONFIG.includeBullOut` | `true`                                                                               | Wenn `true`, läuft der Effekt auch in Bull-Out/Bull-Off-Situationen.                        |
+| `CONFIG.debug`          | `false`                                                                              | Wenn `true`, werden Diagnose-Logs (`[xConfig][Winner Fireworks]`) geschrieben.              |
+| `CONFIG.pointerDismiss` | `true`                                                                               | Wenn `true`, beendet ein Klick/Tap den Effekt sofort.                                        |
+| `INTENSITY_PRESETS`     | `dezent`, `standard`, `stark`                                                        | Skaliert Partikelmenge, Taktung sowie Dynamik (`particleScale`, `intervalScale`, `velocityScale`, `scalarScale`). |
+| `COLOR_THEMES`          | `autodarts`, `redwhite`, `ice`, `sunset`, `neon`, `gold`                            | Liefert je Palette abgestimmte Farbsets (`primary`, `accent`, `special`) für alle Styles.  |
+| `STYLE_TUNING`          | style-spezifische Werte                                                              | Enthält die pro Style optimierten Intervalle/Burst-Größen für stabile, gut unterscheidbare Wirkung. |
 
 ##### 🖼️ Beispiele/Screenshots
 
 ![Winner Fireworks (xConfig)](../assets/animation-winner-fireworks-xConfig.gif)
 
 Varianten:
-Variante über `xConfig_EFFEKT`: `Firework`, `Confetti`, `Aurora`, `Pulse`.
-
-| Aurora                                                           | Confetti                                                             | Firework                                                             | Pulse                                                          |
-| :--------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------------- | :------------------------------------------------------------- |
-| ![Winner Fireworks Aurora](../assets/animation-winner-fireworks-aurora-readme.gif) | ![Winner Fireworks Confetti](../assets/animation-winner-fireworks-confetti-readme.gif) | ![Winner Fireworks Firework](../assets/animation-winner-fireworks-firework-readme.gif) | ![Winner Fireworks Pulse](../assets/animation-winner-fireworks-pulse-readme.gif) |
+`xConfig_STYLE`: `realistic`, `fireworks`, `cannon`, `victorystorm`, `stars`.
 
 ##### ℹ️ Weitere Hinweise
 
-- Ein Klick blendet das Overlay aus; falls es zu viel wird, wähle `pulse` oder reduziere Partikelanzahlen.
+- Alte Werte werden automatisch migriert: `schoolpride/continuous -> victorystorm`, `party -> cannon`, `snow -> stars`, `random -> fireworks`.
+- Legacy-Mapping für alte `xConfig_EFFEKT`-Werte bleibt erhalten (`firework`, `confetti`, `aurora`, `pulse`).
+- Alte `xConfig_PERFORMANCE`-Werte werden auf Intensität gemappt: `eco -> dezent`, `balanced -> standard`, `high -> stark`.
 
 ---
 

@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      3.4
-// @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit canvas-confetti-Presets (z. B. Realistic, Fireworks, Stars, Snow).
+// @version      3.6
+// @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 5 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
 // @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; Klick blendet den Effekt aus.
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-winner-fireworks-xConfig.gif
-// @xconfig-settings-version 8
+// @xconfig-settings-version 10
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -23,10 +23,12 @@
 (function () {
   "use strict";
 
-  // xConfig: {"type":"select","label":"Preset","description":"Waehlt ein Gewinner-Preset mit staerkerem Output und passender Farbpalette.","options":[{"value":"schoolpride","label":"School Pride Stream (rot/weiss, links/rechts)"},{"value":"fireworks","label":"Autodarts Skyburst (Blau/Violett/Weiss)"},{"value":"continuous","label":"Side Cannons XL (Autodarts)"},{"value":"realistic","label":"Grand Finale (mehrstufige Bursts)"},{"value":"cannon","label":"Arena Cannon (breite Salven)"},{"value":"stars","label":"Logo Starlight (Sterne in Cyan/Blau)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Seiten)"},{"value":"party","label":"Festival Mix (bunt und dicht)"},{"value":"snow","label":"Ice Rain (kuehles Blau-Weiss)"},{"value":"random","label":"Random (bei jedem Sieg neues Preset)"}]}
-  const xConfig_PRESET = "schoolpride";
-  // xConfig: {"type":"select","label":"Performance","description":"Regelt Partikelmenge und Taktung fuer schwaechere oder starke Geraete.","options":[{"value":"eco","label":"Schonend (weniger Last)"},{"value":"balanced","label":"Ausgewogen (empfohlen)"},{"value":"high","label":"Intensiv (sehr dicht)"}]}
-  const xConfig_PERFORMANCE = "balanced";
+  // xConfig: {"type":"select","label":"Style","description":"Waehlt einen von 5 Gewinner-Styles mit klar unterscheidbarem Ablauf.","options":[{"value":"realistic","label":"Grand Finale (ausgewogen)"},{"value":"fireworks","label":"Skyburst (schnelle Luft-Bursts)"},{"value":"cannon","label":"Arena Cannon (druckvoll von unten)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Flanken)"},{"value":"stars","label":"Starlight (Sterne, ruhiger Ausklang)"}]}
+  const xConfig_STYLE = "realistic";
+  // xConfig: {"type":"select","label":"Farbe","description":"Farbpalette fuer den Gewinner-Effekt.","options":[{"value":"autodarts","label":"Autodarts (Blau/Weiss)"},{"value":"redwhite","label":"Rot-Weiss"},{"value":"ice","label":"Ice (Cyan/Blau/Weiss)"},{"value":"sunset","label":"Sunset (Amber/Rose/Violett)"},{"value":"neon","label":"Neon (Lime/Cyan/Pink)"},{"value":"gold","label":"Gold (Gold/Amber/Weiss)"}]}
+  const xConfig_FARBE = "autodarts";
+  // xConfig: {"type":"select","label":"Intensitaet","description":"Steuert Dichte und Geschwindigkeit des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
+  const xConfig_INTENSITAET = "standard";
   // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Gewinner-Effekt auch in der Variante Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULLOUT_AKTIV = true;
   // xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
@@ -57,33 +59,69 @@
 
   const LEGACY_PRESET_BY_EFFECT = Object.freeze({
     firework: "fireworks",
-    confetti: "party",
+    confetti: "cannon",
     aurora: "stars",
-    pulse: "schoolpride",
+    pulse: "victorystorm",
   });
 
+  const PRESET_MIGRATION = Object.freeze({
+    schoolpride: "victorystorm",
+    continuous: "victorystorm",
+    party: "cannon",
+    snow: "stars",
+    random: "fireworks",
+  });
+
+  const LEGACY_PRESET_VALUE =
+    typeof xConfig_PRESET === "undefined"
+      ? ""
+      : String(xConfig_PRESET || "").trim().toLowerCase();
   const LEGACY_EFFECT =
     typeof xConfig_EFFEKT === "undefined"
       ? ""
       : String(xConfig_EFFEKT || "").trim().toLowerCase();
-  const PRESET_FALLBACK = LEGACY_PRESET_BY_EFFECT[LEGACY_EFFECT] || "realistic";
+  const STYLE_FALLBACK = LEGACY_PRESET_BY_EFFECT[LEGACY_EFFECT] || "realistic";
+  const REQUESTED_STYLE_RAW = String(xConfig_STYLE || LEGACY_PRESET_VALUE || "").trim().toLowerCase();
+  const REQUESTED_STYLE = PRESET_MIGRATION[REQUESTED_STYLE_RAW] || REQUESTED_STYLE_RAW;
 
-  const RESOLVED_PRESET = resolveStringChoice(xConfig_PRESET, PRESET_FALLBACK, [
+  const RESOLVED_STYLE = resolveStringChoice(REQUESTED_STYLE, STYLE_FALLBACK, [
     "cannon",
-    "party",
-    "random",
     "realistic",
-    "schoolpride",
     "fireworks",
     "stars",
-    "snow",
-    "continuous",
     "victorystorm",
   ]);
-  const RESOLVED_PERFORMANCE = resolveStringChoice(xConfig_PERFORMANCE, "balanced", [
-    "eco",
-    "balanced",
-    "high",
+
+  const LEGACY_COLOR_THEME =
+    typeof xConfig_FARBTHEMA === "undefined"
+      ? ""
+      : String(xConfig_FARBTHEMA || "").trim().toLowerCase();
+  const REQUESTED_COLOR_THEME = String(xConfig_FARBE || LEGACY_COLOR_THEME || "").trim().toLowerCase();
+  const RESOLVED_COLOR_THEME = resolveStringChoice(REQUESTED_COLOR_THEME, "autodarts", [
+    "autodarts",
+    "redwhite",
+    "ice",
+    "sunset",
+    "neon",
+    "gold",
+  ]);
+
+  const LEGACY_PERFORMANCE =
+    typeof xConfig_PERFORMANCE === "undefined"
+      ? ""
+      : String(xConfig_PERFORMANCE || "").trim().toLowerCase();
+  const INTENSITY_BY_LEGACY_PERFORMANCE = Object.freeze({
+    eco: "dezent",
+    balanced: "standard",
+    high: "stark",
+  });
+  const REQUESTED_INTENSITY = String(
+    xConfig_INTENSITAET || INTENSITY_BY_LEGACY_PERFORMANCE[LEGACY_PERFORMANCE] || ""
+  ).trim().toLowerCase();
+  const RESOLVED_INTENSITY = resolveStringChoice(REQUESTED_INTENSITY, "standard", [
+    "dezent",
+    "standard",
+    "stark",
   ]);
   const RESOLVED_INCLUDE_BULLOUT = resolveToggle(xConfig_BULLOUT_AKTIV, true);
   const LEGACY_DEBUG_VALUE =
@@ -93,28 +131,87 @@
   const RESOLVED_DEBUG = resolveToggle(xConfig_DEBUG, resolveToggle(LEGACY_DEBUG_VALUE, false));
   const RESOLVED_POINTER_DISMISS = resolveToggle(xConfig_KLICK_ZUM_STOPPEN, true);
 
-  const PERFORMANCE_PRESETS = Object.freeze({
-    eco: {
-      particleScale: 0.85,
-      intervalScale: 1.25,
+  const INTENSITY_PRESETS = Object.freeze({
+    dezent: {
+      particleScale: 0.78,
+      intervalScale: 1.18,
+      velocityScale: 0.92,
+      scalarScale: 0.96,
     },
-    balanced: {
-      particleScale: 1.1,
-      intervalScale: 0.95,
+    standard: {
+      particleScale: 1,
+      intervalScale: 1,
+      velocityScale: 1,
+      scalarScale: 1,
     },
-    high: {
-      particleScale: 1.4,
-      intervalScale: 0.75,
+    stark: {
+      particleScale: 1.24,
+      intervalScale: 0.84,
+      velocityScale: 1.08,
+      scalarScale: 1.05,
     },
   });
 
-  const PERFORMANCE = PERFORMANCE_PRESETS[RESOLVED_PERFORMANCE] || PERFORMANCE_PRESETS.balanced;
+  const INTENSITY = INTENSITY_PRESETS[RESOLVED_INTENSITY] || INTENSITY_PRESETS.standard;
   const COLOR_THEMES = Object.freeze({
-    autodarts: ["#ffffff", "#dbeafe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#4338ca"],
-    skyburst: ["#ffffff", "#bae6fd", "#7dd3fc", "#38bdf8", "#3b82f6", "#4f46e5"],
-    starlight: ["#ffffff", "#c4b5fd", "#93c5fd", "#60a5fa", "#22d3ee", "#0ea5e9"],
-    ice: ["#ffffff", "#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#1d4ed8"],
-    party: ["#ffffff", "#f59e0b", "#f43f5e", "#22c55e", "#3b82f6", "#a855f7", "#14b8a6"],
+    autodarts: {
+      primary: ["#ffffff", "#dbeafe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#4338ca"],
+      accent: ["#ffffff", "#bae6fd", "#7dd3fc", "#38bdf8", "#3b82f6", "#4f46e5"],
+      special: ["#ffffff", "#c4b5fd", "#93c5fd", "#60a5fa", "#22d3ee", "#0ea5e9"],
+    },
+    redwhite: {
+      primary: ["#ffffff", "#fee2e2", "#fca5a5", "#ef4444", "#dc2626", "#991b1b"],
+      accent: ["#ffffff", "#fecaca", "#f87171", "#e11d48", "#be123c", "#881337"],
+      special: ["#ffffff", "#ffe4e6", "#fda4af", "#fb7185", "#f43f5e", "#be123c"],
+    },
+    ice: {
+      primary: ["#ffffff", "#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7", "#1d4ed8"],
+      accent: ["#ffffff", "#ecfeff", "#a5f3fc", "#67e8f9", "#22d3ee", "#0891b2", "#155e75"],
+      special: ["#ffffff", "#f0f9ff", "#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1e3a8a"],
+    },
+    sunset: {
+      primary: ["#ffffff", "#ffedd5", "#fdba74", "#fb923c", "#f97316", "#ea580c", "#c2410c"],
+      accent: ["#ffffff", "#ffe4e6", "#fda4af", "#fb7185", "#f43f5e", "#e11d48", "#be123c"],
+      special: ["#ffffff", "#f5d0fe", "#e9d5ff", "#d8b4fe", "#c084fc", "#a855f7", "#7e22ce"],
+    },
+    neon: {
+      primary: ["#ffffff", "#ecfccb", "#d9f99d", "#bef264", "#84cc16", "#65a30d", "#3f6212"],
+      accent: ["#ffffff", "#cffafe", "#a5f3fc", "#67e8f9", "#22d3ee", "#06b6d4", "#0e7490"],
+      special: ["#ffffff", "#fce7f3", "#fbcfe8", "#f9a8d4", "#f472b6", "#ec4899", "#be185d"],
+    },
+    gold: {
+      primary: ["#ffffff", "#fef3c7", "#fde68a", "#fcd34d", "#fbbf24", "#f59e0b", "#b45309"],
+      accent: ["#ffffff", "#fffbeb", "#fef9c3", "#fde68a", "#facc15", "#eab308", "#a16207"],
+      special: ["#ffffff", "#fff7ed", "#fed7aa", "#fdba74", "#fb923c", "#f97316", "#c2410c"],
+    },
+  });
+
+  const ACTIVE_COLOR_THEME = COLOR_THEMES[RESOLVED_COLOR_THEME] || COLOR_THEMES.autodarts;
+  const STYLE_TUNING = Object.freeze({
+    cannon: {
+      intervalMs: 920,
+    },
+    victorystorm: {
+      intervalMs: 620,
+    },
+    realistic: {
+      intervalMs: 920,
+      mainBurst: 230,
+      followupBurst: 96,
+    },
+    fireworks: {
+      intervalMs: 250,
+      sideParticleMin: 18,
+      sideParticleMax: 48,
+      centerChance: 0.28,
+      centerParticleMin: 12,
+      centerParticleMax: 28,
+    },
+    stars: {
+      intervalMs: 980,
+      echoDelayA: 130,
+      echoDelayB: 260,
+    },
   });
 
   const CONFIG = Object.freeze({
@@ -123,11 +220,13 @@
     variantElementId: "ad-ext-game-variant",
     overlayId: "ad-ext-winner-fireworks",
     styleId: "ad-ext-winner-fireworks-style",
-    preset: RESOLVED_PRESET,
+    style: RESOLVED_STYLE,
+    colorTheme: RESOLVED_COLOR_THEME,
+    intensity: RESOLVED_INTENSITY,
     includeBullOut: RESOLVED_INCLUDE_BULLOUT,
     debug: RESOLVED_DEBUG,
     pointerDismiss: RESOLVED_POINTER_DISMISS,
-    colors: COLOR_THEMES.autodarts,
+    colors: getThemeColors("primary"),
   });
 
   const STYLE_TEXT = `
@@ -224,6 +323,14 @@
 
   function randomInRange(min, max) {
     return Math.random() * (max - min) + min;
+  }
+
+  function getThemeColors(slot) {
+    const selection = ACTIVE_COLOR_THEME[slot];
+    if (Array.isArray(selection) && selection.length > 0) {
+      return selection;
+    }
+    return ACTIVE_COLOR_THEME.primary;
   }
 
   function clearTimeouts() {
@@ -328,8 +435,9 @@
       useWorker: false,
     });
     debugLog("overlay-created", {
-      preset: CONFIG.preset,
-      performance: RESOLVED_PERFORMANCE,
+      style: CONFIG.style,
+      farbe: CONFIG.colorTheme,
+      intensitaet: CONFIG.intensity,
     });
 
     return true;
@@ -348,7 +456,15 @@
   }
 
   function scaledParticleCount(particleCount) {
-    return Math.max(1, Math.round(Number(particleCount || 0) * PERFORMANCE.particleScale));
+    return Math.max(1, Math.round(Number(particleCount || 0) * INTENSITY.particleScale));
+  }
+
+  function scaledVelocity(startVelocity) {
+    return Math.max(0, Number(startVelocity || 0) * INTENSITY.velocityScale);
+  }
+
+  function scaledScalar(scalar) {
+    return Math.max(0.2, Number(scalar || 0) * INTENSITY.scalarScale);
   }
 
   function emitConfetti(options) {
@@ -365,6 +481,12 @@
     if (typeof payload.particleCount === "number") {
       payload.particleCount = scaledParticleCount(payload.particleCount);
     }
+    if (typeof payload.startVelocity === "number") {
+      payload.startVelocity = scaledVelocity(payload.startVelocity);
+    }
+    if (typeof payload.scalar === "number") {
+      payload.scalar = scaledScalar(payload.scalar);
+    }
     if (!Array.isArray(payload.colors)) {
       payload.colors = CONFIG.colors;
     }
@@ -373,13 +495,15 @@
   }
 
   function emitEntryBurst() {
+    const primaryColors = getThemeColors("primary");
+    const accentColors = getThemeColors("accent");
     emitConfetti({
       particleCount: 54,
       spread: 74,
       startVelocity: 48,
       decay: 0.91,
       origin: { x: 0.5, y: 0.72 },
-      colors: COLOR_THEMES.autodarts,
+      colors: primaryColors,
     });
     emitConfetti({
       particleCount: 26,
@@ -387,7 +511,7 @@
       spread: 54,
       startVelocity: 38,
       origin: { x: 0.02, y: 0.72 },
-      colors: COLOR_THEMES.skyburst,
+      colors: accentColors,
     });
     emitConfetti({
       particleCount: 26,
@@ -395,16 +519,16 @@
       spread: 54,
       startVelocity: 38,
       origin: { x: 0.98, y: 0.72 },
-      colors: COLOR_THEMES.skyburst,
+      colors: accentColors,
     });
   }
 
   function cannonBurst() {
     const origin = { y: 0.64 };
-    const colors = COLOR_THEMES.autodarts;
+    const colors = getThemeColors("primary");
     emitConfetti({
-      particleCount: 140,
-      spread: 72,
+      particleCount: 120,
+      spread: 68,
       startVelocity: 56,
       decay: 0.9,
       scalar: 1.02,
@@ -413,8 +537,8 @@
     });
     scheduleTimeout(() => {
       emitConfetti({
-        particleCount: 90,
-        spread: 98,
+        particleCount: 78,
+        spread: 92,
         startVelocity: 40,
         decay: 0.91,
         scalar: 0.95,
@@ -424,8 +548,8 @@
     }, 120);
     scheduleTimeout(() => {
       emitConfetti({
-        particleCount: 62,
-        spread: 124,
+        particleCount: 56,
+        spread: 118,
         startVelocity: 30,
         decay: 0.93,
         scalar: 1.12,
@@ -435,8 +559,8 @@
     }, 250);
     scheduleTimeout(() => {
       emitConfetti({
-        particleCount: 40,
-        spread: 145,
+        particleCount: 34,
+        spread: 140,
         startVelocity: 22,
         decay: 0.95,
         scalar: 1.24,
@@ -447,112 +571,20 @@
   }
 
   function startCannonPreset() {
+    const tuning = STYLE_TUNING.cannon;
     runActiveInterval(
-      Math.round(1050 * PERFORMANCE.intervalScale),
+      Math.round(tuning.intervalMs * INTENSITY.intervalScale),
       () => cannonBurst(),
       true
     );
   }
 
-  function startPartyPreset() {
-    runActiveInterval(
-      Math.round(620 * PERFORMANCE.intervalScale),
-      () => {
-        emitConfetti({
-          angle: randomInRange(32, 148),
-          spread: randomInRange(58, 108),
-          particleCount: randomInRange(84, 160),
-          startVelocity: randomInRange(36, 56),
-          origin: {
-            x: randomInRange(0.08, 0.92),
-            y: randomInRange(0.48, 0.72),
-          },
-          colors: COLOR_THEMES.party,
-        });
-        emitConfetti({
-          angle: randomInRange(24, 156),
-          spread: randomInRange(64, 126),
-          particleCount: randomInRange(34, 76),
-          startVelocity: randomInRange(24, 40),
-          scalar: randomInRange(0.86, 1.2),
-          origin: {
-            x: randomInRange(0.06, 0.94),
-            y: randomInRange(0.45, 0.75),
-          },
-          colors: COLOR_THEMES.party,
-        });
-        if (Math.random() > 0.72) {
-          emitConfetti({
-            particleCount: randomInRange(18, 34),
-            angle: 90,
-            spread: randomInRange(82, 110),
-            startVelocity: randomInRange(36, 52),
-            origin: {
-              x: randomInRange(0.2, 0.8),
-              y: 0.76,
-            },
-            colors: COLOR_THEMES.party,
-          });
-        }
-      },
-      true
-    );
-  }
-
-  function startSchoolPridePreset() {
-    const frameIntervalMs = Math.round(62 * PERFORMANCE.intervalScale);
-    const colors = ["#bb0000", "#ffffff"];
-    let lastShotTs = 0;
-    let lastCenterTs = 0;
-
-    const shoot = (timestamp) => {
-      if (timestamp - lastShotTs < frameIntervalMs) {
-        return;
-      }
-      lastShotTs = timestamp;
-
-      emitConfetti({
-        particleCount: 4,
-        angle: 60,
-        spread: 55,
-        startVelocity: 30,
-        decay: 0.91,
-        origin: { x: 0, y: 0.74 },
-        colors,
-      });
-      emitConfetti({
-        particleCount: 4,
-        angle: 120,
-        spread: 55,
-        startVelocity: 30,
-        decay: 0.91,
-        origin: { x: 1, y: 0.74 },
-        colors,
-      });
-
-      if (timestamp - lastCenterTs >= Math.round(760 * PERFORMANCE.intervalScale)) {
-        lastCenterTs = timestamp;
-        emitConfetti({
-          particleCount: 46,
-          angle: 90,
-          spread: 78,
-          startVelocity: 50,
-          decay: 0.9,
-          origin: { x: 0.5, y: 0.74 },
-          colors,
-        });
-      }
-    };
-
-    shoot(performance.now());
-    scheduleFrameLoop((timestamp) => {
-      shoot(timestamp);
-    });
-  }
-
   function startVictoryStormPreset() {
+    const tuning = STYLE_TUNING.victorystorm;
+    const centerColors = getThemeColors("accent");
+    const sideColors = getThemeColors("primary");
     runActiveInterval(
-      Math.round(560 * PERFORMANCE.intervalScale),
+      Math.round(tuning.intervalMs * INTENSITY.intervalScale),
       () => {
         emitConfetti({
           particleCount: 70,
@@ -561,7 +593,7 @@
           startVelocity: 54,
           decay: 0.9,
           origin: { x: randomInRange(0.42, 0.58), y: 0.74 },
-          colors: COLOR_THEMES.skyburst,
+          colors: centerColors,
         });
         scheduleTimeout(() => {
           emitConfetti({
@@ -570,7 +602,7 @@
             spread: 62,
             startVelocity: 44,
             origin: { x: 0.1, y: 0.74 },
-            colors: COLOR_THEMES.autodarts,
+            colors: sideColors,
           });
           emitConfetti({
             particleCount: 38,
@@ -578,7 +610,7 @@
             spread: 62,
             startVelocity: 44,
             origin: { x: 0.9, y: 0.74 },
-            colors: COLOR_THEMES.autodarts,
+            colors: sideColors,
           });
         }, 140);
       },
@@ -587,9 +619,10 @@
   }
 
   function realisticBurst(baseCount) {
+    const primaryColors = getThemeColors("primary");
     const defaults = {
       origin: { y: 0.7 },
-      colors: COLOR_THEMES.autodarts,
+      colors: primaryColors,
     };
     const fire = (particleRatio, options) => {
       emitConfetti({
@@ -627,33 +660,39 @@
   }
 
   function startRealisticPreset() {
+    const tuning = STYLE_TUNING.realistic;
     runActiveInterval(
-      Math.round(980 * PERFORMANCE.intervalScale),
+      Math.round(tuning.intervalMs * INTENSITY.intervalScale),
       () => {
-        realisticBurst(260);
-        scheduleTimeout(() => realisticBurst(110), 220);
+        realisticBurst(tuning.mainBurst);
+        scheduleTimeout(() => realisticBurst(tuning.followupBurst), 220);
       },
       true
     );
   }
 
   function startFireworksPreset() {
+    const tuning = STYLE_TUNING.fireworks;
+    const accentColors = getThemeColors("accent");
+    const primaryColors = getThemeColors("primary");
     const defaults = {
-      startVelocity: 34,
+      startVelocity: 32,
       spread: 360,
       ticks: 70,
       decay: 0.91,
     };
-    const intervalMs = Math.round(170 * PERFORMANCE.intervalScale);
+    const intervalMs = Math.round(tuning.intervalMs * INTENSITY.intervalScale);
 
     runActiveInterval(
       intervalMs,
       () => {
-        const particleCount = Math.round(randomInRange(28, 74));
+        const particleCount = Math.round(
+          randomInRange(tuning.sideParticleMin, tuning.sideParticleMax)
+        );
         emitConfetti({
           ...defaults,
           particleCount,
-          colors: COLOR_THEMES.skyburst,
+          colors: accentColors,
           origin: {
             x: randomInRange(0.08, 0.32),
             y: randomInRange(0.03, 0.35),
@@ -662,19 +701,21 @@
         emitConfetti({
           ...defaults,
           particleCount,
-          colors: COLOR_THEMES.skyburst,
+          colors: accentColors,
           origin: {
             x: randomInRange(0.68, 0.92),
             y: randomInRange(0.03, 0.35),
           },
         });
-        if (Math.random() > 0.66) {
+        if (Math.random() < tuning.centerChance) {
           emitConfetti({
             ...defaults,
-            particleCount: Math.round(randomInRange(18, 44)),
+            particleCount: Math.round(
+              randomInRange(tuning.centerParticleMin, tuning.centerParticleMax)
+            ),
             spread: 300,
             startVelocity: 46,
-            colors: COLOR_THEMES.autodarts,
+            colors: primaryColors,
             origin: {
               x: randomInRange(0.4, 0.6),
               y: randomInRange(0.04, 0.26),
@@ -687,13 +728,14 @@
   }
 
   function starsBurst() {
+    const specialColors = getThemeColors("special");
     const defaults = {
       spread: 360,
       ticks: 78,
       gravity: 0.12,
       decay: 0.93,
       startVelocity: 34,
-      colors: COLOR_THEMES.starlight,
+      colors: specialColors,
     };
 
     emitConfetti({
@@ -711,157 +753,28 @@
   }
 
   function startStarsPreset() {
+    const tuning = STYLE_TUNING.stars;
     runActiveInterval(
-      Math.round(900 * PERFORMANCE.intervalScale),
+      Math.round(tuning.intervalMs * INTENSITY.intervalScale),
       () => {
         starsBurst();
-        scheduleTimeout(starsBurst, 90);
-        scheduleTimeout(starsBurst, 180);
+        scheduleTimeout(starsBurst, tuning.echoDelayA);
+        scheduleTimeout(starsBurst, tuning.echoDelayB);
       },
       true
     );
   }
 
-  function startSnowPreset() {
-    const frameIntervalMs = Math.round(24 * PERFORMANCE.intervalScale);
-    let skew = 1;
-    let lastShotTs = 0;
-
-    const shoot = (timestamp) => {
-      if (timestamp - lastShotTs < frameIntervalMs) {
-        return;
-      }
-      lastShotTs = timestamp;
-
-      const ticks = Math.round(randomInRange(260, 540));
-      const particleCount = Math.random() > 0.58 ? 2 : 1;
-      skew = Math.max(0.8, skew - 0.0008);
-
-      emitConfetti({
-        particleCount,
-        startVelocity: 0,
-        ticks,
-        origin: {
-          x: Math.random(),
-          y: Math.random() * skew - 0.2,
-        },
-        colors: COLOR_THEMES.ice,
-        shapes: ["circle"],
-        gravity: randomInRange(0.28, 0.52),
-        scalar: randomInRange(0.44, 1.08),
-        drift: randomInRange(-0.55, 0.55),
-      });
-      if (Math.random() > 0.76) {
-        emitConfetti({
-          particleCount: 1,
-          startVelocity: 0,
-          ticks: Math.max(260, ticks),
-          origin: {
-            x: Math.random(),
-            y: -0.04,
-          },
-          colors: COLOR_THEMES.ice,
-          shapes: ["circle"],
-          gravity: randomInRange(0.3, 0.45),
-          scalar: randomInRange(0.58, 1.15),
-          drift: randomInRange(-0.46, 0.46),
-        });
-      }
-      if (skew <= 0.8 && Math.random() > 0.9) {
-        skew = 1;
-      }
-    };
-
-    shoot(performance.now());
-    scheduleFrameLoop((timestamp) => {
-      shoot(timestamp);
-    });
-  }
-
-  function startContinuousPreset() {
-    const frameIntervalMs = Math.round(58 * PERFORMANCE.intervalScale);
-    const sideColors = COLOR_THEMES.autodarts;
-    const centerColors = COLOR_THEMES.skyburst;
-    let lastShotTs = 0;
-    let lastCenterTs = 0;
-
-    const shoot = (timestamp) => {
-      if (timestamp - lastShotTs < frameIntervalMs) {
-        return;
-      }
-      lastShotTs = timestamp;
-
-      emitConfetti({
-        particleCount: 6,
-        angle: 60,
-        spread: 58,
-        startVelocity: 34,
-        decay: 0.91,
-        origin: { x: 0, y: 0.72 },
-        colors: sideColors,
-      });
-      emitConfetti({
-        particleCount: 6,
-        angle: 120,
-        spread: 58,
-        startVelocity: 34,
-        decay: 0.91,
-        origin: { x: 1, y: 0.72 },
-        colors: sideColors,
-      });
-
-      if (timestamp - lastCenterTs >= Math.round(780 * PERFORMANCE.intervalScale)) {
-        lastCenterTs = timestamp;
-        emitConfetti({
-          particleCount: 54,
-          angle: 90,
-          spread: 76,
-          startVelocity: 48,
-          decay: 0.9,
-          origin: { x: 0.5, y: 0.72 },
-          colors: centerColors,
-        });
-      }
-    };
-
-    shoot(performance.now());
-    scheduleFrameLoop((timestamp) => {
-      shoot(timestamp);
-    });
-  }
-
-  function startRandomPreset() {
-    const randomPool = [
-      "schoolpride",
-      "fireworks",
-      "continuous",
-      "realistic",
-      "cannon",
-      "stars",
-      "victorystorm",
-      "party",
-      "snow",
-    ];
-    const selectedPreset = randomPool[Math.floor(Math.random() * randomPool.length)];
-    const runner = PRESET_RUNNERS[selectedPreset] || PRESET_RUNNERS.fireworks;
-    runner();
-  }
-
-  const PRESET_RUNNERS = Object.freeze({
+  const STYLE_RUNNERS = Object.freeze({
     cannon: startCannonPreset,
-    party: startPartyPreset,
-    random: startRandomPreset,
     realistic: startRealisticPreset,
-    schoolpride: startSchoolPridePreset,
     fireworks: startFireworksPreset,
     stars: startStarsPreset,
-    snow: startSnowPreset,
-    continuous: startContinuousPreset,
     victorystorm: startVictoryStormPreset,
   });
 
-  function startPreset() {
-    const runner = PRESET_RUNNERS[CONFIG.preset] || PRESET_RUNNERS.realistic;
+  function startStyle() {
+    const runner = STYLE_RUNNERS[CONFIG.style] || STYLE_RUNNERS.realistic;
     runner();
   }
 
@@ -884,9 +797,10 @@
     clearSchedulers();
     debugLog("show-start", {
       reason,
-      preset: CONFIG.preset,
+      style: CONFIG.style,
+      farbe: CONFIG.colorTheme,
+      intensitaet: CONFIG.intensity,
       includeBullOut: CONFIG.includeBullOut,
-      performance: RESOLVED_PERFORMANCE,
     });
 
     if (CONFIG.pointerDismiss) {
@@ -903,7 +817,7 @@
     }
 
     emitEntryBurst();
-    startPreset();
+    startStyle();
   }
 
   function hideEffect(reason = "unknown") {
@@ -1011,7 +925,9 @@
         variantAllowed,
         variantText,
         running,
-        preset: CONFIG.preset,
+        style: CONFIG.style,
+        farbe: CONFIG.colorTheme,
+        intensitaet: CONFIG.intensity,
       });
       lastDebugSignalKey = signalKey;
     }
@@ -1088,8 +1004,9 @@
   }
 
   debugLog("init", {
-    preset: CONFIG.preset,
-    performance: RESOLVED_PERFORMANCE,
+    style: CONFIG.style,
+    farbe: CONFIG.colorTheme,
+    intensitaet: CONFIG.intensity,
     includeBullOut: CONFIG.includeBullOut,
     pointerDismiss: CONFIG.pointerDismiss,
     debug: CONFIG.debug,
