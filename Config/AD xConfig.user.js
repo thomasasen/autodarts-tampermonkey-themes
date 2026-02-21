@@ -244,6 +244,22 @@
     return `Gilt für: ${variant}`;
   }
 
+  function resolveBetaMetadataFlag(metadata, titleText, sourcePath) {
+    const meta = metadata && typeof metadata === "object" ? metadata : {};
+    const explicit = normalizeBooleanSettingValue(meta["xconfig-beta"]);
+    if (explicit === true || explicit === false) {
+      return explicit;
+    }
+
+    const title = String(titleText || meta["xconfig-title"] || meta.name || "").trim();
+    if (/\[beta\]/i.test(title)) {
+      return true;
+    }
+
+    const source = normalizeSourcePath(sourcePath || "").toLowerCase();
+    return source.endsWith(" beta.user.js");
+  }
+
   function normalizeReadmeAnchor(value) {
     return String(value || "")
       .trim()
@@ -2287,6 +2303,7 @@
     const settingsSchema = parseXConfigFieldsFromSource(scriptText);
     const source = normalizeSourcePath(entry.path || "");
     const title = normalizeTitle(metadata["xconfig-title"] || metadata.name, source);
+    const isBeta = resolveBetaMetadataFlag(metadata, title, source);
     const description = metadata["xconfig-description"] || metadata.description || "No description available.";
     const version = metadata.version || "0.0.0";
     const variant = normalizeVariantLabel(metadata["xconfig-variant"], category);
@@ -2301,6 +2318,7 @@
       id: LEGACY_FEATURE_ID_BY_SOURCE[source] || slugifyFeatureId(source),
       category,
       title,
+      isBeta,
       description,
       variant,
       readmeAnchor,
@@ -3588,6 +3606,11 @@
 #${PANEL_HOST_ID} .xcfg-card-note { margin: 0.65rem 0 0; font-size: 0.76rem; color: rgba(255,255,255,0.58); }
 #${PANEL_HOST_ID} .xcfg-badge { border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.72rem; line-height: 1; border: 1px solid transparent; }
 #${PANEL_HOST_ID} .xcfg-badge--version { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); }
+#${PANEL_HOST_ID} .xcfg-badge--beta {
+  border-color: rgba(255, 168, 105, 0.78);
+  background: rgba(255, 168, 105, 0.2);
+  color: rgba(255, 242, 222, 0.98);
+}
 #${PANEL_HOST_ID} .xcfg-badge--settings { border-color: rgba(168,255,122,0.65); background: rgba(168,255,122,0.18); }
 #${PANEL_HOST_ID} .xcfg-badge--config { border-color: rgba(148,214,255,0.65); background: rgba(148,214,255,0.2); }
 #${PANEL_HOST_ID} .xcfg-badge--variant { border-color: rgba(163,191,250,0.7); background: rgba(163,191,250,0.2); }
@@ -4671,6 +4694,10 @@
       `<span class="xcfg-badge xcfg-badge--version">v${escapeHtml(feature.version)}</span>`,
       `<span class="xcfg-badge xcfg-badge--variant">${escapeHtml(formatVariantBadgeLabel(feature.variant || ""))}</span>`,
     ];
+
+    if (feature.isBeta === true) {
+      badges.push(`<span class="xcfg-badge xcfg-badge--beta">Betaversion</span>`);
+    }
 
     if (flags.hasSettingsUpdate) {
       badges.push(`<span class="xcfg-badge xcfg-badge--settings">Neue Einstellungen</span>`);
