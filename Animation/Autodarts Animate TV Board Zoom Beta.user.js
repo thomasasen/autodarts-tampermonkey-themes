@@ -193,6 +193,7 @@
     checkoutDoubleSlackRebalanceFactor: 0.18,
     bullSlackRebalanceFactor: 0.24,
     transientIntentGraceMs: 520,
+    stableTurnContextTtlMs: 900,
     easingIn: "cubic-bezier(0.2, 0.8, 0.2, 1)",
     easingOut: "cubic-bezier(0.4, 0, 0.2, 1)",
   };
@@ -237,6 +238,10 @@
     activeZoomTween: null,
     lastIntentToken: "",
     noIntentSinceTs: 0,
+    lastStableTurn: null,
+    lastStableThrows: [],
+    lastStableTurnTs: 0,
+    debugThrottle: new Map(),
   };
 
   const originalStyleCache = new WeakMap();
@@ -264,6 +269,19 @@
 		}
 		console.log(`${DEBUG_PREFIX} ${event}`, payload);
 	}
+
+  function debugLogThrottled(event, payload, minIntervalMs = 350) {
+    if (!DEBUG_ENABLED) {
+      return;
+    }
+    const nowTs = Date.now();
+    const lastTs = Number(state.debugThrottle.get(event) || 0);
+    if (nowTs - lastTs < minIntervalMs) {
+      return;
+    }
+    state.debugThrottle.set(event, nowTs);
+    debugLog(event, payload);
+  }
 
 	function debugWarn(event, payload) {
 		if (!DEBUG_ENABLED) {
@@ -874,19 +892,80 @@
   }
 
   function isX01Active() {
-    if (gameStateShared && typeof gameStateShared.isX01Variant === "function") {
-      return gameStateShared.isX01Variant({
-        allowNumeric: true,
-        allowMissing: false,
-        allowEmpty: false,
-      });
-    }
-
-    return isX01Variant("ad-ext-game-variant", {
+    const domVariantIsX01 = isX01Variant("ad-ext-game-variant", {
       allowNumeric: true,
       allowMissing: false,
       allowEmpty: false,
     });
+
+    if (gameStateShared && typeof gameStateShared.isX01Variant === "function") {
+      let sharedVariantIsX01 = null;
+      try {
+        sharedVariantIsX01 = gameStateShared.isX01Variant({
+          allowNumeric: true,
+          allowMissing: false,
+          allowEmpty: false,
+        });
+      } catch (_) {
+        sharedVariantIsX01 = null;
+      }
+
+      if (sharedVariantIsX01 === true) {
+        return true;
+      }
+      if (sharedVariantIsX01 === false && domVariantIsX01) {
+        // GameState can be temporarily incomplete (e.g. game-events payload).
+        // Keep DOM variant as stability fallback to avoid zoom flicker.
+        debugLogThrottled("variant-fallback-dom", {
+          reason: "shared-false-dom-true",
+        });
+        return true;
+      }
+      if (sharedVariantIsX01 === false) {
+        return false;
+      }
+    }
+
+    return domVariantIsX01;
+  }
+
+  function getStableTurnContext(nowTs) {
+    const turn =
+      typeof gameStateShared?.getActiveTurn === "function"
+        ? gameStateShared.getActiveTurn()
+        : null;
+    const throws =
+      typeof gameStateShared?.getActiveThrows === "function"
+        ? gameStateShared.getActiveThrows()
+        : [];
+
+    if (turn && Array.isArray(throws)) {
+      state.lastStableTurn = turn;
+      state.lastStableThrows = throws.slice();
+      state.lastStableTurnTs = nowTs;
+      return {
+        turn,
+        throws,
+      };
+    }
+
+    if (
+      state.lastStableTurn &&
+      nowTs - state.lastStableTurnTs <= CONFIG.stableTurnContextTtlMs
+    ) {
+      debugLogThrottled("turn-context-fallback-cache", {
+        ageMs: nowTs - state.lastStableTurnTs,
+      });
+      return {
+        turn: state.lastStableTurn,
+        throws: Array.isArray(state.lastStableThrows) ? state.lastStableThrows : [],
+      };
+    }
+
+    return {
+      turn: null,
+      throws: [],
+    };
   }
 
   function clamp(value, minValue, maxValue) {
@@ -1296,10 +1375,20 @@
     const nowTs = Date.now();
     if (!state.noIntentSinceTs) {
       state.noIntentSinceTs = nowTs;
+      debugLogThrottled("no-intent-grace-start", {
+        graceMs: CONFIG.transientIntentGraceMs,
+      });
       return true;
     }
 
-    return nowTs - state.noIntentSinceTs <= CONFIG.transientIntentGraceMs;
+    const withinGrace =
+      nowTs - state.noIntentSinceTs <= CONFIG.transientIntentGraceMs;
+    if (withinGrace) {
+      debugLogThrottled("no-intent-grace-active", {
+        ageMs: nowTs - state.noIntentSinceTs,
+      });
+    }
+    return withinGrace;
   }
 
   function applyZoom(zoomTarget, host, transform, signature, zoomIntent) {
@@ -1496,22 +1585,17 @@
       return null;
     }
 
-    const turn =
-      typeof gameStateShared?.getActiveTurn === "function"
-        ? gameStateShared.getActiveTurn()
-        : null;
-    const throws =
-      typeof gameStateShared?.getActiveThrows === "function"
-        ? gameStateShared.getActiveThrows()
-        : [];
+    const nowTs = Date.now();
+    const stableContext = getStableTurnContext(nowTs);
+    const turn = stableContext.turn;
+    const throws = stableContext.throws;
 
-    if (!turn || !Array.isArray(throws)) {
+    if (!turn) {
       return null;
     }
 
     const turnId = getTurnId(turn);
     const throwCount = throws.length;
-    const nowTs = Date.now();
 
     const turnChanged = turnId !== state.lastTurnId;
     if (turnChanged) {
@@ -1632,6 +1716,9 @@
   function onBeforeUnload() {
     resetZoom({ immediate: true });
     clearDismissState();
+    state.lastStableTurn = null;
+    state.lastStableThrows = [];
+    state.lastStableTurnTs = 0;
   }
 
   ensureStyle(STYLE_ID, STYLE_TEXT);
@@ -1641,6 +1728,13 @@
 	debugLog("applied");
   const domObserver = observeMutations({
     target: document.documentElement,
+    types: ["childList", "characterData"],
+    options: {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: false,
+    },
     onChange: scheduleUpdate,
   });
 
