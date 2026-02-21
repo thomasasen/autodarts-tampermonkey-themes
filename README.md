@@ -33,6 +33,7 @@ Wichtig: Wenn `Config/AD xConfig.user.js` bereits direkt installiert ist, bitte 
 
 Hinweis: In AD xConfig gibt es pro Modul die Buttons **📦 Skript**, **📖 README** und **🛠 Technik**.
 Die technische Tiefe findest du in der [TECHNIK-REFERENZ](docs/TECHNIK-REFERENZ.md).
+Zusatz: Die Option `Debug` ist in vielen Modulen vorhanden und nur für Fehlersuche gedacht.
 
 ### 🧱 Templates
 
@@ -58,7 +59,8 @@ Die technische Tiefe findest du in der [TECHNIK-REFERENZ](docs/TECHNIK-REFERENZ.
 
 **Einstellungen einfach erklärt**
 
-- `AVG anzeigen`: Zeigt den AVG-Wert im Theme an oder blendet ihn aus.
+- `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
+  Vorteil: Mit `An` siehst du deinen Formtrend sofort, mit `Aus` wirkt das Layout ruhiger.
 
 **Vorschau**
 
@@ -84,7 +86,8 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `AVG anzeigen`: Zeigt den AVG-Wert im Theme an oder blendet ihn aus.
+- `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
+  Vorteil: Du kannst Shanghai je nach Geschmack zwischen „mehr Infos“ und „mehr Ruhe“ umschalten.
 
 **Vorschau**
 
@@ -106,6 +109,7 @@ DartsZoom-Vorschau:
 **Einstellungen einfach erklärt**
 
 - Keine zusätzlichen Einstellungen.
+  Vorteil: Das Theme ist sofort startklar und braucht kein Feintuning.
 
 **Vorschau**
 
@@ -126,7 +130,8 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `AVG anzeigen`: Zeigt den AVG-Wert im Theme an oder blendet ihn aus.
+- `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
+  Vorteil: Mit `An` behältst du deinen Schnitt im Blick, mit `Aus` wirkt Cricket aufgeräumter.
 
 **Vorschau**
 
@@ -147,7 +152,8 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `Kontrast-Preset`: Legt fest, wie dezent oder kräftig Kontraste dargestellt werden.
+- `Kontrast-Preset`: Steuert, wie kräftig die Kontraste im Bull-off-Theme sind (`Sanft`, `Standard`, `Kräftig`).
+  Vorteil: Du kannst die Sichtbarkeit schnell an Monitor, Abstand und Raumlicht anpassen.
 
 **Vorschau**
 
@@ -179,10 +185,14 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `Triple hervorheben`
-- `Double hervorheben`
-- `Bull hervorheben`
-- `Aktualisierungsmodus`: Mehr Reaktionsgeschwindigkeit oder mehr Kompatibilität.
+- `Triple hervorheben`: Markiert Triple-Treffer deutlich in der Wurfliste.
+  Vorteil: Starke Würfe springen sofort ins Auge.
+- `Double hervorheben`: Markiert Double-Treffer deutlich in der Wurfliste.
+  Vorteil: Hilft besonders beim Checkout-Fokus.
+- `Bull hervorheben`: Markiert Bull-Treffer deutlich in der Wurfliste.
+  Vorteil: Du erkennst Bull-Treffer auch im schnellen Spiel sofort.
+- `Aktualisierungsmodus`: `Nur Live` reagiert maximal direkt, `Kompatibel` ist robuster bei zäheren Browser-/Systemsituationen.
+  Vorteil: Du kannst zwischen maximaler Direktheit und maximaler Stabilität wählen.
 
 **Vorschau**
 
@@ -203,7 +213,8 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `Lautstärke`
+- `Lautstärke`: Legt fest, wie laut der Single-Bull-Sound abgespielt wird (`Leise` bis `Sehr laut`).
+  Vorteil: Du bekommst akustisches Feedback, ohne andere Sounds zu überdecken.
 
 **Audio-Vorschau**
 
@@ -224,10 +235,14 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `Effekt`
-- `Farbthema`
-- `Intensität`
-- `Trigger-Quelle`
+- `Effekt`: Bestimmt die Art der Hervorhebung (`Pulse`, `Glow`, `Scale`, `Blink`).
+  Vorteil: Du kannst den Stil auf „auffällig“ oder „dezent“ abstimmen.
+- `Farbthema`: Wählt die Highlight-Farbe.
+  Vorteil: Bessere Erkennbarkeit je nach Theme und persönlicher Farbvorliebe.
+- `Intensität`: Regelt die Stärke des Effekts (`Dezent`, `Standard`, `Stark`).
+  Vorteil: Du vermeidest Überstrahlung und hältst die Anzeige trotzdem klar sichtbar.
+- `Trigger-Quelle`: Steuert, ob der Effekt durch Vorschlag, Score oder nur eine Quelle ausgelöst wird.
+  Vorteil: Du passt das Verhalten an deinen bevorzugten Spiel-Flow an.
 
 **Vorschau**
 
@@ -248,7 +263,8 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- `Animationsdauer`
+- `Animationsdauer`: Legt fest, wie schnell die Punkte hoch- oder runterzählen.
+  Vorteil: Kürzer wirkt direkter, länger macht Punkteänderungen leichter nachvollziehbar.
 
 **Vorschau**
 
@@ -273,8 +289,10 @@ Detailansicht:
 
 **Einstellungen einfach erklärt**
 
-- `Animationsdauer`
-- `Pfeil-Größe`
+- `Animationsdauer`: Legt fest, wie lange der Trendpfeil sichtbar bleibt.
+  Vorteil: Du kannst zwischen schneller Rückmeldung und längerer Sichtbarkeit wählen.
+- `Pfeil-Größe`: Stellt den Pfeil auf `Klein`, `Standard` oder `Groß`.
+  Vorteil: Besser lesbar auf kleinen oder weit entfernten Displays.
 
 **Vorschau**
 
@@ -295,8 +313,10 @@ Detailansicht:
 
 **Einstellungen einfach erklärt**
 
-- `Sweep-Geschwindigkeit`
-- `Sweep-Stil`
+- `Sweep-Geschwindigkeit`: Legt fest, wie schnell der Lichtstreifen über den aktiven Spieler läuft.
+  Vorteil: Schnell wirkt knackig, langsam wirkt ruhiger.
+- `Sweep-Stil`: Bestimmt, wie dezent oder kräftig der Sweep aussieht.
+  Vorteil: Du kannst den Effekt sichtbar machen, ohne das Layout zu überladen.
 
 **Vorschau**
 
@@ -317,9 +337,12 @@ Detailansicht:
 
 **Einstellungen einfach erklärt**
 
-- `Bildgröße`
-- `Pulse-Animation`
-- `Pulse-Stärke`
+- `Bildgröße`: Wählt die Größe der Hand-Grafik (`Kompakt`, `Standard`, `Groß`).
+  Vorteil: Gute Lesbarkeit auf unterschiedlichen Bildschirmgrößen.
+- `Pulse-Animation`: Aktiviert oder deaktiviert das leichte Pulsieren.
+  Vorteil: Mit Puls fällt der Hinweis stärker auf, ohne dauerhaft zu blinken.
+- `Pulse-Stärke`: Legt fest, wie stark der Puls ausfällt.
+  Vorteil: Du kannst zwischen subtiler und deutlicher Hervorhebung wählen.
 
 **Vorschau**
 
@@ -340,12 +363,18 @@ Detailansicht:
 
 **Einstellungen einfach erklärt**
 
-- `Style`: Wählt den Ablauf des Effekts.
-- `Farbe`: Wählt die Farbpalette.
-- `Intensität`: Steuert Dichte und Dynamik.
-- `Test-Button`: Zeigt den aktuell gewählten Effekt sofort als Vorschau, auch im geöffneten xConfig-Fenster im Vordergrund.
-- `Bei Bull-Out aktiv`
-- `Klick beendet Effekt`
+- `Style`: Wählt den Ablauf des Sieger-Effekts (z. B. ruhiger oder spektakulärer Stil).
+  Vorteil: Du gibst dem Win-Moment deinen eigenen Charakter.
+- `Farbe`: Wählt die Farbpalette des Effekts.
+  Vorteil: Passt optisch besser zu deinem Theme oder Team-Farben.
+- `Intensität`: Regelt Dichte und Dynamik (`Dezent`, `Standard`, `Stark`).
+  Vorteil: Du bestimmst, wie präsent der Effekt sein soll.
+- `Test-Button`: Startet den aktuell gewählten Effekt sofort als Vorschau, auch im geöffneten xConfig-Fenster im Vordergrund.
+  Vorteil: Du kannst Einstellungen direkt live vergleichen, ohne auf den nächsten Sieg zu warten.
+- `Bei Bull-Out aktiv`: Schaltet den Effekt auch für Bull-off/Bull-Out frei.
+  Vorteil: Einheitliches Sieger-Feedback über mehr Spielvarianten hinweg.
+- `Klick beendet Effekt`: Beendet den laufenden Effekt per Klick oder Tap.
+  Vorteil: Du hast jederzeit schnelle Kontrolle, wenn es dir zu lang oder zu intensiv ist.
 
 **Vorschau**
 
@@ -370,11 +399,16 @@ Test-Button in AD xConfig:
 
 **Einstellungen einfach erklärt**
 
-- `Marker-Größe`
-- `Marker-Farbe`
-- `Effekt`
-- `Marker-Sichtbarkeit`
-- `Outline-Farbe`
+- `Marker-Größe`: Stellt Marker kleiner oder größer dar.
+  Vorteil: Trefferpunkte bleiben auch aus der Distanz gut erkennbar.
+- `Marker-Farbe`: Wählt die Hauptfarbe der Marker.
+  Vorteil: Besserer Kontrast zum aktuellen Board-Theme.
+- `Effekt`: Schaltet zusätzliches `Glow`, `Pulse` oder `Kein Effekt`.
+  Vorteil: Du steuerst, ob Marker eher ruhig oder stark hervorgehoben wirken.
+- `Marker-Sichtbarkeit`: Regelt die allgemeine Sichtbarkeit in Prozent.
+  Vorteil: Feintuning zwischen dezent und maximal klar.
+- `Outline-Farbe`: Setzt optional einen hellen oder dunklen Rand.
+  Vorteil: Marker heben sich auch auf schwierigen Hintergründen zuverlässig ab.
 
 **Vorschau**
 
@@ -395,11 +429,16 @@ Test-Button in AD xConfig:
 
 **Einstellungen einfach erklärt**
 
-- `Dart Design`
-- `Dart Fluganimation`
-- `Dart-Größe`
-- `Original-Marker ausblenden`
-- `Fluggeschwindigkeit`
+- `Dart Design`: Wählt das Dart-Bild für Treffer.
+  Vorteil: Personalisierter Look statt Standard-Marker.
+- `Dart Fluganimation`: Schaltet Flug-, Einschlag- und Wobble-Animation ein oder aus.
+  Vorteil: Mehr Dynamik bei Treffern oder bewusst ruhigeres Bild.
+- `Dart-Größe`: Skaliert die Dart-Bilder (`Klein`, `Standard`, `Groß`).
+  Vorteil: Bessere Lesbarkeit je nach Bildschirmgröße und Abstand.
+- `Original-Marker ausblenden`: Blendet die runden Standard-Marker aus.
+  Vorteil: Vermeidet Doppelanzeigen und sorgt für ein sauberes Bild.
+- `Fluggeschwindigkeit`: Legt das Tempo der Fluganimation fest.
+  Vorteil: Du bestimmst, ob der Effekt eher direkt oder cineastisch wirkt.
 
 **Vorschau**
 
@@ -432,11 +471,16 @@ Verfügbare Dart-Designs:
 
 **Einstellungen einfach erklärt**
 
-- `Effekt`
-- `Zielumfang`
-- `Single-Ring`
-- `Farbthema`
-- `Kontur-Intensität`
+- `Effekt`: Wählt die Art der Zielmarkierung (`Pulse`, `Blink`, `Glow`).
+  Vorteil: Du kannst zwischen ruhiger und auffälliger Führung wählen.
+- `Zielumfang`: Markiert nur das erste Ziel oder alle vorgeschlagenen Ziele.
+  Vorteil: Je nach Wunsch mehr Fokus oder mehr Gesamtübersicht.
+- `Single-Ring`: Legt fest, welcher Single-Ring markiert wird (`innen`, `außen`, `beide`).
+  Vorteil: Passt die Darstellung an deine bevorzugte Visierlogik an.
+- `Farbthema`: Wählt die Farben der Zielmarkierung.
+  Vorteil: Besser sichtbar je nach Theme und persönlicher Präferenz.
+- `Kontur-Intensität`: Steuert, wie stark die Kontur hervortritt.
+  Vorteil: Mehr Klarheit bei Bedarf, ohne das Board zu überladen.
 
 **Vorschau**
 
@@ -457,9 +501,12 @@ Verfügbare Dart-Designs:
 
 **Einstellungen einfach erklärt**
 
-- `Zoom-Stufe`
-- `Zoom-Geschwindigkeit`
-- `Checkout-Zoom`
+- `Zoom-Stufe`: Bestimmt, wie nah auf das Board gezoomt wird.
+  Vorteil: Du findest den passenden Mix aus Überblick und Fokus.
+- `Zoom-Geschwindigkeit`: Legt fest, wie schnell ein- und ausgezoomt wird.
+  Vorteil: Du passt den Effekt an dein Spieltempo an.
+- `Checkout-Zoom`: Aktiviert Zoom bei klaren 1-Dart-Checkouts.
+  Vorteil: Entscheidende Finish-Momente werden noch eindeutiger hervorgehoben.
 
 **Vorschau**
 
@@ -480,9 +527,12 @@ Verfügbare Dart-Designs:
 
 **Einstellungen einfach erklärt**
 
-- `Stil`
-- `Labeltext`
-- `Farbthema`
+- `Stil`: Wählt das Layout der Checkout-Empfehlung (z. B. Badge, Ribbon, Stripe).
+  Vorteil: Du kannst Optik und Lesefluss an deinen Geschmack anpassen.
+- `Labeltext`: Legt den Text über der Empfehlung fest (`CHECKOUT`, `FINISH` oder kein Label).
+  Vorteil: Klarere Orientierung oder bewusst minimalistische Darstellung.
+- `Farbthema`: Wählt das Farbschema der Hervorhebung.
+  Vorteil: Empfehlung bleibt auch bei unterschiedlichen Themes gut sichtbar.
 
 **Vorschau**
 
@@ -511,9 +561,12 @@ Formatvarianten:
 
 **Einstellungen einfach erklärt**
 
-- `Dead-Ziele anzeigen`
-- `Farbthema`
-- `Intensität`
+- `Dead-Ziele anzeigen`: Zeigt auch bereits für alle geschlossene Ziele an.
+  Vorteil: Mehr Gesamtüberblick über den aktuellen Board-Zustand.
+- `Farbthema`: Wählt das Farbschema der Zielzustände.
+  Vorteil: Bessere Lesbarkeit abhängig von Helligkeit und Kontrast deines Setups.
+- `Intensität`: Steuert Deckkraft und Kontrast der Markierungen.
+  Vorteil: Du kannst die Hinweise klar sichtbar machen, ohne zu übertreiben.
 
 **Vorschau**
 
@@ -534,8 +587,27 @@ Formatvarianten:
 
 **Einstellungen einfach erklärt**
 
-- Alle Effekte sind einzeln ein- oder ausschaltbar.
-- Starte am besten mit Standardwerten und aktiviere nur, was dir im Spiel wirklich hilft.
+- `Zeilen-Sweep`: Kurzer Lichtlauf über die betroffene Zeile bei Änderungen.
+  Vorteil: Änderungen in der Matrix werden sofort wahrgenommen.
+- `Ziel-Badge-Hinweis`: Hebt das linke Ziel-Badge in wichtigen Situationen stärker hervor.
+  Vorteil: Kritische Ziele fallen schneller auf.
+- `Mark-Fortschritt`: Animiert Mark-Symbole bei Trefferzuwachs.
+  Vorteil: Fortschritt ist auf einen Blick verständlich.
+- `Gefahrenkante`: Markiert gefährliche Zeilen mit klaren Warnkanten.
+  Vorteil: Defensivdruck ist früh sichtbar.
+- `Scoring-Lane`: Hebt Zeilen hervor, auf denen du aktuell punkten kannst.
+  Vorteil: Unterstützt schnelle offensive Entscheidungen.
+- `Geschlossene Zeilen abdunkeln`: Dimmt vollständig geschlossene Zeilen.
+  Vorteil: Fokus bleibt auf den relevanten, noch aktiven Zielen.
+- `Delta-Chips`: Zeigt bei neuen Treffern kurz `+1`, `+2` oder `+3`.
+  Vorteil: Trefferfortschritt wird ohne Rechnen sofort klar.
+- `Treffer-Impuls`: Ergänzt einen kurzen Impuls direkt am Ereignisort.
+  Vorteil: Treffermoment wird visuell präziser wahrgenommen.
+- `Zugwechsel-Übergang`: Zeigt beim Spielerwechsel einen kurzen Übergang über das Grid.
+  Vorteil: Wechsel sind klar erkennbar, auch in schnellen Matches.
+- `Gegnerdruck-Overlay`: Markiert Zeilen mit akutem Defensivdruck.
+  Vorteil: Hilft dir, Prioritäten unter Druck besser zu setzen.
+- Empfehlung: Starte mit Standardwerten und aktiviere nur Effekte, die dir im Spiel wirklich helfen.
 
 **Vorschau**
 
