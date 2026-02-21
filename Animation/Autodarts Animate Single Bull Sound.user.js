@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.12
-// @description  Spielt einen konfigurierbaren Sound bei Single Bull (25/BULL) in der Wurfliste.
-// @xconfig-description  Erkennt Single-Bull-Treffer in der Turn-Throw-Liste und spielt dazu einen konfigurierbaren Sound ab.
+// @description  Spielt bei erkanntem Single Bull einen kurzen Sound ab.
+// @xconfig-description  Gibt bei Single-Bull-Treffern in der Wurfliste einen konfigurierbaren Sound aus.
+// @xconfig-title  Single-Bull-Sound
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
 // @xconfig-settings-version 4
@@ -20,9 +21,9 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Lautstärke","description":"Legt die Lautstärke des Single-Bull-Sounds fest.","options":[{"value":0.5,"label":"Leise"},{"value":0.75,"label":"Mittel"},{"value":0.9,"label":"Laut"},{"value":1,"label":"Sehr laut"}]}
+	// xConfig: {"type":"select","label":"Lautstärke","description":"Legt die Lautstärke des Sounds bei Single Bull fest.","options":[{"value":0.5,"label":"Leise"},{"value":0.75,"label":"Mittel"},{"value":0.9,"label":"Laut"},{"value":1,"label":"Sehr laut"}]}
 	const xConfig_LAUTSTAERKE = 0.9;
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 	const DEFAULT_COOLDOWN_MS = 700;
 	const DEFAULT_POLL_INTERVAL_MS = 0;

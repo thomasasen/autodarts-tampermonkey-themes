@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Zeigt im Cricket die Zielzustände (offen, geschlossen, punktbar, tot) als Board-Overlay. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Liest Cricket-Marks pro Spieler und visualisiert Zielzustände für 15-20 und Bull direkt auf dem Board.
+// @description  Zeigt Zielzustände im Cricket als Overlay direkt auf dem virtuellen Dartboard.
+// @xconfig-description  Markiert in Cricket relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
+// @xconfig-title  Cricket-Ziel-Highlighter
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
@@ -21,13 +22,13 @@
 (function () {
 		"use strict";
 
-		// xConfig: {"type":"toggle","label":"Dead-Ziele anzeigen","description":"Zeigt auch Ziele an, die von allen Spielern bereits geschlossen wurden.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+		// xConfig: {"type":"toggle","label":"Dead-Ziele anzeigen","description":"Zeigt auch Ziele, die bei allen Spielern bereits geschlossen sind.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 		const xConfig_DEAD_ZIELE_ANZEIGEN = true;
-		// xConfig: {"type":"select","label":"Farbthema","description":"Wählt das Farbschema für Score- und Danger-Ziele.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
+		// xConfig: {"type":"select","label":"Farbthema","description":"Wählt das Farbschema für Zielzustände.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
 		const xConfig_FARBTHEMA = "standard";
-		// xConfig: {"type":"select","label":"Intensität","description":"Steuert Deckkraft und Kontrast der Overlay-Hervorhebungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
+		// xConfig: {"type":"select","label":"Intensität","description":"Steuert Deckkraft und Kontrast der Markierungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
 		const xConfig_INTENSITAET = "normal";
-		// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+		// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 		const xConfig_DEBUG = false;
 
 		function resolveToggle(value, fallbackValue) {

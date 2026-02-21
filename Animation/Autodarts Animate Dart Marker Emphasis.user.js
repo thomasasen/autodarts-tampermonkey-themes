@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Dart Marker Emphasis
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Macht Dart-Trefferpunkte sichtbarer durch Größe, Farbe und optionalen Glow/Pulse. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Passt Dart-Marker auf dem Board an und kann sie mit Glow oder Pulse hervorheben.
+// @description  Macht Trefferpunkte auf dem virtuellen Dartboard durch Größe, Farbe und Effekte besser sichtbar.
+// @xconfig-description  Passt Marker auf dem virtuellen Dartboard an und hebt sie auf Wunsch mit Glow oder Pulse hervor. Kein Support für Live Dartboard.
+// @xconfig-title  Dart-Marker-Hervorhebung
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-emphasis
 // @xconfig-background     assets/animation-dart-marker-emphasis-xConfig.gif
@@ -21,18 +22,18 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Marker-Größe","description":"Bestimmt die Größe der Dart-Marker auf dem Board.","options":[{"value":4,"label":"Klein"},{"value":6,"label":"Standard"},{"value":9,"label":"Groß"}]}
+	// xConfig: {"type":"select","label":"Marker-Größe","description":"Bestimmt die Größe der Marker auf dem Board.","options":[{"value":4,"label":"Klein"},{"value":6,"label":"Standard"},{"value":9,"label":"Groß"}]}
 	const xConfig_MARKER_GROESSE = 6;
-	// xConfig: {"type":"select","label":"Marker-Farbe","description":"Wählt die Füllfarbe der Dart-Marker.","options":[{"value":"rgb(49, 130, 206)","label":"Blau (Standard)"},{"value":"rgb(34, 197, 94)","label":"Grün"},{"value":"rgb(248, 113, 113)","label":"Rot"},{"value":"rgb(250, 204, 21)","label":"Gelb"},{"value":"rgb(255, 255, 255)","label":"Weiß"}]}
+	// xConfig: {"type":"select","label":"Marker-Farbe","description":"Wählt die Hauptfarbe der Marker.","options":[{"value":"rgb(49, 130, 206)","label":"Blau (Standard)"},{"value":"rgb(34, 197, 94)","label":"Grün"},{"value":"rgb(248, 113, 113)","label":"Rot"},{"value":"rgb(250, 204, 21)","label":"Gelb"},{"value":"rgb(255, 255, 255)","label":"Weiß"}]}
 	const xConfig_MARKER_FARBE = "rgb(49, 130, 206)";
-	// xConfig: {"type":"select","label":"Effekt","description":"Legt die Hervorhebung der Marker fest.","options":[{"value":"glow","label":"Glow"},{"value":"pulse","label":"Pulse"},{"value":"none","label":"Kein Effekt"}]}
+	// xConfig: {"type":"select","label":"Effekt","description":"Legt fest, ob die Marker zusätzlich glühen oder pulsieren.","options":[{"value":"glow","label":"Glow"},{"value":"pulse","label":"Pulse"},{"value":"none","label":"Kein Effekt"}]}
 	const xConfig_EFFEKT = "glow";
-	// xConfig: {"type":"select","label":"Marker-Sichtbarkeit","description":"Regelt, wie deutlich die Marker insgesamt sichtbar sind.","options":[{"value":65,"label":"Dezent (65%)"},{"value":85,"label":"Standard (85%)"},{"value":100,"label":"Voll sichtbar (100%)"}]}
+	// xConfig: {"type":"select","label":"Marker-Sichtbarkeit","description":"Steuert die allgemeine Sichtbarkeit der Marker.","options":[{"value":65,"label":"Dezent (65%)"},{"value":85,"label":"Standard (85%)"},{"value":100,"label":"Voll sichtbar (100%)"}]}
 	const xConfig_MARKER_OPAZITAET = 85;
-	// xConfig: {"type":"select","label":"Outline-Farbe","description":"Optionaler Rand um die Marker für bessere Erkennbarkeit.","options":[{"value":"aus","label":"Aus"},{"value":"weiß","label":"Weiß"},{"value":"schwarz","label":"Schwarz"}]}
+	// xConfig: {"type":"select","label":"Outline-Farbe","description":"Fügt optional einen Rand für mehr Kontrast hinzu.","options":[{"value":"aus","label":"Aus"},{"value":"weiß","label":"Weiß"},{"value":"schwarz","label":"Schwarz"}]}
 	const xConfig_OUTLINE = "aus";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Checkout Board Targets
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
-// @description  Hebt mögliche Checkout-Ziele auf dem Board hervor und animiert sie in X01. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Markiert mögliche Checkout-Felder (Double/Bull) auf dem Dartboard und animiert sie mit Blink, Pulse oder Glow in X01.
+// @description  Markiert in X01 mögliche Checkout-Ziele direkt auf dem virtuellen Dartboard.
+// @xconfig-description  Zeigt in X01 mögliche Checkout-Felder auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
+// @xconfig-title  Checkout-Ziele am Board
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
 // @xconfig-background     assets/animation-checkout-board-targets.gif
@@ -22,18 +23,18 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Effekt","description":"Legt den Animationseffekt für Board-Ziele fest.","options":[{"value":"pulse","label":"Pulse"},{"value":"blink","label":"Blink"},{"value":"glow","label":"Glow"}]}
+	// xConfig: {"type":"select","label":"Effekt","description":"Wählt den visuellen Effekt für markierte Checkout-Ziele.","options":[{"value":"pulse","label":"Pulse"},{"value":"blink","label":"Blink"},{"value":"glow","label":"Glow"}]}
 	const xConfig_EFFEKT = "pulse";
-	// xConfig: {"type":"select","label":"Zielumfang","description":"Markiert nur das erste Ziel oder alle Ziele der Empfehlung.","options":[{"value":"first","label":"Erstes Ziel"},{"value":"all","label":"Alle Ziele"}]}
+	// xConfig: {"type":"select","label":"Zielumfang","description":"Markiert entweder nur das erste oder alle vorgeschlagenen Ziele.","options":[{"value":"first","label":"Erstes Ziel"},{"value":"all","label":"Alle Ziele"}]}
 	const xConfig_ZIELUMFANG = "first";
-	// xConfig: {"type":"select","label":"Single-Ring","description":"Wählt, welcher Single-Ring bei Single-Zielen hervorgehoben wird.","options":[{"value":"both","label":"Beide Ringe"},{"value":"inner","label":"Nur innen"},{"value":"outer","label":"Nur außen"}]}
+	// xConfig: {"type":"select","label":"Single-Ring","description":"Legt fest, welcher Single-Ring bei Single-Zielen markiert wird.","options":[{"value":"both","label":"Beide Ringe"},{"value":"inner","label":"Nur innen"},{"value":"outer","label":"Nur außen"}]}
 	const xConfig_SINGLE_RING = "both";
-	// xConfig: {"type":"select","label":"Farbthema","description":"Farbthema für Füllung und Kontur der Zielbereiche.","options":[{"value":"violet","label":"Violett (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"amber","label":"Amber"}]}
+	// xConfig: {"type":"select","label":"Farbthema","description":"Wählt die Farben für markierte Zielbereiche.","options":[{"value":"violet","label":"Violett (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"amber","label":"Amber"}]}
 	const xConfig_FARBTHEMA = "violet";
-	// xConfig: {"type":"select","label":"Kontur-Intensität","description":"Steuert, wie deutlich die weiße Ziel-Kontur dargestellt wird.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
+	// xConfig: {"type":"select","label":"Kontur-Intensität","description":"Steuert, wie stark die weiße Kontur hervorsticht.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
 	const xConfig_KONTUR_INTENSITAET = "standard";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

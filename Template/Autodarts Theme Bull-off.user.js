@@ -2,8 +2,9 @@
 // @name         Autodarts Theme Bull-off.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.3
-// @description  Layout- und Farb-Theme fuer Bull-off mit Fokus auf aktive Scores und Board-Kontrast.
-// @xconfig-description  Aktiviert ein Bull-off Theme mit bull-fokussierter Farbgebung und verbessertem Score-Kontrast.
+// @description  Visuelles Bull-off-Theme mit Fokus auf Kontrast und klare Score-Darstellung.
+// @xconfig-description  Aktiviert ein Bull-off-Theme mit bullfokussierter Farbgebung und gut lesbaren Kontrasten.
+// @xconfig-title  Theme Bull-off
 // @xconfig-variant      bull-off
 // @xconfig-readme-anchor  template-autodarts-theme-bull-off
 // @xconfig-background     assets/template-theme-bull-off-xConfig.png
@@ -31,10 +32,10 @@
 
 	const STYLE_ID = "autodarts-bull-off-custom-style";
 	const VARIANT_NAME = "bull-off";
-	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Regelt, wie stark Linien, Leuchteffekte und FlÃ¤chenkontraste im Bull-off-Theme erscheinen.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"KrÃ¤ftig"}]}
+	// xConfig: {"type":"select","label":"Kontrast-Preset","description":"Bestimmt, wie stark Kontraste und Leuchteffekte im Bull-off-Theme dargestellt werden.","options":[{"value":"soft","label":"Sanft"},{"value":"standard","label":"Standard"},{"value":"high","label":"Kräftig"}]}
 	const xConfig_KONTRAST_PRESET = "standard";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

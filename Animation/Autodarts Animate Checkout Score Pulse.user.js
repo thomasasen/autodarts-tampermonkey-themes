@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Checkout Score Pulse
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
-// @description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
-// @xconfig-description  Lässt bei möglichem Checkout die Score-Zahl des aktiven Spielers pulsieren.
+// @description  Hebt den Score des aktiven Spielers hervor, sobald ein Checkout möglich ist.
+// @xconfig-description  Lässt den Score des aktiven Spielers pulsieren, wenn eine Checkout-Situation erkannt wird.
+// @xconfig-title  Checkout-Score-Puls
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse.gif
@@ -22,16 +23,16 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Effekt","description":"Legt den visuellen Effekt für checkout-fähige Scores fest.","options":[{"value":"pulse","label":"Pulse"},{"value":"glow","label":"Glow"},{"value":"scale","label":"Scale"},{"value":"blink","label":"Blink"}]}
+	// xConfig: {"type":"select","label":"Effekt","description":"Wählt den Effekt für checkout-fähige Scores.","options":[{"value":"pulse","label":"Pulse"},{"value":"glow","label":"Glow"},{"value":"scale","label":"Scale"},{"value":"blink","label":"Blink"}]}
 	const xConfig_EFFEKT = "scale";
-	// xConfig: {"type":"select","label":"Farbthema","description":"Farbton für Highlight und Glow des Scores.","options":[{"value":"159, 219, 88","label":"Grün (Standard)"},{"value":"56, 189, 248","label":"Cyan"},{"value":"245, 158, 11","label":"Amber"},{"value":"248, 113, 113","label":"Rot"}]}
+	// xConfig: {"type":"select","label":"Farbthema","description":"Bestimmt die Highlight-Farbe des Scores.","options":[{"value":"159, 219, 88","label":"Grün (Standard)"},{"value":"56, 189, 248","label":"Cyan"},{"value":"245, 158, 11","label":"Amber"},{"value":"248, 113, 113","label":"Rot"}]}
 	const xConfig_FARBTHEMA = "159, 219, 88";
-	// xConfig: {"type":"select","label":"Intensität","description":"Steuert, wie deutlich der Checkout-Effekt angezeigt wird.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
+	// xConfig: {"type":"select","label":"Intensität","description":"Legt fest, wie stark der Effekt sichtbar ist.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"stark","label":"Stark"}]}
 	const xConfig_INTENSITAET = "standard";
-	// xConfig: {"type":"select","label":"Trigger-Quelle","description":"Legt fest, ob der Effekt nach Checkout-Vorschlag, Score-Regel oder einer Kombination ausgelöst wird.","options":[{"value":"suggestion-first","label":"Vorschlag zuerst"},{"value":"score-only","label":"Nur Score"},{"value":"suggestion-only","label":"Nur Vorschlag"}]}
+	// xConfig: {"type":"select","label":"Trigger-Quelle","description":"Bestimmt, ob der Effekt durch Vorschlag, Score oder beides ausgelöst wird.","options":[{"value":"suggestion-first","label":"Vorschlag zuerst"},{"value":"score-only","label":"Nur Score"},{"value":"suggestion-only","label":"Nur Vorschlag"}]}
 	const xConfig_TRIGGER_QUELLE = "suggestion-first";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

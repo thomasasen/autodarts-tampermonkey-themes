@@ -2,8 +2,9 @@
 // @name         Autodarts Style Checkout Suggestions
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Stylt Checkout-Empfehlungen in X01 klarer und besser lesbar.
-// @xconfig-description  Formatiert und betont Checkout-Suggestions in X01, damit Empfehlungen schneller erfassbar sind.
+// @description  Stellt Checkout-Empfehlungen in X01 klarer und auffälliger dar.
+// @xconfig-description  Formatiert Checkout-Empfehlungen in gut lesbare Styles, damit Entscheidungen schneller fallen.
+// @xconfig-title  Checkout-Empfehlungsstil
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-style-checkout-suggestions
 // @xconfig-background     assets/animation-style-checkout-suggestions-format-stripe-readme.png
@@ -147,14 +148,14 @@
 		console.warn("[xConfig][Checkout Suggestions] Shared helper not available. Using local fallback helpers.");
 	}
 
-	// xConfig: {"type":"select","label":"Stil","description":"Wählt die Darstellungsart für Checkout-Empfehlungen.","options":[{"value":"badge","label":"Badge"},{"value":"ribbon","label":"Ribbon"},{"value":"stripe","label":"Stripe"},{"value":"ticket","label":"Ticket"},{"value":"outline","label":"Outline"}]}
+	// xConfig: {"type":"select","label":"Stil","description":"Wählt das Layout für Checkout-Empfehlungen.","options":[{"value":"badge","label":"Badge"},{"value":"ribbon","label":"Ribbon"},{"value":"stripe","label":"Stripe"},{"value":"ticket","label":"Ticket"},{"value":"outline","label":"Outline"}]}
 	const xConfig_STIL = "ribbon";
-	// xConfig: {"type":"select","label":"Labeltext","description":"Text im Label über der Empfehlung.","options":[{"value":"CHECKOUT","label":"CHECKOUT"},{"value":"FINISH","label":"FINISH"},{"value":"","label":"Kein Label"}]}
+	// xConfig: {"type":"select","label":"Labeltext","description":"Legt den Text oberhalb der Empfehlung fest.","options":[{"value":"CHECKOUT","label":"CHECKOUT"},{"value":"FINISH","label":"FINISH"},{"value":"","label":"Kein Label"}]}
 	const xConfig_LABELTEXT = "CHECKOUT";
-	// xConfig: {"type":"select","label":"Farbthema","description":"Farbthema für Akzente, Label und Highlights.","options":[{"value":"amber","label":"Amber (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"rose","label":"Rose"}]}
+	// xConfig: {"type":"select","label":"Farbthema","description":"Wählt das Farbschema für Label und Akzente.","options":[{"value":"amber","label":"Amber (Standard)"},{"value":"cyan","label":"Cyan"},{"value":"rose","label":"Rose"}]}
 	const xConfig_FARBTHEMA = "amber";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

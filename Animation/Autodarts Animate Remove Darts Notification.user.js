@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Remove Darts Notification
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.4
-// @description  Ersetzt die TakeOut-Notifikation aus „Tools für Autodarts“ durch eine Hand-Grafik, damit sie schöner und besser erkennbar ist.
-// @xconfig-description  Ersetzt die TakeOut-Notifikation aus „Tools für Autodarts“ durch eine Hand-Grafik, damit sie schöner und besser erkennbar ist.
+// @description  Ersetzt die TakeOut-Meldung durch eine gut sichtbare Hand-Grafik.
+// @xconfig-description  Macht den Hinweis zum Darts-Entfernen auffälliger und leichter erkennbar.
+// @xconfig-title  Darts-entfernen-Hinweis
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
 // @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
@@ -21,14 +22,14 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Bildgröße","description":"Legt die Größe des TakeOut-Bildes in der Meldung fest.","options":[{"value":"compact","label":"Kompakt"},{"value":"standard","label":"Standard"},{"value":"large","label":"Groß"}]}
+	// xConfig: {"type":"select","label":"Bildgröße","description":"Legt die Größe der Hand-Grafik in der Meldung fest.","options":[{"value":"compact","label":"Kompakt"},{"value":"standard","label":"Standard"},{"value":"large","label":"Groß"}]}
 	const xConfig_BILDGROESSE = "standard";
-	// xConfig: {"type":"toggle","label":"Pulse-Animation","description":"Aktiviert oder deaktiviert den leichten Puls-Effekt des Bildes.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	// xConfig: {"type":"toggle","label":"Pulse-Animation","description":"Schaltet den leichten Puls-Effekt ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_PULSE_ANIMATION = true;
-	// xConfig: {"type":"select","label":"Pulse-Stärke","description":"Bestimmt, wie stark das Bild bei der Pulse-Animation skaliert wird.","options":[{"value":1.02,"label":"Dezent"},{"value":1.04,"label":"Standard"},{"value":1.08,"label":"Stark"}]}
+	// xConfig: {"type":"select","label":"Pulse-Stärke","description":"Bestimmt, wie stark die Grafik beim Puls skaliert.","options":[{"value":1.02,"label":"Dezent"},{"value":1.04,"label":"Standard"},{"value":1.08,"label":"Stark"}]}
 	const xConfig_PULSE_STAERKE = 1.04;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

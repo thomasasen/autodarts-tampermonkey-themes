@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
 // @version      1.1
-// @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste mit Animation.
-// @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste mit animierten Farbverläufen hervor.
+// @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste sichtbar.
+// @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste klar hervor, damit wichtige Würfe sofort auffallen.
+// @xconfig-title  Treffer-Highlights (Triple/Double/Bull)
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @xconfig-background     assets/animation-animate-triple-double-bull-hits.gif
@@ -20,16 +21,16 @@
 (function () {
   "use strict";
 
-  // xConfig: {"type":"toggle","label":"Triple hervorheben","description":"Hebt Triple-Treffer (T1-T20) in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Triple hervorheben","description":"Markiert Triple-Treffer in der Wurfliste.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_TRIPLE_HERVORHEBEN = true;
-  // xConfig: {"type":"toggle","label":"Double hervorheben","description":"Hebt Double-Treffer (D1-D20) in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Double hervorheben","description":"Markiert Double-Treffer in der Wurfliste.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DOUBLE_HERVORHEBEN = true;
-  // xConfig: {"type":"toggle","label":"Bull hervorheben","description":"Hebt BULL-Treffer in der Wurfliste hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Bull hervorheben","description":"Markiert Bull-Treffer in der Wurfliste.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULL_HERVORHEBEN = true;
-  // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Wählt zwischen reinem Live-Observer oder zusätzlichem Polling für hohe Kompatibilität.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
+  // xConfig: {"type":"select","label":"Aktualisierungsmodus","description":"Wählt zwischen maximaler Reaktionsgeschwindigkeit und robuster Kompatibilität.","options":[{"value":0,"label":"Nur Live (Observer)"},{"value":3000,"label":"Kompatibel (zusätzliches Polling)"}]}
   const xConfig_AKTUALISIERUNGSMODUS = 3000;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

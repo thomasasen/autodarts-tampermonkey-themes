@@ -2,8 +2,9 @@
 // @name         Autodarts Theme Bermuda
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Layout- und Farb-Theme für Bermuda mit klarer Trennung von Spieler- und Boardbereich.
-// @xconfig-description  Wendet ein visuelles Theme für Bermuda an und nutzt den Shared-Helper für konsistentes Layout/Styling.
+// @description  Visuelles Bermuda-Theme mit klarerer Trennung wichtiger Bereiche.
+// @xconfig-description  Aktiviert ein Bermuda-Theme mit konsistentem Layout und besserer Lesbarkeit.
+// @xconfig-title  Theme Bermuda
 // @xconfig-variant      bermuda
 // @xconfig-readme-anchor  template-autodarts-theme-bermuda
 // @xconfig-background     assets/template-theme-bermuda-xConfig.png
@@ -33,7 +34,7 @@
 	const STYLE_ID = "autodarts-bermuda-custom-style";
 	const VARIANT_NAME = "bermuda";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 	function resolveDebugToggle(value) {

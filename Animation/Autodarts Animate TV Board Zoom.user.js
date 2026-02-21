@@ -2,8 +2,9 @@
 // @name         Autodarts Animate TV Board Zoom
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.22
-// @description  Simuliert TV-Ã¤hnliche Board-Zooms vor dem dritten Dart in X01 (strict). Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Zoomt in X01 wie eine TV-Ãœbertragung auf wahrscheinliche Zielbereiche vor Dart 3 (strict: T20,T20 oder klarer 1-Dart-Checkout).
+// @description  Simuliert in X01 TV-ähnliche Zooms auf relevante Zielbereiche vor dem dritten Dart.
+// @xconfig-description  Zoomt in X01 auf wahrscheinliche Zielbereiche im virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
+// @xconfig-title  TV-Board-Zoom
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-background     assets/animation-Autodarts-Animate-TV-Board-Zoom.gif
@@ -43,14 +44,14 @@
 
   const gameStateShared = window.autodartsGameStateShared || null;
 
-  // xConfig: {"type":"select","label":"Zoom-Stufe","description":"Bestimmt, wie nah das Board herangezoomt wird.","options":[{"value":"2.35","label":"Dezent (2.35x)"},{"value":"2.75","label":"Mittel (2.75x)"},{"value":"3.15","label":"Nah (3.15x)"}]}
+  // xConfig: {"type":"select","label":"Zoom-Stufe","description":"Bestimmt, wie nah auf das Board gezoomt wird.","options":[{"value":"2.35","label":"Dezent (2.35x)"},{"value":"2.75","label":"Mittel (2.75x)"},{"value":"3.15","label":"Nah (3.15x)"}]}
   const xConfig_ZOOM_STUFE = "2.75";
-  // xConfig: {"type":"select","label":"Zoom-Geschwindigkeit","description":"Legt fest, wie schnell Ein- und Auszoom-Animation laufen.","options":[{"value":"schnell","label":"Schnell"},{"value":"mittel","label":"Mittel"},{"value":"langsam","label":"Langsam"}]}
+  // xConfig: {"type":"select","label":"Zoom-Geschwindigkeit","description":"Legt fest, wie schnell ein- und ausgezoomt wird.","options":[{"value":"schnell","label":"Schnell"},{"value":"mittel","label":"Mittel"},{"value":"langsam","label":"Langsam"}]}
   const xConfig_ZOOM_GESCHWINDIGKEIT = "mittel";
-  // xConfig: {"type":"toggle","label":"Checkout-Zoom","description":"Aktiviert Zoom bei eindeutigem 1-Dart-Checkout (D1-D20/BULL).","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Checkout-Zoom","description":"Aktiviert Zoom bei klaren 1-Dart-Checkouts.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_CHECKOUT_ZOOM = true;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
   const RING_RATIOS = {

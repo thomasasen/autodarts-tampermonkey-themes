@@ -2,8 +2,9 @@
 // @name         Autodarts Theme X01.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.4
-// @description  Vollständiges X01-Theme mit Fokus auf klare Scores, Player-Karten und Navigation.
-// @xconfig-description  Setzt in X01 ein umfassendes visuelles Theme für Lesbarkeit, Struktur und konsistente Darstellung.
+// @description  Visuelles X01-Theme mit Fokus auf klare Scores und gut lesbare Spielerbereiche.
+// @xconfig-description  Aktiviert ein X01-Theme für mehr Struktur und schnellere Lesbarkeit im Match.
+// @xconfig-title  Theme X01
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  template-autodarts-theme-x01
 // @xconfig-background     assets/template-theme-x01-xConfig.png
@@ -32,10 +33,10 @@
 	// Style tag identifier and expected variant name.
 	const STYLE_ID = "autodarts-x01-custom-style";
 	const VARIANT_NAME = "x01";
-	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Blendet den AVG-Wert im X01-Theme ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Zeigt den AVG-Wert im Theme an oder blendet ihn aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_AVG_ANZEIGE = true;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 	// Preview placement: "standard" or "under-throws".

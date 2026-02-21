@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Average Trend Arrow
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
-// @description  Zeigt bei AVG-Änderungen kurz einen Trendpfeil nach oben oder unten.
-// @xconfig-description  Visualisiert AVG-Änderungen direkt am Wert mit einem kurzen Up/Down-Pfeil, damit Trends sofort sichtbar sind.
+// @description  Zeigt bei AVG-Änderungen kurz einen Pfeil nach oben oder unten.
+// @xconfig-description  Macht AVG-Trends sofort sichtbar, indem ein kurzer Pfeil direkt am AVG-Wert eingeblendet wird.
+// @xconfig-title  AVG-Trendpfeil
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
 // @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
@@ -21,12 +22,12 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie lange der Trendpfeil sichtbar animiert wird.","options":[{"value":220,"label":"Schnell"},{"value":320,"label":"Standard"},{"value":500,"label":"Langsam"}]}
+	// xConfig: {"type":"select","label":"Animationsdauer","description":"Legt fest, wie lange der Trendpfeil sichtbar bleibt.","options":[{"value":220,"label":"Schnell"},{"value":320,"label":"Standard"},{"value":500,"label":"Langsam"}]}
 	const xConfig_ANIMATIONSDAUER_MS = 320;
-	// xConfig: {"type":"select","label":"Pfeil-Größe","description":"Legt fest, wie groß der Auf/Ab-Pfeil neben dem AVG angezeigt wird.","options":[{"value":"klein","label":"Klein"},{"value":"standard","label":"Standard"},{"value":"groß","label":"Groß"}]}
+	// xConfig: {"type":"select","label":"Pfeil-Größe","description":"Bestimmt die Größe des Trendpfeils neben dem AVG.","options":[{"value":"klein","label":"Klein"},{"value":"standard","label":"Standard"},{"value":"groß","label":"Groß"}]}
 	const xConfig_PFEIL_GROESSE = "standard";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

@@ -2,8 +2,9 @@
 // @name         Autodarts Theme Shanghai.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
-// @description  Layout- und Farb-Theme für Shanghai mit sauber ausgerichtetem Grid.
-// @xconfig-description  Aktiviert ein Shanghai-Theme mit gemeinsamem Layout/Styling über den Theme-Shared-Helper.
+// @description  Visuelles Shanghai-Theme mit klar ausgerichtetem Layout.
+// @xconfig-description  Aktiviert ein Shanghai-Theme mit konsistentem Aufbau und besserer Übersicht.
+// @xconfig-title  Theme Shanghai
 // @xconfig-variant      shanghai
 // @xconfig-readme-anchor  template-autodarts-theme-shanghai
 // @xconfig-background     assets/template-theme-shanghai-xConfig.png
@@ -31,10 +32,10 @@
 
 	const STYLE_ID = "autodarts-shanghai-custom-style";
 	const VARIANT_NAME = "shanghai";
-	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Blendet den AVG-Wert im Shanghai-Theme ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Zeigt den AVG-Wert im Theme an oder blendet ihn aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_AVG_ANZEIGE = true;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

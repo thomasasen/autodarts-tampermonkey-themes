@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Winner Fireworks
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      3.8
-// @description  Zeigt nach dem Sieg einen Gewinner-Effekt mit 6 abgestimmten Styles, konfigurierbarer Farbpalette und Intensitaet.
-// @xconfig-description  Blendet beim Gewinner einen konfigurierbaren canvas-confetti-Effekt ein; inkl. xConfig-Test-Button und Klick zum Ausblenden.
+// @description  Zeigt nach einem Sieg einen frei wählbaren Feuerwerks- und Konfetti-Effekt.
+// @xconfig-description  Startet beim Gewinner einen konfigurierbaren Effekt. Mit dem Test-Button kannst du die aktuelle Einstellung sofort als Vorschau sehen.
+// @xconfig-title  Sieger-Feuerwerk
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-animate-winner-fireworks.gif
@@ -23,19 +24,19 @@
 (function () {
   "use strict";
 
-  // xConfig: {"type":"select","label":"Style","description":"Waehlt einen von 6 Gewinner-Styles mit klar unterscheidbarem Ablauf.","options":[{"value":"realistic","label":"Grand Finale (ausgewogen)"},{"value":"fireworks","label":"Skyburst (schnelle Luft-Bursts)"},{"value":"cannon","label":"Arena Cannon (druckvoll von unten)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Flanken)"},{"value":"stars","label":"Starlight (Sterne, ruhiger Ausklang)"},{"value":"sides","label":"Side Cannons (Konfetti von den Seiten)"}]}
+  // xConfig: {"type":"select","label":"Style","description":"Wählt den Ablauf des Sieger-Effekts.","options":[{"value":"realistic","label":"Grand Finale (ausgewogen)"},{"value":"fireworks","label":"Skyburst (schnelle Luft-Bursts)"},{"value":"cannon","label":"Arena Cannon (druckvoll von unten)"},{"value":"victorystorm","label":"Victory Storm (Mitte + Flanken)"},{"value":"stars","label":"Starlight (Sterne, ruhiger Ausklang)"},{"value":"sides","label":"Side Cannons (Konfetti von den Seiten)"}]}
   const xConfig_STYLE = "realistic";
-  // xConfig: {"type":"select","label":"Farbe","description":"Farbpalette fuer den Gewinner-Effekt.","options":[{"value":"autodarts","label":"Autodarts (Blau dominant)"},{"value":"redwhite","label":"Rot-Weiss"},{"value":"ice","label":"Ice (Cyan/Blau/Weiss)"},{"value":"sunset","label":"Sunset (Amber/Rose/Violett)"},{"value":"neon","label":"Neon (Lime/Cyan/Pink)"},{"value":"gold","label":"Gold (Gold/Amber/Weiss)"}]}
+  // xConfig: {"type":"select","label":"Farbe","description":"Wählt die Farbpalette für das Feuerwerk.","options":[{"value":"autodarts","label":"Autodarts (Blau dominant)"},{"value":"redwhite","label":"Rot-Weiß"},{"value":"ice","label":"Ice (Cyan/Blau/Weiß)"},{"value":"sunset","label":"Sunset (Amber/Rose/Violett)"},{"value":"neon","label":"Neon (Lime/Cyan/Pink)"},{"value":"gold","label":"Gold (Gold/Amber/Weiß)"}]}
   const xConfig_FARBE = "autodarts";
-  // xConfig: {"type":"select","label":"Intensitaet","description":"Steuert Dichte und Geschwindigkeit des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
+  // xConfig: {"type":"select","label":"Intensität","description":"Bestimmt Dichte und Dynamik des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
   const xConfig_INTENSITAET = "standard";
-  // xConfig: {"type":"action","label":"Test-Button","description":"Testet den Effekt direkt mit den aktuell eingestellten Werten.","buttonLabel":"Effekt jetzt testen","action":"preview","prominent":true}
+  // xConfig: {"type":"action","label":"Test-Button","description":"Startet den Effekt sofort als Vorschau mit den aktuellen Einstellungen.","buttonLabel":"Effekt jetzt testen","action":"preview","prominent":true}
   const xConfig_TEST_BUTTON = "preview";
-  // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Gewinner-Effekt auch in der Variante Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Sieger-Effekt auch in Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULLOUT_AKTIV = true;
-  // xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+  // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
   const xConfig_DEBUG = false;
-  // xConfig: {"type":"toggle","label":"Klick beendet Effekt","description":"Blendet den Gewinner-Effekt per Klick/Tap aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Klick beendet Effekt","description":"Beendet den laufenden Effekt per Klick oder Tap.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_KLICK_ZUM_STOPPEN = true;
 
   function resolveStringChoice(value, fallbackValue, allowedValues) {

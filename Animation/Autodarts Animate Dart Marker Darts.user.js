@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Dart Marker Darts
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.5
-// @description  Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar. Nur mit dem "virtuellen Dartboard"; nicht mit dem "Live Dartboard".
-// @xconfig-description  WICHTIG: Funktioniert nur mit dem "virtuellen Dartboard" und nicht mit dem "Live Dartboard". Stellt konfigurierbare Bilder von Dartpfeilen auf dem Board dar, inklusive optionalem Flugeffekt, als wären es echte Darts. Bilder der auswählbaren Designs findest du über "📖 Anleitung".
+// @description  Zeigt Treffer auf dem virtuellen Dartboard als konfigurierbare Dart-Bilder.
+// @xconfig-description  Ersetzt Board-Marker durch Dart-Bilder mit optionaler Fluganimation. Funktioniert nur mit dem virtuellen Dartboard.
+// @xconfig-title  Dart-Bildmarker
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
@@ -173,18 +174,18 @@
 		return defaultValue;
 	}
 
-	// xConfig: {"type":"select","label":"Dart Design","description":"Wählt das Dart-Bild für die Hitmarker auf dem Board.","options":[{"value":"Dart_autodarts.png","label":"Autodarts (Standard)"},{"value":"Dart_blackblue.png","label":"Black Blue"},{"value":"Dart_blackgreen.png","label":"Black Green"},{"value":"Dart_blackred.png","label":"Black Red"},{"value":"Dart_blue.png","label":"Blue"},{"value":"Dart_camoflage.png","label":"Camouflage"},{"value":"Dart_green.png","label":"Green"},{"value":"Dart_pride.png","label":"Pride"},{"value":"Dart_red.png","label":"Red"},{"value":"Dart_white.png","label":"White"},{"value":"Dart_whitetrible.png","label":"White Triple"},{"value":"Dart_yellow.png","label":"Yellow"},{"value":"Dart_yellowscull.png","label":"Yellow Skull"}]}
+	// xConfig: {"type":"select","label":"Dart Design","description":"Wählt das Dart-Bild für Treffer auf dem Board.","options":[{"value":"Dart_autodarts.png","label":"Autodarts (Standard)"},{"value":"Dart_blackblue.png","label":"Black Blue"},{"value":"Dart_blackgreen.png","label":"Black Green"},{"value":"Dart_blackred.png","label":"Black Red"},{"value":"Dart_blue.png","label":"Blue"},{"value":"Dart_camoflage.png","label":"Camouflage"},{"value":"Dart_green.png","label":"Green"},{"value":"Dart_pride.png","label":"Pride"},{"value":"Dart_red.png","label":"Red"},{"value":"Dart_white.png","label":"White"},{"value":"Dart_whitetrible.png","label":"White Triple"},{"value":"Dart_yellow.png","label":"Yellow"},{"value":"Dart_yellowscull.png","label":"Yellow Skull"}]}
 	const xConfig_DART_DESIGN = "Dart_autodarts.png";
-	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Aktiviert Flug-, Einschlag- und Wobble-Animation für neue Darts.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
+	// xConfig: {"type":"toggle","label":"Dart Fluganimation","description":"Schaltet Flug-, Einschlag- und Wobble-Animation ein oder aus.","options":[{"value":true,"label":"Aktiv"},{"value":false,"label":"Inaktiv"}]}
 	const xConfig_ANIMATE_DARTS = true;
-	// xConfig: {"type":"select","label":"Dart-Größe","description":"Skaliert die Dart-Bilder auf dem Board kleiner oder größer.","options":[{"value":"90","label":"Klein (90%)"},{"value":"100","label":"Standard (100%)"},{"value":"115","label":"Groß (115%)"}]}
+	// xConfig: {"type":"select","label":"Dart-Größe","description":"Skaliert die Dart-Bilder kleiner oder größer.","options":[{"value":"90","label":"Klein (90%)"},{"value":"100","label":"Standard (100%)"},{"value":"115","label":"Groß (115%)"}]}
 	const xConfig_DART_GROESSE = "100";
-	// xConfig: {"type":"toggle","label":"Original-Marker ausblenden","description":"Blendet die originalen runden Trefferpunkte aus, wenn Dart-Bilder angezeigt werden.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	// xConfig: {"type":"toggle","label":"Original-Marker ausblenden","description":"Blendet die runden Original-Marker aus, wenn Dart-Bilder genutzt werden.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_ORIGINAL_MARKER_AUSBLENDEN = false;
-	// xConfig: {"type":"select","label":"Fluggeschwindigkeit","description":"Bestimmt, wie schnell die Dart-Fluganimation abgespielt wird.","options":[{"value":"schnell","label":"Schnell"},{"value":"standard","label":"Standard"},{"value":"cinematic","label":"Cinematic"}]}
+	// xConfig: {"type":"select","label":"Fluggeschwindigkeit","description":"Legt fest, wie schnell die Fluganimation abgespielt wird.","options":[{"value":"schnell","label":"Schnell"},{"value":"standard","label":"Standard"},{"value":"cinematic","label":"Cinematic"}]}
 	const xConfig_FLUGGESCHWINDIGKEIT = "standard";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 	const DART_DESIGN = resolveXConfigSelect("xConfig_DART_DESIGN", xConfig_DART_DESIGN, DART_DESIGN_OPTIONS);

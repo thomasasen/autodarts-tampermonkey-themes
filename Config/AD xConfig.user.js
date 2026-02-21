@@ -2285,7 +2285,7 @@
     const metadata = parseUserscriptMetadata(scriptText);
     const settingsSchema = parseXConfigFieldsFromSource(scriptText);
     const source = normalizeSourcePath(entry.path || "");
-    const title = normalizeTitle(metadata.name, source);
+    const title = normalizeTitle(metadata["xconfig-title"] || metadata.name, source);
     const description = metadata["xconfig-description"] || metadata.description || "No description available.";
     const version = metadata.version || "0.0.0";
     const variant = normalizeVariantLabel(metadata["xconfig-variant"], category);

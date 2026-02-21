@@ -1,35 +1,32 @@
 ﻿# Technische Referenz
 
-> Vollständige technische Details zu allen Themes und Animationen (Variablen, Selektoren, Trigger, CSS-Blöcke).
+> Technische Detaildokumentation zu allen Themes und Animationen (Variablen, Selektoren, Trigger, CSS-Blöcke, Fallbacks).
 
-- Zurück zur Hauptdoku: [README.md](../README.md)
-- Diese Datei ist bewusst ausführlich und richtet sich an technisch versierte Nutzer.
+- Zur Endnutzer-Dokumentation: [README.md](../README.md)
+- Zielgruppe: Nutzer mit Programmiererfahrung und technischem Hintergrund.
 
 ## 🧩 Skripte
 
-Hinweis für die meisten Nutzer:
-Die Konfiguration erfolgt vollständig über **AD xConfig** (Ein/Aus, Einstellungen, Laufzeitstatus).
+Hinweis:
+Die tägliche Konfiguration erfolgt über **AD xConfig** (Ein/Aus, Einstellungen, Laufzeitstatus).
+Diese Datei ergänzt die README um die technischen Hintergründe pro Modul.
 
-Hinweis für technisch Versierte:
-Die Tabellen unten dokumentieren die internen Variablen der einzelnen Skripte.
-Im Alltag solltest du trotzdem die AD xConfig-Oberfläche nutzen.
-
-Kennzeichnung: Jede Skriptsektion enthält einen Block **Einfache Variablen (Beispiele)**.
-Diese Werte kannst du ohne technisches Vorwissen ändern; alle anderen Variablen richten sich an technisch Versierte.
-Beispiele zeigen die echten Werte (z.B. `true`/`false`, `"ribbon"`).
+Kennzeichnung:
+Jede Skriptsektion enthält **Einfache Variablen (Beispiele)** als schnelle Orientierung.
+Die vollständigen Tabellen dokumentieren anschließend die internen Parameter.
 
 Begriffe in den Tabellen:
 
-- **Selector/Selektor**: CSS-„Adresse“ eines Elements. Nur ändern, wenn Autodarts die Klassen/Struktur geändert hat.
-- **CSS-Block**: Mehrzeilige CSS-Regeln. Hier kannst du Farben, Größen und Abstände feinjustieren.
-- **RGB/RGBA**: Farbwerte; RGB = 0–255 pro Kanal, RGBA = RGB + Transparenz (0..1).
+- **Selektor**: CSS-„Adresse“ eines Elements. Nur ändern, wenn Autodarts die Klassen/Struktur geändert hat.
+- **CSS-Block**: Mehrzeilige CSS-Regeln für Farben, Größen, Abstände und Effekte.
+- **RGB/RGBA**: Farbwerte; RGB = 0-255 pro Kanal, RGBA = RGB + Transparenz (0..1).
 
 Medien-Hinweis: Alle Bilder/GIFs und Sounds liegen in `assets/`. PNGs sind statisch, GIFs zeigen Bewegung.
 Kleine Variantenbilder sind als Vorschau eingebettet.
 
-## 🐞 Debugging (einfach für Nicht-Techniker)
+## 🐞 Debugging (für reproduzierbare Reports)
 
-Wenn ein Modul nicht wie erwartet funktioniert, kannst du so verwertbare Debug-Infos liefern:
+Wenn ein Modul nicht wie erwartet funktioniert, kannst du mit diesen Schritten verwertbare Debug-Infos liefern:
 
 1. Öffne in Autodarts das Menü **AD xConfig**.
 2. Öffne das betroffene Modul und stelle den Schalter **`Debug`** auf **An**.

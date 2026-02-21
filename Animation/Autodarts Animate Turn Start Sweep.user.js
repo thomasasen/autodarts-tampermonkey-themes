@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Turn Start Sweep
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Zeigt beim Start eines neuen Zuges einen kurzen Sweep beim aktiven Spieler.
-// @xconfig-description  Erzeugt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen über Zeile oder Karte.
+// @description  Zeigt beim Wechsel des aktiven Spielers einen kurzen Lichtstreifen.
+// @xconfig-description  Macht den Start eines neuen Zuges mit einem kurzen Sweep direkt sichtbar.
+// @xconfig-title  Spielerwechsel-Sweep
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-start-sweep
 // @xconfig-background     assets/animation-turn-start-sweep-xConfig.gif
@@ -21,12 +22,12 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Sweep-Geschwindigkeit","description":"Legt fest, wie schnell der Lichtstreifen abläuft.","options":[{"value":300,"label":"Schnell"},{"value":420,"label":"Standard"},{"value":620,"label":"Langsam"}]}
+	// xConfig: {"type":"select","label":"Sweep-Geschwindigkeit","description":"Legt fest, wie schnell der Lichtstreifen läuft.","options":[{"value":300,"label":"Schnell"},{"value":420,"label":"Standard"},{"value":620,"label":"Langsam"}]}
 	const xConfig_SWEEP_GESCHWINDIGKEIT_MS = 420;
-	// xConfig: {"type":"select","label":"Sweep-Stil","description":"Bestimmt Stärke und Sichtbarkeit des Lichtstreifens.","options":[{"value":"subtle","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"strong","label":"Stark"}]}
+	// xConfig: {"type":"select","label":"Sweep-Stil","description":"Bestimmt, wie dezent oder kräftig der Sweep erscheint.","options":[{"value":"subtle","label":"Dezent"},{"value":"standard","label":"Standard"},{"value":"strong","label":"Stark"}]}
 	const xConfig_SWEEP_STIL = "standard";
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

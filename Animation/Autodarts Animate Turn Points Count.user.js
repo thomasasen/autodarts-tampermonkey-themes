@@ -2,8 +2,9 @@
 // @name         Autodarts Animate Turn Points Count
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.1
-// @description  Animiert Turn-Points kurz hoch oder runter statt hart zu springen.
-// @xconfig-description  Zählt die Turn-Punkte bei Änderungen kurz hoch oder runter, um Score-Sprünge besser lesbar zu machen.
+// @description  Animiert die Turn-Punkte beim Wechsel nach oben oder unten.
+// @xconfig-description  Lässt Punkteänderungen fließend zählen, damit Score-Sprünge leichter erfasst werden.
+// @xconfig-title  Turn-Punkte-Zähler
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-points-count
 // @xconfig-background     assets/animation-turn-points-count-detail-readme.gif
@@ -21,10 +22,10 @@
 (function () {
 	"use strict";
 
-	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie schnell die Turn-Punkte hoch bzw. runter zählen.","options":[{"value":260,"label":"Schnell"},{"value":416,"label":"Standard"},{"value":650,"label":"Langsam"}]}
+	// xConfig: {"type":"select","label":"Animationsdauer","description":"Bestimmt, wie schnell die Turn-Punkte hoch oder runter zählen.","options":[{"value":260,"label":"Schnell"},{"value":416,"label":"Standard"},{"value":650,"label":"Langsam"}]}
 	const xConfig_ANIMATIONSDAUER_MS = 416;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 

@@ -2,8 +2,9 @@
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.3
-// @description  Layout- und Farb-Theme für Cricket mit aufgeräumter Board- und Spieleransicht.
-// @xconfig-description  Aktiviert ein visuelles Cricket-Theme auf Basis des Shared-Helpers für Farben, Abstände und Struktur.
+// @description  Visuelles Cricket-Theme für eine ruhigere und klarere Darstellung.
+// @xconfig-description  Aktiviert ein Cricket-Theme mit stimmigem Layout, Farben und guter Lesbarkeit.
+// @xconfig-title  Theme Cricket
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  template-autodarts-theme-cricket
 // @xconfig-background     assets/template-theme-cricket-xConfig.png
@@ -24,10 +25,10 @@
 	const {attachTheme, initPreviewPlacement} = window.autodartsThemeShared;
 	const STYLE_ID = "autodarts-cricket-custom-style";
 	const VARIANT_NAME = "cricket";
-	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Blendet den AVG-Wert im Cricket-Theme ein oder aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Zeigt den AVG-Wert im Theme an oder blendet ihn aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_AVG_ANZEIGE = true;
 
-	// xConfig: {"type":"toggle","label":"Debug","description":"Nur auf Anweisung aktivieren. Schreibt technische Diagnose-Logs in die Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
 
 
