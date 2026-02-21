@@ -192,6 +192,7 @@
     t20SlackRebalanceFactor: 0.14,
     checkoutDoubleSlackRebalanceFactor: 0.18,
     bullSlackRebalanceFactor: 0.24,
+    transientIntentGraceMs: 520,
     easingIn: "cubic-bezier(0.2, 0.8, 0.2, 1)",
     easingOut: "cubic-bezier(0.4, 0, 0.2, 1)",
   };
@@ -234,6 +235,8 @@
     dismissedUntilTs: 0,
     releaseTimeoutId: 0,
     activeZoomTween: null,
+    lastIntentToken: "",
+    noIntentSinceTs: 0,
   };
 
   const originalStyleCache = new WeakMap();
@@ -536,6 +539,14 @@
     return "";
   }
 
+  function scoreToOneDartCheckoutSegment(score) {
+    if (!Number.isFinite(score)) {
+      return "";
+    }
+    const segment = getCheckoutTargetSegment(score);
+    return segment && isOneDartCheckoutSegment(segment) ? segment : "";
+  }
+
   function isOneDartCheckoutSegment(segmentName) {
     const normalized = normalizeSegmentName(segmentName);
     return normalized === "BULL" || /^D([1-9]|1\d|20)$/.test(normalized);
@@ -653,14 +664,21 @@
 
   function getCheckoutSegmentFromScoreSources() {
     // Checkout zoom is strictly based on remaining score (no suggestion parsing).
-    // Use visible player score only; shared game score can be stale in some views.
+    // Prefer DOM when valid, but keep GameState as anti-jitter fallback.
     const domRemainingScore = getActiveRemainingScoreFromDom();
-    if (!Number.isFinite(domRemainingScore)) {
-      return "";
+    const domSegment = scoreToOneDartCheckoutSegment(domRemainingScore);
+
+    let gameStateSegment = "";
+    if (gameStateShared && typeof gameStateShared.getActiveScore === "function") {
+      const gameStateScore = gameStateShared.getActiveScore();
+      gameStateSegment = scoreToOneDartCheckoutSegment(gameStateScore);
     }
 
-    const segment = getCheckoutTargetSegment(domRemainingScore);
-    return segment && isOneDartCheckoutSegment(segment) ? segment : "";
+    if (domSegment && gameStateSegment) {
+      return domSegment;
+    }
+
+    return domSegment || gameStateSegment || "";
   }
 
   function isSensibleThirdT20Score(remainingScore) {
@@ -1257,6 +1275,33 @@
     }
   }
 
+  function buildIntentToken(turnId, throwCount) {
+    const normalizedTurnId = String(turnId || "");
+    const normalizedThrowCount = Number.isFinite(throwCount) ? throwCount : -1;
+    return `${normalizedTurnId}|${normalizedThrowCount}`;
+  }
+
+  function shouldDelayResetForTransientNoIntent() {
+    if (!state.zoomedElement || !state.activeZoomIntent) {
+      state.noIntentSinceTs = 0;
+      return false;
+    }
+
+    const currentToken = buildIntentToken(state.lastTurnId, state.lastThrowCount);
+    if (!state.lastIntentToken || state.lastIntentToken !== currentToken) {
+      state.noIntentSinceTs = 0;
+      return false;
+    }
+
+    const nowTs = Date.now();
+    if (!state.noIntentSinceTs) {
+      state.noIntentSinceTs = nowTs;
+      return true;
+    }
+
+    return nowTs - state.noIntentSinceTs <= CONFIG.transientIntentGraceMs;
+  }
+
   function applyZoom(zoomTarget, host, transform, signature, zoomIntent) {
     if (!zoomTarget) {
       return;
@@ -1320,6 +1365,8 @@
     state.zoomedElement = zoomTarget;
     state.lastAppliedTransform = composedSignature;
     state.activeZoomIntent = zoomIntent;
+    state.lastIntentToken = buildIntentToken(state.lastTurnId, state.lastThrowCount);
+    state.noIntentSinceTs = 0;
   }
 
   function resetZoom(options = {}) {
@@ -1334,6 +1381,8 @@
       stopActiveZoomTween(null);
       state.activeZoomIntent = null;
       state.lastAppliedTransform = "";
+      state.lastIntentToken = "";
+      state.noIntentSinceTs = 0;
       if (state.zoomHost) {
         restoreHostStyle(state.zoomHost);
         state.zoomHost = null;
@@ -1347,6 +1396,8 @@
       restoreStyle(zoomTarget);
       state.zoomedElement = null;
       state.lastAppliedTransform = "";
+      state.lastIntentToken = "";
+      state.noIntentSinceTs = 0;
       if (state.zoomHost) {
         restoreHostStyle(state.zoomHost);
         state.zoomHost = null;
@@ -1398,6 +1449,8 @@
     }
 
     state.activeZoomIntent = null;
+    state.lastIntentToken = "";
+    state.noIntentSinceTs = 0;
   }
 
   function shouldHoldZoom(nowTs, turnId, throwCount) {
@@ -1538,9 +1591,13 @@
     const zoomIntent = computeZoomIntent(boardMetrics);
 
     if (!zoomIntent?.point) {
+      if (shouldDelayResetForTransientNoIntent()) {
+        return;
+      }
       resetZoom();
       return;
     }
+    state.noIntentSinceTs = 0;
 
     const zoomData = buildZoomTransform(
       zoomIntent,
@@ -1550,6 +1607,9 @@
       viewportElement
     );
     if (!zoomData) {
+      if (shouldDelayResetForTransientNoIntent()) {
+        return;
+      }
       resetZoom();
       return;
     }
