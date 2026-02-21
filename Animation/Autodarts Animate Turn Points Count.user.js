@@ -7,6 +7,7 @@
 // @xconfig-title  Turn-Punkte-Zähler
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-points-count
+// @xconfig-tech-anchor  animation-autodarts-animate-turn-points-count
 // @xconfig-background     assets/animation-turn-points-count-detail-readme.gif
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -234,3 +235,4 @@
 	observeMutations({onChange: scheduleUpdate});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

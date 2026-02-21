@@ -7,6 +7,7 @@
 // @xconfig-title  Theme Bermuda
 // @xconfig-variant      bermuda
 // @xconfig-readme-anchor  template-autodarts-theme-bermuda
+// @xconfig-tech-anchor  template-autodarts-theme-bermuda
 // @xconfig-background     assets/template-theme-bermuda-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -112,3 +113,4 @@
 
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

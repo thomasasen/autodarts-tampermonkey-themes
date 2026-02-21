@@ -7,6 +7,7 @@
 // @xconfig-title  AVG-Trendpfeil
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-average-trend-arrow
+// @xconfig-tech-anchor  animation-autodarts-animate-average-trend-arrow
 // @xconfig-background     assets/animation-average-trend-arrow-xConfig.png
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -285,3 +286,4 @@
 	observeMutations({onChange: scheduleUpdate});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

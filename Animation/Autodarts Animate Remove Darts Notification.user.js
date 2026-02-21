@@ -7,6 +7,7 @@
 // @xconfig-title  Darts-entfernen-Hinweis
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-remove-darts-notification
+// @xconfig-tech-anchor  animation-autodarts-animate-remove-darts-notification
 // @xconfig-background     assets/animation-remove-darts-notification-xConfig.png
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -564,3 +565,4 @@
 	});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

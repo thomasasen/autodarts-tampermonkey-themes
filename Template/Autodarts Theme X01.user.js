@@ -7,6 +7,7 @@
 // @xconfig-title  Theme X01
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  template-autodarts-theme-x01
+// @xconfig-tech-anchor  template-autodarts-theme-x01
 // @xconfig-background     assets/template-theme-x01-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -226,3 +227,4 @@ span.chakra-badge.css-1c4630i {
 
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

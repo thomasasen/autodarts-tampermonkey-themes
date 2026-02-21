@@ -6,6 +6,7 @@
 // @xconfig-title  Treffer-Highlights (Triple/Double/Bull)
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-triple-double-bull-hits
+// @xconfig-tech-anchor  animation-autodarts-animate-triple-double-bull-hits
 // @xconfig-background     assets/animation-animate-triple-double-bull-hits.gif
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -416,3 +417,4 @@
   }
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

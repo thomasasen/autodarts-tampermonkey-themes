@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Single Bull Sound
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.12
@@ -7,6 +7,7 @@
 // @xconfig-title  Single-Bull-Sound
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-single-bull-sound
+// @xconfig-tech-anchor  animation-autodarts-animate-single-bull-sound
 // @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT

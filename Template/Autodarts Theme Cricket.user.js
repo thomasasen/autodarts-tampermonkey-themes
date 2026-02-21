@@ -7,6 +7,7 @@
 // @xconfig-title  Theme Cricket
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  template-autodarts-theme-cricket
+// @xconfig-tech-anchor  template-autodarts-theme-cricket
 // @xconfig-background     assets/template-theme-cricket-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -282,3 +283,4 @@ span.chakra-switch__track.css-v4l15v {
 
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

@@ -7,6 +7,7 @@
 // @xconfig-title  Checkout-Score-Puls
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-score-pulse
+// @xconfig-tech-anchor  animation-autodarts-animate-checkout-score-pulse
 // @xconfig-background     assets/animation-checkout-score-pulse.gif
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -361,3 +362,4 @@
 	observeMutations({onChange: scheduleUpdate});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

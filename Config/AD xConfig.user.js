@@ -43,6 +43,7 @@
   const REPO_BASE_URL = "https://github.com/thomasasen/autodarts-tampermonkey-themes";
   const REPO_BRANCH = "main";
   const REPO_README_URL = `${REPO_BASE_URL}/blob/${REPO_BRANCH}/README.md`;
+  const REPO_TECH_REFERENCE_URL = `${REPO_BASE_URL}/blob/${REPO_BRANCH}/docs/TECHNIK-REFERENZ.md`;
   const REPO_API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
   const REPO_RAW_BASE = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}`;
   const GIT_API_BACKOFF_STORAGE_KEY = "ad-xconfig:git-api-backoff-until:v1";
@@ -2290,6 +2291,7 @@
     const version = metadata.version || "0.0.0";
     const variant = normalizeVariantLabel(metadata["xconfig-variant"], category);
     const readmeAnchor = normalizeReadmeAnchor(metadata["xconfig-readme-anchor"]);
+    const techAnchor = normalizeReadmeAnchor(metadata["xconfig-tech-anchor"] || metadata["xconfig-readme-anchor"]);
     const backgroundAsset = normalizeAssetPath(metadata["xconfig-background"]);
     const author = String(metadata.author || "").trim();
     const settingsVersion = Number.parseInt(metadata["xconfig-settings-version"] || "1", 10);
@@ -2302,6 +2304,7 @@
       description,
       variant,
       readmeAnchor,
+      techAnchor,
       backgroundAsset,
       author,
       source,
@@ -3028,6 +3031,11 @@
   function getFeatureReadmeUrl(feature) {
     const anchor = normalizeReadmeAnchor(feature?.readmeAnchor);
     return anchor ? `${REPO_README_URL}#${anchor}` : REPO_README_URL;
+  }
+
+  function getFeatureTechReferenceUrl(feature) {
+    const anchor = normalizeReadmeAnchor(feature?.techAnchor || feature?.readmeAnchor);
+    return anchor ? `${REPO_TECH_REFERENCE_URL}#${anchor}` : REPO_TECH_REFERENCE_URL;
   }
 
   function getFeatureBackgroundUrl(feature) {
@@ -4711,7 +4719,8 @@
           <div class="xcfg-actions-row">
             ${configButton}
             <button type="button" class="xcfg-mini-btn" data-action="open-repo" data-feature-id="${escapeHtml(feature.id)}">📦 Skript</button>
-            <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">📖 Anleitung</button>
+            <button type="button" class="xcfg-mini-btn" data-action="open-readme" data-feature-id="${escapeHtml(feature.id)}">📖 README</button>
+            <button type="button" class="xcfg-mini-btn" data-action="open-techref" data-feature-id="${escapeHtml(feature.id)}">🛠 Technik</button>
           </div>
           <p class="xcfg-card-note">${hasConfigurableFields ? "Einstellungen werden zentral gespeichert und vom Skript übernommen." : "Dieses Skript stellt aktuell keine xConfig-Felder bereit."}</p>
         </div>
@@ -4801,6 +4810,11 @@
 
     if (action === "open-readme" && featureId) {
       openFeatureReadme(featureId);
+      return;
+    }
+
+    if (action === "open-techref" && featureId) {
+      openFeatureTechReference(featureId);
       return;
     }
 
@@ -4968,7 +4982,7 @@
 
     const repoUrl = getFeatureRepoUrl(feature);
     window.open(repoUrl, "_blank", "noopener,noreferrer");
-    setNotice("info", `${feature.title}: Skriptquelle im Repository geoeffnet.`);
+    setNotice("info", `${feature.title}: Skriptquelle im Repository geöffnet.`);
   }
 
   function openFeatureReadme(featureId) {
@@ -4979,7 +4993,18 @@
 
     const readmeUrl = getFeatureReadmeUrl(feature);
     window.open(readmeUrl, "_blank", "noopener,noreferrer");
-    setNotice("info", `${feature.title}: Anleitung im README geoeffnet.`);
+    setNotice("info", `${feature.title}: README geöffnet.`);
+  }
+
+  function openFeatureTechReference(featureId) {
+    const feature = getFeatureById(featureId);
+    if (!feature) {
+      return;
+    }
+
+    const techReferenceUrl = getFeatureTechReferenceUrl(feature);
+    window.open(techReferenceUrl, "_blank", "noopener,noreferrer");
+    setNotice("info", `${feature.title}: Technik-Referenz geöffnet.`);
   }
 
   function onPanelClick(event) {

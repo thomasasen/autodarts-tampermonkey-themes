@@ -7,6 +7,7 @@
 // @xconfig-title  Theme Shanghai
 // @xconfig-variant      shanghai
 // @xconfig-readme-anchor  template-autodarts-theme-shanghai
+// @xconfig-tech-anchor  template-autodarts-theme-shanghai
 // @xconfig-background     assets/template-theme-shanghai-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -141,3 +142,4 @@ p.chakra-text.css-1j0bqop{
 
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

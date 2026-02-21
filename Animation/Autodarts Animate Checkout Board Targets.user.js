@@ -7,6 +7,7 @@
 // @xconfig-title  Checkout-Ziele am Board
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-checkout-board-targets
+// @xconfig-tech-anchor  animation-autodarts-animate-checkout-board-targets
 // @xconfig-background     assets/animation-checkout-board-targets.gif
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -583,3 +584,4 @@
 	observeMutations({onChange: scheduleUpdate});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

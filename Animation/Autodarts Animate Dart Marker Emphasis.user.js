@@ -7,6 +7,7 @@
 // @xconfig-title  Dart-Marker-Hervorhebung
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-emphasis
+// @xconfig-tech-anchor  animation-autodarts-animate-dart-marker-emphasis
 // @xconfig-background     assets/animation-dart-marker-emphasis-xConfig.gif
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -275,3 +276,4 @@
 	observeMutations({onChange: scheduleUpdate});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

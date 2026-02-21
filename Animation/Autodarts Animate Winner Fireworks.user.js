@@ -7,6 +7,7 @@
 // @xconfig-title  Sieger-Feuerwerk
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-winner-fireworks
+// @xconfig-tech-anchor  animation-autodarts-animate-winner-fireworks
 // @xconfig-background     assets/animation-animate-winner-fireworks.gif
 // @xconfig-settings-version 12
 // @author       Thomas Asen
@@ -30,7 +31,7 @@
   const xConfig_FARBE = "autodarts";
   // xConfig: {"type":"select","label":"Intensität","description":"Bestimmt Dichte und Dynamik des Effekts.","options":[{"value":"dezent","label":"Dezent"},{"value":"standard","label":"Standard (empfohlen)"},{"value":"stark","label":"Stark"}]}
   const xConfig_INTENSITAET = "standard";
-  // xConfig: {"type":"action","label":"Test-Button","description":"Startet den Effekt sofort als Vorschau mit den aktuellen Einstellungen.","buttonLabel":"Effekt jetzt testen","action":"preview","prominent":true}
+  // xConfig: {"type":"action","label":"Test-Button","description":"Startet den Effekt sofort als Vorschau mit den aktuellen Einstellungen, auch im geöffneten xConfig-Fenster im Vordergrund.","buttonLabel":"Effekt jetzt testen","action":"preview","prominent":true}
   const xConfig_TEST_BUTTON = "preview";
   // xConfig: {"type":"toggle","label":"Bei Bull-Out aktiv","description":"Aktiviert den Sieger-Effekt auch in Bull-off/Bull-Out.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BULLOUT_AKTIV = true;
@@ -1133,3 +1134,4 @@
     actionEvent: XCONFIG_ACTION_EVENT_NAME,
   });
 })();
+

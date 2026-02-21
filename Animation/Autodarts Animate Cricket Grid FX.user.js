@@ -7,6 +7,7 @@
 // @xconfig-title  Cricket-Grid-Effekte
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
+// @xconfig-tech-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -47,25 +48,25 @@
   const SPARK_CLASS = "ad-ext-crfx-spark";
   const WIPE_CLASS = "ad-ext-crfx-wipe";
 
-  // xConfig: {"type":"toggle","label":"Row Rail Pulse","description":"Zeigt bei Änderungen einen kurzen Lichtlauf über die betroffene Zeile.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Zeilen-Sweep","description":"Zeigt bei Änderungen einen kurzen Lichtlauf über die betroffene Zeile.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROW_RAIL_PULSE = true;
-  // xConfig: {"type":"toggle","label":"Badge Beacon","description":"Hebt das linke Ziel-Badge bei wichtigen Situationen deutlicher hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Ziel-Badge-Hinweis","description":"Hebt das linke Ziel-Badge bei wichtigen Situationen deutlicher hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BADGE_BEACON = true;
-  // xConfig: {"type":"toggle","label":"Mark Progress Animator","description":"Animiert Mark-Symbole bei Trefferzuwachs.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Mark-Fortschritt","description":"Animiert Mark-Symbole bei Trefferzuwachs.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_MARK_PROGRESS_ANIMATOR = true;
-  // xConfig: {"type":"toggle","label":"Threat Edge","description":"Markiert gefährliche Zeilen mit klaren Warnkanten.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Gefahrenkante","description":"Markiert gefährliche Zeilen mit klaren Warnkanten.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_THREAT_EDGE = true;
-  // xConfig: {"type":"toggle","label":"Scoring Lane Highlight","description":"Hebt Zeilen hervor, auf denen du aktuell Punkte machen kannst.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Scoring-Lane","description":"Hebt Zeilen hervor, auf denen du aktuell Punkte machen kannst.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_SCORING_LANE_HIGHLIGHT = true;
-  // xConfig: {"type":"toggle","label":"Dead Row Collapse","description":"Dimmt bereits vollständig geschlossene Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Geschlossene Zeilen abdunkeln","description":"Dimmt bereits vollständig geschlossene Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DEAD_ROW_COLLAPSE = true;
-  // xConfig: {"type":"toggle","label":"Delta Chips","description":"Zeigt bei neuem Treffer kurz +1, +2 oder +3 in der Zelle.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Delta-Chips","description":"Zeigt bei neuem Treffer kurz +1, +2 oder +3 in der Zelle.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DELTA_CHIPS = true;
-  // xConfig: {"type":"toggle","label":"Hit Spark","description":"Ergänzt einen kurzen Treffer-Impuls direkt am Ereignisort.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Treffer-Impuls","description":"Ergänzt einen kurzen Treffer-Impuls direkt am Ereignisort.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_HIT_SPARK = true;
-  // xConfig: {"type":"toggle","label":"Round Transition Wipe","description":"Zeigt bei Spielerwechsel einen kurzen Übergang über das Grid.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Zugwechsel-Übergang","description":"Zeigt bei Spielerwechsel einen kurzen Übergang über das Grid.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROUND_TRANSITION_WIPE = true;
-  // xConfig: {"type":"toggle","label":"Opponent Pressure Overlay","description":"Markiert Zeilen mit akutem Defensivdruck.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Gegnerdruck-Overlay","description":"Markiert Zeilen mit akutem Defensivdruck.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_OPPONENT_PRESSURE_OVERLAY = true;
 
 	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}

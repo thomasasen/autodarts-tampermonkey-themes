@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      2.2
@@ -7,6 +7,7 @@
 // @xconfig-title  Cricket-Ziel-Highlighter
 // @xconfig-variant      cricket
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
+// @xconfig-tech-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -123,32 +124,32 @@
 		} = window.autodartsAnimationShared;
 		const gameStateShared = window.autodartsGameStateShared || null;
 
-		// Skript-Ziel: Cricket-Marks je Spieler lesen und die ZustÃ¤nde als Board-Overlay darstellen.
+		// Skript-Ziel: Cricket-Marks je Spieler lesen und die Zustände als Board-Overlay darstellen.
 		// Ablauf:
 		// 1) Ermittelt die Cricket-Tabelle und die Spieleranzahl (funktioniert mit 1, 2 und mehr Spielern).
 		// 2) Liest pro Zeile (15-20, Bull) die Marks aus Symbolen/Icons/alt-Texten.
 		// 3) Berechnet daraus den Status je Ziel:
 		//    - offen: Spieler hat <3 Marks und kein Gegner ist bereits geschlossen.
 		//    - geschlossen: Spieler hat 3 Marks, alle Gegner ebenfalls geschlossen.
-		//    - score: Spieler hat 3 Marks, mindestens ein Gegner ist noch offen (Punkten mÃ¶glich).
+		//    - score: Spieler hat 3 Marks, mindestens ein Gegner ist noch offen (Punkten möglich).
 		//    - danger: Spieler ist offen, mindestens ein Gegner hat bereits geschlossen (Gegner kann punkten).
-		//    - tot: alle Spieler haben geschlossen (keine Punkte mehr mÃ¶glich).
+		//    - tot: alle Spieler haben geschlossen (keine Punkte mehr möglich).
 		// 4) Rendert ein SVG-Overlay auf dem Board:
 		//    - Nicht-Cricket-Felder (1-14) werden ausgeblendet.
-		//    - Cricket-Ziele werden je Status eingefÃ¤rbt (konfigurierbar am Skriptanfang).
+		//    - Cricket-Ziele werden je Status eingefärbt (konfigurierbar am Skriptanfang).
 		/**
-   * Konfiguration fÃ¼r Selektoren und Optik.
+   * Konfiguration für Selektoren und Optik.
    * @property {string} variantElementId - Element mit Spielvariante-Text.
-   * @property {string|null} tableSelector - Optionaler Selektor fÃ¼r die Cricket-Tabelle.
-   * @property {string} playerSelector - Selektor fÃ¼r Spieler-Karten.
-   * @property {string} activePlayerSelector - Selektor fÃ¼r den aktiven Spieler.
-   * @property {string} markElementSelector - Selektor zum ZÃ¤hlen von Mark-Icons.
+   * @property {string|null} tableSelector - Optionaler Selektor für die Cricket-Tabelle.
+   * @property {string} playerSelector - Selektor für Spieler-Karten.
+   * @property {string} activePlayerSelector - Selektor für den aktiven Spieler.
+   * @property {string} markElementSelector - Selektor zum Zählen von Mark-Icons.
    * @property {boolean} showDeadTargets - Auch Ziele markieren, die von allen Spielern geschlossen sind.
-   * @property {number} strokeWidthRatio - StrichstÃ¤rke relativ zum Board-Radius.
-   * @property {number} edgePaddingPx - ZusÃ¤tzlicher Rand fÃ¼r Overlay-Formen.
-   * @property {Object} baseColor - Basisfarbe fÃ¼rs Ausblenden (RGB).
-   * @property {Object} opacity - Deckkraft fÃ¼r geschlossen/tot/inaktiv (0..1).
-   * @property {Object} highlight - Farben fÃ¼r Score/Danger-Highlights.
+   * @property {number} strokeWidthRatio - Strichstärke relativ zum Board-Radius.
+   * @property {number} edgePaddingPx - Zusätzlicher Rand für Overlay-Formen.
+   * @property {Object} baseColor - Basisfarbe fürs Ausblenden (RGB).
+   * @property {Object} opacity - Deckkraft für geschlossen/tot/inaktiv (0..1).
+   * @property {Object} highlight - Farben für Score/Danger-Highlights.
    * @property {Object} ringRatios - Ring-Grenzen des Dartboards.
    */
 		const CONFIG = {
@@ -322,7 +323,7 @@
 		}
 
 		/**
-   * FÃ¼gt die benÃ¶tigten CSS-Regeln einmalig ein.
+   * Fügt die benötigten CSS-Regeln einmalig ein.
    * @returns {void}
    */
 		const STYLE_TEXT = `
@@ -433,7 +434,7 @@
 
 		/**
    * Findet Elemente, die wie Cricket-Zeilenlabels aussehen.
-   * @param {Element} scope - Wurzel-Element fÃ¼r die Suche.
+   * @param {Element} scope - Wurzel-Element für die Suche.
    * @returns {Element[]}
    */
 		function findLabelNodes(scope) {
@@ -640,8 +641,8 @@
 		}
 
 		/**
-   * WÃ¤hlt die plausibelsten Zellen einer Zeile.
-   * @param {Element[]} candidates - MÃ¶gliche Zellen.
+   * Wählt die plausibelsten Zellen einer Zeile.
+   * @param {Element[]} candidates - Mögliche Zellen.
    * @param {number|null} playerCount - Anzahl der Spieler (falls bekannt).
    * @returns {Element[]}
    */
@@ -717,7 +718,7 @@ function getRowCells (row, labelNode, playerCount) {
 }
 
 /**
-   * Bestimmt Zellen anhand der Zeilen-Ausrichtung (Fallback fÃ¼r getrennte Spalten).
+   * Bestimmt Zellen anhand der Zeilen-Ausrichtung (Fallback für getrennte Spalten).
    * @param {Element} root - Wurzel der Cricket-Tabelle.
    * @param {Element} labelNode - Label-Element.
    * @param {number|null} playerCount - Anzahl der Spieler (falls bekannt).
@@ -836,7 +837,7 @@ function getMarksFromAttributes (element) {
 }
 
 /**
-   * Liest Marks aus Zelltext (unterstÃ¼tzt gÃ¤ngige Cricket-Symbole).
+   * Liest Marks aus Zelltext (unterstützt gängige Cricket-Symbole).
    * @param {string|null} text - Zelltext.
    * @returns {number|null}
    */
@@ -891,7 +892,7 @@ function getMarksFromText (text) {
 }
 
 /**
-   * ZÃ¤hlt Mark-Icons anhand eines Selektors.
+   * Zählt Mark-Icons anhand eines Selektors.
    * @param {Element} cell - Zellen-Element.
    * @returns {number|null}
    */
@@ -967,7 +968,7 @@ function isEmptyCell (cell) {
 }
 
 /**
-   * Baut eine Zustands-Map fÃ¼r den aktiven Spieler.
+   * Baut eine Zustands-Map für den aktiven Spieler.
    * @param {number} playerCount - Anzahl der Spieler.
    * @param {number} activeIndex - Index des aktiven Spielers.
    * @returns {Map<string, {state: string}>|null}
@@ -1070,7 +1071,7 @@ function getCricketStates (playerCount, activeIndex) {
 }
 
 /**
-   * Baut die Highlight-Formen fÃ¼r ein Ziel.
+   * Baut die Highlight-Formen für ein Ziel.
    * @param {number} radius - Board-Radius.
    * @param {{label: string, value?: number, ring?: string}} target - Zielinfo.
    * @returns {SVGElement[]}
@@ -1103,7 +1104,7 @@ function buildTargetShapes (radius, target) {
 }
 
 /**
-   * Setzt CSS-Variablen fÃ¼r das Overlay.
+   * Setzt CSS-Variablen für das Overlay.
    * @param {SVGGElement} overlay - Overlay-Gruppe.
    * @param {number} radius - Board-Radius.
    * @returns {void}
@@ -1149,7 +1150,7 @@ function applyOverlayTheme (overlay, radius) {
 
 /**
    * Rendert die Ziel-Overlays anhand des aktuellen Zustands.
-   * @param {Map<string, {state: string}>} stateMap - Map der ZielzustÃ¤nde.
+   * @param {Map<string, {state: string}>} stateMap - Map der Zielzustände.
    * @returns {void}
    */
 function renderTargets (stateMap) {
@@ -1189,8 +1190,8 @@ function renderTargets (stateMap) {
 }
 
 /**
-   * Erstellt einen kompakten Status-Key, um unnÃ¶tige Updates zu vermeiden.
-   * @param {Map<string, {state: string}>} stateMap - Map der ZielzustÃ¤nde.
+   * Erstellt einen kompakten Status-Key, um unnötige Updates zu vermeiden.
+   * @param {Map<string, {state: string}>} stateMap - Map der Zielzustände.
    * @returns {string}
    */
 function buildStateKey (stateMap) {
@@ -1257,7 +1258,7 @@ function updateTargets () {
 }
 
 		/**
-   * Fasst viele DOM-Ã„nderungen zu einem Update pro Frame zusammen.
+   * Fasst viele DOM-Änderungen zu einem Update pro Frame zusammen.
    * @returns {void}
    */
 		const scheduleUpdate = createRafScheduler(updateTargets);
@@ -1271,10 +1272,11 @@ function updateTargets () {
 		ensureStyle(STYLE_ID, STYLE_TEXT);
 		updateTargets();
 
-		// Beobachtet DOM-Ã„nderungen der Cricket-Tabelle und des aktiven Spielers.
+		// Beobachtet DOM-Änderungen der Cricket-Tabelle und des aktiven Spielers.
 		debugLog("applied");
 		observeMutations({
 			onChange: scheduleUpdate
 		});
 	})();
+
 

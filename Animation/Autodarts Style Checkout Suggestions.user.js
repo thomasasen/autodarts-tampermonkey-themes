@@ -7,6 +7,7 @@
 // @xconfig-title  Checkout-Empfehlungsstil
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-style-checkout-suggestions
+// @xconfig-tech-anchor  animation-autodarts-style-checkout-suggestions
 // @xconfig-background     assets/animation-style-checkout-suggestions-format-stripe-readme.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -566,3 +567,4 @@
 	});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

@@ -1,4 +1,4 @@
-﻿# Technische Referenz
+# Technische Referenz
 
 > Technische Detaildokumentation zu allen Themes und Animationen (Variablen, Selektoren, Trigger, CSS-Blöcke, Fallbacks).
 
@@ -54,7 +54,12 @@ Diese Skripte verändern Layout und Farben und aktivieren sich automatisch je Sp
 
 Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert ist, wird kein Platz reserviert.
 
+<a id="template-autodarts-theme-x01"></a>
+
 #### Template: Autodarts Theme X01
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Template/Autodarts%20Theme%20X01.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#template-autodarts-theme-x01)
 
 - Bezeichnung: Autodarts Theme X01
 - Datei: `Template/Autodarts Theme X01.user.js`
@@ -80,7 +85,6 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert für X01 ein oder aus.
 - Kombination: Wenn `Aus` gesetzt ist, wird auch der Trendpfeil aus `Autodarts Animate Average Trend Arrow` ausgeblendet.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                        | Standard                     | Wirkung                                                                                                               |
 | :------------------------------ | :--------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
@@ -117,7 +121,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ---
 
+<a id="template-autodarts-theme-shanghai"></a>
+
 #### Template: Autodarts Theme Shanghai
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Template/Autodarts%20Theme%20Shanghai.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#template-autodarts-theme-shanghai)
 
 - Bezeichnung: Autodarts Theme Shanghai
 - Datei: `Template/Autodarts Theme Shanghai.user.js`
@@ -143,7 +152,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Shanghai-Theme ein oder aus.
 - Kombination: Bei `Aus` wird zusätzlich der Trendpfeil (`Autodarts Animate Average Trend Arrow`) verborgen.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                          | Wirkung                                                                           |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------- |
@@ -167,7 +175,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ---
 
+<a id="template-autodarts-theme-bermuda"></a>
+
 #### Template: Autodarts Theme Bermuda
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Template/Autodarts%20Theme%20Bermuda.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#template-autodarts-theme-bermuda)
 
 - Bezeichnung: Autodarts Theme Bermuda
 - Datei: `Template/Autodarts Theme Bermuda.user.js`
@@ -210,7 +223,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ---
 
+<a id="template-autodarts-theme-cricket"></a>
+
 #### Template: Autodarts Theme Cricket
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Template/Autodarts%20Theme%20Cricket.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#template-autodarts-theme-cricket)
 
 - Bezeichnung: Autodarts Theme Cricket
 - Datei: `Template/Autodarts Theme Cricket.user.js`
@@ -236,7 +254,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-Theme ein oder aus.
 - Kombination: Bei `Aus` wird auch der Trendpfeil (`Autodarts Animate Average Trend Arrow`) ausgeblendet.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                         | Wirkung                                                                                                          |
 | :-------------------- | :------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
@@ -259,7 +276,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ---
 
+<a id="template-autodarts-theme-bull-off"></a>
+
 #### Template: Autodarts Theme Bull-off
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Template/Autodarts%20Theme%20Bull-off.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#template-autodarts-theme-bull-off)
 
 - Bezeichnung: Autodarts Theme Bull-off
 - Datei: `Template/Autodarts Theme Bull-off.user.js`
@@ -286,7 +308,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `xConfig_KONTRAST_PRESET`: Regelt, wie deutlich Kontraste, Konturen und Glow-Effekte im Bull-off-Theme sichtbar sind.
 - `Sanft` ist ruhiger, `Standard` entspricht dem bisherigen Look, `Kräftig` hebt Kontraste deutlich stärker hervor.
 - Das Preset ändert nur die Intensität, nicht Layout oder Positionen.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable              | Standard                          | Wirkung                                                                                             |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------------------------- |
@@ -321,7 +342,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - Enthält u.a. Observer-Utilities, Variant-Checks (X01/Cricket) und Board-Overlay-Helfer.
 - Wenn du das Repo forkst oder lokale Dateien nutzt, passe die `@require`-URL im Skript an.
 
+<a id="animation-autodarts-animate-triple-double-bull-hits"></a>
+
 #### Animation: Autodarts Animate Triple Double Bull Hits
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Triple%20Double%20Bull%20Hits.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-triple-double-bull-hits)
 
 - Bezeichnung: Autodarts Animate Triple Double Bull Hits
 - Datei: `Animation/Autodarts Animate Triple Double Bull Hits.user.js`
@@ -348,7 +374,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `xConfig_DOUBLE_HERVORHEBEN`: Steuert Double-Highlights (D1–D20).
 - `xConfig_BULL_HERVORHEBEN`: Schaltet Bull-Highlight separat.
 - `xConfig_AKTUALISIERUNGSMODUS`: `Nur Live` für minimale Last, `Kompatibel` für robuste Erkennung.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                      | Standard                           | Wirkung                                                                                                                                                                                   |
 | :---------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -370,7 +395,12 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ---
 
+<a id="animation-autodarts-animate-single-bull-sound"></a>
+
 #### Animation: Autodarts Animate Single Bull Sound
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Single%20Bull%20Sound.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-single-bull-sound)
 
 - Bezeichnung: Autodarts Animate Single Bull Sound
 - Datei: `Animation/Autodarts Animate Single Bull Sound.user.js`
@@ -391,7 +421,6 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_LAUTSTAERKE`: Wählt die Sound-Lautstärke für den Single-Bull-Treffer.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                     | Standard                                                                                                | Wirkung                                                                     |
 | :--------------------------- | :------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------- |
@@ -415,7 +444,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-checkout-score-pulse"></a>
+
 #### Animation: Autodarts Animate Checkout Score Pulse
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Checkout%20Score%20Pulse.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-checkout-score-pulse)
 
 - Bezeichnung: Autodarts Animate Checkout Score Pulse
 - Datei: `Animation/Autodarts Animate Checkout Score Pulse.user.js`
@@ -445,7 +479,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 - `Vorschlag zuerst`: nutzt zuerst den Suggestion-Text, fällt sonst auf Score-Regel zurück.
 - `Nur Score`: ignoriert Suggestion und prüft nur die Checkout-Mathematik des Scores.
 - `Nur Vorschlag`: reagiert nur auf Suggestion-Text, ohne Score-Fallback.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                | Standard                                      | Wirkung                                                                                                  |
 | :---------------------- | :-------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
@@ -473,7 +506,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-turn-points-count"></a>
+
 #### Animation: Autodarts Animate Turn Points Count
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Turn%20Points%20Count.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-turn-points-count)
 
 - Bezeichnung: Autodarts Animate Turn Points Count
 - Datei: `Animation/Autodarts Animate Turn Points Count.user.js`
@@ -494,7 +532,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_ANIMATIONSDAUER_MS`: Steuert, wie schnell die Turn-Punkte hoch/runter zählen.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable               | Standard               | Wirkung                                                                                 |
 | :--------------------- | :--------------------- | :-------------------------------------------------------------------------------------- |
@@ -511,7 +548,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-average-trend-arrow"></a>
+
 #### Animation: Autodarts Animate Average Trend Arrow
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Average%20Trend%20Arrow.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-average-trend-arrow)
 
 - Bezeichnung: Autodarts Animate Average Trend Arrow
 - Datei: `Animation/Autodarts Animate Average Trend Arrow.user.js`
@@ -534,7 +576,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 - `xConfig_ANIMATIONSDAUER_MS`: Legt die Dauer des Auf/Ab-Pfeils fest.
 - `xConfig_PFEIL_GROESSE`: Ändert die sichtbare Pfeilgröße neben dem AVG.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable        | Standard                        | Wirkung                                                                                       |
 | :-------------- | :------------------------------ | :-------------------------------------------------------------------------------------------- |
@@ -559,7 +600,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-turn-start-sweep"></a>
+
 #### Animation: Autodarts Animate Turn Start Sweep
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Turn%20Start%20Sweep.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-turn-start-sweep)
 
 - Bezeichnung: Autodarts Animate Turn Start Sweep
 - Datei: `Animation/Autodarts Animate Turn Start Sweep.user.js`
@@ -582,7 +628,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 - `xConfig_SWEEP_GESCHWINDIGKEIT_MS`: Passt die Sweep-Dauer an.
 - `xConfig_SWEEP_STIL`: Wählt Breite/Intensität des Lichtstreifens.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                 | Standard                     | Wirkung                                                                                  |
 | :----------------------- | :--------------------------- | :--------------------------------------------------------------------------------------- |
@@ -604,7 +649,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-remove-darts-notification"></a>
+
 #### Animation: Autodarts Animate Remove Darts Notification
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Remove%20Darts%20Notification.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-remove-darts-notification)
 
 - Bezeichnung: Autodarts Animate Remove Darts Notification
 - Datei: `Animation/Autodarts Animate Remove Darts Notification.user.js`
@@ -631,7 +681,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 - `xConfig_PULSE_ANIMATION`: Aktiviert oder deaktiviert den Puls-Effekt.
 - `xConfig_PULSE_STAERKE`: Regelt, wie stark das Bild beim Puls gezoomt wird.
 - Hinweis: Bei `xConfig_PULSE_ANIMATION = Aus` hat `xConfig_PULSE_STAERKE` keinen sichtbaren Effekt.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                   | Standard                                                                                             | Wirkung                                                                       |
 | :------------------------- | :--------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
@@ -657,7 +706,12 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 
 ---
 
+<a id="animation-autodarts-animate-winner-fireworks"></a>
+
 #### Animation: Autodarts Animate Winner Fireworks
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Winner%20Fireworks.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-winner-fireworks)
 
 - Bezeichnung: Autodarts Animate Winner Fireworks
 - Datei: `Animation/Autodarts Animate Winner Fireworks.user.js`
@@ -690,7 +744,6 @@ Sound-Beispiel: [singlebull.mp3](../assets/singlebull.mp3)
 - `xConfig_BULLOUT_AKTIV`: Aktiviert den Effekt auch bei Bull-Out/Bull-Off-Varianten.
 - `xConfig_KLICK_ZUM_STOPPEN`: Klick/Tap blendet den Effekt sofort aus.
 - `xConfig_DEBUG`: Schreibt Diagnose-Logs in die Konsole.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                | Standard                                                                             | Wirkung                                                                                      |
 | :---------------------- | :----------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
@@ -723,7 +776,12 @@ Varianten:
 
 ---
 
+<a id="animation-autodarts-animate-dart-marker-emphasis"></a>
+
 #### Animation: Autodarts Animate Dart Marker Emphasis
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Dart%20Marker%20Emphasis.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-dart-marker-emphasis)
 
 - Bezeichnung: Autodarts Animate Dart Marker Emphasis
 - Datei: `Animation/Autodarts Animate Dart Marker Emphasis.user.js`
@@ -752,7 +810,6 @@ Varianten:
 - `xConfig_EFFEKT`: Aktiviert `Glow`, `Pulse` oder deaktiviert den Effekt.
 - `xConfig_MARKER_OPAZITAET`: Regelt die Grundsichtbarkeit der Marker.
 - `xConfig_OUTLINE`: Fügt optional einen weißen oder schwarzen Rand hinzu.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable          | Standard                                                    | Wirkung                                                            |
 | :---------------- | :---------------------------------------------------------- | :----------------------------------------------------------------- |
@@ -774,7 +831,12 @@ Varianten:
 
 ---
 
+<a id="animation-autodarts-animate-dart-marker-darts"></a>
+
 #### Animation: Autodarts Animate Dart Marker Darts
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Dart%20Marker%20Darts.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-dart-marker-darts)
 
 - Bezeichnung: Autodarts Animate Dart Marker Darts
 - Datei: `Animation/Autodarts Animate Dart Marker Darts.user.js`
@@ -786,7 +848,7 @@ Varianten:
 - Animation: optionaler Flug mit leichtem Gravity-Bogen und kurzem Einschlag-Wobble.
 - Trigger/Erkennung: SVG-Marker via `CONFIG.markerSelector`.
 - Änderungen: legt ein SVG-Overlay mit `<image>`-Darts an, optional Rotation zur Boardmitte für bessere Ausrichtung.
-- Hinweis: Bilder der auswählbaren Designs findest du auch über den Button `📖 Anleitung` im AD xConfig-Modul.
+- Hinweis: Bilder der auswählbaren Designs findest du auch über den Button `📖 README` im AD xConfig-Modul.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -805,7 +867,6 @@ Varianten:
 - `xConfig_DART_GROESSE`: Verkleinert oder vergrößert die Dart-Bilder.
 - `xConfig_ORIGINAL_MARKER_AUSBLENDEN`: Blendet die runden Original-Marker aus, damit nur Dart-Bilder sichtbar sind.
 - `xConfig_FLUGGESCHWINDIGKEIT`: Steuert das Animationstempo (`Schnell`, `Standard`, `Cinematic`).
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                          | Standard                                                                                                                                                                                                                    | Wirkung                                                       |
 | :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------ |
@@ -874,7 +935,12 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 
 ---
 
+<a id="animation-autodarts-animate-checkout-board-targets"></a>
+
 #### Animation: Autodarts Animate Checkout Board Targets
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Checkout%20Board%20Targets.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-checkout-board-targets)
 
 - Bezeichnung: Autodarts Animate Checkout Board Targets
 - Datei: `Animation/Autodarts Animate Checkout Board Targets.user.js`
@@ -903,7 +969,6 @@ Variante über `DART_DESIGN` (siehe Tabelle unten).
 - `xConfig_SINGLE_RING`: Steuert die Single-Ring-Auswahl.
 - `xConfig_FARBTHEMA`: Wechselt Füll- und Konturfarben als Paket.
 - `xConfig_KONTUR_INTENSITAET`: Regelt, wie deutlich die weiße Kontur um Zielbereiche pulsiert.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                    | Standard                   | Wirkung                                                                                                                                                                       |
 | :-------------------------- | :------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -938,7 +1003,12 @@ Varianten über:
 
 ---
 
+<a id="animation-autodarts-animate-tv-board-zoom"></a>
+
 #### Animation: Autodarts Animate TV Board Zoom
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20TV%20Board%20Zoom.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-tv-board-zoom)
 
 - Bezeichnung: Autodarts Animate TV Board Zoom
 - Datei: `Animation/Autodarts Animate TV Board Zoom.user.js`
@@ -963,7 +1033,6 @@ Varianten über:
 - `xConfig_ZOOM_STUFE`: Wählt die Zoom-Stufe (`2.35x`, `2.75x`, `3.15x`).
 - `xConfig_ZOOM_GESCHWINDIGKEIT`: Schaltet Presets für Ein-/Auszoom und Haltezeit (`schnell`, `mittel`, `langsam`).
 - `xConfig_CHECKOUT_ZOOM`: Aktiviert die Checkout-Priorität (Finish-Felder werden vor `T20,T20` bevorzugt).
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                                   | Standard                  | Wirkung                                                                                                                                         |
 | :----------------------------------------- | :------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -994,7 +1063,12 @@ Varianten über:
 
 ---
 
+<a id="animation-autodarts-style-checkout-suggestions"></a>
+
 #### Animation: Autodarts Style Checkout Suggestions
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Style%20Checkout%20Suggestions.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-style-checkout-suggestions)
 
 - Bezeichnung: Autodarts Style Checkout Suggestions
 - Datei: `Animation/Autodarts Style Checkout Suggestions.user.js`
@@ -1019,7 +1093,6 @@ Varianten über:
 - `xConfig_STIL`: Wählt die visuelle Darstellungsart der Suggestion.
 - `xConfig_LABELTEXT`: Legt den Labeltext fest oder blendet ihn aus.
 - `xConfig_FARBTHEMA`: Wechselt Akzent-, Glow- und Labelfarben.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                    | Standard                   | Wirkung                                                 |
 | :-------------------------- | :------------------------- | :------------------------------------------------------ |
@@ -1058,7 +1131,12 @@ Varianten:
 
 ---
 
+<a id="animation-autodarts-animate-cricket-target-highlighter"></a>
+
 #### Animation: Autodarts Animate Cricket Target Highlighter
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-cricket-target-highlighter)
 
 - Bezeichnung: Autodarts Animate Cricket Target Highlighter
 - Datei: `Animation/Autodarts Animate Cricket Target Highlighter.user.js`
@@ -1083,7 +1161,6 @@ Varianten:
 - `xConfig_DEAD_ZIELE_ANZEIGEN`: Zeigt bzw. versteckt bereits „tote“ Ziele.
 - `xConfig_FARBTHEMA`: Wählt das Farbschema für `Score` und `Danger`.
 - `xConfig_INTENSITAET`: Regelt Deckkraft und Kontrast des Overlays.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                      | Standard                  | Wirkung                                                                                                                           |
 | :---------------------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
@@ -1123,7 +1200,12 @@ Varianten:
 
 ---
 
+<a id="animation-autodarts-animate-cricket-grid-fx"></a>
+
 #### Animation: Autodarts Animate Cricket Grid FX
+
+[![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](../Animation/Autodarts%20Animate%20Cricket%20Grid%20FX.user.js)
+[![📖 README](https://img.shields.io/badge/%F0%9F%93%96%20README-%C3%96ffnen-2563eb?style=for-the-badge)](../README.md#animation-autodarts-animate-cricket-grid-fx)
 
 - Bezeichnung: Autodarts Animate Cricket Grid FX
 - Datei: `Animation/Autodarts Animate Cricket Grid FX.user.js`
@@ -1171,7 +1253,6 @@ Varianten:
   Sichtbild: Kurzer Übergangseffekt über das Grid zur besseren Phasenorientierung.
 - `xConfig_OPPONENT_PRESSURE_OVERLAY`: Overlay bei Defensivdruck (Gegner geschlossen, eigener Mark-Stand niedrig).
   Sichtbild: Kritische Zeilen werden klar als „sofort beachten“ markiert.
-- Direkt über AD xConfig aufrufbar via `📖 Anleitung` im Modul.
 
 | Variable                                 | Standard | Wirkung                                                                                                 |
 | :--------------------------------------- | :------- | :------------------------------------------------------------------------------------------------------ |

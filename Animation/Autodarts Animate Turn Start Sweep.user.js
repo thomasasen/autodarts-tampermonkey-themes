@@ -7,6 +7,7 @@
 // @xconfig-title  Spielerwechsel-Sweep
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-turn-start-sweep
+// @xconfig-tech-anchor  animation-autodarts-animate-turn-start-sweep
 // @xconfig-background     assets/animation-turn-start-sweep-xConfig.gif
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -245,3 +246,4 @@
 	});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

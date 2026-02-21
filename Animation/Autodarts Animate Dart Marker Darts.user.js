@@ -7,6 +7,7 @@
 // @xconfig-title  Dart-Bildmarker
 // @xconfig-variant      all
 // @xconfig-readme-anchor  animation-autodarts-animate-dart-marker-darts
+// @xconfig-tech-anchor  animation-autodarts-animate-dart-marker-darts
 // @xconfig-background     assets/animation-dart-marker-darts-xConfig.png
 // @xconfig-settings-version 4
 // @author       Thomas Asen
@@ -1477,3 +1478,4 @@
 	window.addEventListener("beforeunload", cleanupInstance, {once: true});
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

@@ -7,6 +7,7 @@
 // @xconfig-title  Theme Bull-off
 // @xconfig-variant      bull-off
 // @xconfig-readme-anchor  template-autodarts-theme-bull-off
+// @xconfig-tech-anchor  template-autodarts-theme-bull-off
 // @xconfig-background     assets/template-theme-bull-off-xConfig.png
 // @xconfig-settings-version 3
 // @author       Thomas Asen
@@ -357,3 +358,4 @@ span.css-3fr5p8{
 
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+

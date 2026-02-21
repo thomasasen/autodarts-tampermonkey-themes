@@ -7,6 +7,7 @@
 // @xconfig-title  TV-Board-Zoom
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
+// @xconfig-tech-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-background     assets/animation-Autodarts-Animate-TV-Board-Zoom.gif
 // @xconfig-settings-version 9
 // @author       Thomas Asen
@@ -1593,3 +1594,4 @@
   scheduleUpdate();
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
+
