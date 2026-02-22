@@ -1,15 +1,14 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Autodarts Animate TV Board Zoom [Beta]
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.22-beta.2
+// @version      1.22-beta.3
 // @description  Simuliert in X01 TV-ähnliche Zooms auf relevante Zielbereiche vor dem dritten Dart.
-// @xconfig-description  Beta: Stabilere Zoom-Timelines mit GSAP (sauberes Kill/Cleanup bei schnellen Wechseln).
+// @xconfig-description  Beta: Auf Original-Parität zurückgeführt, mit stabilen GSAP-Tweens und sauberem Tween-Cleanup.
 // @xconfig-title  TV-Board-Zoom [Beta]
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-tech-anchor  animation-autodarts-animate-tv-board-zoom
 // @xconfig-background     assets/animation-Autodarts-Animate-TV-Board-Zoom.gif
-
 // @xconfig-settings-version 9
 // @xconfig-beta         true
 // @author       Thomas Asen
@@ -41,7 +40,7 @@
     ensureStyle,
     createRafScheduler,
     observeMutations,
-    getBoardRadius,
+    findBoard,
     segmentAngles,
     isX01Variant,
   } = window.autodartsAnimationShared;
@@ -192,12 +191,6 @@
     t20SlackRebalanceFactor: 0.14,
     checkoutDoubleSlackRebalanceFactor: 0.18,
     bullSlackRebalanceFactor: 0.24,
-    transientIntentGraceMs: 520,
-    stableTurnContextTtlMs: 900,
-    boardSwitchGuardMs: 550,
-    boardLossGraceMs: 650,
-    minBoardNumbers: 12,
-    minBoardPx: 90,
     easingIn: "cubic-bezier(0.2, 0.8, 0.2, 1)",
     easingOut: "cubic-bezier(0.4, 0, 0.2, 1)",
   };
@@ -240,16 +233,6 @@
     dismissedUntilTs: 0,
     releaseTimeoutId: 0,
     activeZoomTween: null,
-    lastIntentToken: "",
-    noIntentSinceTs: 0,
-    lastStableTurn: null,
-    lastStableThrows: [],
-    lastStableTurnTs: 0,
-    stableBoardSvg: null,
-    pendingBoardSvg: null,
-    pendingBoardSinceTs: 0,
-    boardLossSinceTs: 0,
-    debugThrottle: new Map(),
   };
 
   const originalStyleCache = new WeakMap();
@@ -277,19 +260,6 @@
 		}
 		console.log(`${DEBUG_PREFIX} ${event}`, payload);
 	}
-
-  function debugLogThrottled(event, payload, minIntervalMs = 350) {
-    if (!DEBUG_ENABLED) {
-      return;
-    }
-    const nowTs = Date.now();
-    const lastTs = Number(state.debugThrottle.get(event) || 0);
-    if (nowTs - lastTs < minIntervalMs) {
-      return;
-    }
-    state.debugThrottle.set(event, nowTs);
-    debugLog(event, payload);
-  }
 
 	function debugWarn(event, payload) {
 		if (!DEBUG_ENABLED) {
@@ -421,231 +391,6 @@
     }
 
     return { viewBox, center, radius };
-  }
-
-  function countBoardNumbers(svg) {
-    if (!svg || !(svg instanceof SVGElement)) {
-      return 0;
-    }
-
-    const numbers = new Set();
-    for (const text of svg.querySelectorAll("text")) {
-      const value = Number.parseInt(String(text?.textContent || "").trim(), 10);
-      if (value >= 1 && value <= 20) {
-        numbers.add(value);
-      }
-    }
-    return numbers.size;
-  }
-
-  function getVisibleAreaPx(rect) {
-    if (!rect || rect.width <= 0 || rect.height <= 0) {
-      return 0;
-    }
-
-    const viewportWidth = Number(window.innerWidth || 0);
-    const viewportHeight = Number(window.innerHeight || 0);
-    if (!(viewportWidth > 0 && viewportHeight > 0)) {
-      return 0;
-    }
-
-    const left = Math.max(0, rect.left);
-    const top = Math.max(0, rect.top);
-    const right = Math.min(viewportWidth, rect.right);
-    const bottom = Math.min(viewportHeight, rect.bottom);
-    const width = Math.max(0, right - left);
-    const height = Math.max(0, bottom - top);
-    return width * height;
-  }
-
-  function getBoardCandidateInfo(svg) {
-    if (!svg || !(svg instanceof SVGElement) || !svg.isConnected) {
-      return null;
-    }
-
-    const numberScore = countBoardNumbers(svg);
-    if (numberScore < CONFIG.minBoardNumbers) {
-      return null;
-    }
-
-    const radius = getBoardRadius(svg);
-    if (!(Number.isFinite(radius) && radius > 0)) {
-      return null;
-    }
-
-    const rect = svg.getBoundingClientRect();
-    if (
-      !rect ||
-      rect.width < CONFIG.minBoardPx ||
-      rect.height < CONFIG.minBoardPx
-    ) {
-      return null;
-    }
-
-    const visibleAreaPx = getVisibleAreaPx(rect);
-    if (!(visibleAreaPx > 0)) {
-      return null;
-    }
-
-    const rawAreaPx = rect.width * rect.height;
-    // Prioritize board-identification quality first, then on-screen size.
-    const score = numberScore * 1e9 + visibleAreaPx * 1e4 + rawAreaPx + radius;
-
-    return {
-      svg,
-      score,
-      numberScore,
-      radius,
-      visibleAreaPx,
-      rawAreaPx,
-    };
-  }
-
-  function buildBoardFromSvg(svg) {
-    if (!svg || !(svg instanceof SVGElement)) {
-      return null;
-    }
-
-    let bestGroup = null;
-    let bestRadius = 0;
-    for (const group of svg.querySelectorAll("g")) {
-      const radius = getBoardRadius(group);
-      if (radius > bestRadius) {
-        bestRadius = radius;
-        bestGroup = group;
-      }
-    }
-
-    const radius = bestRadius || getBoardRadius(svg);
-    if (!(Number.isFinite(radius) && radius > 0)) {
-      return null;
-    }
-
-    return {
-      svg,
-      group: bestGroup || svg,
-      radius,
-    };
-  }
-
-  function pickBestBoardCandidate() {
-    const svgs = [...document.querySelectorAll("svg")];
-    if (!svgs.length) {
-      return null;
-    }
-
-    let best = null;
-    for (const svg of svgs) {
-      const candidate = getBoardCandidateInfo(svg);
-      if (!candidate) {
-        continue;
-      }
-      if (!best || candidate.score > best.score) {
-        best = candidate;
-      }
-    }
-
-    return best;
-  }
-
-  function resolveStableBoard() {
-    const nowTs = Date.now();
-    const candidate = pickBestBoardCandidate();
-    const stableSvg = state.stableBoardSvg;
-
-    if (!candidate) {
-      if (stableSvg && stableSvg.isConnected) {
-        const stableBoard = buildBoardFromSvg(stableSvg);
-        if (stableBoard) {
-          return stableBoard;
-        }
-      }
-      return null;
-    }
-
-    if (!stableSvg || !stableSvg.isConnected) {
-      state.stableBoardSvg = candidate.svg;
-      state.pendingBoardSvg = null;
-      state.pendingBoardSinceTs = 0;
-      debugLogThrottled("board-select-initial", {
-        area: Math.round(candidate.visibleAreaPx),
-        numbers: candidate.numberScore,
-      });
-      return buildBoardFromSvg(candidate.svg);
-    }
-
-    if (candidate.svg === stableSvg) {
-      state.pendingBoardSvg = null;
-      state.pendingBoardSinceTs = 0;
-      return buildBoardFromSvg(stableSvg);
-    }
-
-    const stableInfo = getBoardCandidateInfo(stableSvg);
-    if (!stableInfo) {
-      state.stableBoardSvg = candidate.svg;
-      state.pendingBoardSvg = null;
-      state.pendingBoardSinceTs = 0;
-      debugLogThrottled("board-switch-invalid-stable", {
-        toArea: Math.round(candidate.visibleAreaPx),
-      });
-      return buildBoardFromSvg(candidate.svg);
-    }
-
-    const hasStrongLead =
-      candidate.score > stableInfo.score &&
-      candidate.visibleAreaPx - stableInfo.visibleAreaPx > 3200;
-    if (!hasStrongLead) {
-      state.pendingBoardSvg = null;
-      state.pendingBoardSinceTs = 0;
-      return buildBoardFromSvg(stableSvg);
-    }
-
-    if (state.pendingBoardSvg !== candidate.svg) {
-      state.pendingBoardSvg = candidate.svg;
-      state.pendingBoardSinceTs = nowTs;
-      debugLogThrottled("board-switch-pending", {
-        fromArea: Math.round(stableInfo.visibleAreaPx),
-        toArea: Math.round(candidate.visibleAreaPx),
-      });
-      return buildBoardFromSvg(stableSvg);
-    }
-
-    if (nowTs - state.pendingBoardSinceTs < CONFIG.boardSwitchGuardMs) {
-      return buildBoardFromSvg(stableSvg);
-    }
-
-    state.stableBoardSvg = candidate.svg;
-    state.pendingBoardSvg = null;
-    state.pendingBoardSinceTs = 0;
-    debugLogThrottled("board-switch-commit", {
-      toArea: Math.round(candidate.visibleAreaPx),
-      guardMs: CONFIG.boardSwitchGuardMs,
-    });
-    return buildBoardFromSvg(candidate.svg);
-  }
-
-  function shouldDelayResetForTransientBoardLoss() {
-    if (!state.zoomedElement) {
-      state.boardLossSinceTs = 0;
-      return false;
-    }
-
-    const nowTs = Date.now();
-    if (!state.boardLossSinceTs) {
-      state.boardLossSinceTs = nowTs;
-      debugLogThrottled("board-loss-grace-start", {
-        graceMs: CONFIG.boardLossGraceMs,
-      });
-      return true;
-    }
-
-    const withinGrace = nowTs - state.boardLossSinceTs <= CONFIG.boardLossGraceMs;
-    if (withinGrace) {
-      debugLogThrottled("board-loss-grace-active", {
-        ageMs: nowTs - state.boardLossSinceTs,
-      });
-    }
-    return withinGrace;
   }
 
   function normalizeSegmentName(name) {
@@ -790,14 +535,6 @@
     return "";
   }
 
-  function scoreToOneDartCheckoutSegment(score) {
-    if (!Number.isFinite(score)) {
-      return "";
-    }
-    const segment = getCheckoutTargetSegment(score);
-    return segment && isOneDartCheckoutSegment(segment) ? segment : "";
-  }
-
   function isOneDartCheckoutSegment(segmentName) {
     const normalized = normalizeSegmentName(segmentName);
     return normalized === "BULL" || /^D([1-9]|1\d|20)$/.test(normalized);
@@ -915,21 +652,14 @@
 
   function getCheckoutSegmentFromScoreSources() {
     // Checkout zoom is strictly based on remaining score (no suggestion parsing).
-    // Prefer DOM when valid, but keep GameState as anti-jitter fallback.
+    // Use visible player score only; shared game score can be stale in some views.
     const domRemainingScore = getActiveRemainingScoreFromDom();
-    const domSegment = scoreToOneDartCheckoutSegment(domRemainingScore);
-
-    let gameStateSegment = "";
-    if (gameStateShared && typeof gameStateShared.getActiveScore === "function") {
-      const gameStateScore = gameStateShared.getActiveScore();
-      gameStateSegment = scoreToOneDartCheckoutSegment(gameStateScore);
+    if (!Number.isFinite(domRemainingScore)) {
+      return "";
     }
 
-    if (domSegment && gameStateSegment) {
-      return domSegment;
-    }
-
-    return domSegment || gameStateSegment || "";
+    const segment = getCheckoutTargetSegment(domRemainingScore);
+    return segment && isOneDartCheckoutSegment(segment) ? segment : "";
   }
 
   function isSensibleThirdT20Score(remainingScore) {
@@ -1125,80 +855,19 @@
   }
 
   function isX01Active() {
-    const domVariantIsX01 = isX01Variant("ad-ext-game-variant", {
+    if (gameStateShared && typeof gameStateShared.isX01Variant === "function") {
+      return gameStateShared.isX01Variant({
+        allowNumeric: true,
+        allowMissing: false,
+        allowEmpty: false,
+      });
+    }
+
+    return isX01Variant("ad-ext-game-variant", {
       allowNumeric: true,
       allowMissing: false,
       allowEmpty: false,
     });
-
-    if (gameStateShared && typeof gameStateShared.isX01Variant === "function") {
-      let sharedVariantIsX01 = null;
-      try {
-        sharedVariantIsX01 = gameStateShared.isX01Variant({
-          allowNumeric: true,
-          allowMissing: false,
-          allowEmpty: false,
-        });
-      } catch (_) {
-        sharedVariantIsX01 = null;
-      }
-
-      if (sharedVariantIsX01 === true) {
-        return true;
-      }
-      if (sharedVariantIsX01 === false && domVariantIsX01) {
-        // GameState can be temporarily incomplete (e.g. game-events payload).
-        // Keep DOM variant as stability fallback to avoid zoom flicker.
-        debugLogThrottled("variant-fallback-dom", {
-          reason: "shared-false-dom-true",
-        });
-        return true;
-      }
-      if (sharedVariantIsX01 === false) {
-        return false;
-      }
-    }
-
-    return domVariantIsX01;
-  }
-
-  function getStableTurnContext(nowTs) {
-    const turn =
-      typeof gameStateShared?.getActiveTurn === "function"
-        ? gameStateShared.getActiveTurn()
-        : null;
-    const throws =
-      typeof gameStateShared?.getActiveThrows === "function"
-        ? gameStateShared.getActiveThrows()
-        : [];
-
-    if (turn && Array.isArray(throws)) {
-      state.lastStableTurn = turn;
-      state.lastStableThrows = throws.slice();
-      state.lastStableTurnTs = nowTs;
-      return {
-        turn,
-        throws,
-      };
-    }
-
-    if (
-      state.lastStableTurn &&
-      nowTs - state.lastStableTurnTs <= CONFIG.stableTurnContextTtlMs
-    ) {
-      debugLogThrottled("turn-context-fallback-cache", {
-        ageMs: nowTs - state.lastStableTurnTs,
-      });
-      return {
-        turn: state.lastStableTurn,
-        throws: Array.isArray(state.lastStableThrows) ? state.lastStableThrows : [],
-      };
-    }
-
-    return {
-      turn: null,
-      throws: [],
-    };
   }
 
   function clamp(value, minValue, maxValue) {
@@ -1587,51 +1256,13 @@
     }
   }
 
-  function buildIntentToken(turnId, throwCount) {
-    const normalizedTurnId = String(turnId || "");
-    const normalizedThrowCount = Number.isFinite(throwCount) ? throwCount : -1;
-    return `${normalizedTurnId}|${normalizedThrowCount}`;
-  }
-
-  function shouldDelayResetForTransientNoIntent() {
-    if (!state.zoomedElement || !state.activeZoomIntent) {
-      state.noIntentSinceTs = 0;
-      return false;
-    }
-
-    const currentToken = buildIntentToken(state.lastTurnId, state.lastThrowCount);
-    if (!state.lastIntentToken || state.lastIntentToken !== currentToken) {
-      state.noIntentSinceTs = 0;
-      return false;
-    }
-
-    const nowTs = Date.now();
-    if (!state.noIntentSinceTs) {
-      state.noIntentSinceTs = nowTs;
-      debugLogThrottled("no-intent-grace-start", {
-        graceMs: CONFIG.transientIntentGraceMs,
-      });
-      return true;
-    }
-
-    const withinGrace =
-      nowTs - state.noIntentSinceTs <= CONFIG.transientIntentGraceMs;
-    if (withinGrace) {
-      debugLogThrottled("no-intent-grace-active", {
-        ageMs: nowTs - state.noIntentSinceTs,
-      });
-    }
-    return withinGrace;
-  }
-
   function applyZoom(zoomTarget, host, transform, signature, zoomIntent) {
     if (!zoomTarget) {
       return;
     }
 
-    stopActiveZoomTween(state.zoomedElement);
-
     if (state.zoomedElement && state.zoomedElement !== zoomTarget) {
+      stopActiveZoomTween(state.zoomedElement);
       restoreStyle(state.zoomedElement);
       state.zoomedElement = null;
       state.lastAppliedTransform = "";
@@ -1654,7 +1285,7 @@
     zoomTarget.classList.add(ZOOM_CLASS);
     zoomTarget.style.transformOrigin = "0 0";
     zoomTarget.style.willChange = "transform";
-    zoomTarget.style.transition = "";
+    zoomTarget.style.transition = `transform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
 
     const baseTransform = getBaseTransform(zoomTarget);
     const composedTransform = baseTransform
@@ -1673,22 +1304,29 @@
     }
 
     if (gsapLib && typeof gsapLib.to === "function") {
-      const tween = gsapLib.to(zoomTarget, {
+      stopActiveZoomTween(zoomTarget);
+      zoomTarget.style.transition = "";
+      let tween = null;
+      tween = gsapLib.to(zoomTarget, {
         duration: Math.max(0.06, CONFIG.zoomInMs / 1000),
         transform: composedTransform,
         ease: "power2.out",
         overwrite: "auto",
+        onComplete: () => {
+          if (state.activeZoomTween === tween) {
+            state.activeZoomTween = null;
+          }
+        },
       });
       state.activeZoomTween = tween;
     } else {
       zoomTarget.style.transition = `transform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
       zoomTarget.style.transform = composedTransform;
     }
+
     state.zoomedElement = zoomTarget;
     state.lastAppliedTransform = composedSignature;
     state.activeZoomIntent = zoomIntent;
-    state.lastIntentToken = buildIntentToken(state.lastTurnId, state.lastThrowCount);
-    state.noIntentSinceTs = 0;
   }
 
   function resetZoom(options = {}) {
@@ -1703,9 +1341,6 @@
       stopActiveZoomTween(null);
       state.activeZoomIntent = null;
       state.lastAppliedTransform = "";
-      state.lastIntentToken = "";
-      state.noIntentSinceTs = 0;
-      state.boardLossSinceTs = 0;
       if (state.zoomHost) {
         restoreHostStyle(state.zoomHost);
         state.zoomHost = null;
@@ -1719,9 +1354,6 @@
       restoreStyle(zoomTarget);
       state.zoomedElement = null;
       state.lastAppliedTransform = "";
-      state.lastIntentToken = "";
-      state.noIntentSinceTs = 0;
-      state.boardLossSinceTs = 0;
       if (state.zoomHost) {
         restoreHostStyle(state.zoomHost);
         state.zoomHost = null;
@@ -1732,10 +1364,10 @@
 
     const expectedTarget = zoomTarget;
     const expectedHost = state.zoomHost;
-
     if (gsapLib && typeof gsapLib.to === "function") {
-      const baseTransform = getBaseTransform(zoomTarget) || "none";
       stopActiveZoomTween(zoomTarget);
+      zoomTarget.style.transition = "";
+      const baseTransform = getBaseTransform(zoomTarget) || "";
       state.activeZoomTween = gsapLib.to(zoomTarget, {
         duration: Math.max(0.08, CONFIG.zoomOutMs / 1000),
         transform: baseTransform,
@@ -1757,6 +1389,7 @@
     } else {
       zoomTarget.style.transition = `transform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
       zoomTarget.style.transform = "";
+
       const releaseDelay = CONFIG.zoomOutMs + 40;
       state.releaseTimeoutId = setTimeout(() => {
         state.releaseTimeoutId = 0;
@@ -1773,9 +1406,6 @@
     }
 
     state.activeZoomIntent = null;
-    state.lastIntentToken = "";
-    state.noIntentSinceTs = 0;
-    state.boardLossSinceTs = 0;
   }
 
   function shouldHoldZoom(nowTs, turnId, throwCount) {
@@ -1821,17 +1451,22 @@
       return null;
     }
 
-    const nowTs = Date.now();
-    const stableContext = getStableTurnContext(nowTs);
-    const turn = stableContext.turn;
-    const throws = stableContext.throws;
+    const turn =
+      typeof gameStateShared?.getActiveTurn === "function"
+        ? gameStateShared.getActiveTurn()
+        : null;
+    const throws =
+      typeof gameStateShared?.getActiveThrows === "function"
+        ? gameStateShared.getActiveThrows()
+        : [];
 
-    if (!turn) {
+    if (!turn || !Array.isArray(throws)) {
       return null;
     }
 
     const turnId = getTurnId(turn);
     const throwCount = throws.length;
+    const nowTs = Date.now();
 
     const turnChanged = turnId !== state.lastTurnId;
     if (turnChanged) {
@@ -1893,21 +1528,14 @@
   }
 
   function update() {
-    const board = resolveStableBoard();
+    const board = findBoard();
     if (!board?.svg) {
-      if (shouldDelayResetForTransientBoardLoss()) {
-        return;
-      }
       resetZoom();
       return;
     }
-    state.boardLossSinceTs = 0;
 
     const zoomTarget = resolveZoomTarget(board.svg);
     if (!zoomTarget) {
-      if (shouldDelayResetForTransientBoardLoss()) {
-        return;
-      }
       resetZoom();
       return;
     }
@@ -1918,13 +1546,9 @@
     const zoomIntent = computeZoomIntent(boardMetrics);
 
     if (!zoomIntent?.point) {
-      if (shouldDelayResetForTransientNoIntent()) {
-        return;
-      }
       resetZoom();
       return;
     }
-    state.noIntentSinceTs = 0;
 
     const zoomData = buildZoomTransform(
       zoomIntent,
@@ -1934,9 +1558,6 @@
       viewportElement
     );
     if (!zoomData) {
-      if (shouldDelayResetForTransientNoIntent()) {
-        return;
-      }
       resetZoom();
       return;
     }
@@ -1959,13 +1580,6 @@
   function onBeforeUnload() {
     resetZoom({ immediate: true });
     clearDismissState();
-    state.lastStableTurn = null;
-    state.lastStableThrows = [];
-    state.lastStableTurnTs = 0;
-    state.stableBoardSvg = null;
-    state.pendingBoardSvg = null;
-    state.pendingBoardSinceTs = 0;
-    state.boardLossSinceTs = 0;
   }
 
   ensureStyle(STYLE_ID, STYLE_TEXT);
@@ -1975,13 +1589,6 @@
 	debugLog("applied");
   const domObserver = observeMutations({
     target: document.documentElement,
-    types: ["childList", "characterData"],
-    options: {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: false,
-    },
     onChange: scheduleUpdate,
   });
 
@@ -2026,8 +1633,6 @@
     window.removeEventListener("pointerdown", onPointerDown, true);
     document.removeEventListener("visibilitychange", scheduleUpdate);
     window.removeEventListener("beforeunload", onBeforeUnload);
-    window.removeEventListener("beforeunload", cleanupInstance);
-    window.removeEventListener("pagehide", cleanupInstance);
     if (domReadyListener) {
       document.removeEventListener("DOMContentLoaded", domReadyListener);
       domReadyListener = null;
@@ -2051,6 +1656,4 @@
   scheduleUpdate();
 	debugLog("init", { debug: DEBUG_ENABLED });
 })();
-
-
 
