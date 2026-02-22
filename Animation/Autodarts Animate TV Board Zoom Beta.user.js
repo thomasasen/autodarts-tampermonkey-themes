@@ -3,7 +3,7 @@
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.22-beta.3
 // @description  Simuliert in X01 TV-ähnliche Zooms auf relevante Zielbereiche vor dem dritten Dart.
-// @xconfig-description  Beta: Auf Original-Parität zurückgeführt, mit stabilen GSAP-Tweens und sauberem Tween-Cleanup.
+// @xconfig-description  Beta: GSAP mit Anti-Flicker (Mutation-Filter + stale tween/reset guard + kurzer Transient-Reset-Delay).
 // @xconfig-title  TV-Board-Zoom [Beta]
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom
@@ -191,6 +191,7 @@
     t20SlackRebalanceFactor: 0.14,
     checkoutDoubleSlackRebalanceFactor: 0.18,
     bullSlackRebalanceFactor: 0.24,
+    transientResetGraceMs: 180,
     easingIn: "cubic-bezier(0.2, 0.8, 0.2, 1)",
     easingOut: "cubic-bezier(0.4, 0, 0.2, 1)",
   };
@@ -232,7 +233,10 @@
     dismissedThrowCount: -1,
     dismissedUntilTs: 0,
     releaseTimeoutId: 0,
+    releaseToken: 0,
+    pendingResetSinceTs: 0,
     activeZoomTween: null,
+    activeTweenMode: "",
   };
 
   const originalStyleCache = new WeakMap();
@@ -1245,11 +1249,24 @@
     host.classList.remove(ZOOM_HOST_CLASS);
   }
 
+  function clearReleaseTimeout() {
+    if (state.releaseTimeoutId) {
+      clearTimeout(state.releaseTimeoutId);
+      state.releaseTimeoutId = 0;
+    }
+  }
+
+  function invalidatePendingRelease() {
+    clearReleaseTimeout();
+    state.releaseToken += 1;
+  }
+
   function stopActiveZoomTween(target) {
     if (state.activeZoomTween && typeof state.activeZoomTween.kill === "function") {
       state.activeZoomTween.kill();
     }
     state.activeZoomTween = null;
+    state.activeTweenMode = "";
 
     if (gsapLib && typeof gsapLib.killTweensOf === "function" && target) {
       gsapLib.killTweensOf(target);
@@ -1260,6 +1277,9 @@
     if (!zoomTarget) {
       return;
     }
+
+    invalidatePendingRelease();
+    clearTransientResetDelay();
 
     if (state.zoomedElement && state.zoomedElement !== zoomTarget) {
       stopActiveZoomTween(state.zoomedElement);
@@ -1297,7 +1317,8 @@
 
     if (
       state.zoomedElement === zoomTarget &&
-      state.lastAppliedTransform === composedSignature
+      state.lastAppliedTransform === composedSignature &&
+      !(state.activeZoomTween && state.activeTweenMode === "out")
     ) {
       state.activeZoomIntent = zoomIntent;
       return;
@@ -1315,10 +1336,12 @@
         onComplete: () => {
           if (state.activeZoomTween === tween) {
             state.activeZoomTween = null;
+            state.activeTweenMode = "";
           }
         },
       });
       state.activeZoomTween = tween;
+      state.activeTweenMode = "in";
     } else {
       zoomTarget.style.transition = `transform ${CONFIG.zoomInMs}ms ${CONFIG.easingIn}`;
       zoomTarget.style.transform = composedTransform;
@@ -1331,11 +1354,8 @@
 
   function resetZoom(options = {}) {
     const immediate = Boolean(options.immediate);
-
-    if (state.releaseTimeoutId) {
-      clearTimeout(state.releaseTimeoutId);
-      state.releaseTimeoutId = 0;
-    }
+    clearTransientResetDelay();
+    invalidatePendingRelease();
 
     if (!state.zoomedElement) {
       stopActiveZoomTween(null);
@@ -1364,17 +1384,25 @@
 
     const expectedTarget = zoomTarget;
     const expectedHost = state.zoomHost;
+    const releaseToken = state.releaseToken;
     if (gsapLib && typeof gsapLib.to === "function") {
       stopActiveZoomTween(zoomTarget);
       zoomTarget.style.transition = "";
       const baseTransform = getBaseTransform(zoomTarget) || "";
-      state.activeZoomTween = gsapLib.to(zoomTarget, {
+      let tween = null;
+      tween = gsapLib.to(zoomTarget, {
         duration: Math.max(0.08, CONFIG.zoomOutMs / 1000),
         transform: baseTransform,
         ease: "power2.inOut",
         overwrite: "auto",
         onComplete: () => {
-          state.activeZoomTween = null;
+          if (state.activeZoomTween === tween) {
+            state.activeZoomTween = null;
+            state.activeTweenMode = "";
+          }
+          if (releaseToken !== state.releaseToken) {
+            return;
+          }
           if (state.zoomedElement === expectedTarget) {
             restoreStyle(expectedTarget);
             state.zoomedElement = null;
@@ -1386,6 +1414,8 @@
           }
         },
       });
+      state.activeZoomTween = tween;
+      state.activeTweenMode = "out";
     } else {
       zoomTarget.style.transition = `transform ${CONFIG.zoomOutMs}ms ${CONFIG.easingOut}`;
       zoomTarget.style.transform = "";
@@ -1393,6 +1423,9 @@
       const releaseDelay = CONFIG.zoomOutMs + 40;
       state.releaseTimeoutId = setTimeout(() => {
         state.releaseTimeoutId = 0;
+        if (releaseToken !== state.releaseToken) {
+          return;
+        }
         if (state.zoomedElement === expectedTarget) {
           restoreStyle(expectedTarget);
           state.zoomedElement = null;
@@ -1530,12 +1563,18 @@
   function update() {
     const board = findBoard();
     if (!board?.svg) {
+      if (shouldDelayTransientReset()) {
+        return;
+      }
       resetZoom();
       return;
     }
 
     const zoomTarget = resolveZoomTarget(board.svg);
     if (!zoomTarget) {
+      if (shouldDelayTransientReset()) {
+        return;
+      }
       resetZoom();
       return;
     }
@@ -1546,6 +1585,9 @@
     const zoomIntent = computeZoomIntent(boardMetrics);
 
     if (!zoomIntent?.point) {
+      if (shouldDelayTransientReset()) {
+        return;
+      }
       resetZoom();
       return;
     }
@@ -1558,9 +1600,13 @@
       viewportElement
     );
     if (!zoomData) {
+      if (shouldDelayTransientReset()) {
+        return;
+      }
       resetZoom();
       return;
     }
+    clearTransientResetDelay();
     applyZoom(
       zoomTarget,
       clipHost,
@@ -1582,6 +1628,63 @@
     clearDismissState();
   }
 
+  function shouldDelayTransientReset() {
+    if (!state.zoomedElement) {
+      state.pendingResetSinceTs = 0;
+      return false;
+    }
+    const nowTs = Date.now();
+    if (!state.pendingResetSinceTs) {
+      state.pendingResetSinceTs = nowTs;
+      return true;
+    }
+    if (nowTs - state.pendingResetSinceTs < CONFIG.transientResetGraceMs) {
+      return true;
+    }
+    state.pendingResetSinceTs = 0;
+    return false;
+  }
+
+  function clearTransientResetDelay() {
+    state.pendingResetSinceTs = 0;
+  }
+
+  function isNodeInActiveZoomScope(node) {
+    if (!(node instanceof Node)) {
+      return false;
+    }
+    if (state.zoomedElement && (node === state.zoomedElement || state.zoomedElement.contains(node))) {
+      return true;
+    }
+    if (state.zoomHost && (node === state.zoomHost || state.zoomHost.contains(node))) {
+      return true;
+    }
+    return false;
+  }
+
+  function isInternalZoomMutation(mutation) {
+    if (!mutation || mutation.type !== "attributes") {
+      return false;
+    }
+    const attributeName = String(mutation.attributeName || "");
+    if (attributeName !== "style" && attributeName !== "class") {
+      return false;
+    }
+    return isNodeInActiveZoomScope(mutation.target);
+  }
+
+  function shouldScheduleForMutations(mutation, mutations) {
+    if (Array.isArray(mutations) && mutations.length) {
+      for (const entry of mutations) {
+        if (!isInternalZoomMutation(entry)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return !isInternalZoomMutation(mutation);
+  }
+
   ensureStyle(STYLE_ID, STYLE_TEXT);
 
   const scheduleUpdate = createRafScheduler(update);
@@ -1589,7 +1692,12 @@
 	debugLog("applied");
   const domObserver = observeMutations({
     target: document.documentElement,
-    onChange: scheduleUpdate,
+    onChange: (mutation, mutations) => {
+      if (!shouldScheduleForMutations(mutation, mutations)) {
+        return;
+      }
+      scheduleUpdate();
+    },
   });
 
   let unsubscribeGameState = null;
