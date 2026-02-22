@@ -3,7 +3,7 @@
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.22
 // @description  Simuliert in X01 TV-ähnliche Zooms auf relevante Zielbereiche vor dem dritten Dart.
-// @xconfig-description  Zoomt in X01 auf wahrscheinliche Zielbereiche im virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
+// @xconfig-description  Zoomt in X01 auf wahrscheinliche Zielbereiche im virtuellen Dartboard und im Liveboard mit aktiviertem virtuellem Zahlenring.
 // @xconfig-title  TV-Board-Zoom
 // @xconfig-variant      x01
 // @xconfig-readme-anchor  animation-autodarts-animate-tv-board-zoom

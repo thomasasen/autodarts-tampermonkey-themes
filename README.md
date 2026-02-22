@@ -497,7 +497,8 @@ Verfügbare Dart-Designs:
 
 - Gilt für: `X01`
 - Was macht es sichtbar? TV-ähnlicher Zoom auf relevante Zielbereiche vor dem dritten Dart.
-- Wichtig: Funktioniert nur mit dem **virtuellen Dartboard**, nicht mit dem **Live Dartboard**.
+- Wichtig: Funktioniert mit dem **virtuellen Dartboard** und im **Liveboard**, wenn der **virtuelle Zahlenring** aktiviert ist.
+- Danke an [Michael Lübben](https://www.facebook.com/groups/962170332286616/user/100002652521673/) für den Hinweis.
 
 **Einstellungen einfach erklärt**
 

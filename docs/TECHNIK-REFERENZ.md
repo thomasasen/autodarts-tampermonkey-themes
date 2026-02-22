@@ -1016,7 +1016,7 @@ Varianten über:
 
 ##### 📝 Beschreibung
 
-- Zweck: Simuliert TV-ähnliche Kamera-Zooms auf relevante Zielbereiche vor Dart 3 in X01.
+- Zweck: Simuliert TV-ähnliche Kamera-Zooms auf relevante Zielbereiche vor Dart 3 in X01, auf dem virtuellen Dartboard und im Liveboard mit aktiviertem virtuellem Zahlenring.
 - Trigger/Erkennung: `T20,T20`-Setup (nur wenn ein dritter `T20` nicht bustet) oder eindeutiger 1-Dart-Checkout (`D1`–`D20`/`Bull`).
 - Änderungen: Transformiert den Board-Container per `translate(...) scale(...)`, inklusive sauberem Clip-Host und Rückbau beim Deaktivieren.
 
@@ -1057,6 +1057,7 @@ Varianten über:
 
 ##### ℹ️ Weitere Hinweise
 
+- Im Liveboard ist der Zoom verfügbar, wenn der virtuelle Zahlenring aktiviert ist.
 - Checkout-Zoom wird immer vor `T20,T20` geprüft.
 - Bei Restwert `< 62` wird ein drittes `T20` unterdrückt (Bust-Vermeidung).
 - Für reine Zielvisualisierung ohne Kamerafahrt eignet sich zusätzlich `Autodarts Animate Checkout Board Targets`.
