@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.2
+// @version      2.4
 // @description  Zeigt Zielzustände im Cricket als Overlay direkt auf dem virtuellen Dartboard.
 // @xconfig-description  Markiert in Cricket relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
@@ -9,7 +9,7 @@
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-tech-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
-// @xconfig-settings-version 3
+// @xconfig-settings-version 5
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -72,7 +72,7 @@
 		const CRICKET_THEME_PRESETS = {
 			standard: {
 				score: {r: 0, g: 178, b: 135},
-				danger: {r: 222, g: 120, b: 0},
+				danger: {r: 239, g: 68, b: 68},
 			},
 			"high-contrast": {
 				score: {r: 34, g: 197, b: 94},

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.2
+// @version      1.0.4
 // @description  Erweitert die Cricket-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -9,7 +9,7 @@
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-tech-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
-// @xconfig-settings-version 4
+// @xconfig-settings-version 6
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -77,7 +77,7 @@
     - xConfig_ROW_RAIL_PULSE: Effekt 1, Zeilen-Sweep bei relevanten Triggern.
     - xConfig_BADGE_BEACON: Effekt 2, linkes Badge wird hervorgehoben.
     - xConfig_MARK_PROGRESS_ANIMATOR: Effekt 3, Symbol-Progress Animation.
-    - xConfig_THREAT_EDGE: Effekt 4, seitliche Danger-Warnkanten.
+    - xConfig_THREAT_EDGE: Effekt 4, roter Warnlook fuer gefaehrliche Zeilen.
     - xConfig_SCORING_LANE_HIGHLIGHT: Effekt 5, gruene Scoring-Lane.
     - xConfig_DEAD_ROW_COLLAPSE: Effekt 6, Dead-Row optisch reduziert.
     - xConfig_DELTA_CHIPS: Effekt 8, +Delta als kurzes Overlay.
@@ -704,7 +704,7 @@
   const CSS = `
 .${ROOT_CLASS}{position:relative;isolation:isolate;}
 .${ROOT_CLASS} .${CELL_CLASS}{position:relative;overflow:visible;transition:filter .18s ease,opacity .18s ease,box-shadow .18s ease,background .18s ease;}
-.${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 3px 0 rgba(245,158,11,.95),inset -3px 0 rgba(245,158,11,.95),inset 0 0 0 1px rgba(245,158,11,.35);}
+.${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
 .${ROOT_CLASS} .${CELL_CLASS}.${SCORE_CLASS}{box-shadow:inset 0 0 0 1px rgba(16,185,129,.42);background-image:linear-gradient(90deg,rgba(16,185,129,.18) 0%,rgba(16,185,129,.04) 28%,rgba(16,185,129,.04) 72%,rgba(16,185,129,.18) 100%);}
 .${ROOT_CLASS} .${CELL_CLASS}.${DEAD_CLASS}{filter:grayscale(.88) saturate(.25) brightness(.72);opacity:.72;}
 .${ROOT_CLASS} .${CELL_CLASS}.${PRESSURE_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
