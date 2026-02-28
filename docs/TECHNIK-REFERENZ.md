@@ -388,6 +388,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 ##### 🖼️ Beispiele/Screenshots
 
 ![Animate Triple Double Bull Hits](../assets/animation-animate-triple-double-bull-hits.gif)
+- Hinweis: Die numerische Punktezeile im Preview wird vom separaten Skript `Autodarts Animate Turn Points Count` gerendert; dieses Skript dekoriert nur das Treffer-Label (`T20`, `D16`, `BULL`).
 
 ##### ℹ️ Weitere Hinweise
 

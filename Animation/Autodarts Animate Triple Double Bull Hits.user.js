@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Autodarts Animate Triple Double Bull Hits
-// @version      1.1
+// @version      1.2
 // @description  Markiert Triple-, Double- und Bull-Treffer in der Wurfliste sichtbar.
 // @xconfig-description  Hebt T-, D- und Bull-Treffer in der Wurfliste klar hervor, damit wichtige Würfe sofort auffallen.
 // @xconfig-title  Treffer-Highlights (Triple/Double/Bull)
@@ -158,6 +158,11 @@
       throwText: ".ad-ext-turn-throw p.chakra-text",
       textNode: "p.chakra-text",
     },
+    classes: {
+      badge: "ad-ext-hit-badge",
+      prefix: "ad-ext-hit-prefix",
+      remainder: "ad-ext-hit-remainder",
+    },
     defaultGradientStops: ["#22d3ee", "#9fdb58", "#f59e0b", "#34d399"],
     hitTypes: ACTIVE_HIT_TYPES,
     bull: {
@@ -190,10 +195,6 @@
   }, {});
   const BULL_TYPE = CONFIG.bull.enabled ? withDerivedProps(CONFIG.bull) : null;
   const DECORATABLE_TYPES = [...HIT_TYPES, ...(BULL_TYPE ? [BULL_TYPE] : [])];
-  const GRADIENT_VARIANTS = DECORATABLE_TYPES.map((type) => type.gradientClass);
-  const ALL_GRADIENT_VARIANTS = Array.from(
-    new Set([...GRADIENT_VARIANTS, "animate-hit-triple", "animate-hit-double", "animate-hit-bull"])
-  );
 
   let stylesInjected = false;
   let initialized = false;
@@ -230,9 +231,9 @@
         )};\n        }\n`
     ).join("\n");
 
-    return `\n        .highlight {\n            font-weight: bold;\n            text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);\n        }\n\n${highlightBlocks}\n        .animate-hit {\n            border: none;\n            outline: none;\n            position: relative;\n            color: #fdfdfd !important;\n            font-size: 20px;\n            font-weight: 500;\n            letter-spacing: 2px;\n            word-spacing: 4px;\n            text-transform: uppercase;\n            padding: 8px 14px;\n            border-radius: 12px;\n            overflow: hidden;\n            isolation: isolate;\n            transition: transform 120ms ease-out, box-shadow 120ms ease-out;\n        }\n\n        .animate-hit::before {\n            content: \"\";\n            position: absolute;\n            inset: -3px;\n            border-radius: inherit;\n            background: var(--animate-gradient, ${gradientValue(
+    return `\n        .highlight {\n            font-weight: bold;\n            text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);\n        }\n\n${highlightBlocks}\n        .${CONFIG.classes.badge} {\n            border: none;\n            outline: none;\n            position: relative;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            gap: 0.04em;\n            max-width: 100%;\n            color: #fdfdfd !important;\n            font-size: 20px;\n            font-weight: 500;\n            letter-spacing: 2px;\n            word-spacing: 4px;\n            line-height: 1;\n            text-transform: uppercase;\n            padding: 8px 14px;\n            border-radius: 12px;\n            overflow: hidden;\n            isolation: isolate;\n            transition: transform 120ms ease-out, box-shadow 120ms ease-out;\n        }\n\n        .${CONFIG.classes.badge}::before {\n            content: \"\";\n            position: absolute;\n            inset: -3px;\n            border-radius: inherit;\n            background: var(--animate-gradient, ${gradientValue(
       CONFIG.defaultGradientStops
-    )});\n            background-size: 250% 250%;\n            filter: blur(3px);\n            opacity: 0.9;\n            animation: glow-flow 6s linear infinite;\n            z-index: -2;\n        }\n\n        .animate-hit::after {\n            content: \"\";\n            position: absolute;\n            inset: 1px;\n            border-radius: inherit;\n            background: rgba(5, 7, 16, 0.85);\n            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);\n            animation: panel-pulse 3s ease-in-out infinite;\n            z-index: -1;\n        }\n\n        .animate-hit:hover {\n            transform: translateY(-1px);\n            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);\n        }\n\n${gradientBlocks}\n        @keyframes glow-flow {\n            0% {\n                background-position: 0% 50%;\n            }\n            50% {\n                background-position: 100% 50%;\n            }\n            100% {\n                background-position: 0% 50%;\n            }\n        }\n\n        @keyframes panel-pulse {\n            0% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n            50% {\n                opacity: 1;\n                transform: translateY(-1px);\n            }\n            100% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n        }\n    `;
+    )});\n            background-size: 250% 250%;\n            filter: blur(3px);\n            opacity: 0.9;\n            animation: glow-flow 6s linear infinite;\n            z-index: -2;\n        }\n\n        .${CONFIG.classes.badge}::after {\n            content: \"\";\n            position: absolute;\n            inset: 1px;\n            border-radius: inherit;\n            background: rgba(5, 7, 16, 0.85);\n            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);\n            animation: panel-pulse 3s ease-in-out infinite;\n            z-index: -1;\n        }\n\n        .${CONFIG.classes.badge}:hover {\n            transform: translateY(-1px);\n            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);\n        }\n\n        .${CONFIG.classes.prefix},\n        .${CONFIG.classes.remainder} {\n            position: relative;\n            z-index: 1;\n        }\n\n${gradientBlocks}\n        @keyframes glow-flow {\n            0% {\n                background-position: 0% 50%;\n            }\n            50% {\n                background-position: 100% 50%;\n            }\n            100% {\n                background-position: 0% 50%;\n            }\n        }\n\n        @keyframes panel-pulse {\n            0% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n            50% {\n                opacity: 1;\n                transform: translateY(-1px);\n            }\n            100% {\n                opacity: 0.85;\n                transform: translateY(0);\n            }\n        }\n    `;
   }
 
   /**
@@ -286,6 +287,15 @@
     return null;
   }
 
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   /**
    * Applies classes and highlighted text for a hit.
    * @param {HTMLElement} pElement - Text element of the throw display.
@@ -294,17 +304,6 @@
    * @returns {void}
    */
   function decorateHit(pElement, meta, prefixChar) {
-    const throwRow = pElement.closest(CONFIG.selectors.throwRow);
-    if (!throwRow) {
-      return;
-    }
-
-    throwRow.classList.add("animate-hit");
-    if (GRADIENT_VARIANTS.length) {
-      throwRow.classList.remove(...GRADIENT_VARIANTS);
-    }
-    throwRow.classList.add(meta.gradientClass);
-
     const baseText = pElement.textContent.trim();
     if (!baseText) {
       return;
@@ -312,23 +311,15 @@
 
     const highlightClasses = `highlight ${meta.highlightClass}`;
     if (prefixChar) {
-      const remainder = baseText.slice(prefixChar.length);
-      pElement.innerHTML = `<span class="${highlightClasses}">${prefixChar}</span>${remainder}`;
+      const remainder = escapeHtml(baseText.slice(prefixChar.length));
+      pElement.innerHTML = `<span class="${CONFIG.classes.badge} ${meta.gradientClass}"><span class="${CONFIG.classes.prefix} ${highlightClasses}">${escapeHtml(prefixChar)}</span><span class="${CONFIG.classes.remainder}">${remainder}</span></span>`;
     } else {
-      pElement.innerHTML = `<span class="${highlightClasses}">${baseText}</span>`;
+      pElement.innerHTML = `<span class="${CONFIG.classes.badge} ${meta.gradientClass}"><span class="${CONFIG.classes.prefix} ${highlightClasses}">${escapeHtml(baseText)}</span></span>`;
     }
   }
 
   function resetHitDecoration(pElement) {
-    const throwRow = pElement.closest(CONFIG.selectors.throwRow);
-    if (throwRow) {
-      throwRow.classList.remove("animate-hit");
-      if (ALL_GRADIENT_VARIANTS.length) {
-        throwRow.classList.remove(...ALL_GRADIENT_VARIANTS);
-      }
-    }
-
-    if (pElement.querySelector("span.highlight, span[class*='highlight-']")) {
+    if (pElement.querySelector(`span.${CONFIG.classes.badge}`)) {
       pElement.textContent = pElement.textContent.trim();
     }
   }

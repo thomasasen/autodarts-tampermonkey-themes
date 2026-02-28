@@ -198,6 +198,8 @@ DartsZoom-Vorschau:
 
 ![Triple Double Bull Hits](assets/animation-animate-triple-double-bull-hits.gif)
 
+Hinweis: Die zusÃ¤tzliche numerische Punktezeile im Preview stammt aus dem separaten Skript [`Autodarts Animate Turn Points Count`](#animation-autodarts-animate-turn-points-count). `Autodarts Animate Triple Double Bull Hits` hebt nur das Treffer-Label wie `T20`, `D16` oder `BULL` hervor.
+
 ---
 
 <a id="animation-autodarts-animate-single-bull-sound"></a>
