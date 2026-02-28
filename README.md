@@ -561,6 +561,7 @@ Formatvarianten:
 - Gilt für: `Cricket`
 - Was macht es sichtbar? Zielzustände im Cricket werden als Overlay am Board sichtbar.
 - Wichtig: Funktioniert nur mit dem **virtuellen Dartboard**, nicht mit dem **Live Dartboard**.
+- Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix dieselben Zustände zeigen.
 
 **Einstellungen einfach erklärt**
 
@@ -598,8 +599,8 @@ Formatvarianten:
   Vorteil: Fortschritt ist auf einen Blick verständlich.
 - `Gefahrenkante`: Markiert gefährliche Zeilen mit klaren Warnkanten.
   Vorteil: Defensivdruck ist früh sichtbar.
-- `Scoring-Lane`: Hebt Zeilen hervor, auf denen du aktuell punkten kannst.
-  Vorteil: Unterstützt schnelle offensive Entscheidungen.
+- `Offensiv-Lane`: Hebt Zeilen hervor, auf denen du aktuell offensiv Druck machen kannst.
+  Vorteil: Unterstützt schnelle offensive Entscheidungen, auch in Cut-Throat-artigen Cricket-Modi.
 - `Geschlossene Zeilen abdunkeln`: Dimmt vollständig geschlossene Zeilen.
   Vorteil: Fokus bleibt auf den relevanten, noch aktiven Zielen.
 - `Delta-Chips`: Zeigt bei neuen Treffern kurz `+1`, `+2` oder `+3`.
@@ -610,6 +611,7 @@ Formatvarianten:
   Vorteil: Wechsel sind klar erkennbar, auch in schnellen Matches.
 - `Gegnerdruck-Overlay`: Markiert Zeilen mit akutem Defensivdruck.
   Vorteil: Hilft dir, Prioritäten unter Druck besser zu setzen.
+- Hinweis zur Stabilität: Die Effekte arbeiten nur noch auf echten Spielerzellen und lassen die linke Zielspalte parser-stabil.
 - Empfehlung: Starte mit Standardwerten und aktiviere nur Effekte, die dir im Spiel wirklich helfen.
 
 **Vorschau**

@@ -1147,8 +1147,8 @@ Varianten:
 ##### 📝 Beschreibung
 
 - Zweck: blendet Nicht-Cricket-Felder aus und markiert 15–20/BULL nach Status.
-- Trigger/Erkennung: Variante `cricket`, liest Cricket-Tabelle (Marks via Icons/Attribute/Text).
-- Änderungen: Overlay-SVG mit Statusfarben (open/closed/score/danger/dead) für bessere Entscheidungen.
+- Trigger/Erkennung: Variante `cricket`, liest die Cricket-Tabelle über den gemeinsamen Helper `Animation/autodarts-cricket-state-shared.js`.
+- Änderungen: Overlay-SVG mit Statusfarben (open/closed/offense/danger/dead) für bessere Entscheidungen; Board und Grid FX nutzen dieselbe Zustandslogik.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1161,7 +1161,7 @@ Varianten:
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_DEAD_ZIELE_ANZEIGEN`: Zeigt bzw. versteckt bereits „tote“ Ziele.
-- `xConfig_FARBTHEMA`: Wählt das Farbschema für `Score` und `Danger`.
+- `xConfig_FARBTHEMA`: Wählt das Farbschema für `Offense` und `Danger`.
 - `xConfig_INTENSITAET`: Regelt Deckkraft und Kontrast des Overlays.
 
 | Variable                      | Standard                  | Wirkung                                                                                                                           |
@@ -1170,7 +1170,6 @@ Varianten:
 | `CONFIG.tableSelector`        | `null`                    | Optional fixer Selector für die Cricket-Tabelle; `null` = automatische Erkennung, setze ihn wenn die Tabelle nicht gefunden wird. |
 | `CONFIG.playerSelector`       | `.ad-ext-player`          | Selector für Player-Karten.                                                                                                       |
 | `CONFIG.activePlayerSelector` | `.ad-ext-player-active`   | Selector für den aktiven Player.                                                                                                  |
-| `CONFIG.markElementSelector`  | komplex                   | CSS-Selector-Liste zum Zählen der Marks (Icons/Attribute/Text); nur anpassen, wenn die Marks nicht erkannt werden.                |
 | `CONFIG.showDeadTargets`      | `true`                    | Zeigt Ziele, die alle geschlossen haben.                                                                                          |
 | `CONFIG.strokeWidthRatio`     | `0.006`                   | Rahmenstärke relativ zum Board-Radius.                                                                                            |
 | `CONFIG.edgePaddingPx`        | `0.8`                     | Zusatz-Padding für Shapes.                                                                                                        |
@@ -1178,9 +1177,10 @@ Varianten:
 | `CONFIG.opacity.closed`       | `0.8`                     | Deckkraft für geschlossene Ziele.                                                                                                 |
 | `CONFIG.opacity.dead`         | `0.98`                    | Deckkraft für „dead“-Ziele.                                                                                                       |
 | `CONFIG.opacity.inactive`     | `0.8`                     | Deckkraft für inaktive Bereiche.                                                                                                  |
-| `CONFIG.highlight.score`      | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Score-Ziele (Spieler kann punkten) inkl. Kontur-Boost.                 |
-| `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele (Gegner kann punkten) inkl. Kontur-Boost.                 |
+| `CONFIG.highlight.offense`    | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für offensive Ziele (Standard-Cricket: Scoring, Cut-Throat: Angriffschance) inkl. Kontur-Boost. |
+| `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele (aktiver Spieler offen, Gegner geschlossen) inkl. Kontur-Boost. |
 | `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius.       |
+| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber und berechnet die regelkonformen Cricket-Zustände für Board und Matrix gemeinsam. |
 | `xConfig_DEBUG`               | `false`                   | Aktiviert technische Debug-Logs in der Konsole (nur bei Bedarf einschalten).                                                     |
 
 ##### 🖼️ Beispiele/Screenshots
@@ -1190,15 +1190,16 @@ Varianten:
 🧭 Screenshot erklärt:
 
 - Das Overlay färbt nur Cricket-Ziele (15–20/Bull). Alle anderen Felder (1–14) werden dunkel/neutral ausgeblendet, damit der Fokus auf den Cricket-Zielen liegt.
-- **Grün** zeigt ein **Score-Ziel**: Du hast das Ziel bereits geschlossen (3 Marks), mindestens ein Gegner ist noch offen → dort kannst du noch Punkte holen.
-- **Orange** zeigt **Danger**: Du bist noch offen, mindestens ein Gegner hat das Ziel geschlossen → der Gegner kann dort punkten, du solltest es schließen.
+- **Grün** zeigt ein **offensives Ziel**: Du hast das Ziel bereits geschlossen (3 Marks), mindestens ein Gegner ist noch offen. In Standard-Cricket bedeutet das ein Scoring-Ziel, in Cut-Throat ein Angriffsfenster.
+- **Rot** zeigt **Danger**: Du bist noch offen, mindestens ein Gegner hat das Ziel geschlossen → der Gegner kann dort Druck aufbauen, du solltest es schließen.
 - **Neutral/hell** markiert **offene Ziele** (noch nicht geschlossen und aktuell ohne akute Gefahr).
 - **Gedämpfte/abgeschwächte Farben** stehen für **geschlossen/tot/inaktiv** (z.B. alle geschlossen, keine Punkte mehr möglich).  
-  Hinweis: Die genauen Farbtöne kannst du über `CONFIG.baseColor`, `CONFIG.highlight.score`, `CONFIG.highlight.danger` und `CONFIG.opacity.*` anpassen.
+  Hinweis: Die genauen Farbtöne kannst du über `CONFIG.baseColor`, `CONFIG.highlight.offense`, `CONFIG.highlight.danger` und `CONFIG.opacity.*` anpassen.
 
 ##### ℹ️ Weitere Hinweise
 
 - Debug-Ausgaben kannst du über `xConfig_DEBUG` in AD xConfig aktivieren/deaktivieren.
+- Für unbekannte oder nicht-scoring Cricket-Modi unterdrückt der Helper taktische Grün/Rot-Hinweise bewusst und bleibt bei neutralen Zuständen.
 
 ---
 
@@ -1214,9 +1215,9 @@ Varianten:
 
 ##### 📝 Beschreibung
 
-- Zweck: Ergänzt die Cricket-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Score/Pressure, Delta-Chips, Turn-Wipe).
+- Zweck: Ergänzt die Cricket-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Offense/Pressure, Delta-Chips, Turn-Wipe).
 - Trigger/Erkennung: Nur Variante `cricket` und nur bei aktivem `Template/Autodarts Theme Cricket.user.js` (feste Modul-Bindung, kein separater Toggle).
-- Änderungen: Setzt ausschließlich modul-eigene CSS-Klassen/Overlays auf der Cricket-Matrix und entfernt diese beim Verlassen der Variante wieder.
+- Änderungen: Nutzt dieselbe Cricket-State-Basis wie der Board-Highlighter, setzt modul-eigene CSS-Klassen nur auf Spielerzellen/Badge-Node und entfernt sie beim Verlassen der Variante wieder.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1243,8 +1244,8 @@ Varianten:
   Sichtbild: Mark-Symbol „setzt“ sich sichtbar mit kurzer, levelabhängiger Intensität.
 - `xConfig_THREAT_EDGE`: Seitliche Warnkanten bei Danger-Zielen.
   Sichtbild: Schmale Warnkanten links/rechts statt großer Flächen-Overlays.
-- `xConfig_SCORING_LANE_HIGHLIGHT`: Grüne Lane bei aktiven Scoring-Zielen.
-  Sichtbild: Dezentes, aber durchgehendes Scoring-Band über die gesamte Zeile.
+- `xConfig_SCORING_LANE_HIGHLIGHT`: Grüne Lane bei offensiv nutzbaren Zielen.
+  Sichtbild: Dezentes, aber durchgehendes Offensiv-Band über die gesamte Zeile.
 - `xConfig_DEAD_ROW_COLLAPSE`: Dämpft komplett geschlossene Ziele.
   Sichtbild: Dead-Zeilen werden entsättigt/abgeblendet und treten in den Hintergrund.
 - `xConfig_DELTA_CHIPS`: Kurzzeit-Overlay `+1/+2/+3` pro Trefferzuwachs.
@@ -1262,7 +1263,7 @@ Varianten:
 | `xConfig_BADGE_BEACON`                   | `true`   | Aktiviert Badge-Hervorhebung und Badge-Burst.                                                           |
 | `xConfig_MARK_PROGRESS_ANIMATOR`         | `true`   | Aktiviert Mark-Progress-Animation auf Symbolen.                                                         |
 | `xConfig_THREAT_EDGE`                    | `true`   | Aktiviert seitliche Danger-Warnkanten.                                                                  |
-| `xConfig_SCORING_LANE_HIGHLIGHT`         | `true`   | Aktiviert die grüne Scoring-Lane.                                                                       |
+| `xConfig_SCORING_LANE_HIGHLIGHT`         | `true`   | Aktiviert die grüne Offensiv-Lane.                                                                      |
 | `xConfig_DEAD_ROW_COLLAPSE`              | `true`   | Aktiviert Dämpfung/Desaturierung für Dead-Zeilen.                                                       |
 | `xConfig_DELTA_CHIPS`                    | `true`   | Aktiviert `+Δ`-Hinweise bei neuen Marks.                                                                |
 | `xConfig_HIT_SPARK`                      | `true`   | Aktiviert den kurzen Spark-Effekt bei neuen Marks.                                                      |
@@ -1281,7 +1282,7 @@ Varianten:
 🧭 Screenshot erklärt:
 
 - Die linke Zielspalte (19/18/…) bleibt visuell vorne und wird bei Bedarf über `Badge Beacon` betont.
-- Scoring-Zeilen bekommen eine grüne Lane; Danger/Pressure nutzen klar getrennte Warnsignale.
+- Offensiv-Zeilen bekommen eine grüne Lane; Danger/Pressure nutzen klar getrennte Warnsignale.
 - Trefferzuwachs wird über `Mark Progress`, `Delta Chips` und optional `Hit Spark` direkt erkennbar gemacht.
 
 ##### ℹ️ Weitere Hinweise
@@ -1289,6 +1290,7 @@ Varianten:
 - Das Modul ist strikt Cricket-spezifisch und entfernt seine Klassen/Overlays beim Variantenwechsel.
 - Das Modul ist fest mit `Template: Autodarts Theme Cricket` gekoppelt (kein eigener Schalter dafür).
 - Die Effekte sind unabhängig schaltbar, um Side-Effekte zwischen den Features zu minimieren.
+- Parser-relevante Labelstrukturen bleiben unberührt: temporäre Overlays sitzen nur auf Spielerzellen oder auf dem Root-Wipe, nicht auf der linken Zielspalte.
 
 ---
 

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cricket State Harness</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #111;
+        color: #f5f5f5;
+      }
+
+      .pass {
+        color: #86efac;
+      }
+
+      .fail {
+        color: #fca5a5;
+      }
+
+      code {
+        color: #93c5fd;
+      }
+    </style>
+    <script src="../Animation/autodarts-cricket-state-shared.js"></script>
+  </head>
+  <body>
+    <h1>Cricket State Harness</h1>
+    <p id="summary">Running…</p>
+    <ul id="results"></ul>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const helper = window.autodartsCricketStateShared;
+        const TARGETS = ["20", "19", "18", "17", "16", "15", "BULL"];
+        const results = [];
+
+        function markCell(mark, textOverride) {
+          const cell = document.createElement("div");
+          cell.className = "player-cell";
+          cell.setAttribute("data-marks", String(mark));
+          if (typeof textOverride === "string") {
+            cell.textContent = textOverride;
+          }
+          return cell;
+        }
+
+        function buildLinearRoot(markSets, labelFormatter) {
+          const root = document.createElement("div");
+          root.className = "grid-root";
+          TARGETS.forEach((label, index) => {
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            labelCell.textContent = labelFormatter ? labelFormatter(label, index) : label;
+            root.appendChild(labelCell);
+
+            markSets[index].forEach((mark) => {
+              root.appendChild(markCell(mark));
+            });
+          });
+          return root;
+        }
+
+        function buildNestedRowRoot(markSets) {
+          const root = document.createElement("div");
+          root.className = "nested-root";
+          TARGETS.forEach((label, index) => {
+            const row = document.createElement("div");
+            row.className = "row";
+
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            const labelNode = document.createElement("span");
+            labelNode.textContent = label;
+            labelCell.appendChild(labelNode);
+            row.appendChild(labelCell);
+
+            const playerWrapper = document.createElement("div");
+            playerWrapper.className = "player-wrapper";
+            markSets[index].forEach((mark) => {
+              playerWrapper.appendChild(markCell(mark));
+            });
+            row.appendChild(playerWrapper);
+            root.appendChild(row);
+          });
+          return root;
+        }
+
+        function buildDecoratedLabelRoot(markSets) {
+          const root = document.createElement("div");
+          root.className = "decorated-root";
+          TARGETS.forEach((label, index) => {
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            const labelNode = document.createElement("span");
+            labelNode.className = "ad-ext-crfx-badge";
+            labelNode.textContent = label;
+            labelCell.appendChild(labelNode);
+
+            const wave = document.createElement("span");
+            wave.className = "ad-ext-crfx-row-wave";
+            wave.textContent = "ignored";
+            labelCell.appendChild(wave);
+
+            const delta = document.createElement("span");
+            delta.className = "ad-ext-crfx-delta";
+            delta.textContent = "+1";
+            labelCell.appendChild(delta);
+
+            root.appendChild(labelCell);
+            markSets[index].forEach((mark) => {
+              root.appendChild(markCell(mark));
+            });
+          });
+          return root;
+        }
+
+        function fakeGameState(activePlayerIndex, mode) {
+          return {
+            getActivePlayerIndex: function () {
+              return activePlayerIndex;
+            },
+            getCricketMode: function () {
+              return mode || "";
+            },
+          };
+        }
+
+        function buildState(root, playerCount, activePlayerIndex, mode) {
+          const snapshot = helper.buildGridSnapshot({
+            root,
+            playerCount,
+            gameStateShared: fakeGameState(activePlayerIndex, mode),
+          });
+          if (!snapshot) {
+            return { snapshot: null, states: null };
+          }
+          return {
+            snapshot,
+            states: helper.computeTargetStates(snapshot, {
+              showDeadTargets: true,
+            }),
+          };
+        }
+
+        function assert(condition, label, details) {
+          results.push({
+            label,
+            pass: Boolean(condition),
+            details: details || "",
+          });
+        }
+
+        const twoPlayerOpen = TARGETS.map(() => [3, 0]);
+        const twoPlayerDanger = TARGETS.map(() => [0, 3]);
+        const threePlayer = TARGETS.map(() => [0, 3, 0]);
+        const solo = TARGETS.map(() => [3]);
+
+        const case1 = buildState(buildLinearRoot(twoPlayerOpen), 2, 0, "standard");
+        assert(
+          case1.states.get("20").presentation === "offense",
+          "Linear 2-player: active closed vs opponent open -> offense",
+          JSON.stringify(case1.states.get("20"))
+        );
+
+        const case2 = buildState(buildLinearRoot(twoPlayerDanger), 2, 0, "standard");
+        assert(
+          case2.states.get("20").presentation === "danger",
+          "Linear 2-player: active open vs opponent closed -> danger",
+          JSON.stringify(case2.states.get("20"))
+        );
+
+        const case3 = buildState(buildLinearRoot(threePlayer), 3, 1, "cut-throat");
+        assert(
+          case3.states.get("20").presentation === "offense",
+          "Linear 3-player: active player index stays relative to player cells",
+          JSON.stringify(case3.states.get("20"))
+        );
+
+        const case4 = buildState(buildNestedRowRoot(twoPlayerDanger), 2, 0, "standard");
+        assert(
+          case4.states.get("20").presentation === "danger",
+          "Nested row container: wrapper children become player cells",
+          JSON.stringify(case4.states.get("20"))
+        );
+
+        const case5 = buildState(buildDecoratedLabelRoot(twoPlayerOpen), 2, 0, "standard");
+        assert(
+          case5.snapshot && case5.snapshot.rows.length === 7,
+          "Decorated labels: helper still finds all 7 Cricket targets",
+          case5.snapshot ? `rows=${case5.snapshot.rows.length}` : "snapshot=null"
+        );
+
+        assert(
+          helper.normalizeLabel("25") === "BULL" &&
+            helper.normalizeLabel("BULLSEYE") === "BULL" &&
+            helper.normalizeLabel("Bull") === "BULL",
+          "Bull aliases normalize to BULL",
+          [
+            helper.normalizeLabel("25"),
+            helper.normalizeLabel("BULLSEYE"),
+            helper.normalizeLabel("Bull"),
+          ].join(", ")
+        );
+
+        const case7 = buildState(buildLinearRoot(solo), 1, 0, "standard");
+        assert(
+          case7.states.get("20").presentation === "closed" &&
+            !case7.states.get("20").dead,
+          "Solo Cricket: closed stays closed and never dead",
+          JSON.stringify(case7.states.get("20"))
+        );
+
+        const case8 = buildState(buildLinearRoot(twoPlayerOpen), 2, 0, "mystery-mode");
+        assert(
+          case8.states.get("20").presentation === "closed" &&
+            !case8.states.get("20").offense &&
+            !case8.states.get("20").danger,
+          "Unknown mode: tactical highlights are suppressed",
+          JSON.stringify(case8.states.get("20"))
+        );
+
+        const summary = document.getElementById("summary");
+        const list = document.getElementById("results");
+        const passed = results.filter((result) => result.pass).length;
+
+        summary.textContent = `${passed}/${results.length} checks passed`;
+        summary.className = passed === results.length ? "pass" : "fail";
+        document.body.dataset.status = passed === results.length ? "pass" : "fail";
+
+        results.forEach((result) => {
+          const item = document.createElement("li");
+          item.className = result.pass ? "pass" : "fail";
+          item.innerHTML = `${result.pass ? "PASS" : "FAIL"} <strong>${result.label}</strong><br><code>${result.details}</code>`;
+          list.appendChild(item);
+        });
+      })();
+    </script>
+  </body>
+</html>
