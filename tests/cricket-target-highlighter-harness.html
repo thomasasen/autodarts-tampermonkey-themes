@@ -241,8 +241,7 @@
           });
         }
 
-        function renderGrid(targetOrder, marksByLabel) {
-          const grid = document.getElementById("grid");
+        function renderGridInto(grid, targetOrder, marksByLabel) {
           grid.textContent = "";
           targetOrder.forEach((label) => {
             const labelCell = document.createElement("div");
@@ -262,8 +261,37 @@
           });
         }
 
+        function clearExtraGrids() {
+          document
+            .querySelectorAll("[data-test-extra-grid='true']")
+            .forEach((node) => node.remove());
+        }
+
+        function renderGrid(targetOrder, marksByLabel, options) {
+          const config = options || {};
+          const grid = document.getElementById("grid");
+          clearExtraGrids();
+          renderGridInto(grid, targetOrder, marksByLabel);
+
+          (config.hiddenGrids || []).forEach((gridConfig, index) => {
+            const hiddenGrid = document.createElement("div");
+            hiddenGrid.dataset.testExtraGrid = "true";
+            hiddenGrid.className = "grid-root-hidden";
+            hiddenGrid.style.display = "none";
+            hiddenGrid.style.gridTemplateColumns =
+              getComputedStyle(grid).gridTemplateColumns;
+            renderGridInto(
+              hiddenGrid,
+              gridConfig.targetOrder || targetOrder,
+              gridConfig.marksByLabel || {}
+            );
+            grid.parentNode.insertBefore(hiddenGrid, grid);
+          });
+        }
+
         function readMetrics() {
           const overlay = document.getElementById(overlayId);
+          const visibleGrid = document.getElementById("grid");
           return {
             overlay: Boolean(overlay),
             scoreShapes: overlay
@@ -275,16 +303,24 @@
             deadShapes: overlay
               ? overlay.querySelectorAll(".ad-ext-cricket-target--dead").length
               : 0,
-            gridScoreCells: document.querySelectorAll(".ad-ext-crfx-score").length,
-            gridThreatCells: document.querySelectorAll(".ad-ext-crfx-threat").length,
-            gridDeadCells: document.querySelectorAll(".ad-ext-crfx-dead").length,
+            gridScoreCells: visibleGrid
+              ? visibleGrid.querySelectorAll(".ad-ext-crfx-score").length
+              : 0,
+            gridThreatCells: visibleGrid
+              ? visibleGrid.querySelectorAll(".ad-ext-crfx-threat").length
+              : 0,
+            gridDeadCells: visibleGrid
+              ? visibleGrid.querySelectorAll(".ad-ext-crfx-dead").length
+              : 0,
             themeApplied: Boolean(
               document.getElementById("autodarts-cricket-custom-style")
             ),
             gridFxActive: document.getElementById("grid")?.classList.contains(
               "ad-ext-crfx-root"
             ),
-            wrapperBadges: document.querySelectorAll(".label-cell.ad-ext-crfx-badge").length,
+            wrapperBadges: visibleGrid
+              ? visibleGrid.querySelectorAll(".label-cell.ad-ext-crfx-badge").length
+              : 0,
           };
         }
 
@@ -316,7 +352,9 @@
           };
 
           renderPlayers(config.domActivePlayerIndex);
-          renderGrid(config.targetOrder, config.marksByLabel);
+          renderGrid(config.targetOrder, config.marksByLabel, {
+            hiddenGrids: config.hiddenGrids,
+          });
           if (typeof sharedState.emit === "function") {
             sharedState.emit();
           }
@@ -423,6 +461,40 @@
               case3.gridFxActive,
             "Nach dem Spielerwechsel färbt ein gegnerischer T20 die 20 sofort rot",
             JSON.stringify(case3)
+          );
+
+          const case4 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "18": [1, 0],
+              "10": [3, 0],
+            }),
+            hiddenGrids: [
+              {
+                targetOrder: TACTICS_TARGETS,
+                marksByLabel: buildMarkMap(TACTICS_TARGETS, {}),
+              },
+            ],
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 4;
+            },
+          });
+          assert(
+            case4.overlay &&
+              case4.scoreShapes === 0 &&
+              case4.dangerShapes === 8 &&
+              case4.gridScoreCells === 0 &&
+              case4.gridThreatCells === 4 &&
+              case4.themeApplied &&
+              case4.gridFxActive &&
+              case4.wrapperBadges === 0,
+            "Ein sichtbares Grid bleibt auch neben einem versteckten Alt-Grid die aktive Datenquelle",
+            JSON.stringify(case4)
           );
 
           const summary = document.getElementById("summary");

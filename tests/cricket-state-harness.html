@@ -308,6 +308,24 @@
           }
         }
 
+        function mountGridRoot(root, options) {
+          const config = options || {};
+          root.dataset.testGridRoot = "true";
+          root.style.width = "420px";
+          root.style.marginTop = "8px";
+          if (config.visible === false) {
+            root.style.display = "none";
+          }
+          document.body.appendChild(root);
+          return root;
+        }
+
+        function cleanupMountedGridRoots() {
+          document.querySelectorAll("[data-test-grid-root='true']").forEach((node) => {
+            node.remove();
+          });
+        }
+
         function createUniformMarkSets(targetOrder, producer) {
           return targetOrder.map((label, index) => producer(label, index));
         }
@@ -927,6 +945,127 @@
               })
             : "snapshot=null"
         );
+
+        cleanupMountedGridRoots();
+        const case26Players = mountPlayerStrip(2, 1, {
+          visible: true,
+        });
+        try {
+          const hiddenRoot = mountGridRoot(
+            buildLinearRoot(
+              TACTICS_TARGETS,
+              createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+            ),
+            { visible: false }
+          );
+          const visibleRoot = mountGridRoot(
+            buildLinearRoot(
+              TACTICS_TARGETS,
+              createUniformMarkSets(TACTICS_TARGETS, function (label) {
+                if (label === "20" || label === "10") {
+                  return [3, 0];
+                }
+                if (label === "18") {
+                  return [1, 0];
+                }
+                return [0, 0];
+              })
+            )
+          );
+          const case26Snapshot = helper.buildGridSnapshot({
+            gameStateShared: fakeGameState(1, "standard", "Tactics", {
+              domPlayerCount: 2,
+              domActivePlayerIndex: 1,
+              domVisible: true,
+            }),
+          });
+          const case26States = helper.computeTargetStates(case26Snapshot, {
+            showDeadTargets: true,
+          });
+          assert(
+            case26Snapshot &&
+              case26Snapshot.root === visibleRoot &&
+              hiddenRoot.isConnected &&
+              case26States.get("20").presentation === "danger" &&
+              case26States.get("10").presentation === "danger" &&
+              case26States.get("18").presentation === "open",
+            "Ein sichtbares aktuelles Grid schlÃ¤gt ein verstecktes Alt-Grid bei der Root-Erkennung",
+            case26Snapshot
+              ? JSON.stringify({
+                  rootMatchesVisible: case26Snapshot.root === visibleRoot,
+                  hiddenStillConnected: hiddenRoot.isConnected,
+                  twenty: case26States.get("20"),
+                  ten: case26States.get("10"),
+                  eighteen: case26States.get("18"),
+                })
+              : "snapshot=null"
+          );
+        } finally {
+          case26Players.remove();
+          cleanupMountedGridRoots();
+        }
+
+        cleanupMountedGridRoots();
+        const case27Players = mountPlayerStrip(2, 1, {
+          visible: true,
+        });
+        try {
+          const firstRoot = mountGridRoot(
+            buildLinearRoot(
+              TACTICS_TARGETS,
+              createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+            )
+          );
+          const firstSnapshot = helper.buildGridSnapshot({
+            gameStateShared: fakeGameState(1, "standard", "Tactics", {
+              domPlayerCount: 2,
+              domActivePlayerIndex: 1,
+              domVisible: true,
+            }),
+          });
+          firstRoot.style.display = "none";
+          const secondRoot = mountGridRoot(
+            buildLinearRoot(
+              TACTICS_TARGETS,
+              createUniformMarkSets(TACTICS_TARGETS, function (label) {
+                if (label === "20" || label === "10") {
+                  return [3, 0];
+                }
+                return [0, 0];
+              })
+            )
+          );
+          const case27Snapshot = helper.buildGridSnapshot({
+            gameStateShared: fakeGameState(1, "standard", "Tactics", {
+              domPlayerCount: 2,
+              domActivePlayerIndex: 1,
+              domVisible: true,
+            }),
+          });
+          const case27States = helper.computeTargetStates(case27Snapshot, {
+            showDeadTargets: true,
+          });
+          assert(
+            firstSnapshot &&
+              case27Snapshot &&
+              firstSnapshot.root === firstRoot &&
+              case27Snapshot.root === secondRoot &&
+              case27States.get("20").presentation === "danger" &&
+              case27States.get("10").presentation === "danger",
+            "Ein versteckt verbundenes gecachtes Alt-Grid wird nach dem Re-Render nicht weiterverwendet",
+            case27Snapshot
+              ? JSON.stringify({
+                  firstRootCached: firstSnapshot.root === firstRoot,
+                  secondRootSelected: case27Snapshot.root === secondRoot,
+                  twenty: case27States.get("20"),
+                  ten: case27States.get("10"),
+                })
+              : "snapshot=null"
+          );
+        } finally {
+          case27Players.remove();
+          cleanupMountedGridRoots();
+        }
 
         const summary = document.getElementById("summary");
         const list = document.getElementById("results");

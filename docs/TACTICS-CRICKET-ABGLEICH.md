@@ -141,11 +141,13 @@ Gründe:
 - Fallback-Inferenz auf Tactics aus dem Grid selbst
 - Aktivspieler-Priorität: sichtbarer DOM-Aktivstatus im primären Player-Display vor verzögertem Match-State
 - Spieleranzahl-Priorität: erkannte Grid-Spaltenzahl vor global gezählten DOM-Spielern
+- Grid-Root-Priorität: sichtbares aktuelles Grid vor versteckten, aber noch verbundenen Alt-Grids derselben Seite
 - Live-Wurf-Vorschau: laufende `activeThrows` werden sofort auf den aktiven Spieler angerechnet, damit ein frisch geschlossenes Ziel schon während des laufenden Zuges grün wird
 - Spielerwechsel-Vorschau: abgeschlossene Würfe aus `match.turns` werden zusätzlich kumulativ eingerechnet, damit nach dem Spielerwechsel dieselben Ziele beim nun aktiven Gegner sofort rot erscheinen
 - Unterzählungs-Reparatur: wenn das Grid genau eine Spielerspalte zu wenig liefert, darf der Shared Helper diese Lücke gezielt aus dem sichtbaren Player-Display ergänzen, ohne frühere Phantomspieler-Fälle wieder zu öffnen
 - Screenshot-Regression: aktiver Spieler `TEST2` ergibt in Tactics korrekt Grün auf `20`, `17`, `15`, Rot auf `16` und `dead` auf gemeinsam geschlossenen Zielen
 - Spielerwechsel-Regression: nach einem gegnerischen `T20` erscheint `20` beim nächsten aktiven Spieler sofort als `danger`, auch wenn das Grid noch `0/0` zeigt
+- Alt-Grid-Regression: ein verstecktes verbundenes Vorher-Grid darf weder Board noch Matrix vom sichtbaren aktuellen Grid abziehen
 - Symbol-Parsing: `⊗` wird als `3`, `X`/`✕` als `2` und `/` als `1` erkannt
 
 `tests/cricket-target-highlighter-harness.html` prüft zusätzlich den konkreten Live-Regressionsfall:

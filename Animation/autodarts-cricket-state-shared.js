@@ -57,6 +57,44 @@
     return Boolean(node) && node.nodeType === 1;
   }
 
+  function isLayoutVisible(element) {
+    if (!isElement(element) || !element.isConnected) {
+      return false;
+    }
+
+    if (typeof element.getBoundingClientRect !== "function") {
+      return false;
+    }
+
+    let current = element;
+    while (isElement(current)) {
+      const style = getComputedStyle(current);
+      if (!style) {
+        return false;
+      }
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.opacity === "0"
+      ) {
+        return false;
+      }
+      current = current.parentElement;
+    }
+
+    const rect = element.getBoundingClientRect();
+    if (
+      !Number.isFinite(rect.width) ||
+      !Number.isFinite(rect.height) ||
+      rect.width <= 0 ||
+      rect.height <= 0
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   function hasDecorationClass(element) {
     if (!isElement(element)) {
       return false;
@@ -172,13 +210,15 @@
     return normalizeLabel(collectMeaningfulText(node));
   }
 
-  function findLabelNodes(scope) {
+  function findLabelNodes(scope, options = {}) {
     if (!isElement(scope)) {
       return [];
     }
 
+    const visibleOnly = options.visibleOnly === true;
     const labeledNodes = toArray(scope.querySelectorAll(LABEL_SELECTOR))
       .filter((node) => !isIgnoredDecorationElement(node))
+      .filter((node) => !visibleOnly || isLayoutVisible(node))
       .map((node) => ({ node, label: getNodeLabel(node) }))
       .filter((entry) => entry.label);
 
@@ -191,8 +231,10 @@
       .map((entry) => entry.node);
   }
 
-  function countDistinctLabels(scope) {
-    return new Set(findLabelNodes(scope).map((node) => getNodeLabel(node))).size;
+  function countDistinctLabels(scope, options = {}) {
+    return new Set(
+      findLabelNodes(scope, options).map((node) => getNodeLabel(node))
+    ).size;
   }
 
   function getPlayerDisplayRoot(options = {}) {
@@ -201,38 +243,7 @@
   }
 
   function isVisiblePlayerNode(element) {
-    if (!isElement(element) || !element.isConnected) {
-      return false;
-    }
-
-    if (typeof element.getBoundingClientRect !== "function") {
-      return false;
-    }
-
-    const rect = element.getBoundingClientRect();
-    if (
-      !Number.isFinite(rect.width) ||
-      !Number.isFinite(rect.height) ||
-      rect.width <= 0 ||
-      rect.height <= 0
-    ) {
-      return false;
-    }
-
-    const style = getComputedStyle(element);
-    if (!style) {
-      return false;
-    }
-
-    if (
-      style.display === "none" ||
-      style.visibility === "hidden" ||
-      style.opacity === "0"
-    ) {
-      return false;
-    }
-
-    return true;
+    return isLayoutVisible(element);
   }
 
   function uniqueElements(elements) {
@@ -349,7 +360,8 @@
     if (
       cachedGridRoot &&
       cachedGridRoot.isConnected &&
-      countDistinctLabels(cachedGridRoot) >= 5
+      isLayoutVisible(cachedGridRoot) &&
+      countDistinctLabels(cachedGridRoot, { visibleOnly: true }) >= 5
     ) {
       return cachedGridRoot;
     }
@@ -358,50 +370,71 @@
       return null;
     }
 
-    const labelNodes = findLabelNodes(doc.body);
-    if (labelNodes.length < 5) {
-      return null;
+    function findBestRoot(visibleOnly) {
+      const labelNodes = findLabelNodes(
+        doc.body,
+        visibleOnly ? { visibleOnly: true } : {}
+      );
+      if (labelNodes.length < 5) {
+        return null;
+      }
+
+      let best = null;
+      labelNodes.forEach((labelNode) => {
+        let current = labelNode.parentElement;
+        let depth = 0;
+
+        while (current && depth < 8) {
+          if (visibleOnly && !isLayoutVisible(current)) {
+            current = current.parentElement;
+            depth += 1;
+            continue;
+          }
+
+          const labelCount = countDistinctLabels(
+            current,
+            visibleOnly ? { visibleOnly: true } : {}
+          );
+          if (labelCount >= 5) {
+            const childCount = current.children.length;
+            const display = getComputedStyle(current).display || "";
+            let score = labelCount * 100;
+            if (display.includes("grid") || display.includes("table")) {
+              score += 60;
+            }
+            if (childCount >= 14) {
+              score += 18;
+            }
+            if (childCount > 0 && childCount % 7 === 0) {
+              score += 12;
+            }
+            if (childCount > 0 && childCount % 12 === 0) {
+              score += 12;
+            }
+            if (isLayoutVisible(current)) {
+              score += 80;
+            }
+            score -= depth * 3;
+
+            if (!best || score > best.score) {
+              best = { node: current, score };
+            }
+          }
+
+          current = current.parentElement;
+          depth += 1;
+        }
+      });
+
+      return best;
     }
 
-    let best = null;
-    labelNodes.forEach((labelNode) => {
-      let current = labelNode.parentElement;
-      let depth = 0;
-
-      while (current && depth < 8) {
-        const labelCount = countDistinctLabels(current);
-        if (labelCount >= 5) {
-          const childCount = current.children.length;
-          const display = getComputedStyle(current).display || "";
-          let score = labelCount * 100;
-          if (display.includes("grid") || display.includes("table")) {
-            score += 60;
-          }
-          if (childCount >= 14) {
-            score += 18;
-          }
-          if (childCount > 0 && childCount % 7 === 0) {
-            score += 12;
-          }
-          if (childCount > 0 && childCount % 12 === 0) {
-            score += 12;
-          }
-          score -= depth * 3;
-
-          if (!best || score > best.score) {
-            best = { node: current, score };
-          }
-        }
-
-        current = current.parentElement;
-        depth += 1;
-      }
-    });
-
+    const best = findBestRoot(true) || findBestRoot(false);
     cachedGridRoot = best ? best.node : null;
     if (debugLog) {
       debugLog("findGridRoot: result", {
         found: Boolean(cachedGridRoot),
+        visible: Boolean(cachedGridRoot && isLayoutVisible(cachedGridRoot)),
       });
     }
     return cachedGridRoot;
