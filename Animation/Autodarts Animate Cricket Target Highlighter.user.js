@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.7
+// @version      2.8
 // @description  Zeigt Zielzustände in Cricket und Tactics als Overlay direkt auf dem virtuellen Dartboard.
 // @xconfig-description  Markiert in Cricket und Tactics relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
@@ -491,6 +491,21 @@
     const targetOrder = snapshot?.targetOrder || [];
     const gameMode = snapshot?.gameModeInfo?.normalized || "";
     const modeFamily = snapshot?.modeInfo?.family || "";
+    const playerMappingSource = snapshot?.playerMappingSource || "";
+    const playerSlots = Array.isArray(snapshot?.playerSlots)
+      ? snapshot.playerSlots
+          .map((slot) =>
+            [
+              Number.isFinite(slot?.columnIndex) ? slot.columnIndex : "",
+              Number.isFinite(slot?.displayIndex) ? slot.displayIndex : "",
+              Number.isFinite(slot?.matchIndex) ? slot.matchIndex : "",
+              slot?.playerId || "",
+              slot?.nameKey || "",
+              slot?.source || "",
+            ].join(":")
+          )
+          .join(",")
+      : "";
     const activePlayerIndex = Number.isFinite(snapshot?.activePlayerIndex)
       ? snapshot.activePlayerIndex
       : "";
@@ -503,12 +518,19 @@
         const marks = Array.isArray(state?.marksByPlayer)
           ? state.marksByPlayer.join(",")
           : "";
-        return `${label}:${state ? state.presentation : ""}:${marks}`;
+        const cellStates = Array.isArray(state?.cellStates)
+          ? state.cellStates
+              .map((cellState) => cellState?.presentation || "")
+              .join(",")
+          : "";
+        return `${label}:${state ? state.presentation : ""}:${marks}:${cellStates}`;
       })
       .join("|");
     return [
       gameMode,
       modeFamily,
+      playerMappingSource,
+      playerSlots,
       activePlayerIndex,
       playerCount,
       targets,

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.7
+// @version      1.0.8
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -248,6 +248,7 @@
 
   function createRowState(targetState) {
     const marksByPlayer = targetState ? targetState.marksByPlayer || [] : [];
+    const cellStates = targetState ? targetState.cellStates || [] : [];
     const activePlayerIndex =
       targetState && Number.isFinite(targetState.activePlayerIndex)
         ? targetState.activePlayerIndex
@@ -260,8 +261,23 @@
       pressure: Boolean(targetState && targetState.pressure),
       activePlayerIndex,
       presentation,
-      key: `${activePlayerIndex}|${presentation}|${marksByPlayer.join(",")}`,
+      key: [
+        activePlayerIndex,
+        presentation,
+        marksByPlayer.join(","),
+        cellStates.map((state) => state.presentation || "").join(","),
+      ].join("|"),
     };
+  }
+
+  function readCellPresentation(targetState, index) {
+    const cellStates = Array.isArray(targetState?.cellStates)
+      ? targetState.cellStates
+      : [];
+    if (index < 0 || index >= cellStates.length) {
+      return "neutral";
+    }
+    return String(cellStates[index]?.presentation || "neutral");
   }
 
   function pulseRow(row) {
@@ -532,7 +548,8 @@
         new Array(snapshot.playerCount).fill(0);
       const prevRowState = state.rowStateByLabel.get(row.label) || null;
 
-      row.playerCells.forEach((cell) => {
+      row.playerCells.forEach((cell, index) => {
+        const cellPresentation = readCellPresentation(targetState, index);
         cell.classList.add(CELL_CLASS);
         cell.classList.remove(
           THREAT_CLASS,
@@ -540,16 +557,19 @@
           DEAD_CLASS,
           PRESSURE_CLASS
         );
-        if (CFG.threatEdge && targetState.danger) {
+        if (
+          CFG.threatEdge &&
+          (cellPresentation === "danger" || cellPresentation === "pressure")
+        ) {
           cell.classList.add(THREAT_CLASS);
         }
-        if (CFG.scoringLane && targetState.offense) {
+        if (CFG.scoringLane && cellPresentation === "offense") {
           cell.classList.add(SCORE_CLASS);
         }
-        if (CFG.deadRowCollapse && targetState.dead) {
+        if (CFG.deadRowCollapse && cellPresentation === "dead") {
           cell.classList.add(DEAD_CLASS);
         }
-        if (CFG.pressureOverlay && targetState.pressure) {
+        if (CFG.pressureOverlay && cellPresentation === "pressure") {
           cell.classList.add(PRESSURE_CLASS);
         }
       });

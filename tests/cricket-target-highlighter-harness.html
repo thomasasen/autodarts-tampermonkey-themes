@@ -227,16 +227,43 @@
           return marksByLabel;
         }
 
-        function renderPlayers(activePlayerIndex) {
+        function renderPlayers(activePlayerIndex, players, domOrder, visualOrder, includeIds) {
           const host = document.getElementById("ad-ext-player-display");
           host.textContent = "";
-          ["P1", "P2"].forEach((name, index) => {
+          const playerList = Array.isArray(players) && players.length
+            ? players
+            : [
+                { id: "player-1", name: "P1" },
+                { id: "player-2", name: "P2" },
+              ];
+          const resolvedDomOrder =
+            Array.isArray(domOrder) && domOrder.length === playerList.length
+              ? domOrder
+              : playerList.map((_, index) => index);
+          const resolvedVisualOrder =
+            Array.isArray(visualOrder) && visualOrder.length === playerList.length
+              ? visualOrder
+              : playerList.map((_, index) => index);
+
+          resolvedDomOrder.forEach((playerIndex) => {
+            const playerInfo = playerList[playerIndex] || {};
             const player = document.createElement("div");
             player.className = "ad-ext-player";
-            if (index === activePlayerIndex) {
+            player.style.order = String(
+              Number.isFinite(resolvedVisualOrder[playerIndex])
+                ? resolvedVisualOrder[playerIndex]
+                : playerIndex
+            );
+            if (includeIds !== false && playerInfo.id) {
+              player.setAttribute("data-player-id", String(playerInfo.id));
+            }
+            if (playerIndex === activePlayerIndex) {
               player.classList.add("ad-ext-player-active");
             }
-            player.textContent = name;
+            const nameNode = document.createElement("span");
+            nameNode.className = "ad-ext-player-name";
+            nameNode.textContent = playerInfo.name || `P${playerIndex + 1}`;
+            player.appendChild(nameNode);
             host.appendChild(player);
           });
         }
@@ -246,14 +273,17 @@
           targetOrder.forEach((label) => {
             const labelCell = document.createElement("div");
             labelCell.className = "label-cell";
+            labelCell.dataset.rowLabel = label;
             const badge = document.createElement("span");
             badge.textContent = label;
             labelCell.appendChild(badge);
             grid.appendChild(labelCell);
 
-            (marksByLabel[label] || [0, 0]).forEach((mark) => {
+            (marksByLabel[label] || [0, 0]).forEach((mark, playerIndex) => {
               const cell = document.createElement("div");
               cell.className = "player-cell";
+              cell.dataset.rowLabel = label;
+              cell.dataset.playerIndex = String(playerIndex);
               cell.setAttribute("data-marks", String(mark));
               cell.textContent = String(mark);
               grid.appendChild(cell);
@@ -292,6 +322,17 @@
         function readMetrics() {
           const overlay = document.getElementById(overlayId);
           const visibleGrid = document.getElementById("grid");
+          function countCellsByPlayer(className) {
+            const counts = {};
+            if (!visibleGrid) {
+              return counts;
+            }
+            visibleGrid.querySelectorAll(`.${className}[data-player-index]`).forEach((cell) => {
+              const key = String(cell.getAttribute("data-player-index") || "");
+              counts[key] = (counts[key] || 0) + 1;
+            });
+            return counts;
+          }
           return {
             overlay: Boolean(overlay),
             scoreShapes: overlay
@@ -312,6 +353,9 @@
             gridDeadCells: visibleGrid
               ? visibleGrid.querySelectorAll(".ad-ext-crfx-dead").length
               : 0,
+            gridScoreCellsByPlayer: countCellsByPlayer("ad-ext-crfx-score"),
+            gridThreatCellsByPlayer: countCellsByPlayer("ad-ext-crfx-threat"),
+            gridDeadCellsByPlayer: countCellsByPlayer("ad-ext-crfx-dead"),
             themeApplied: Boolean(
               document.getElementById("autodarts-cricket-custom-style")
             ),
@@ -351,7 +395,13 @@
             turns: [],
           };
 
-          renderPlayers(config.domActivePlayerIndex);
+          renderPlayers(
+            config.domActivePlayerIndex,
+            config.players,
+            config.playerDomOrder,
+            config.playerVisualOrder,
+            config.includeIds
+          );
           renderGrid(config.targetOrder, config.marksByLabel, {
             hiddenGrids: config.hiddenGrids,
           });
@@ -373,14 +423,15 @@
               "10": [3, 0],
             }),
             readyWhen: function (metrics) {
-              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 2;
+              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 1;
             },
           });
           assert(
             case1.overlay &&
               case1.scoreShapes === 4 &&
               case1.dangerShapes === 0 &&
-              case1.gridScoreCells === 2 &&
+              case1.gridScoreCells === 1 &&
+              case1.gridScoreCellsByPlayer["0"] === 1 &&
               case1.gridThreatCells === 0 &&
               case1.themeApplied &&
               case1.gridFxActive,
@@ -406,14 +457,15 @@
               },
             ],
             readyWhen: function (metrics) {
-              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 2;
+              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 1;
             },
           });
           assert(
             case2.overlay &&
               case2.scoreShapes === 4 &&
               case2.dangerShapes === 0 &&
-              case2.gridScoreCells === 2 &&
+              case2.gridScoreCells === 1 &&
+              case2.gridScoreCellsByPlayer["0"] === 1 &&
               case2.gridThreatCells === 0 &&
               case2.themeApplied &&
               case2.gridFxActive,
@@ -448,7 +500,7 @@
               ],
             },
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 2;
+              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 1;
             },
           });
           assert(
@@ -456,7 +508,8 @@
               case3.scoreShapes === 0 &&
               case3.dangerShapes === 4 &&
               case3.gridScoreCells === 0 &&
-              case3.gridThreatCells === 2 &&
+              case3.gridThreatCells === 1 &&
+              case3.gridThreatCellsByPlayer["1"] === 1 &&
               case3.themeApplied &&
               case3.gridFxActive,
             "Nach dem Spielerwechsel färbt ein gegnerischer T20 die 20 sofort rot",
@@ -481,7 +534,7 @@
               },
             ],
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 4;
+              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
             },
           });
           assert(
@@ -489,12 +542,79 @@
               case4.scoreShapes === 0 &&
               case4.dangerShapes === 8 &&
               case4.gridScoreCells === 0 &&
-              case4.gridThreatCells === 4 &&
+              case4.gridThreatCells === 2 &&
+              case4.gridThreatCellsByPlayer["1"] === 2 &&
               case4.themeApplied &&
               case4.gridFxActive &&
               case4.wrapperBadges === 0,
             "Ein sichtbares Grid bleibt auch neben einem versteckten Alt-Grid die aktive Datenquelle",
             JSON.stringify(case4)
+          );
+
+          const case5 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "15": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
+            },
+          });
+          assert(
+            case5.overlay &&
+              case5.scoreShapes === 0 &&
+              case5.dangerShapes === 8 &&
+              case5.gridScoreCells === 0 &&
+              case5.gridThreatCells === 2 &&
+              case5.gridThreatCellsByPlayer["1"] === 2 &&
+              !case5.gridThreatCellsByPlayer["0"] &&
+              case5.themeApplied &&
+              case5.gridFxActive,
+            "Wenn TEST1 20 und 15 geschlossen hat, sieht der aktive TEST2 beide Ziele sofort rot im Grid und am Board",
+            JSON.stringify(case5)
+          );
+
+          const case6 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            playerDomOrder: [1, 0],
+            playerVisualOrder: [0, 1],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "15": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
+            },
+          });
+          assert(
+            case6.overlay &&
+              case6.scoreShapes === 0 &&
+              case6.dangerShapes === 8 &&
+              case6.gridScoreCells === 0 &&
+              case6.gridThreatCells === 2 &&
+              case6.gridThreatCellsByPlayer["1"] === 2 &&
+              !case6.gridThreatCellsByPlayer["0"] &&
+              case6.themeApplied &&
+              case6.gridFxActive,
+            "Auch bei verdrehter DOM-Reihenfolge bleibt die visuelle TEST2-Spalte die rote Danger-Seite",
+            JSON.stringify(case6)
           );
 
           const summary = document.getElementById("summary");

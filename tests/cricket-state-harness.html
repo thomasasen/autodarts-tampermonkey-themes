@@ -174,19 +174,41 @@
 
         function mountPlayerStrip(playerCount, activePlayerIndex, options) {
           const config = options || {};
+          const players = Array.isArray(config.players) && config.players.length
+            ? config.players.slice(0, playerCount)
+            : Array.from({ length: playerCount }, (_, index) => ({
+                id: `player-${index + 1}`,
+                name: `P${index + 1}`,
+              }));
+          const domOrder = Array.isArray(config.domOrder) && config.domOrder.length === players.length
+            ? config.domOrder
+            : players.map((_, index) => index);
+          const visualOrder = Array.isArray(config.visualOrder) && config.visualOrder.length === players.length
+            ? config.visualOrder
+            : players.map((_, index) => index);
           const host = document.createElement("div");
           host.id = "ad-ext-player-display";
           host.className = "ad-ext-player-strip";
           host.style.display = config.visible === false ? "none" : "flex";
           host.style.gap = "8px";
 
-          Array.from({ length: playerCount }, (_, index) => index).forEach((index) => {
+          domOrder.forEach((playerIndex) => {
+            const playerData = players[playerIndex] || {};
             const player = document.createElement("div");
             player.className = "ad-ext-player";
-            player.textContent = `P${index + 1}`;
+            player.style.order = String(
+              Number.isFinite(visualOrder[playerIndex]) ? visualOrder[playerIndex] : playerIndex
+            );
             player.style.width = "80px";
             player.style.height = "24px";
-            if (index === activePlayerIndex) {
+            if (config.includeIds !== false && playerData.id) {
+              player.setAttribute("data-player-id", String(playerData.id));
+            }
+            const nameNode = document.createElement("span");
+            nameNode.className = "ad-ext-player-name";
+            nameNode.textContent = playerData.name || `P${playerIndex + 1}`;
+            player.appendChild(nameNode);
+            if (playerIndex === activePlayerIndex) {
               player.classList.add("ad-ext-player-active");
             }
             host.appendChild(player);
@@ -278,6 +300,10 @@
                   visible: config.domVisible,
                   hiddenActiveDuplicates: config.hiddenActiveDuplicates,
                   extraVisiblePlayers: config.extraVisiblePlayers,
+                  players: config.domPlayers,
+                  domOrder: config.domOrder,
+                  visualOrder: config.visualOrder,
+                  includeIds: config.includeIds,
                 })
               : null;
 
@@ -336,6 +362,13 @@
             pass: Boolean(condition),
             details: details || "",
           });
+        }
+
+        function readCellPresentations(state, label) {
+          const entry = state && state.states ? state.states.get(label) : null;
+          return Array.isArray(entry?.cellStates)
+            ? entry.cellStates.map((cellState) => cellState.presentation)
+            : [];
         }
 
         const twoPlayerOpenCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3, 0]);
@@ -860,7 +893,8 @@
         assert(
           case23.snapshot &&
             case23.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
-            case23.states.get("20").presentation === "offense",
+            case23.states.get("20").presentation === "offense" &&
+            readCellPresentations(case23, "20").join(",") === "offense,neutral",
           "Active throws preview closes 20 immediately after a first-dart T20 in Tactics",
           case23.snapshot
             ? JSON.stringify({
@@ -936,7 +970,8 @@
           case25.snapshot &&
             case25.snapshot.activePlayerIndex === 1 &&
             case25.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
-            case25.states.get("20").presentation === "danger",
+            case25.states.get("20").presentation === "danger" &&
+            readCellPresentations(case25, "20").join(",") === "neutral,pressure",
           "Nach einem gegnerischen T20 wird 20 für den nächsten aktiven Spieler sofort als danger erkannt",
           case25.snapshot
             ? JSON.stringify({
@@ -1066,6 +1101,209 @@
           case27Players.remove();
           cleanupMountedGridRoots();
         }
+
+        const case28 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "20" || label === "15") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            domOrder: [1, 0],
+            visualOrder: [0, 1],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [],
+            },
+          }
+        );
+        assert(
+          case28.snapshot &&
+            case28.snapshot.activePlayerIndex === 1 &&
+            case28.snapshot.playerSlots.map((slot) => slot.playerId).join(",") ===
+              "player-1,player-2" &&
+            case28.states.get("20").presentation === "danger" &&
+            readCellPresentations(case28, "20").join(",") === "neutral,pressure" &&
+            readCellPresentations(case28, "15").join(",") === "neutral,pressure",
+          "Die visuelle Player-Reihenfolge schlägt die DOM-Reihenfolge und hält danger auf der aktiven TEST2-Spalte",
+          case28.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case28.snapshot.activePlayerIndex,
+                playerSlots: case28.snapshot.playerSlots,
+                twenty: case28.states.get("20"),
+                fifteen: case28.states.get("15"),
+              })
+            : "snapshot=null"
+        );
+
+        const case29 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            matchState: {
+              players: [
+                { id: "player-2", name: "TEST2" },
+                { id: "player-1", name: "TEST1" },
+              ],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:01:00.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T20",
+                        number: 20,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        );
+        assert(
+          case29.snapshot &&
+            case29.snapshot.playerSlots.map((slot) => slot.playerId).join(",") ===
+              "player-1,player-2" &&
+            case29.snapshot.playerMappingSource === "id-match" &&
+            case29.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") ===
+              "3,0" &&
+            case29.states.get("20").presentation === "danger" &&
+            readCellPresentations(case29, "20").join(",") === "neutral,pressure",
+          "Historische Turns werden trotz vertauschter match.players-Reihenfolge per ID auf die richtige Grid-Spalte remappt",
+          case29.snapshot
+            ? JSON.stringify({
+                playerMappingSource: case29.snapshot.playerMappingSource,
+                playerSlots: case29.snapshot.playerSlots,
+                twentyRow: case29.snapshot.rows.find((row) => row.label === "20"),
+                twenty: case29.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case30 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "20" || label === "15") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          0,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: -1,
+            domVisible: true,
+            domPlayers: [
+              { name: "TEST1" },
+              { name: "TEST2" },
+            ],
+            includeIds: false,
+            matchState: {
+              player: 0,
+              players: [
+                { name: "TEST2" },
+                { name: "TEST1" },
+              ],
+              turns: [],
+            },
+          }
+        );
+        assert(
+          case30.snapshot &&
+            case30.snapshot.playerMappingSource === "name-match" &&
+            case30.snapshot.activePlayerIndex === 1 &&
+            case30.states.get("20").presentation === "danger" &&
+            readCellPresentations(case30, "20").join(",") === "neutral,pressure",
+          "Ohne IDs wird der aktive Spieler über Namensabgleich trotzdem auf die richtige Grid-Spalte gemappt",
+          case30.snapshot
+            ? JSON.stringify({
+                playerMappingSource: case30.snapshot.playerMappingSource,
+                activePlayerIndex: case30.snapshot.activePlayerIndex,
+                playerSlots: case30.snapshot.playerSlots,
+                twenty: case30.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case31 = buildState(
+          buildLinearRoot(
+            CRICKET_TARGETS,
+            createUniformMarkSets(CRICKET_TARGETS, function (label) {
+              if (label === "20" || label === "15") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        assert(
+          case31.snapshot &&
+            case31.states.get("20").presentation === "danger" &&
+            case31.states.get("15").presentation === "danger" &&
+            readCellPresentations(case31, "20").join(",") === "neutral,pressure" &&
+            readCellPresentations(case31, "15").join(",") === "neutral,pressure",
+          "Cricket spiegelt dieselbe aktive-Spieler-Perspektive wie Tactics: TEST2 sieht TEST1s geschlossene 20 und 15 sofort rot",
+          case31.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case31.snapshot.activePlayerIndex,
+                twenty: case31.states.get("20"),
+                fifteen: case31.states.get("15"),
+              })
+            : "snapshot=null"
+        );
 
         const summary = document.getElementById("summary");
         const list = document.getElementById("results");

@@ -565,6 +565,7 @@ Formatvarianten:
 - Zielbereich: In `Cricket` werden `20` bis `15` plus `Bull` markiert, in `Tactics` `20` bis `10` plus `Bull`.
 - Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix in Cricket und Tactics dieselben Zustände zeigen.
 - Aktivspieler-Regel: Der sichtbar aktive Spieler im primären Player-Display `#ad-ext-player-display` hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
+- Spielerzuordnung: Die Cricket-State-Basis führt Player-Display, Grid-Spalten und `match.players` über sichtbare Links-nach-Rechts-Reihenfolge plus ID-/Namensabgleich zusammen. Dadurch bleiben Board-Farben auch dann korrekt, wenn DOM-Reihenfolge und Match-Reihenfolge voneinander abweichen.
 - Spieleranzahl-Regel: Die aus dem Grid erkannte Spaltenzahl hat Vorrang vor global gezählten `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen daher keine Phantom-Gegner.
 - Grid-Root-Regel: Ein sichtbar gerendertes aktuelles Grid hat Vorrang vor versteckten Alt-Grids derselben Seite. Damit bleiben Board-Farben auch nach React-Re-Rendern oder SPA-Wechseln am richtigen Match-Grid.
 - Live-Wurf-Regel: Laufende Würfe aus `activeThrows` werden direkt in den Zielstatus eingerechnet. Schließt also schon der erste Dart ein Ziel, wird es sofort grün, auch wenn das Grid-DOM noch leicht hinterherhinkt.
@@ -598,6 +599,7 @@ Formatvarianten:
 - Hinweis: Läuft in Kombination mit dem Cricket-Theme am sinnvollsten.
 - Zielbereich: Nutzt automatisch den passenden Zielsatz der aktiven Variante, also `20` bis `15` plus `Bull` in Cricket oder `20` bis `10` plus `Bull` in Tactics.
 - Zustandsbasis: Nutzt exakt dieselbe Shared-State-Logik wie der Board-Highlighter, inklusive sichtbarem Aktivspieler aus `#ad-ext-player-display` und Grid-vorrangiger Spieleranzahl.
+- Spielerperspektive: Dauerhafte Grün-/Rot-Markierungen liegen nur noch auf der aktiven Spielerzelle der betroffenen Zeile. Zeilen-Sweep, Badge-Beacon und Treffer-Impulse dürfen weiter zeilenbezogen arbeiten, die fachliche Taktikfarbe bleibt aber strikt aktive-Spieler-Perspektive.
 - Grid-Root-Regel: Auch bei mehreren verbundenen Cricket-/Tactics-Grids auf derselben Seite bleibt das sichtbare aktuelle Grid die aktive Datenquelle. Versteckte Alt-Grids werden ignoriert.
 - Live-Wurf-Regel: Laufende Würfe aus `activeThrows` werden schon vor dem vollständigen Grid-Refresh berücksichtigt. Dadurch färben sich Offense-/Danger-Zeilen sofort nach dem Wurf korrekt ein.
 - Spielerwechsel-Regel: Zusätzlich fließen bereits abgeschlossene Würfe aus `match.turns` als Vorschau in denselben Shared State ein. Nach einem Spielerwechsel erscheinen Danger-Zeilen dadurch sofort beim nun aktiven Gegner.

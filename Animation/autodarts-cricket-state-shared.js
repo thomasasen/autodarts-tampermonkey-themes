@@ -246,6 +246,174 @@
     return isLayoutVisible(element);
   }
 
+  function sortElementsByVisualOrder(elements, options = {}) {
+    const rowTolerance = Number.isFinite(options.rowTolerance)
+      ? options.rowTolerance
+      : 8;
+
+    return uniqueElements(elements)
+      .filter((element) => isElement(element))
+      .map((element, index) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          element,
+          index,
+          top: Number.isFinite(rect.top) ? rect.top : 0,
+          left: Number.isFinite(rect.left) ? rect.left : 0,
+          width: Number.isFinite(rect.width) ? rect.width : 0,
+          height: Number.isFinite(rect.height) ? rect.height : 0,
+        };
+      })
+      .sort((first, second) => {
+        if (Math.abs(first.top - second.top) > rowTolerance) {
+          return first.top - second.top;
+        }
+        if (first.left !== second.left) {
+          return first.left - second.left;
+        }
+        if (first.width !== second.width) {
+          return first.width - second.width;
+        }
+        if (first.height !== second.height) {
+          return first.height - second.height;
+        }
+        return first.index - second.index;
+      })
+      .map((entry) => entry.element);
+  }
+
+  function normalizeIdentityKey(value) {
+    return String(value || "")
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/[^\p{L}\p{N}@._ -]+/gu, "")
+      .trim();
+  }
+
+  function readNodeAttribute(element, attributeName) {
+    if (!isElement(element) || !attributeName) {
+      return "";
+    }
+    return String(element.getAttribute(attributeName) || "").trim();
+  }
+
+  function extractIdentityTokenFromUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+      return "";
+    }
+
+    const uuidMatch = text.match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
+    );
+    if (uuidMatch) {
+      return uuidMatch[0].toLowerCase();
+    }
+
+    const pathMatch = text.match(
+      /(?:users?|players?|members?|profile|avatar)s?\/([^/?#]+)/i
+    );
+    if (pathMatch) {
+      return decodeURIComponent(pathMatch[1]).trim().toLowerCase();
+    }
+
+    return "";
+  }
+
+  function readNamedPlayerText(node) {
+    if (!isElement(node)) {
+      return "";
+    }
+
+    const preferred =
+      node.querySelector(".ad-ext-player-name") ||
+      node.querySelector("[data-player-name]") ||
+      node.querySelector("[data-username]") ||
+      node.querySelector("[data-name]");
+
+    if (preferred) {
+      const text = normalizeWhitespace(collectMeaningfulText(preferred));
+      if (text) {
+        return text;
+      }
+    }
+
+    return normalizeWhitespace(collectMeaningfulText(node));
+  }
+
+  function extractPlayerNodeIdentity(node) {
+    const attributes = [
+      "data-player-id",
+      "data-user-id",
+      "data-id",
+      "data-player",
+    ];
+    for (const attribute of attributes) {
+      const value = readNodeAttribute(node, attribute);
+      if (value) {
+        return {
+          playerId: value,
+          nameKey: normalizeIdentityKey(readNamedPlayerText(node)),
+        };
+      }
+    }
+
+    const linkedNode = isElement(node)
+      ? node.querySelector("[href], [src], a[href], img[src]")
+      : null;
+    const linkedValue =
+      readNodeAttribute(linkedNode, "href") || readNodeAttribute(linkedNode, "src");
+    const tokenFromUrl = extractIdentityTokenFromUrl(linkedValue);
+    if (tokenFromUrl) {
+      return {
+        playerId: tokenFromUrl,
+        nameKey: normalizeIdentityKey(readNamedPlayerText(node)),
+      };
+    }
+
+    return {
+      playerId: "",
+      nameKey: normalizeIdentityKey(readNamedPlayerText(node)),
+    };
+  }
+
+  function extractMatchPlayerIdentity(player) {
+    if (!player || typeof player !== "object") {
+      return { playerId: "", nameKey: "" };
+    }
+
+    const playerId = String(
+      player.id || player.userId || player.playerId || ""
+    ).trim();
+    const rawName =
+      player.name ||
+      player.displayName ||
+      player.nickname ||
+      player.username ||
+      player.user?.name ||
+      player.user?.displayName ||
+      player.user?.nickname ||
+      player.user?.username ||
+      "";
+
+    return {
+      playerId,
+      nameKey: normalizeIdentityKey(rawName),
+    };
+  }
+
+  function readMatchData(gameStateShared) {
+    if (!gameStateShared || typeof gameStateShared.getState !== "function") {
+      return null;
+    }
+
+    const state = gameStateShared.getState();
+    const match = state && state.match;
+    return match && typeof match === "object" ? match : null;
+  }
+
   function uniqueElements(elements) {
     const merged = [];
     const seen = new Set();
@@ -283,19 +451,195 @@
     const visibleGlobalPlayers = globalPlayers.filter(isVisiblePlayerNode);
 
     if (visibleDirectDisplayPlayers.length) {
-      return uniqueElements(visibleDirectDisplayPlayers);
+      return sortElementsByVisualOrder(visibleDirectDisplayPlayers);
     }
     if (visibleDisplayPlayers.length) {
-      return uniqueElements(visibleDisplayPlayers);
+      return sortElementsByVisualOrder(visibleDisplayPlayers);
     }
     if (visibleGlobalPlayers.length) {
-      return uniqueElements(visibleGlobalPlayers);
+      return sortElementsByVisualOrder(visibleGlobalPlayers);
     }
-    return uniqueElements(globalPlayers);
+    return sortElementsByVisualOrder(globalPlayers);
   }
 
   function getVisiblePlayerCount(options = {}) {
     return getPreferredPlayerNodes(options).filter(isVisiblePlayerNode).length;
+  }
+
+  function getDisplayPlayerNodes(options = {}) {
+    return getPreferredPlayerNodes(options).filter(isVisiblePlayerNode);
+  }
+
+  function buildPlayerSlots(playerCount, displayPlayers) {
+    return Array.from({ length: playerCount }, (_, columnIndex) => {
+      const displayNode =
+        Array.isArray(displayPlayers) && columnIndex < displayPlayers.length
+          ? displayPlayers[columnIndex]
+          : null;
+      const displayIdentity = extractPlayerNodeIdentity(displayNode);
+      return {
+        columnIndex,
+        displayIndex: displayNode ? columnIndex : null,
+        matchIndex: null,
+        playerId: displayIdentity.playerId || "",
+        nameKey: displayIdentity.nameKey || "",
+        source: displayNode ? "visual-order" : "grid-only",
+        displayNode,
+      };
+    });
+  }
+
+  function summarizePlayerMappingSource(playerSlots) {
+    const sources = new Set((playerSlots || []).map((slot) => slot.source));
+    if (sources.has("order-fallback")) {
+      return "order-fallback";
+    }
+    if (sources.has("active-anchor-2p")) {
+      return "active-anchor-2p";
+    }
+    if (sources.has("active-anchor")) {
+      return "active-anchor";
+    }
+    if (sources.has("name-match")) {
+      return "name-match";
+    }
+    if (sources.has("id-match")) {
+      return "id-match";
+    }
+    if (sources.has("visual-order")) {
+      return "visual-order";
+    }
+    return "grid-only";
+  }
+
+  function buildPlayerSlotMapping(options = {}) {
+    const playerCount = Number(options.playerCount);
+    if (!(playerCount > 0)) {
+      return {
+        playerSlots: [],
+        playerMappingSource: "grid-only",
+      };
+    }
+
+    const gameStateShared = options.gameStateShared || null;
+    const match = options.match || readMatchData(gameStateShared);
+    const activePlayerInfo = options.activePlayerInfo || {};
+    const displayPlayers = getDisplayPlayerNodes(options).slice(0, playerCount);
+    const playerSlots = buildPlayerSlots(playerCount, displayPlayers);
+    const matchPlayers = Array.isArray(match?.players) ? match.players : [];
+    const matchIdentities = matchPlayers.map((player, matchIndex) => {
+      const identity = extractMatchPlayerIdentity(player);
+      return {
+        matchIndex,
+        playerId: identity.playerId || "",
+        nameKey: identity.nameKey || "",
+      };
+    });
+    const unusedMatchIndices = new Set(
+      matchIdentities
+        .slice(0, Math.max(playerCount, matchIdentities.length))
+        .map((entry) => entry.matchIndex)
+    );
+    const unusedColumns = new Set(playerSlots.map((slot) => slot.columnIndex));
+
+    function assignSlot(columnIndex, matchIndex, source) {
+      const slot = playerSlots[columnIndex];
+      const matchIdentity = matchIdentities[matchIndex];
+      if (!slot || !matchIdentity) {
+        return false;
+      }
+      if (!unusedColumns.has(columnIndex) || !unusedMatchIndices.has(matchIndex)) {
+        return false;
+      }
+      slot.matchIndex = matchIndex;
+      if (matchIdentity.playerId) {
+        slot.playerId = matchIdentity.playerId;
+      }
+      if (matchIdentity.nameKey) {
+        slot.nameKey = matchIdentity.nameKey;
+      }
+      slot.source = source;
+      unusedColumns.delete(columnIndex);
+      unusedMatchIndices.delete(matchIndex);
+      return true;
+    }
+
+    playerSlots.forEach((slot) => {
+      if (!slot.playerId) {
+        return;
+      }
+      const matching = matchIdentities.filter(
+        (entry) => entry.playerId && entry.playerId === slot.playerId
+      );
+      if (matching.length === 1) {
+        assignSlot(slot.columnIndex, matching[0].matchIndex, "id-match");
+      }
+    });
+
+    playerSlots.forEach((slot) => {
+      if (slot.matchIndex !== null || !slot.nameKey) {
+        return;
+      }
+      const matching = matchIdentities.filter(
+        (entry) =>
+          entry.nameKey &&
+          entry.nameKey === slot.nameKey &&
+          unusedMatchIndices.has(entry.matchIndex)
+      );
+      if (matching.length === 1) {
+        assignSlot(slot.columnIndex, matching[0].matchIndex, "name-match");
+      }
+    });
+
+    const displayIndex = Number.isFinite(activePlayerInfo.displayIndex)
+      ? activePlayerInfo.displayIndex
+      : null;
+    const stateIndex = Number.isFinite(activePlayerInfo.stateIndex)
+      ? activePlayerInfo.stateIndex
+      : null;
+    if (
+      displayIndex !== null &&
+      stateIndex !== null &&
+      displayIndex >= 0 &&
+      displayIndex < playerSlots.length &&
+      stateIndex >= 0 &&
+      stateIndex < matchIdentities.length
+    ) {
+      assignSlot(displayIndex, stateIndex, "active-anchor");
+    }
+
+    if (
+      playerSlots.length === 2 &&
+      unusedColumns.size === 1 &&
+      unusedMatchIndices.size === 1
+    ) {
+      const [columnIndex] = Array.from(unusedColumns);
+      const [matchIndex] = Array.from(unusedMatchIndices);
+      assignSlot(columnIndex, matchIndex, "active-anchor-2p");
+    }
+
+    Array.from(unusedColumns)
+      .sort((first, second) => first - second)
+      .forEach((columnIndex) => {
+        const matchIndex = Array.from(unusedMatchIndices)
+          .sort((first, second) => first - second)
+          .find((candidate) => Number.isFinite(candidate));
+        if (Number.isFinite(matchIndex)) {
+          assignSlot(columnIndex, matchIndex, "order-fallback");
+        }
+      });
+
+    return {
+      playerSlots: playerSlots.map((slot) => ({
+        columnIndex: slot.columnIndex,
+        displayIndex: Number.isFinite(slot.displayIndex) ? slot.displayIndex : null,
+        matchIndex: Number.isFinite(slot.matchIndex) ? slot.matchIndex : null,
+        playerId: slot.playerId || "",
+        nameKey: slot.nameKey || "",
+        source: slot.source,
+      })),
+      playerMappingSource: summarizePlayerMappingSource(playerSlots),
+    };
   }
 
   function getExpectedPlayerCount(options = {}) {
@@ -466,6 +810,7 @@
     if (activeIndices.length > 0) {
       return {
         index: activeIndices[0],
+        displayIndex: activeIndices[0],
         source: "visible-dom",
         visiblePlayerCount,
         stateIndex:
@@ -481,6 +826,7 @@
     if (Number.isFinite(fromState) && fromState >= 0) {
       return {
         index: fromState,
+        displayIndex: null,
         source: "game-state",
         visiblePlayerCount,
         stateIndex: fromState,
@@ -497,6 +843,7 @@
 
     return {
       index: activeIndex >= 0 ? activeIndex : 0,
+      displayIndex: activeIndex >= 0 ? activeIndex : null,
       source: activeIndex >= 0 ? "dom-fallback" : "default-zero",
       visiblePlayerCount,
       stateIndex: fromState,
@@ -1003,15 +1350,7 @@
   }
 
   function readMatchTurns(gameStateShared) {
-    if (!gameStateShared || typeof gameStateShared.getState !== "function") {
-      return null;
-    }
-
-    const state = gameStateShared.getState();
-    const match = state && state.match;
-    if (!match || typeof match !== "object") {
-      return null;
-    }
+    const match = readMatchData(gameStateShared);
     if (!Array.isArray(match.players) || !Array.isArray(match.turns)) {
       return null;
     }
@@ -1019,23 +1358,30 @@
     return match;
   }
 
-  function readTurnMarksByLabel(gameStateShared, targetSet, playerCount) {
+  function readTurnMarksByLabel(gameStateShared, targetSet, playerSlots) {
     const match = readMatchTurns(gameStateShared);
-    if (!match || !(playerCount > 0)) {
+    const slotCount = Array.isArray(playerSlots) ? playerSlots.length : 0;
+    if (!match || !(slotCount > 0)) {
       return new Map();
     }
 
-    const playerIndexById = new Map();
+    const matchIndexById = new Map();
     match.players.forEach((player, index) => {
       const playerId =
         player && (player.id || player.userId || player.playerId || "");
-      if (!playerId || index >= playerCount) {
+      if (!playerId) {
         return;
       }
-      playerIndexById.set(String(playerId), index);
+      matchIndexById.set(String(playerId), index);
+    });
+    const columnIndexByMatchIndex = new Map();
+    playerSlots.forEach((slot) => {
+      if (slot && Number.isFinite(slot.matchIndex)) {
+        columnIndexByMatchIndex.set(slot.matchIndex, slot.columnIndex);
+      }
     });
 
-    if (!playerIndexById.size) {
+    if (!matchIndexById.size || !columnIndexByMatchIndex.size) {
       return new Map();
     }
 
@@ -1046,8 +1392,13 @@
       }
 
       const playerId = String(turn.playerId || "");
-      const playerIndex = playerIndexById.get(playerId);
-      if (!Number.isFinite(playerIndex) || playerIndex < 0 || playerIndex >= playerCount) {
+      const matchIndex = matchIndexById.get(playerId);
+      const columnIndex = columnIndexByMatchIndex.get(matchIndex);
+      if (
+        !Number.isFinite(columnIndex) ||
+        columnIndex < 0 ||
+        columnIndex >= slotCount
+      ) {
         return;
       }
 
@@ -1063,9 +1414,9 @@
         }
 
         const currentMarks =
-          marksByLabel.get(label) || new Array(playerCount).fill(0);
-        currentMarks[playerIndex] = clampMark(
-          (currentMarks[playerIndex] || 0) + marks
+          marksByLabel.get(label) || new Array(slotCount).fill(0);
+        currentMarks[columnIndex] = clampMark(
+          (currentMarks[columnIndex] || 0) + marks
         );
         marksByLabel.set(label, currentMarks);
       });
@@ -1101,10 +1452,11 @@
       filtered.push(cell);
     });
 
-    if (expectedPlayerCount && filtered.length > expectedPlayerCount) {
-      return filtered.slice(0, expectedPlayerCount);
+    const sorted = sortElementsByVisualOrder(filtered);
+    if (expectedPlayerCount && sorted.length > expectedPlayerCount) {
+      return sorted.slice(0, expectedPlayerCount);
     }
-    return filtered;
+    return sorted;
   }
 
   function findBadgeNode(labelCell, fallbackNode, label) {
@@ -1446,6 +1798,37 @@
     };
   }
 
+  function resolveMappedActivePlayerIndex(activePlayerInfo, playerSlots, playerCount) {
+    const slots = Array.isArray(playerSlots) ? playerSlots : [];
+    const displayIndex = Number.isFinite(activePlayerInfo?.displayIndex)
+      ? activePlayerInfo.displayIndex
+      : null;
+    if (displayIndex !== null) {
+      const matchedSlot = slots.find((slot) => slot.displayIndex === displayIndex);
+      if (matchedSlot && Number.isFinite(matchedSlot.columnIndex)) {
+        return matchedSlot.columnIndex;
+      }
+    }
+
+    const stateIndex = Number.isFinite(activePlayerInfo?.stateIndex)
+      ? activePlayerInfo.stateIndex
+      : null;
+    if (stateIndex !== null) {
+      const matchedSlot = slots.find((slot) => slot.matchIndex === stateIndex);
+      if (matchedSlot && Number.isFinite(matchedSlot.columnIndex)) {
+        return matchedSlot.columnIndex;
+      }
+    }
+
+    const fallbackIndex = Number.isFinite(activePlayerInfo?.index)
+      ? activePlayerInfo.index
+      : 0;
+    if (playerCount > 0) {
+      return Math.max(0, Math.min(fallbackIndex, playerCount - 1));
+    }
+    return 0;
+  }
+
   function buildGridSnapshot(options = {}) {
     const debugLog =
       typeof options.debugLog === "function" ? options.debugLog : null;
@@ -1457,7 +1840,6 @@
     const expectedPlayerCount = getExpectedPlayerCount(options);
     const gameStateShared = options.gameStateShared || null;
     const activePlayerInfo = getResolvedActivePlayerInfo(options);
-    const activePlayerIndex = activePlayerInfo.index;
     const visiblePlayerCount = activePlayerInfo.visiblePlayerCount;
 
     let parsedRows = buildRowsFromLinearGrid(root, expectedPlayerCount);
@@ -1511,6 +1893,30 @@
       }
     }
 
+    const playerMapping = buildPlayerSlotMapping({
+      ...options,
+      gameStateShared,
+      match: readMatchData(gameStateShared),
+      activePlayerInfo,
+      playerCount,
+    });
+    const playerSlots = Array.isArray(playerMapping.playerSlots)
+      ? playerMapping.playerSlots.slice(0, playerCount)
+      : [];
+    const resolvedActivePlayerIndex = resolveMappedActivePlayerIndex(
+      activePlayerInfo,
+      playerSlots,
+      playerCount
+    );
+    const turnMarksByLabel = readTurnMarksByLabel(
+      gameStateShared,
+      targetSet,
+      playerSlots
+    );
+    const activeThrowMarksByLabel = readActiveThrowMarksByLabel(
+      gameStateShared,
+      targetSet
+    );
     if (
       debugLog &&
       ((visiblePlayerCount > 0 &&
@@ -1518,30 +1924,18 @@
         visiblePlayerCount !== detectedPlayerCount) ||
         (Number.isFinite(activePlayerInfo.stateIndex) &&
           activePlayerInfo.source !== "game-state" &&
-          activePlayerInfo.stateIndex !== activePlayerIndex))
+          activePlayerInfo.stateIndex !== resolvedActivePlayerIndex))
     ) {
       debugLog("buildGridSnapshot: player-source-mismatch", {
         visiblePlayerCount,
         detectedPlayerCount,
-        activePlayerIndex,
+        activePlayerIndex: resolvedActivePlayerIndex,
         activePlayerSource: activePlayerInfo.source,
         gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
+        playerMappingSource: playerMapping.playerMappingSource,
+        playerSlots,
       });
     }
-
-    const resolvedActivePlayerIndex = Math.max(
-      0,
-      Math.min(activePlayerIndex, playerCount - 1)
-    );
-    const turnMarksByLabel = readTurnMarksByLabel(
-      gameStateShared,
-      targetSet,
-      playerCount
-    );
-    const activeThrowMarksByLabel = readActiveThrowMarksByLabel(
-      gameStateShared,
-      targetSet
-    );
     if (debugLog && playerSource === "visible-gap-repair") {
       debugLog("buildGridSnapshot: repaired player undercount", {
         detectedPlayerCount,
@@ -1590,9 +1984,9 @@
           rowElement: row.rowElement,
           labelCell: row.labelCell || null,
           badgeNode: row.badgeNode || null,
-          playerCells,
-          marksByPlayer,
-        };
+        playerCells,
+        marksByPlayer,
+      };
       })
       .sort((first, second) => {
         return targetOrder.indexOf(first.label) - targetOrder.indexOf(second.label);
@@ -1620,6 +2014,8 @@
       visiblePlayerCount,
       detectedPlayerCount,
       playerSource,
+      playerSlots,
+      playerMappingSource: playerMapping.playerMappingSource,
       activePlayerIndex: resolvedActivePlayerIndex,
       modeInfo,
     };
@@ -1669,6 +2065,32 @@
         !dead;
       const pressure = danger && activeMarks <= 1;
       const closed = activeMarks >= 3 && !offense && !dead;
+      const cellStates = marksByPlayer.map((marks, index) => {
+        const isActivePlayer = index === activePlayerIndex;
+        let cellPresentation = "neutral";
+        if (dead) {
+          cellPresentation = "dead";
+        } else if (isActivePlayer) {
+          if (offense) {
+            cellPresentation = "offense";
+          } else if (pressure) {
+            cellPresentation = "pressure";
+          } else if (danger) {
+            cellPresentation = "danger";
+          } else if (closed) {
+            cellPresentation = "closed";
+          } else {
+            cellPresentation = "open";
+          }
+        }
+
+        return {
+          index,
+          marks,
+          isActivePlayer,
+          presentation: cellPresentation,
+        };
+      });
 
       let presentation = "open";
       if (dead) {
@@ -1694,6 +2116,7 @@
         closed,
         dead,
         presentation,
+        cellStates,
       });
     });
 
@@ -1708,8 +2131,12 @@
     normalizeLabel,
     getTargetOrderByGameMode,
     isVisiblePlayerNode,
+    sortElementsByVisualOrder,
+    extractPlayerNodeIdentity,
+    extractMatchPlayerIdentity,
     getPreferredPlayerNodes,
     getVisiblePlayerCount,
+    buildPlayerSlotMapping,
     findGridRoot,
     resolveActivePlayerIndex,
     readCricketMode,
