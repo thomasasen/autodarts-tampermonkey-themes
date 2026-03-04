@@ -49,6 +49,7 @@
   const GIT_API_BACKOFF_STORAGE_KEY = "ad-xconfig:git-api-backoff-until:v1";
   const GIT_API_BACKOFF_DEFAULT_MS = 10 * 60 * 1000;
   const GIT_API_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
+  const FEATURE_EXECUTION_LOADER_MODE = "xconfig-loader";
 
   const STYLE_ID = "ad-xconfig-style";
   const MENU_ITEM_ID = "ad-xconfig-menu-item";
@@ -143,9 +144,10 @@
       stackHintEntries: [],
       stackHintCache: new Map(),
       executedFeatures: new Set(),
+      executedFeatureInfo: new Map(),
       executedFiles: new Set(),
       featureRuntimeStatus: {},
-      currentFeatureExecution: "",
+      currentFeatureExecution: null,
       observerHandlesByFeature: new Map(),
       intervalHandlesByFeature: new Map(),
       timeoutHandlesByFeature: new Map(),
@@ -869,11 +871,22 @@
 
   function publishRuntimeState(reason) {
     const snapshot = buildRuntimeSnapshot();
+    const getCurrentExecution = () =>
+      cloneRuntimeValue(getCurrentFeatureExecutionInfo());
+    const getExecutedFeatureInfo = (featureRef) => {
+      const resolvedFeatureId =
+        resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
+      return cloneRuntimeValue(
+        state.runtime.executedFeatureInfo.get(resolvedFeatureId) || null
+      );
+    };
     const runtimeApi = {
       loaderMode: LOADER_MODE,
       reason: String(reason || "update"),
       updatedAt: snapshot.updatedAt,
       getSnapshot: () => cloneRuntimeValue(snapshot),
+      getCurrentExecution,
+      getExecutedFeatureInfo,
       resolveFeatureId: (featureRef) => resolveFeatureIdFromReference(featureRef),
       isFeatureEnabled: (featureRef) => {
         const resolvedFeatureId = resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
@@ -969,8 +982,15 @@
       if (fromStack) {
         return fromStack;
       }
-      return String(state.runtime.currentFeatureExecution || "");
+      return String(getCurrentFeatureExecutionInfo()?.featureId || "");
     }
+  }
+
+  function getCurrentFeatureExecutionInfo() {
+    const execution = state.runtime.currentFeatureExecution;
+    return execution && typeof execution === "object"
+      ? execution
+      : null;
   }
 
   function trackRuntimeHandle(map, featureId, handle) {
@@ -2907,7 +2927,7 @@
     (0, eval)(payload);
   }
 
-  function executeModuleFileFromCache(repoPath, featureId, executionStack = new Set()) {
+  function executeModuleFileFromCache(repoPath, featureId, executionStack = new Set(), executionReason = "runtime") {
     const normalizedPath = normalizeSourcePath(repoPath || "").replace(/^\/+/, "");
     if (!normalizedPath) {
       return { ok: false, status: LOADER_STATUS.ERROR, message: "Fehlender Modulpfad." };
@@ -2938,7 +2958,7 @@
     executionStack.add(normalizedPath);
     const requires = normalizeStringArray(fileEntry.requires);
     for (const requiredPath of requires) {
-      const dependencyResult = executeModuleFileFromCache(requiredPath, featureId, executionStack);
+      const dependencyResult = executeModuleFileFromCache(requiredPath, featureId, executionStack, executionReason);
       if (!dependencyResult.ok) {
         executionStack.delete(normalizedPath);
         return dependencyResult;
@@ -2947,14 +2967,28 @@
 
     const previousFeatureExecution = state.runtime.currentFeatureExecution;
     try {
-      state.runtime.currentFeatureExecution = featureId;
       const featureSourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
       const isFeatureMainFile = Boolean(featureSourcePath) && featureSourcePath === normalizedPath;
+      state.runtime.currentFeatureExecution = {
+        featureId: String(featureId || ""),
+        sourcePath: normalizedPath,
+        reason: isFeatureMainFile ? String(executionReason || "runtime") : "require",
+        loaderMode: FEATURE_EXECUTION_LOADER_MODE,
+      };
       const scriptContent = isFeatureMainFile
         ? applyFeatureSettingOverridesToCode(fileEntry.content, featureId, normalizedPath)
         : String(fileEntry.content || "");
       executeCodeWithSourceUrl(scriptContent, normalizedPath);
       state.runtime.executedFiles.add(normalizedPath);
+      if (isFeatureMainFile && featureId) {
+        state.runtime.executedFeatureInfo.set(featureId, {
+          featureId: String(featureId),
+          sourcePath: normalizedPath,
+          reason: String(executionReason || "runtime"),
+          loaderMode: FEATURE_EXECUTION_LOADER_MODE,
+          loadedAt: new Date().toISOString(),
+        });
+      }
       executionStack.delete(normalizedPath);
       return { ok: true, status: LOADER_STATUS.LOADED, message: `Geladen: ${normalizedPath}` };
     } catch (error) {
@@ -3001,7 +3035,7 @@
         return;
       }
 
-      const executionResult = executeModuleFileFromCache(sourcePath, featureId);
+      const executionResult = executeModuleFileFromCache(sourcePath, featureId, new Set(), reason);
       if (executionResult.ok) {
         state.runtime.executedFeatures.add(featureId);
         setLoaderStatus(featureId, LOADER_STATUS.LOADED, executionResult.message);
@@ -4475,6 +4509,7 @@
         clearRuntimeHandlesForFeature(featureId);
         cleanupFeatureArtifacts(featureId);
         state.runtime.executedFeatures.delete(featureId);
+        state.runtime.executedFeatureInfo.delete(featureId);
         const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
         if (sourcePath) {
           state.runtime.executedFiles.delete(sourcePath);
@@ -4885,6 +4920,7 @@
       clearRuntimeHandlesForFeature(featureId);
       cleanupFeatureArtifacts(featureId);
       state.runtime.executedFeatures.delete(featureId);
+      state.runtime.executedFeatureInfo.delete(featureId);
       const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
       if (sourcePath) {
         state.runtime.executedFiles.delete(sourcePath);

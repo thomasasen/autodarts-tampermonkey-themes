@@ -6,6 +6,7 @@
   // Update the @require URL if you fork the repository.
 
   const SVG_NS = "http://www.w3.org/2000/svg";
+  const FEATURE_INSTANCE_GLOBAL_KEY = "__adExtFeatureInstances";
   const SEGMENT_ORDER = [
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
   ];
@@ -277,6 +278,188 @@
     return overlay;
   }
 
+  function getFeatureRegistry() {
+    let registry = global[FEATURE_INSTANCE_GLOBAL_KEY];
+    if (!(registry instanceof Map)) {
+      registry = new Map();
+      global[FEATURE_INSTANCE_GLOBAL_KEY] = registry;
+    }
+    return registry;
+  }
+
+  function normalizeVersion(value) {
+    return String(value || "0")
+      .trim()
+      .split(".")
+      .map((segment) => {
+        const numeric = Number.parseInt(segment, 10);
+        return Number.isFinite(numeric) ? numeric : 0;
+      });
+  }
+
+  function compareVersions(leftValue, rightValue) {
+    const left = normalizeVersion(leftValue);
+    const right = normalizeVersion(rightValue);
+    const length = Math.max(left.length, right.length);
+    for (let index = 0; index < length; index += 1) {
+      const leftSegment = left[index] || 0;
+      const rightSegment = right[index] || 0;
+      if (leftSegment > rightSegment) {
+        return 1;
+      }
+      if (leftSegment < rightSegment) {
+        return -1;
+      }
+    }
+    return 0;
+  }
+
+  function toOwnerMeta(record) {
+    if (!record || typeof record !== "object") {
+      return null;
+    }
+    return {
+      featureKey: String(record.featureKey || ""),
+      token: String(record.token || ""),
+      version: String(record.version || ""),
+      sourcePath: String(record.sourcePath || ""),
+      executionSource: String(record.executionSource || "unknown"),
+    };
+  }
+
+  function claimFeatureInstance(options) {
+    const config = options || {};
+    const featureKey = String(config.featureKey || "").trim();
+    const version = String(config.version || "0").trim() || "0";
+    const sourcePath = String(config.sourcePath || "").trim();
+    const executionSource =
+      String(config.executionSource || "unknown").trim() || "unknown";
+    const onDispose =
+      typeof config.onDispose === "function" ? config.onDispose : null;
+    const token = `${featureKey || "feature"}:${Date.now()}:${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
+
+    if (!featureKey) {
+      return {
+        active: false,
+        token,
+        reason: "older-version-rejected",
+        ownerMeta: null,
+      };
+    }
+
+    const registry = getFeatureRegistry();
+    const existing = registry.get(featureKey);
+    const candidateRecord = {
+      featureKey,
+      token,
+      version,
+      sourcePath,
+      executionSource,
+      onDispose,
+    };
+
+    if (!existing) {
+      registry.set(featureKey, candidateRecord);
+      return {
+        active: true,
+        token,
+        reason: "claimed",
+        ownerMeta: toOwnerMeta(candidateRecord),
+      };
+    }
+
+    const comparison = compareVersions(version, existing.version);
+    if (comparison > 0) {
+      if (typeof existing.onDispose === "function") {
+        try {
+          existing.onDispose({
+            reason: "replaced-by-newer-version",
+            replacedBy: toOwnerMeta(candidateRecord),
+            previousOwner: toOwnerMeta(existing),
+          });
+        } catch (error) {
+          console.warn("[autodarts-animation-shared] feature dispose failed", {
+            featureKey,
+            error,
+          });
+        }
+      }
+      registry.set(featureKey, candidateRecord);
+      return {
+        active: true,
+        token,
+        reason: "replaced-older-owner",
+        ownerMeta: toOwnerMeta(candidateRecord),
+      };
+    }
+
+    return {
+      active: false,
+      token,
+      reason:
+        comparison === 0
+          ? "same-version-already-active"
+          : "older-version-rejected",
+      ownerMeta: toOwnerMeta(existing),
+    };
+  }
+
+  function releaseFeatureInstance(featureKey, token) {
+    const normalizedFeatureKey = String(featureKey || "").trim();
+    const normalizedToken = String(token || "").trim();
+    if (!normalizedFeatureKey || !normalizedToken) {
+      return false;
+    }
+
+    const registry = getFeatureRegistry();
+    const existing = registry.get(normalizedFeatureKey);
+    if (!existing || existing.token !== normalizedToken) {
+      return false;
+    }
+    registry.delete(normalizedFeatureKey);
+    return true;
+  }
+
+  function getFeatureInstance(featureKey) {
+    const normalizedFeatureKey = String(featureKey || "").trim();
+    if (!normalizedFeatureKey) {
+      return null;
+    }
+    return toOwnerMeta(getFeatureRegistry().get(normalizedFeatureKey));
+  }
+
+  function markOverlayOwner(overlay, meta) {
+    if (!overlay || !overlay.dataset || !meta) {
+      return null;
+    }
+    overlay.dataset.adExtFeatureKey = String(meta.featureKey || "");
+    overlay.dataset.adExtFeatureToken = String(meta.token || "");
+    overlay.dataset.adExtFeatureVersion = String(meta.version || "");
+    overlay.dataset.adExtFeatureSource = String(meta.sourcePath || "");
+    return readOverlayOwner(overlay);
+  }
+
+  function readOverlayOwner(overlay) {
+    if (!overlay || !overlay.dataset) {
+      return null;
+    }
+    const featureKey = String(overlay.dataset.adExtFeatureKey || "");
+    const token = String(overlay.dataset.adExtFeatureToken || "");
+    const version = String(overlay.dataset.adExtFeatureVersion || "");
+    const sourcePath = String(overlay.dataset.adExtFeatureSource || "");
+    if (!featureKey && !token && !version && !sourcePath) {
+      return null;
+    }
+    return {
+      featureKey,
+      token,
+      version,
+      sourcePath,
+    };
+  }
+
   function clearOverlay(overlay) {
     if (!overlay) {
       return;
@@ -383,6 +566,11 @@
     findBoard,
     ensureOverlayGroup,
     clearOverlay,
+    claimFeatureInstance,
+    releaseFeatureInstance,
+    getFeatureInstance,
+    markOverlayOwner,
+    readOverlayOwner,
     polar,
     wedgePath,
     ringPath,

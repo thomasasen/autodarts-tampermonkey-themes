@@ -567,6 +567,7 @@ Formatvarianten:
 - Perspektive: Das Board bleibt strikt in der Sicht des aktiven Spielers. Das Grid zeigt dieselben Zielzustände parallel pro Spielerzelle, sodass dieselbe Zeile gleichzeitig grün und rot sein kann.
 - Aktivspieler-Regel: Der sichtbar aktive Spieler im primären Player-Display `#ad-ext-player-display` hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
 - Snapshot-Hinweis: Der Shared Helper legt die finale Board-Perspektive zusätzlich als `snapshot.boardPlayerIndex` und `snapshot.activePlayerResolution` offen. Damit lässt sich im Debug schnell prüfen, aus welcher Quelle das Board seinen aktiven Spieler bezieht.
+- Runtime-Schutz: Board, Grid FX und Theme Cricket beanspruchen ihre Feature-Instanz jetzt zentral über `autodarts-animation-shared`. Bei doppelten Installationen oder späteren Reloads bleibt nur eine aktive Instanz Owner des Cricket-Overlays.
 - Spielerzuordnung: Die Cricket-State-Basis führt Player-Display, Grid-Spalten und `match.players` über sichtbare Links-nach-Rechts-Reihenfolge plus ID-/Namensabgleich zusammen. Dadurch bleiben Board-Farben auch dann korrekt, wenn DOM-Reihenfolge und Match-Reihenfolge voneinander abweichen.
 - Spieleranzahl-Regel: Die aus dem Grid erkannte Spaltenzahl hat Vorrang vor global gezählten `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen daher keine Phantom-Gegner.
 - Grid-Root-Regel: Ein sichtbar gerendertes aktuelles Grid hat Vorrang vor versteckten Alt-Grids derselben Seite. Damit bleiben Board-Farben auch nach React-Re-Rendern oder SPA-Wechseln am richtigen Match-Grid.
@@ -606,6 +607,7 @@ Formatvarianten:
 - Live-Wurf-Regel: Laufende Würfe aus `activeThrows` werden schon vor dem vollständigen Grid-Refresh berücksichtigt. Dadurch färben sich Offense-/Danger-Zeilen sofort nach dem Wurf korrekt ein.
 - Spielerwechsel-Regel: Zusätzlich fließen bereits abgeschlossene Würfe aus `match.turns` als Vorschau in denselben Shared State ein. Nach einem Spielerwechsel wird das Board sofort aus Sicht des neuen aktiven Spielers aktualisiert, während das Grid die offensiven und defensiven Gegenspielerzustände parallel beibehält.
 - Live-Refresh: Neben MutationObserver und Match-State-Events läuft ein 300-ms-Watchdog, damit Matrix-Farben und Effekte nach jedem Wurf synchron bleiben.
+- Runtime-Schutz: Auch das Grid beansprucht seine Instanz zentral. Dadurch können parallele xConfig-/Tampermonkey-Läufe nicht mehr dieselben Cricket-Zellklassen gegeneinander überschreiben.
 
 **Einstellungen einfach erklärt**
 

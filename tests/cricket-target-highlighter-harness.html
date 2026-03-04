@@ -204,7 +204,7 @@
           "10",
           "BULL",
         ];
-        const overlayId = "ad-ext-cricket-targets-v2";
+        const overlayId = "ad-ext-cricket-targets";
         const results = [];
         const sharedState = window.__targetHarnessState;
 
@@ -471,6 +471,69 @@
         }
 
         (async function run() {
+          const runtimeShared = window.autodartsAnimationShared || {};
+          const disposeEvents = [];
+          const runtimeClaimA = runtimeShared.claimFeatureInstance({
+            featureKey: "test/runtime-cricket-target",
+            version: "2.8",
+            sourcePath: "tests/runtime-a.user.js",
+            executionSource: "standalone-userscript",
+            onDispose: function (payload) {
+              disposeEvents.push(payload || null);
+            },
+          });
+          const runtimeClaimB = runtimeShared.claimFeatureInstance({
+            featureKey: "test/runtime-cricket-target",
+            version: "2.8",
+            sourcePath: "tests/runtime-b.user.js",
+            executionSource: "xconfig-loader",
+          });
+          const runtimeClaimC = runtimeShared.claimFeatureInstance({
+            featureKey: "test/runtime-cricket-target",
+            version: "2.9",
+            sourcePath: "tests/runtime-c.user.js",
+            executionSource: "xconfig-loader",
+          });
+          const runtimeOverlay = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "g"
+          );
+          runtimeOverlay.id = "test-runtime-overlay";
+          runtimeShared.markOverlayOwner(
+            runtimeOverlay,
+            runtimeClaimC.ownerMeta
+          );
+          const runtimeOverlayOwner = runtimeShared.readOverlayOwner(
+            runtimeOverlay
+          );
+          assert(
+            runtimeClaimA.active &&
+              !runtimeClaimB.active &&
+              runtimeClaimB.reason === "same-version-already-active" &&
+              runtimeClaimC.active &&
+              runtimeClaimC.reason === "replaced-older-owner" &&
+              disposeEvents.length === 1,
+            "Runtime-Singleton: gleiche Version wird verworfen, neuere Version übernimmt und disposed den alten Owner",
+            JSON.stringify({
+              runtimeClaimA,
+              runtimeClaimB,
+              runtimeClaimC,
+              disposeEvents,
+            })
+          );
+          assert(
+            runtimeOverlayOwner &&
+              runtimeOverlayOwner.featureKey ===
+                "test/runtime-cricket-target" &&
+              runtimeOverlayOwner.token === runtimeClaimC.token,
+            "Overlay-Ownership: mark/read bleibt auf dem aktuellen Runtime-Owner stabil",
+            JSON.stringify(runtimeOverlayOwner)
+          );
+          runtimeShared.releaseFeatureInstance(
+            "test/runtime-cricket-target",
+            runtimeClaimC.token
+          );
+
           const case1 = await runScenario({
             variant: "Tactics",
             scoringMode: "standard",

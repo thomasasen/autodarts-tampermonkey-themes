@@ -434,6 +434,22 @@
           return state?.snapshot?.activePlayerResolution || null;
         }
 
+        assert(
+          helper &&
+            helper.__moduleId === "autodarts-cricket-state-shared" &&
+            helper.__apiVersion === 2 &&
+            helper.__buildSignature ===
+              "autodarts-cricket-state-shared@2:2026-03-runtime-ownership",
+          "Shared helper exposes moduleId, apiVersion and buildSignature for runtime compatibility checks",
+          helper
+            ? JSON.stringify({
+                moduleId: helper.__moduleId,
+                apiVersion: helper.__apiVersion,
+                buildSignature: helper.__buildSignature,
+              })
+            : "helper=null"
+        );
+
         const twoPlayerOpenCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3, 0]);
         const twoPlayerDangerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3]);
         const threePlayerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3, 0]);

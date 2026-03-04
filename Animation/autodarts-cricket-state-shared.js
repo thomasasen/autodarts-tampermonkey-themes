@@ -8,6 +8,9 @@
     return;
   }
 
+  const MODULE_ID = "autodarts-cricket-state-shared";
+  const API_VERSION = 2;
+  const BUILD_SIGNATURE = `${MODULE_ID}@${API_VERSION}:2026-03-runtime-ownership`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -35,10 +38,7 @@
     "ad-ext-crfx-spark",
     "ad-ext-crfx-wipe",
   ]);
-  const DECORATION_ROOT_IDS = new Set([
-    "ad-ext-cricket-targets",
-    "ad-ext-cricket-targets-v2",
-  ]);
+  const DECORATION_ROOT_IDS = new Set(["ad-ext-cricket-targets"]);
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT"]);
 
   let cachedGridRoot = null;
@@ -190,6 +190,23 @@
   function readVariantTextFromDom(doc) {
     const variantEl = (doc || document).getElementById("ad-ext-game-variant");
     return variantEl?.textContent?.trim() || "";
+  }
+
+  function getRuntimeSourceHint() {
+    const runtimeApi = global.__adXConfigRuntime;
+    const currentExecution =
+      runtimeApi && typeof runtimeApi.getCurrentExecution === "function"
+        ? runtimeApi.getCurrentExecution()
+        : null;
+    if (!currentExecution || typeof currentExecution !== "object") {
+      return "";
+    }
+    return String(
+      currentExecution.loaderMode ||
+        currentExecution.sourcePath ||
+        currentExecution.featureId ||
+        ""
+    );
   }
 
   function normalizeCricketGameMode(value) {
@@ -2354,6 +2371,7 @@
           ? activePlayerInfo.activeCandidates.length
           : 0,
       },
+      runtimeSourceHint: getRuntimeSourceHint(),
       modeInfo,
     };
   }
@@ -2487,6 +2505,9 @@
 
   global.autodartsCricketStateShared = {
     __initialized: true,
+    __moduleId: MODULE_ID,
+    __apiVersion: API_VERSION,
+    __buildSignature: BUILD_SIGNATURE,
     TARGET_ORDER,
     CRICKET_TARGET_ORDER,
     TACTICS_TARGET_ORDER,

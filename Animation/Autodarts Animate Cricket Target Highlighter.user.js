@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.8
+// @version      2.9
 // @description  Zeigt Zielzustände in Cricket und Tactics als Overlay direkt auf dem virtuellen Dartboard.
 // @xconfig-description  Markiert in Cricket und Tactics relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
@@ -125,6 +125,14 @@
     CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] ||
     CRICKET_INTENSITY_PRESETS.normal;
   const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
+  const SCRIPT_VERSION = "2.9";
+  const FEATURE_KEY = "ad-ext/a-cricket-target";
+  const SOURCE_PATH =
+    "Animation/Autodarts Animate Cricket Target Highlighter.user.js";
+  const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
+  const EXPECTED_SHARED_API_VERSION = 2;
+  const EXPECTED_SHARED_BUILD_SIGNATURE =
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-runtime-ownership`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
@@ -138,6 +146,11 @@
     findBoard,
     ensureOverlayGroup,
     clearOverlay,
+    claimFeatureInstance,
+    releaseFeatureInstance,
+    getFeatureInstance,
+    markOverlayOwner,
+    readOverlayOwner,
     segmentAngles,
     createWedge,
     createBull,
@@ -196,8 +209,7 @@
   ];
 
   const STYLE_ID = "autodarts-cricket-target-style";
-  const LEGACY_OVERLAY_ID = "ad-ext-cricket-targets";
-  const OVERLAY_ID = "ad-ext-cricket-targets-v2";
+  const OVERLAY_ID = "ad-ext-cricket-targets";
   const TARGET_CLASS = "ad-ext-cricket-target";
   const OPEN_CLASS = "ad-ext-cricket-target--open";
   const CLOSED_CLASS = "ad-ext-cricket-target--closed";
@@ -210,6 +222,10 @@
 
   let lastStateKey = null;
   let lastBoardKey = null;
+  let mutationObserver = null;
+  let unsubscribeGameState = null;
+  let refreshTimer = null;
+  let instanceReleased = false;
   const debugWarnSignatures = new Set();
 
   function stripDebugSignature(payload) {
@@ -277,6 +293,94 @@
 
   function debugTrace(event, payload) {
     debugLog(event, payload, "trace");
+  }
+
+  function normalizeSourcePath(value) {
+    return String(value || "").replaceAll("\\", "/").replace(/^\/+/, "");
+  }
+
+  function getCurrentExecution() {
+    const runtimeApi = window.__adXConfigRuntime;
+    const execution =
+      runtimeApi && typeof runtimeApi.getCurrentExecution === "function"
+        ? runtimeApi.getCurrentExecution()
+        : null;
+    return execution && typeof execution === "object" ? execution : null;
+  }
+
+  function resolveExecutionSource() {
+    const execution = getCurrentExecution();
+    const currentSourcePath = normalizeSourcePath(execution?.sourcePath || "");
+    return {
+      execution,
+      executionSource:
+        currentSourcePath === normalizeSourcePath(SOURCE_PATH)
+          ? "xconfig-loader"
+          : "standalone-userscript",
+    };
+  }
+
+  function isCompatibleCricketStateHelper() {
+    return Boolean(
+      cricketStateShared &&
+        cricketStateShared.__moduleId === EXPECTED_SHARED_MODULE_ID &&
+        cricketStateShared.__apiVersion === EXPECTED_SHARED_API_VERSION &&
+        cricketStateShared.__buildSignature === EXPECTED_SHARED_BUILD_SIGNATURE &&
+        typeof cricketStateShared.buildGridSnapshot === "function" &&
+        typeof cricketStateShared.computeTargetStates === "function"
+    );
+  }
+
+  function logSharedHelperMismatch() {
+    debugLog("shared-helper-version-mismatch", {
+      _signature: [
+        cricketStateShared?.__moduleId || "missing",
+        cricketStateShared?.__apiVersion || "missing",
+        cricketStateShared?.__buildSignature || "missing",
+      ].join("|"),
+      expectedModuleId: EXPECTED_SHARED_MODULE_ID,
+      expectedApiVersion: EXPECTED_SHARED_API_VERSION,
+      expectedBuildSignature: EXPECTED_SHARED_BUILD_SIGNATURE,
+      actualModuleId: cricketStateShared?.__moduleId || "",
+      actualApiVersion: cricketStateShared?.__apiVersion || "",
+      actualBuildSignature: cricketStateShared?.__buildSignature || "",
+    });
+  }
+
+  function isOverlayOwnedByInstance(overlay, instanceToken) {
+    const owner = readOverlayOwner(overlay);
+    return Boolean(
+      owner &&
+        owner.featureKey === FEATURE_KEY &&
+        owner.token &&
+        owner.token === instanceToken
+    );
+  }
+
+  function acquireOverlayOwnership(overlay, instanceMeta) {
+    if (!overlay || !instanceMeta) {
+      return false;
+    }
+    const owner = readOverlayOwner(overlay);
+    if (!owner || !owner.featureKey) {
+      markOverlayOwner(overlay, instanceMeta);
+      return true;
+    }
+    if (owner.featureKey === FEATURE_KEY && owner.token === instanceMeta.token) {
+      return true;
+    }
+    debugLog("overlay-owner-mismatch", {
+      _signature: [
+        owner.featureKey || "",
+        owner.token || "",
+        instanceMeta.token || "",
+        owner.version || "",
+      ].join("|"),
+      overlayId: overlay.id || "",
+      owner,
+      expectedOwner: instanceMeta,
+    });
+    return false;
   }
 
   function getBoardPresentation(stateInfo) {
@@ -402,121 +506,12 @@
     return 0;
   }
 
-  function resolveLiveBoardResolution(snapshot) {
-    const fallbackResolution = getActivePlayerResolution(snapshot);
-    const fallbackIndex = getFallbackBoardPlayerIndex(snapshot);
-    const playerSlots = Array.isArray(snapshot?.playerSlots)
-      ? snapshot.playerSlots
-      : [];
-    if (
-      !playerSlots.length ||
-      !cricketStateShared ||
-      typeof cricketStateShared.resolveActivePlayerResolution !== "function"
-    ) {
-      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
-    }
-
-    const playerDisplayRoot = document.getElementById("ad-ext-player-display");
-    if (!playerDisplayRoot) {
-      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
-    }
-
-    const visiblePlayers = sortPlayerNodesByVisualOrder(
-      Array.from(playerDisplayRoot.querySelectorAll(CONFIG.playerSelector)).filter(
-        isLayoutVisible
-      )
-    );
-    if (!visiblePlayers.length) {
-      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
-    }
-
-    const activeEntries = visiblePlayers.reduce((entries, player, displayIndex) => {
-      const isActive =
-        player.matches(CONFIG.activePlayerSelector) ||
-        (typeof player.querySelector === "function" &&
-          player.querySelector(CONFIG.activePlayerSelector));
-      if (!isActive) {
-        return entries;
-      }
-      const identity = readPlayerNodeIdentity(player);
-      entries.push({
-        index: displayIndex,
-        playerId: identity.playerId || "",
-        nameKey: identity.nameKey || "",
-      });
-      return entries;
-    }, []);
-
-    if (!activeEntries.length) {
-      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
-    }
-
-    const stateIndex =
-      gameStateShared && typeof gameStateShared.getActivePlayerIndex === "function"
-        ? gameStateShared.getActivePlayerIndex()
-        : Number.isFinite(fallbackResolution?.matchIndex)
-          ? fallbackResolution.matchIndex
-          : null;
-    const activeInfo =
-      activeEntries.length === 1
-        ? {
-            index: activeEntries[0].index,
-            displayIndex: activeEntries[0].index,
-            source: "visible-dom",
-            playerId: activeEntries[0].playerId || "",
-            nameKey: activeEntries[0].nameKey || "",
-            activeCandidates: activeEntries,
-            stateIndex,
-          }
-        : {
-            index: Number.isFinite(stateIndex) ? stateIndex : activeEntries[0].index,
-            displayIndex: null,
-            source: "visible-dom-ambiguous",
-            playerId: "",
-            nameKey: "",
-            activeCandidates: activeEntries,
-            stateIndex,
-          };
-    const resolved = cricketStateShared.resolveActivePlayerResolution(
-      activeInfo,
-      playerSlots,
-      Number.isFinite(snapshot?.playerCount) ? snapshot.playerCount : playerSlots.length
-    );
-    return resolved && Number.isFinite(resolved.columnIndex)
-      ? resolved
-      : fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
-  }
-
-  function resolveRenderBoardPlayerIndex(snapshot) {
-    const resolution = resolveLiveBoardResolution(snapshot);
-    return Number.isFinite(resolution?.columnIndex)
-      ? resolution.columnIndex
-      : getFallbackBoardPlayerIndex(snapshot);
-  }
-
-  function getRenderBoardPresentation(stateInfo, boardPlayerIndex) {
-    const cellStates = Array.isArray(stateInfo?.cellStates) ? stateInfo.cellStates : [];
-    if (
-      Number.isFinite(boardPlayerIndex) &&
-      boardPlayerIndex >= 0 &&
-      boardPlayerIndex < cellStates.length
-    ) {
-      return String(cellStates[boardPlayerIndex]?.presentation || "open");
-    }
-    return getBoardPresentation(stateInfo);
-  }
-
   function rgba(alpha, color = CONFIG.baseColor) {
     const { r, g, b } = color;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   const STYLE_TEXT = `
-#${LEGACY_OVERLAY_ID} {
-  display: none !important;
-  pointer-events: none !important;
-}
-
 .${TARGET_CLASS} {
   fill: var(--ad-ext-cricket-fill, transparent);
   stroke: var(--ad-ext-cricket-stroke, transparent);
@@ -721,27 +716,150 @@
     overlay.style.setProperty("--ad-ext-cricket-stroke-width", `${strokeWidth}px`);
   }
 
+  const executionContext = resolveExecutionSource();
+
+  if (
+    typeof ensureStyle !== "function" ||
+    typeof createRafScheduler !== "function" ||
+    typeof observeMutations !== "function" ||
+    typeof findBoard !== "function" ||
+    typeof ensureOverlayGroup !== "function" ||
+    typeof clearOverlay !== "function" ||
+    typeof claimFeatureInstance !== "function" ||
+    typeof releaseFeatureInstance !== "function" ||
+    typeof getFeatureInstance !== "function" ||
+    typeof markOverlayOwner !== "function" ||
+    typeof readOverlayOwner !== "function"
+  ) {
+    debugError("animation-runtime-missing", {
+      sourcePath: SOURCE_PATH,
+      executionSource: executionContext.executionSource,
+    });
+    return;
+  }
+
+  if (!isCompatibleCricketStateHelper()) {
+    logSharedHelperMismatch();
+    return;
+  }
+
+  const instanceClaim = claimFeatureInstance({
+    featureKey: FEATURE_KEY,
+    version: SCRIPT_VERSION,
+    sourcePath: SOURCE_PATH,
+    executionSource: executionContext.executionSource,
+    onDispose: () => {
+      dispose("replaced-by-newer-instance");
+    },
+  });
+
+  if (!instanceClaim.active) {
+    debugLog("feature-instance-skipped", {
+      _signature: [
+        FEATURE_KEY,
+        SCRIPT_VERSION,
+        instanceClaim.reason,
+        instanceClaim.ownerMeta?.token || "",
+      ].join("|"),
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      ownerMeta: instanceClaim.ownerMeta,
+      executionSource: executionContext.executionSource,
+    });
+    return;
+  }
+
+  if (instanceClaim.reason === "replaced-older-owner") {
+    debugLog("feature-instance-replaced", {
+      _signature: [
+        FEATURE_KEY,
+        SCRIPT_VERSION,
+        instanceClaim.reason,
+        executionContext.executionSource,
+      ].join("|"),
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      executionSource: executionContext.executionSource,
+    });
+  } else {
+    debugTrace("feature-instance-claimed", {
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      executionSource: executionContext.executionSource,
+    });
+  }
+
+  function isCurrentInstanceOwner() {
+    if (instanceReleased) {
+      return false;
+    }
+    const currentOwner = getFeatureInstance(FEATURE_KEY);
+    return !currentOwner || currentOwner.token === instanceClaim.token;
+  }
+
+  function dispose(reason = "dispose") {
+    if (instanceReleased) {
+      return;
+    }
+    instanceReleased = true;
+
+    if (mutationObserver && typeof mutationObserver.disconnect === "function") {
+      mutationObserver.disconnect();
+    }
+    mutationObserver = null;
+
+    if (typeof unsubscribeGameState === "function") {
+      unsubscribeGameState();
+    }
+    unsubscribeGameState = null;
+
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+    }
+    refreshTimer = null;
+
+    const board = findBoard();
+    const overlay =
+      board?.group && typeof board.group.querySelector === "function"
+        ? board.group.querySelector(`#${OVERLAY_ID}`)
+        : null;
+    if (overlay && isOverlayOwnedByInstance(overlay, instanceClaim.token)) {
+      clearOverlay(overlay);
+    }
+
+    releaseFeatureInstance(FEATURE_KEY, instanceClaim.token);
+    lastStateKey = null;
+    lastBoardKey = null;
+    debugTrace("feature-instance-disposed", {
+      featureKey: FEATURE_KEY,
+      reason,
+    });
+  }
+
   function renderTargets(stateContext) {
+    if (!isCurrentInstanceOwner()) {
+      return;
+    }
+
     const snapshot = stateContext?.snapshot || null;
     const stateMap = stateContext?.stateMap || new Map();
     const boardPlayerIndex = Number.isFinite(stateContext?.boardPlayerIndex)
       ? stateContext.boardPlayerIndex
-      : resolveRenderBoardPlayerIndex(snapshot);
+      : getFallbackBoardPlayerIndex(snapshot);
     const board = findBoard();
     if (!board) {
       return;
     }
 
     const activeTargets = snapshot?.targetSet || new Set();
-
     const overlay = ensureOverlayGroup(board.group, OVERLAY_ID);
-    const legacyOverlay =
-      board.group && typeof board.group.querySelector === "function"
-        ? board.group.querySelector(`#${LEGACY_OVERLAY_ID}`)
-        : null;
-    if (legacyOverlay) {
-      clearOverlay(legacyOverlay);
+    if (!overlay || !acquireOverlayOwnership(overlay, instanceClaim.ownerMeta)) {
+      return;
     }
+
     applyOverlayTheme(overlay, board.radius);
     clearOverlay(overlay);
 
@@ -754,10 +872,7 @@
 
       buildTargetShapes(board.radius, target).forEach((shape) => {
         shape.classList.add(TARGET_CLASS);
-        const boardPresentation = getRenderBoardPresentation(
-          stateInfo,
-          boardPlayerIndex
-        );
+        const boardPresentation = getBoardPresentation(stateInfo);
         if (!isCricketTarget) {
           shape.classList.add(INACTIVE_CLASS);
         } else if (
@@ -774,6 +889,7 @@
         } else {
           shape.classList.add(OPEN_CLASS);
         }
+        shape.dataset.boardPlayerIndex = String(boardPlayerIndex);
         overlay.appendChild(shape);
       });
     });
@@ -787,7 +903,9 @@
     const modeFamily = snapshot?.modeInfo?.family || "";
     const playerMappingSource = snapshot?.playerMappingSource || "";
     const activeResolution = getActivePlayerResolution(snapshot);
-    const liveBoardResolution = resolveLiveBoardResolution(snapshot);
+    const boardPlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
+      ? snapshot.boardPlayerIndex
+      : getFallbackBoardPlayerIndex(snapshot);
     const playerSlots = Array.isArray(snapshot?.playerSlots)
       ? snapshot.playerSlots
           .map((slot) =>
@@ -802,9 +920,9 @@
           )
           .join(",")
       : "";
-    const activePlayerIndex = Number.isFinite(liveBoardResolution?.columnIndex)
-      ? liveBoardResolution.columnIndex
-      : getFallbackBoardPlayerIndex(snapshot);
+    const activePlayerIndex = Number.isFinite(snapshot?.activePlayerIndex)
+      ? snapshot.activePlayerIndex
+      : "";
     const playerCount = Number.isFinite(snapshot?.playerCount)
       ? snapshot.playerCount
       : "";
@@ -814,10 +932,7 @@
         const marks = Array.isArray(state?.marksByPlayer)
           ? state.marksByPlayer.join(",")
           : "";
-        const boardPresentation = getRenderBoardPresentation(
-          state,
-          activePlayerIndex
-        );
+        const boardPresentation = getBoardPresentation(state);
         return `${label}:${boardPresentation}:${marks}`;
       })
       .join("|");
@@ -825,6 +940,7 @@
       gameMode,
       modeFamily,
       playerMappingSource,
+      snapshot?.runtimeSourceHint || "",
       activeResolution?.source || "",
       Number.isFinite(activeResolution?.displayIndex)
         ? activeResolution.displayIndex
@@ -832,10 +948,13 @@
       Number.isFinite(activeResolution?.matchIndex)
         ? activeResolution.matchIndex
         : "",
-      liveBoardResolution?.source || "",
-      playerSlots,
+      Number.isFinite(activeResolution?.columnIndex)
+        ? activeResolution.columnIndex
+        : "",
       activePlayerIndex,
+      boardPlayerIndex,
       playerCount,
+      playerSlots,
       targets,
     ].join("|");
   }
@@ -845,7 +964,6 @@
       return;
     }
     const resolution = getActivePlayerResolution(snapshot);
-    const liveResolution = resolveLiveBoardResolution(snapshot);
     if (!resolution) {
       return;
     }
@@ -858,7 +976,7 @@
           resolution.columnIndex,
           resolution.visibleActiveCandidates || 0,
         ].join("|"),
-        boardPlayerIndex: resolution.columnIndex,
+        boardPlayerIndex: snapshot?.boardPlayerIndex,
         matchIndex: resolution.matchIndex,
         resolutionSource: resolution.source,
         visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
@@ -866,58 +984,33 @@
       });
     }
     if (
-      liveResolution &&
-      Number.isFinite(liveResolution.columnIndex) &&
+      resolution.usedVisibleDom &&
+      Number.isFinite(resolution.displayIndex) &&
       Number.isFinite(snapshot?.boardPlayerIndex) &&
-      liveResolution.columnIndex !== snapshot.boardPlayerIndex
+      resolution.displayIndex !== snapshot.boardPlayerIndex
     ) {
-      debugLog("board-player-resolution-live-override", {
+      debugLog("board-player-resolution-mismatch", {
         _signature: [
           snapshot?.playerMappingSource || "",
+          resolution.source || "",
+          resolution.displayIndex,
           snapshot.boardPlayerIndex,
-          liveResolution.columnIndex,
-          liveResolution.source || "",
+          resolution.matchIndex,
+          resolution.visibleActiveCandidates || 0,
         ].join("|"),
-        snapshotBoardPlayerIndex: snapshot.boardPlayerIndex,
-        liveBoardPlayerIndex: liveResolution.columnIndex,
-        liveResolutionSource: liveResolution.source || "",
-        snapshotResolutionSource: resolution.source || "",
+        boardPlayerIndex: snapshot.boardPlayerIndex,
+        displayIndex: resolution.displayIndex,
+        matchIndex: resolution.matchIndex,
+        resolutionSource: resolution.source,
+        visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
         playerMappingSource: snapshot?.playerMappingSource || "",
       });
     }
-    if (!resolution.usedVisibleDom) {
-      return;
-    }
-    if (
-      !Number.isFinite(resolution.displayIndex) ||
-      !Number.isFinite(resolution.columnIndex)
-    ) {
-      return;
-    }
-    if (resolution.displayIndex === resolution.columnIndex) {
-      return;
-    }
-    debugLog("board-player-resolution-mismatch", {
-      _signature: [
-        snapshot?.playerMappingSource || "",
-        resolution.source || "",
-        resolution.displayIndex,
-        resolution.columnIndex,
-        resolution.matchIndex,
-        resolution.visibleActiveCandidates || 0,
-      ].join("|"),
-      boardPlayerIndex: resolution.columnIndex,
-      displayIndex: resolution.displayIndex,
-      matchIndex: resolution.matchIndex,
-      resolutionSource: resolution.source,
-      visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
-      playerMappingSource: snapshot?.playerMappingSource || "",
-    });
   }
 
   function readStateContext() {
-    if (!cricketStateShared) {
-      debugError("Shared cricket state helper missing");
+    if (!isCompatibleCricketStateHelper()) {
+      logSharedHelperMismatch();
       return null;
     }
 
@@ -936,7 +1029,9 @@
       showDeadTargets: CONFIG.showDeadTargets,
     });
     warnIfBoardResolutionLooksWrong(snapshot);
-    const boardPlayerIndex = resolveRenderBoardPlayerIndex(snapshot);
+    const boardPlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
+      ? snapshot.boardPlayerIndex
+      : getFallbackBoardPlayerIndex(snapshot);
     return {
       snapshot,
       stateMap,
@@ -946,21 +1041,34 @@
 
   function clearOverlayState() {
     const board = findBoard();
-    if (board) {
-      clearOverlay(ensureOverlayGroup(board.group, OVERLAY_ID));
-      const legacyOverlay =
-        board.group && typeof board.group.querySelector === "function"
-          ? board.group.querySelector(`#${LEGACY_OVERLAY_ID}`)
-          : null;
-      if (legacyOverlay) {
-        clearOverlay(legacyOverlay);
+    const overlay =
+      board?.group && typeof board.group.querySelector === "function"
+        ? board.group.querySelector(`#${OVERLAY_ID}`)
+        : null;
+    if (
+      overlay &&
+      (!readOverlayOwner(overlay) || isOverlayOwnedByInstance(overlay, instanceClaim.token))
+    ) {
+      if (!readOverlayOwner(overlay)) {
+        markOverlayOwner(overlay, instanceClaim.ownerMeta);
       }
+      clearOverlay(overlay);
     }
     lastStateKey = null;
     lastBoardKey = null;
   }
 
   function updateTargets() {
+    if (!isCurrentInstanceOwner()) {
+      return;
+    }
+
+    if (!isCompatibleCricketStateHelper()) {
+      logSharedHelperMismatch();
+      clearOverlayState();
+      return;
+    }
+
     if (!isCricketVariantActive()) {
       clearOverlayState();
       debugTrace("updateTargets: not cricket/tactics");
@@ -980,15 +1088,23 @@
       return;
     }
 
-    const boardKey = `${board.radius}:${board.group.id || "board"}`;
-    const stateKey = buildStateKey(stateContext);
     const existingOverlay =
       board.group && typeof board.group.querySelector === "function"
         ? board.group.querySelector(`#${OVERLAY_ID}`)
         : null;
+    if (
+      existingOverlay &&
+      !acquireOverlayOwnership(existingOverlay, instanceClaim.ownerMeta)
+    ) {
+      return;
+    }
+
+    const boardKey = `${board.radius}:${board.group.id || "board"}`;
+    const stateKey = buildStateKey(stateContext);
     const overlayNeedsRefresh =
       !existingOverlay ||
       !existingOverlay.isConnected ||
+      !isOverlayOwnedByInstance(existingOverlay, instanceClaim.token) ||
       existingOverlay.childElementCount === 0;
 
     if (
@@ -1007,13 +1123,17 @@
       boardPlayerIndex: stateContext.boardPlayerIndex,
       snapshotBoardPlayerIndex: stateContext.snapshot?.boardPlayerIndex,
       resolution: getActivePlayerResolution(stateContext.snapshot),
-      liveResolution: resolveLiveBoardResolution(stateContext.snapshot),
       playerMappingSource: stateContext.snapshot?.playerMappingSource || "",
     });
     renderTargets(stateContext);
   }
 
-  const scheduleUpdate = createRafScheduler(updateTargets);
+  const scheduleUpdate = createRafScheduler(() => {
+    if (instanceReleased) {
+      return;
+    }
+    updateTargets();
+  });
 
   ensureStyle(STYLE_ID, STYLE_TEXT);
   debugTrace("init", {
@@ -1021,15 +1141,20 @@
     showDeadTargets: RESOLVED_SHOW_DEAD_TARGETS,
     theme: RESOLVED_THEME_KEY,
     intensity: RESOLVED_INTENSITY_KEY,
+    executionSource: executionContext.executionSource,
   });
 
   updateTargets();
 
-  observeMutations({
+  mutationObserver = observeMutations({
     onChange: scheduleUpdate,
   });
   if (gameStateShared && typeof gameStateShared.subscribe === "function") {
-    gameStateShared.subscribe(scheduleUpdate);
+    unsubscribeGameState = gameStateShared.subscribe(scheduleUpdate);
   }
-  setInterval(updateTargets, 300);
+  refreshTimer = setInterval(() => {
+    if (!instanceReleased) {
+      updateTargets();
+    }
+  }, 300);
 })();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.9
+// @version      1.0.10
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -28,6 +28,13 @@
   const shared = window.autodartsAnimationShared || {};
   const cricketState = window.autodartsCricketStateShared || null;
   const gameState = window.autodartsGameStateShared || null;
+  const SCRIPT_VERSION = "1.0.10";
+  const FEATURE_KEY = "ad-ext/a-cricket-grid-fx";
+  const SOURCE_PATH = "Animation/Autodarts Animate Cricket Grid FX.user.js";
+  const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
+  const EXPECTED_SHARED_API_VERSION = 2;
+  const EXPECTED_SHARED_BUILD_SIGNATURE =
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-runtime-ownership`;
 
   const CRICKET_THEME_STYLE_ID = "autodarts-cricket-custom-style";
   const VARIANT_ID = "ad-ext-game-variant";
@@ -128,6 +135,12 @@
     rowStateByLabel: new Map(),
     turnToken: "",
   };
+  let mutationObserver = null;
+  let unsubscribeGameState = null;
+  let refreshTimer = null;
+  let resizeHandler = null;
+  let visibilityHandler = null;
+  let instanceReleased = false;
   let loggedVariantSkip = false;
   const debugWarnSignatures = new Set();
 
@@ -196,6 +209,58 @@
 
   function debugTrace(event, payload) {
     debugLog(event, payload, "trace");
+  }
+
+  function normalizeSourcePath(value) {
+    return String(value || "").replaceAll("\\", "/").replace(/^\/+/, "");
+  }
+
+  function getCurrentExecution() {
+    const runtimeApi = window.__adXConfigRuntime;
+    const execution =
+      runtimeApi && typeof runtimeApi.getCurrentExecution === "function"
+        ? runtimeApi.getCurrentExecution()
+        : null;
+    return execution && typeof execution === "object" ? execution : null;
+  }
+
+  function resolveExecutionSource() {
+    const execution = getCurrentExecution();
+    const currentSourcePath = normalizeSourcePath(execution?.sourcePath || "");
+    return {
+      execution,
+      executionSource:
+        currentSourcePath === normalizeSourcePath(SOURCE_PATH)
+          ? "xconfig-loader"
+          : "standalone-userscript",
+    };
+  }
+
+  function isCompatibleCricketStateHelper() {
+    return Boolean(
+      cricketState &&
+        cricketState.__moduleId === EXPECTED_SHARED_MODULE_ID &&
+        cricketState.__apiVersion === EXPECTED_SHARED_API_VERSION &&
+        cricketState.__buildSignature === EXPECTED_SHARED_BUILD_SIGNATURE &&
+        typeof cricketState.buildGridSnapshot === "function" &&
+        typeof cricketState.computeTargetStates === "function"
+    );
+  }
+
+  function logSharedHelperMismatch() {
+    debugLog("shared-helper-version-mismatch", {
+      _signature: [
+        cricketState?.__moduleId || "missing",
+        cricketState?.__apiVersion || "missing",
+        cricketState?.__buildSignature || "missing",
+      ].join("|"),
+      expectedModuleId: EXPECTED_SHARED_MODULE_ID,
+      expectedApiVersion: EXPECTED_SHARED_API_VERSION,
+      expectedBuildSignature: EXPECTED_SHARED_BUILD_SIGNATURE,
+      actualModuleId: cricketState?.__moduleId || "",
+      actualApiVersion: cricketState?.__apiVersion || "",
+      actualBuildSignature: cricketState?.__buildSignature || "",
+    });
   }
 
   const ensureStyle =
@@ -486,8 +551,8 @@
   }
 
   function readSnapshot() {
-    if (!cricketState) {
-      debugError("shared-helper-missing");
+    if (!isCompatibleCricketStateHelper()) {
+      logSharedHelperMismatch();
       return null;
     }
 
@@ -729,19 +794,152 @@
 @keyframes adCrfxWipe{0%{transform:translateX(-135%);opacity:0;}15%{opacity:1;}100%{transform:translateX(135%);opacity:0;}}
 `;
 
+  const executionContext = resolveExecutionSource();
+  const claimFeatureInstance = shared.claimFeatureInstance;
+  const releaseFeatureInstance = shared.releaseFeatureInstance;
+  const getFeatureInstance = shared.getFeatureInstance;
+
+  if (
+    typeof claimFeatureInstance !== "function" ||
+    typeof releaseFeatureInstance !== "function" ||
+    typeof getFeatureInstance !== "function"
+  ) {
+    debugError("animation-runtime-missing", {
+      sourcePath: SOURCE_PATH,
+      executionSource: executionContext.executionSource,
+    });
+    return;
+  }
+
+  if (!isCompatibleCricketStateHelper()) {
+    logSharedHelperMismatch();
+    return;
+  }
+
+  const instanceClaim = claimFeatureInstance({
+    featureKey: FEATURE_KEY,
+    version: SCRIPT_VERSION,
+    sourcePath: SOURCE_PATH,
+    executionSource: executionContext.executionSource,
+    onDispose: () => {
+      dispose("replaced-by-newer-instance");
+    },
+  });
+
+  if (!instanceClaim.active) {
+    debugLog("feature-instance-skipped", {
+      _signature: [
+        FEATURE_KEY,
+        SCRIPT_VERSION,
+        instanceClaim.reason,
+        instanceClaim.ownerMeta?.token || "",
+      ].join("|"),
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      ownerMeta: instanceClaim.ownerMeta,
+      executionSource: executionContext.executionSource,
+    });
+    return;
+  }
+
+  if (instanceClaim.reason === "replaced-older-owner") {
+    debugLog("feature-instance-replaced", {
+      _signature: [
+        FEATURE_KEY,
+        SCRIPT_VERSION,
+        instanceClaim.reason,
+        executionContext.executionSource,
+      ].join("|"),
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      executionSource: executionContext.executionSource,
+    });
+  } else {
+    debugTrace("feature-instance-claimed", {
+      featureKey: FEATURE_KEY,
+      version: SCRIPT_VERSION,
+      reason: instanceClaim.reason,
+      executionSource: executionContext.executionSource,
+    });
+  }
+
+  function isCurrentInstanceOwner() {
+    if (instanceReleased) {
+      return false;
+    }
+    const currentOwner = getFeatureInstance(FEATURE_KEY);
+    return !currentOwner || currentOwner.token === instanceClaim.token;
+  }
+
+  function dispose(reason = "dispose") {
+    if (instanceReleased) {
+      return;
+    }
+    instanceReleased = true;
+
+    if (mutationObserver && typeof mutationObserver.disconnect === "function") {
+      mutationObserver.disconnect();
+    }
+    mutationObserver = null;
+
+    if (typeof unsubscribeGameState === "function") {
+      unsubscribeGameState();
+    }
+    unsubscribeGameState = null;
+
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+    }
+    refreshTimer = null;
+
+    if (resizeHandler) {
+      window.removeEventListener("resize", resizeHandler, { passive: true });
+    }
+    resizeHandler = null;
+
+    if (visibilityHandler) {
+      document.removeEventListener("visibilitychange", visibilityHandler, {
+        passive: true,
+      });
+    }
+    visibilityHandler = null;
+
+    reset();
+    releaseFeatureInstance(FEATURE_KEY, instanceClaim.token);
+    debugTrace("feature-instance-disposed", {
+      featureKey: FEATURE_KEY,
+      reason,
+    });
+  }
+
   ensureStyle(STYLE_ID, CSS);
 
-  const schedule = makeScheduler(apply);
+  const schedule = makeScheduler(() => {
+    if (!instanceReleased && isCurrentInstanceOwner()) {
+      apply();
+    }
+  });
   debugTrace("applied", {
     effectsEnabled: Object.values(CFG).filter(Boolean).length,
+    executionSource: executionContext.executionSource,
   });
   schedule();
 
-  observe({ onChange: schedule });
+  mutationObserver = observe({ onChange: schedule });
   if (gameState && typeof gameState.subscribe === "function") {
-    gameState.subscribe(schedule);
+    unsubscribeGameState = gameState.subscribe(schedule);
   }
-  window.addEventListener("resize", schedule, { passive: true });
-  document.addEventListener("visibilitychange", schedule, { passive: true });
-  setInterval(apply, 300);
+  resizeHandler = schedule;
+  visibilityHandler = schedule;
+  window.addEventListener("resize", resizeHandler, { passive: true });
+  document.addEventListener("visibilitychange", visibilityHandler, {
+    passive: true,
+  });
+  refreshTimer = setInterval(() => {
+    if (!instanceReleased && isCurrentInstanceOwner()) {
+      apply();
+    }
+  }, 300);
 })();

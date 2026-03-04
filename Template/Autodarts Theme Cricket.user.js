@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.4
+// @version      2.5
 // @description  Visuelles Cricket-/Tactics-Theme für eine ruhigere und klarere Darstellung.
 // @xconfig-description  Aktiviert ein Cricket-/Tactics-Theme mit stimmigem Layout, Farben und guter Lesbarkeit.
 // @xconfig-title  Theme Cricket
@@ -15,6 +15,7 @@
 // @match        *://play.autodarts.io/*
 // @run-at       document-start
 // @grant        none
+// @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Animation/autodarts-animation-shared.js
 // @require      https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/autodarts-theme-shared.js
 // @downloadURL  https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js
 // @updateURL    https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/Autodarts%20Theme%20Cricket.user.js
@@ -24,6 +25,10 @@
 	"use strict";
 
 	const {attachTheme, initPreviewPlacement} = window.autodartsThemeShared;
+	const animationShared = window.autodartsAnimationShared || {};
+	const SCRIPT_VERSION = "2.5";
+	const FEATURE_KEY = "ad-ext/theme-cricket";
+	const SOURCE_PATH = "Template/Autodarts Theme Cricket.user.js";
 	const STYLE_ID = "autodarts-cricket-custom-style";
 	const VARIANT_NAME = "cricket";
 	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Zeigt den AVG-Wert im Theme an oder blendet ihn aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
@@ -75,6 +80,27 @@
 			return;
 		}
 		console.error(`${DEBUG_PREFIX} ${event}`, payload);
+	}
+
+	function normalizeSourcePath(value) {
+		return String(value || "").replaceAll("\\", "/").replace(/^\/+/, "");
+	}
+
+	function getCurrentExecution() {
+		const runtimeApi = window.__adXConfigRuntime;
+		const execution =
+			runtimeApi && typeof runtimeApi.getCurrentExecution === "function"
+				? runtimeApi.getCurrentExecution()
+				: null;
+		return execution && typeof execution === "object" ? execution : null;
+	}
+
+	function resolveExecutionSource() {
+		const execution = getCurrentExecution();
+		const currentSourcePath = normalizeSourcePath(execution?.sourcePath || "");
+		return currentSourcePath === normalizeSourcePath(SOURCE_PATH)
+			? "xconfig-loader"
+			: "standalone-userscript";
 	}
 	function resolveToggle(value, fallbackValue) {
 		if (typeof value === "boolean") {
@@ -270,17 +296,71 @@ span.chakra-switch__track.css-v4l15v {
 }
 `;
 
-	attachTheme({
+	const claimFeatureInstance = animationShared.claimFeatureInstance;
+	const releaseFeatureInstance = animationShared.releaseFeatureInstance;
+	const executionSource = resolveExecutionSource();
+	if (
+		typeof claimFeatureInstance !== "function" ||
+		typeof releaseFeatureInstance !== "function"
+	) {
+		debugError("animation-runtime-missing", {
+			sourcePath: SOURCE_PATH,
+			executionSource,
+		});
+		return;
+	}
+
+	let instanceReleased = false;
+	let disposeThemeAttachment = null;
+	let disposePreviewPlacement = null;
+	function dispose(reason) {
+		if (instanceReleased) {
+			return;
+		}
+		instanceReleased = true;
+		if (typeof disposePreviewPlacement === "function") {
+			disposePreviewPlacement();
+		}
+		disposePreviewPlacement = null;
+		if (typeof disposeThemeAttachment === "function") {
+			disposeThemeAttachment();
+		}
+		disposeThemeAttachment = null;
+		releaseFeatureInstance(FEATURE_KEY, instanceClaim.token);
+		debugLog("disposed", { reason: reason || "dispose" });
+	}
+
+	const instanceClaim = claimFeatureInstance({
+		featureKey: FEATURE_KEY,
+		version: SCRIPT_VERSION,
+		sourcePath: SOURCE_PATH,
+		executionSource,
+		onDispose: function () {
+			dispose("replaced-by-newer-instance");
+		},
+	});
+	if (!instanceClaim.active) {
+		debugWarn("feature-instance-skipped", {
+			featureKey: FEATURE_KEY,
+			version: SCRIPT_VERSION,
+			reason: instanceClaim.reason,
+			ownerMeta: instanceClaim.ownerMeta,
+			executionSource,
+		});
+		return;
+	}
+
+	disposeThemeAttachment = attachTheme({
 		styleId: STYLE_ID,
 		variantName: VARIANT_NAME,
 		buildCss: () => customCss + avgVisibilityCss + previewPlacementCss
-	});
+	}) || null;
 	debugLog("applied", { styleId: STYLE_ID, variant: VARIANT_NAME });
 
 	if (PREVIEW_PLACEMENT === "under-throws") {
-		initPreviewPlacement({variantName: VARIANT_NAME, previewHeightPx: PREVIEW_HEIGHT_PX, previewGapPx: PREVIEW_GAP_PX, previewSpaceClass: PREVIEW_SPACE_CLASS});
+		disposePreviewPlacement = initPreviewPlacement({variantName: VARIANT_NAME, previewHeightPx: PREVIEW_HEIGHT_PX, previewGapPx: PREVIEW_GAP_PX, previewSpaceClass: PREVIEW_SPACE_CLASS}) || null;
 	}
 
-	debugLog("init", { debug: DEBUG_ENABLED });
+	debugLog("init", { debug: DEBUG_ENABLED, executionSource });
 })();
 

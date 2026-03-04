@@ -455,6 +455,7 @@ div.css-y3hfdd > .css-1igwmid{
     let scheduled = false;
     let observedShadowRoot = null;
     let shadowObserver = null;
+    let destroyed = false;
     const cardOverrides = new WeakMap();
     let lastCards = [];
     const normalizedVariant = variantName.trim().toLowerCase();
@@ -462,9 +463,11 @@ div.css-y3hfdd > .css-1igwmid{
     const previewPlacementId = `preview:${normalizedVariant}:${matchMode}:${previewSpaceClass}`;
 
     function scheduleUpdate() {
+      if (destroyed) return;
       if (scheduled) return;
       scheduled = true;
       requestAnimationFrame(() => {
+        if (destroyed) return;
         scheduled = false;
         updatePlacement();
       });
@@ -581,6 +584,9 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function updatePlacement() {
+      if (destroyed) {
+        return;
+      }
       if (!isVariantActive()) {
         resetPlacement();
         return;
@@ -645,6 +651,18 @@ div.css-y3hfdd > .css-1igwmid{
     window.addEventListener("scroll", scheduleUpdate, true);
 
     scheduleUpdate();
+    return function disposePreviewPlacement() {
+      destroyed = true;
+      if (shadowObserver) {
+        shadowObserver.disconnect();
+      }
+      shadowObserver = null;
+      observedShadowRoot = null;
+      documentObserver.disconnect();
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      resetPlacement();
+    };
   }
   function attachTheme(options = {}) {
     const { styleId, variantName, buildCss, matchMode = "equals" } = options;
@@ -654,6 +672,7 @@ div.css-y3hfdd > .css-1igwmid{
 
     let styleTag;
     let scheduled = false;
+    let destroyed = false;
     const normalizedVariant = variantName.trim().toLowerCase();
 
     function resolveStyleContainer() {
@@ -699,6 +718,9 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function evaluateAndApply() {
+      if (destroyed) {
+        return;
+      }
       if (matchesVariant()) {
         ensureStyle(buildCss());
       } else {
@@ -707,9 +729,11 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     function scheduleEvaluation() {
+      if (destroyed) return;
       if (scheduled) return;
       scheduled = true;
       requestAnimationFrame(() => {
+        if (destroyed) return;
         scheduled = false;
         evaluateAndApply();
       });
@@ -745,7 +769,7 @@ div.css-y3hfdd > .css-1igwmid{
     });
 
     let lastUrl = location.href;
-    setInterval(() => {
+    const locationTimer = setInterval(() => {
       const currentUrl = location.href;
       if (currentUrl === lastUrl) {
         return;
@@ -753,6 +777,12 @@ div.css-y3hfdd > .css-1igwmid{
       lastUrl = currentUrl;
       scheduleEvaluation();
     }, 1000);
+    return function disposeThemeAttachment() {
+      destroyed = true;
+      observer.disconnect();
+      clearInterval(locationTimer);
+      removeStyle();
+    };
   }
 
   global.autodartsThemeShared = {

@@ -126,7 +126,7 @@
 
 	const STYLE_ID = "autodarts-size-strokes-style";
 	const MARKER_SELECTOR = 'svg[viewBox="0 0 1000 1000"] circle';
-	const EXCLUDED_OVERLAY_SELECTOR = "#ad-ext-checkout-targets, #ad-ext-cricket-targets, #ad-ext-cricket-targets-v2, #ad-ext-dart-image-overlay, #ad-ext-winner-fireworks";
+	const EXCLUDED_OVERLAY_SELECTOR = "#ad-ext-checkout-targets, #ad-ext-cricket-targets, #ad-ext-dart-image-overlay, #ad-ext-winner-fireworks";
 	const MARKER_HIDDEN_DATASET_KEY = "adExtOriginalOpacity";
 	const BASE_CLASS = "ad-ext-dart-marker";
 	const EFFECT_CLASSES = {

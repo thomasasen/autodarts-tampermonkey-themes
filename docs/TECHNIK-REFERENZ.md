@@ -1152,6 +1152,7 @@ Varianten:
 - Änderungen: Overlay-SVG mit Statusfarben (open/closed/offense/danger/dead) für bessere Entscheidungen; Board und Grid FX nutzen dieselbe Zustandslogik und denselben dynamischen Zielsatz.
 - Aktivspieler-Priorität: Der Shared Helper verwendet zuerst den sichtbar aktiven Spieler aus dem primären Player-Display `#ad-ext-player-display` mit der DOM-Klasse `.ad-ext-player-active`; nur ohne eindeutigen sichtbaren DOM-Aktivstatus fällt er auf den Match-/WebSocket-State zurück. Damit bleiben Board-Overlay und Matrix auch bei kurzen State-Verzögerungen konsistent.
 - Board-Auflösung: Der finale Board-Spieler wird im Snapshot als `boardPlayerIndex` und `activePlayerResolution` mit Quelle (`visible-dom-*`, `game-state-match`, `dom-fallback-*`, `index-fallback`) offengelegt. Das Board rendert ausschließlich aus dieser finalen Auflösung, das Grid weiterhin parallel pro Spielerzelle.
+- Runtime-Schutz: `Target Highlighter`, `Cricket Grid FX` und `Theme Cricket` claimen ihre Feature-Instanz jetzt zentral über `Animation/autodarts-animation-shared.js`. Damit bleibt bei doppelten xConfig-/Tampermonkey-Ausführungen genau eine aktive Instanz Overlay-Owner.
 - Perspektive: Das Board rendert immer ausschließlich aus Sicht des aktiven Spielers. Dieselbe Zielzeile kann im Grid parallel andere Zustände für andere Spieler tragen, das Board bleibt davon unberührt.
 - Spielerzuordnung: Der Shared Helper führt sichtbare Player-Karten, Grid-Spalten und `match.players` über Links-nach-Rechts-Reihenfolge plus ID-/Namensabgleich zusammen. So bleiben Board und Grid auch bei abweichender DOM- oder Match-Reihenfolge auf den richtigen Spielerslots.
 - Spieleranzahl-Priorität: Die aus dem Grid erkannte Spielerzahl schlägt global gezählte `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen dadurch keine Phantom-Gegner.
@@ -1235,6 +1236,7 @@ Varianten:
 - Live-Wurf-Vorschau: Da dieselbe Shared-State-Basis wie im Board-Highlighter genutzt wird, werden auch laufende Würfe aus `activeThrows` sofort in Offense-/Danger-Zeilen übersetzt.
 - Spielerwechsel-Vorschau: Zusätzlich übernimmt das Grid bereits abgeschlossene Würfe aus `match.turns`, damit nach dem Spielerwechsel sofort die neue Board-Sicht des aktiven Spielers und parallel die gegensätzlichen offense-/pressure-Zellfarben im Grid sichtbar werden.
 - Live-Refresh: Nutzt MutationObserver, Match-State-Events und einen festen 300-ms-Watchdog, damit Zeilenklassen und Effekte auch bei kurzen DOM-/WebSocket-Verzögerungen aktuell bleiben.
+- Runtime-Schutz: Auch das Grid läuft nur noch als Singleton-Instanz pro Feature-Key. Gemischte oder doppelte Läufe können dadurch keine Cricket-Klassen mehr gegenseitig überschreiben.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
