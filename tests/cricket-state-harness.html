@@ -439,7 +439,7 @@
             helper.__moduleId === "autodarts-cricket-state-shared" &&
             helper.__apiVersion === 2 &&
             helper.__buildSignature ===
-              "autodarts-cricket-state-shared@2:2026-03-player-display-horizontal-order",
+              "autodarts-cricket-state-shared@2:2026-03-turn-preview-zero-fallback",
           "Shared helper exposes moduleId, apiVersion and buildSignature for runtime compatibility checks",
           helper
             ? JSON.stringify({
@@ -1104,6 +1104,67 @@
             ? JSON.stringify({
                 activePlayerIndex: case25.snapshot.activePlayerIndex,
                 twenty: case25.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case25b = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "17") {
+                return [0, 3];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T17",
+                        number: 17,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        );
+        assert(
+          case25b.snapshot &&
+            case25b.snapshot.rows.find((row) => row.label === "17").marksByPlayer.join(",") === "0,3" &&
+            case25b.states.get("17").presentation === "offense" &&
+            readCellPresentations(case25b, "17").join(",") === "pressure,offense",
+          "Turn-Vorschau überschreibt keine bereits belegte DOM-Zeile: TEST2 bleibt auf 17 offensiv, obwohl TEST1 in match.turns ein T17 hat",
+          case25b.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case25b.snapshot.activePlayerIndex,
+                seventeenRow: case25b.snapshot.rows.find((row) => row.label === "17"),
+                seventeen: case25b.states.get("17"),
               })
             : "snapshot=null"
         );

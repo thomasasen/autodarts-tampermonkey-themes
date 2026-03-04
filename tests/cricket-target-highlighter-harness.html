@@ -1169,6 +1169,56 @@
             JSON.stringify(case13)
           );
 
+          const case14 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "17": [0, 3],
+            }),
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T17",
+                        number: 17,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return metrics.scoreShapesByLabel["17"] === 4;
+            },
+          });
+          assert(
+            case14.overlay &&
+              case14.scoreShapesByLabel["17"] === 4 &&
+              !case14.dangerShapesByLabel["17"] &&
+              case14.overlayPresentationsByLabel["17"] === "offense" &&
+              case14.gridScoreCellsByPlayer["1"] === 1 &&
+              case14.gridThreatCellsByPlayer["0"] === 1,
+            "Turn-History darf eine bereits belegte DOM-Zeile nicht überlagern: bei aktivem TEST2 bleibt 17 offensiv grün",
+            JSON.stringify(case14)
+          );
+
           const colorParity = {
             overlayScoreFill: case13.overlayScoreFill || "",
             overlayDangerFill: case13.overlayDangerFill || "",

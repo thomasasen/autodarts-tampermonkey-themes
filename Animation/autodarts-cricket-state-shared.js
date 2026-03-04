@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-player-display-horizontal-order`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-turn-preview-zero-fallback`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -3008,15 +3008,23 @@
         for (let index = 0; index < playerCount; index += 1) {
           marksByPlayer.push(readMarks(playerCells[index], row.label));
         }
+        const domHasAnyMarks = marksByPlayer.some((mark) => clampMark(mark) > 0);
+        let usedTurnPreview = false;
         const turnMarks = turnMarksByLabel.get(row.label);
-        if (Array.isArray(turnMarks) && turnMarks.length) {
+        if (
+          Array.isArray(turnMarks) &&
+          turnMarks.length &&
+          !domHasAnyMarks
+        ) {
           for (let index = 0; index < playerCount; index += 1) {
             marksByPlayer[index] = Math.max(
               clampMark(marksByPlayer[index]),
               clampMark(turnMarks[index])
             );
           }
-        } else {
+          usedTurnPreview = true;
+        }
+        if (!usedTurnPreview) {
           const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
           if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
             marksByPlayer[resolvedActivePlayerIndex] = clampMark(

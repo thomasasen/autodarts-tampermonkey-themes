@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1.0
+// @version      1.1.1
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -28,13 +28,13 @@
   const shared = window.autodartsAnimationShared || {};
   const cricketState = window.autodartsCricketStateShared || null;
   const gameState = window.autodartsGameStateShared || null;
-  const SCRIPT_VERSION = "1.1.0";
+  const SCRIPT_VERSION = "1.1.1";
   const FEATURE_KEY = "ad-ext/a-cricket-grid-fx";
   const SOURCE_PATH = "Animation/Autodarts Animate Cricket Grid FX.user.js";
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-player-display-horizontal-order`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-turn-preview-zero-fallback`;
 
   const CRICKET_THEME_STYLE_ID = "autodarts-cricket-custom-style";
   const VARIANT_ID = "ad-ext-game-variant";
