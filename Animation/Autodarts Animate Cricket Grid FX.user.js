@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.5
-// @description  Erweitert die Cricket-Zielmatrix um klare Live-Effekte fuer Treffer, Gefahr und Zugwechsel.
-// @xconfig-description  Macht wichtige Cricket-Zustaende in der Zielmatrix schneller sichtbar und haelt das Bild dabei gut lesbar.
+// @version      1.0.6
+// @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
+// @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
-// @xconfig-variant      cricket
+// @xconfig-variant      cricket / tactics
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-tech-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
@@ -51,27 +51,27 @@
   const SPARK_CLASS = "ad-ext-crfx-spark";
   const WIPE_CLASS = "ad-ext-crfx-wipe";
 
-  // xConfig: {"type":"toggle","label":"Zeilen-Sweep","description":"Zeigt bei Aenderungen einen kurzen Lichtlauf ueber die betroffene Zeile.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Zeilen-Sweep","description":"Zeigt bei Änderungen einen kurzen Lichtlauf über die betroffene Zeile.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROW_RAIL_PULSE = true;
   // xConfig: {"type":"toggle","label":"Ziel-Badge-Hinweis","description":"Hebt das linke Ziel-Badge bei wichtigen Situationen deutlicher hervor.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_BADGE_BEACON = true;
   // xConfig: {"type":"toggle","label":"Mark-Fortschritt","description":"Animiert Mark-Symbole bei Trefferzuwachs.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_MARK_PROGRESS_ANIMATOR = true;
-  // xConfig: {"type":"toggle","label":"Gefahrenkante","description":"Markiert gefaehrliche Zeilen mit klaren Warnkanten.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Gefahrenkante","description":"Markiert gefährliche Zeilen mit klaren Warnkanten.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_THREAT_EDGE = true;
   // xConfig: {"type":"toggle","label":"Offensiv-Lane","description":"Hebt Zeilen hervor, auf denen du aktuell offensiv Druck machen kannst.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_SCORING_LANE_HIGHLIGHT = true;
-  // xConfig: {"type":"toggle","label":"Geschlossene Zeilen abdunkeln","description":"Dimmt bereits vollstaendig geschlossene Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Geschlossene Zeilen abdunkeln","description":"Dimmt bereits vollständig geschlossene Zeilen.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DEAD_ROW_COLLAPSE = true;
   // xConfig: {"type":"toggle","label":"Delta-Chips","description":"Zeigt bei neuem Treffer kurz +1, +2 oder +3 in der Zelle.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DELTA_CHIPS = true;
-  // xConfig: {"type":"toggle","label":"Treffer-Impuls","description":"Ergaenzt einen kurzen Treffer-Impuls direkt am Ereignisort.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Treffer-Impuls","description":"Ergänzt einen kurzen Treffer-Impuls direkt am Ereignisort.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_HIT_SPARK = true;
-  // xConfig: {"type":"toggle","label":"Zugwechsel-Uebergang","description":"Zeigt bei Spielerwechsel einen kurzen Uebergang ueber das Grid.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
+  // xConfig: {"type":"toggle","label":"Zugwechsel-Übergang","description":"Zeigt bei Spielerwechsel einen kurzen Übergang über das Grid.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_ROUND_TRANSITION_WIPE = true;
   // xConfig: {"type":"toggle","label":"Gegnerdruck-Overlay","description":"Markiert Zeilen mit akutem Defensivdruck.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_OPPONENT_PRESSURE_OVERLAY = true;
-  // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusaetzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+  // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
   const xConfig_DEBUG = false;
 
   function resolveDebugToggle(value) {
@@ -214,7 +214,12 @@
     )
       .trim()
       .toLowerCase();
-    return variant === "cricket" || variant.startsWith("cricket ");
+    return (
+      variant === "cricket" ||
+      variant.startsWith("cricket ") ||
+      variant === "tactics" ||
+      variant.startsWith("tactics ")
+    );
   }
 
   function isContextActive() {
@@ -405,7 +410,7 @@
   function apply() {
     if (!isContextActive()) {
       if (!loggedVariantSkip) {
-        debugLog("variant-skip", { reason: "not-cricket-context" });
+        debugLog("variant-skip", { reason: "not-cricket-family-context" });
         loggedVariantSkip = true;
       }
       reset();

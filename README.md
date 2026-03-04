@@ -124,14 +124,15 @@ DartsZoom-Vorschau:
 [![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](Template/Autodarts%20Theme%20Cricket.user.js)
 [![🛠 Technik-Referenz](https://img.shields.io/badge/%F0%9F%9B%A0%20Technik-Referenz-0ea5e9?style=for-the-badge)](docs/TECHNIK-REFERENZ.md#template-autodarts-theme-cricket)
 
-- Gilt für: `Cricket`
-- Was macht es sichtbar? Ruhigere Darstellung mit klaren Kontrasten für Cricket.
-- Wann sinnvoll? Als Basis in Cricket, besonders in Kombination mit Cricket-Animationen.
+- Gilt für: `Cricket`, `Tactics`
+- Was macht es sichtbar? Ruhigere Darstellung mit klaren Kontrasten für Cricket und Tactics.
+- Wann sinnvoll? Als Basis in Cricket und Tactics, besonders in Kombination mit den Cricket-/Tactics-Animationen.
+- Automatik: Das Theme aktiviert sich für beide Varianten automatisch über dieselbe Cricket-Familien-Erkennung.
 
 **Einstellungen einfach erklärt**
 
 - `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
-  Vorteil: Mit `An` behältst du deinen Schnitt im Blick, mit `Aus` wirkt Cricket aufgeräumter.
+  Vorteil: Mit `An` behältst du deinen Schnitt im Blick, mit `Aus` wirkt die Ansicht aufgeräumter.
 
 **Vorschau**
 
@@ -198,7 +199,7 @@ DartsZoom-Vorschau:
 
 ![Triple Double Bull Hits](assets/animation-animate-triple-double-bull-hits.gif)
 
-Hinweis: Die zusÃ¤tzliche numerische Punktezeile im Preview stammt aus dem separaten Skript [`Autodarts Animate Turn Points Count`](#animation-autodarts-animate-turn-points-count). `Autodarts Animate Triple Double Bull Hits` hebt nur das Treffer-Label wie `T20`, `D16` oder `BULL` hervor.
+Hinweis: Die zusätzliche numerische Punktezeile im Preview stammt aus dem separaten Skript [`Autodarts Animate Turn Points Count`](#animation-autodarts-animate-turn-points-count). `Autodarts Animate Triple Double Bull Hits` hebt nur das Treffer-Label wie `T20`, `D16` oder `BULL` hervor.
 
 ---
 
@@ -558,14 +559,15 @@ Formatvarianten:
 [![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js)
 [![🛠 Technik-Referenz](https://img.shields.io/badge/%F0%9F%9B%A0%20Technik-Referenz-0ea5e9?style=for-the-badge)](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-cricket-target-highlighter)
 
-- Gilt für: `Cricket`
-- Was macht es sichtbar? Zielzustände im Cricket werden als Overlay am Board sichtbar.
+- Gilt für: `Cricket`, `Tactics`
+- Was macht es sichtbar? Zielzustände in Cricket und Tactics werden als Overlay am Board sichtbar.
 - Wichtig: Funktioniert nur mit dem **virtuellen Dartboard**, nicht mit dem **Live Dartboard**.
-- Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix dieselben Zustände zeigen.
+- Zielbereich: In `Cricket` werden `20` bis `15` plus `Bull` markiert, in `Tactics` `20` bis `10` plus `Bull`.
+- Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix in Cricket und Tactics dieselben Zustände zeigen.
 
 **Einstellungen einfach erklärt**
 
-- `Dead-Ziele anzeigen`: Zeigt auch bereits für alle geschlossene Ziele an.
+- `Dead-Ziele anzeigen`: Zeigt auch Ziele an, die bei allen Spielern bereits geschlossen sind.
   Vorteil: Mehr Gesamtüberblick über den aktuellen Board-Zustand.
 - `Farbthema`: Wählt das Farbschema der Zielzustände.
   Vorteil: Bessere Lesbarkeit abhängig von Helligkeit und Kontrast deines Setups.
@@ -585,9 +587,10 @@ Formatvarianten:
 [![📦 Skript](https://img.shields.io/badge/%F0%9F%93%A6%20Skript-%C3%96ffnen-1f6feb?style=for-the-badge)](Animation/Autodarts%20Animate%20Cricket%20Grid%20FX.user.js)
 [![🛠 Technik-Referenz](https://img.shields.io/badge/%F0%9F%9B%A0%20Technik-Referenz-0ea5e9?style=for-the-badge)](docs/TECHNIK-REFERENZ.md#animation-autodarts-animate-cricket-grid-fx)
 
-- Gilt für: `Cricket`
-- Was macht es sichtbar? Zusätzliche Live-Effekte in der Cricket-Matrix für schnellere Orientierung.
+- Gilt für: `Cricket`, `Tactics`
+- Was macht es sichtbar? Zusätzliche Live-Effekte in der Cricket-/Tactics-Matrix für schnellere Orientierung.
 - Hinweis: Läuft in Kombination mit dem Cricket-Theme am sinnvollsten.
+- Zielbereich: Nutzt automatisch den passenden Zielsatz der aktiven Variante, also `20` bis `15` plus `Bull` in Cricket oder `20` bis `10` plus `Bull` in Tactics.
 
 **Einstellungen einfach erklärt**
 
@@ -600,7 +603,7 @@ Formatvarianten:
 - `Gefahrenkante`: Markiert gefährliche Zeilen mit klaren Warnkanten.
   Vorteil: Defensivdruck ist früh sichtbar.
 - `Offensiv-Lane`: Hebt Zeilen hervor, auf denen du aktuell offensiv Druck machen kannst.
-  Vorteil: Unterstützt schnelle offensive Entscheidungen, auch in Cut-Throat-artigen Cricket-Modi.
+  Vorteil: Unterstützt schnelle offensive Entscheidungen, auch in Cut-Throat-artigen Cricket-/Tactics-Modi.
 - `Geschlossene Zeilen abdunkeln`: Dimmt vollständig geschlossene Zeilen.
   Vorteil: Fokus bleibt auf den relevanten, noch aktiven Zielen.
 - `Delta-Chips`: Zeigt bei neuen Treffern kurz `+1`, `+2` oder `+3`.

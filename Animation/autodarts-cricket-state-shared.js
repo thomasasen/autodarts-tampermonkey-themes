@@ -8,8 +8,23 @@
     return;
   }
 
-  const TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
-  const TARGET_SET = new Set(TARGET_ORDER);
+  const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
+  const TACTICS_TARGET_ORDER = [
+    "20",
+    "19",
+    "18",
+    "17",
+    "16",
+    "15",
+    "14",
+    "13",
+    "12",
+    "11",
+    "10",
+    "BULL",
+  ];
+  const TARGET_ORDER = CRICKET_TARGET_ORDER;
+  const TARGET_SET = new Set(TACTICS_TARGET_ORDER);
   const LABEL_SELECTOR = "div, span, p, td, th";
   const PLAYER_SELECTOR = ".ad-ext-player";
   const ACTIVE_PLAYER_SELECTOR = ".ad-ext-player-active";
@@ -88,6 +103,49 @@
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  function readVariantTextFromDom(doc) {
+    const variantEl = (doc || document).getElementById("ad-ext-game-variant");
+    return variantEl?.textContent?.trim() || "";
+  }
+
+  function normalizeCricketGameMode(value) {
+    return normalizeWhitespace(value).toLowerCase();
+  }
+
+  function classifyCricketGameMode(value) {
+    const normalized = normalizeCricketGameMode(value);
+    if (!normalized) {
+      return "";
+    }
+    if (normalized === "tactics" || normalized.startsWith("tactics ")) {
+      return "tactics";
+    }
+    if (
+      normalized === "hidden cricket" ||
+      normalized.startsWith("hidden cricket ")
+    ) {
+      return "hidden-cricket";
+    }
+    if (normalized === "cricket" || normalized.startsWith("cricket ")) {
+      return "cricket";
+    }
+    return "";
+  }
+
+  function getTargetOrderByGameMode(gameMode) {
+    return classifyCricketGameMode(gameMode) === "tactics"
+      ? TACTICS_TARGET_ORDER
+      : CRICKET_TARGET_ORDER;
+  }
+
+  function inferCricketGameMode(parsedRows) {
+    const labels = new Set((parsedRows?.rows || []).map((row) => row.label));
+    const looksLikeTactics = ["14", "13", "12", "11", "10"].some((label) =>
+      labels.has(label)
+    );
+    return looksLikeTactics ? "tactics" : "cricket";
+  }
+
   function normalizeLabel(value) {
     const text = normalizeWhitespace(value).toUpperCase();
     if (!text) {
@@ -103,7 +161,9 @@
       return "BULL";
     }
 
-    const match = text.match(/(?:^|[^0-9])(20|19|18|17|16|15)(?:[^0-9]|$)/);
+    const match = text.match(
+      /(?:^|[^0-9])(20|19|18|17|16|15|14|13|12|11|10)(?:[^0-9]|$)/
+    );
     return match ? match[1] : "";
   }
 
@@ -233,6 +293,9 @@
           if (childCount > 0 && childCount % 7 === 0) {
             score += 12;
           }
+          if (childCount > 0 && childCount % 12 === 0) {
+            score += 12;
+          }
           score -= depth * 3;
 
           if (!best || score > best.score) {
@@ -324,6 +387,78 @@
       normalized,
       family,
       supportsTacticalHighlights: family !== "neutral",
+    };
+  }
+
+  function readCricketGameModeInfo(gameStateShared, options = {}) {
+    const debugLog =
+      typeof options.debugLog === "function" ? options.debugLog : null;
+    const doc = options.document || document;
+    const parsedRows = options.parsedRows || null;
+    const candidates = [];
+
+    if (gameStateShared && typeof gameStateShared.getCricketGameMode === "function") {
+      candidates.push({
+        source: "game-state",
+        raw: String(
+          gameStateShared.getCricketGameMode({ includeHiddenCricket: false }) || ""
+        ),
+      });
+    }
+
+    candidates.push({
+      source: "dom",
+      raw: readVariantTextFromDom(doc),
+    });
+
+    for (const candidate of candidates) {
+      const normalized = classifyCricketGameMode(candidate.raw);
+      if (!normalized || normalized === "hidden-cricket") {
+        continue;
+      }
+      const targetOrder = getTargetOrderByGameMode(normalized);
+      return {
+        raw: candidate.raw,
+        normalized,
+        source: candidate.source,
+        isTactics: normalized === "tactics",
+        targetOrder,
+        targetSet: new Set(targetOrder),
+      };
+    }
+
+    if (
+      gameStateShared &&
+      typeof gameStateShared.isCricketVariant === "function" &&
+      gameStateShared.isCricketVariant({
+        allowMissing: false,
+        allowEmpty: false,
+      })
+    ) {
+      return {
+        raw: "Cricket",
+        normalized: "cricket",
+        source: "game-state-family",
+        isTactics: false,
+        targetOrder: CRICKET_TARGET_ORDER,
+        targetSet: new Set(CRICKET_TARGET_ORDER),
+      };
+    }
+
+    const inferredMode = inferCricketGameMode(parsedRows);
+    if (debugLog && inferredMode === "tactics") {
+      debugLog("readCricketGameModeInfo: inferred tactics from parsed rows", {
+        labels: (parsedRows?.rows || []).map((row) => row.label),
+      });
+    }
+    const targetOrder = getTargetOrderByGameMode(inferredMode);
+    return {
+      raw: inferredMode === "tactics" ? "Tactics" : "Cricket",
+      normalized: inferredMode,
+      source: "row-inference",
+      isTactics: inferredMode === "tactics",
+      targetOrder,
+      targetSet: new Set(targetOrder),
     };
   }
 
@@ -888,6 +1023,13 @@
       return null;
     }
 
+    const gameModeInfo = readCricketGameModeInfo(gameStateShared, {
+      debugLog,
+      document: options.document || document,
+      parsedRows,
+    });
+    const targetOrder = gameModeInfo.targetOrder;
+    const targetSet = gameModeInfo.targetSet;
     const modeInfo = readCricketMode(gameStateShared, { debugLog });
     const maxDetectedPlayers = parsedRows.rows.reduce((max, row) => {
       return Math.max(max, row.playerCells.length);
@@ -901,6 +1043,7 @@
     );
 
     const rows = parsedRows.rows
+      .filter((row) => targetSet.has(row.label))
       .map((row) => {
         const playerCells = row.playerCells.slice(0, playerCount);
         const marksByPlayer = [];
@@ -917,8 +1060,17 @@
         };
       })
       .sort((first, second) => {
-        return TARGET_ORDER.indexOf(first.label) - TARGET_ORDER.indexOf(second.label);
+        return targetOrder.indexOf(first.label) - targetOrder.indexOf(second.label);
       });
+
+    if (!rows.length) {
+      if (debugLog) {
+        debugLog("buildGridSnapshot: no rows after target filter", {
+          gameMode: gameModeInfo.normalized,
+        });
+      }
+      return null;
+    }
 
     const rowMap = new Map(rows.map((row) => [row.label, row]));
 
@@ -926,6 +1078,9 @@
       root,
       rows,
       rowMap,
+      gameModeInfo,
+      targetOrder,
+      targetSet,
       playerCount,
       activePlayerIndex: Math.max(0, Math.min(activePlayerIndex, playerCount - 1)),
       modeInfo,
@@ -1010,10 +1165,14 @@
   global.autodartsCricketStateShared = {
     __initialized: true,
     TARGET_ORDER,
+    CRICKET_TARGET_ORDER,
+    TACTICS_TARGET_ORDER,
     normalizeLabel,
+    getTargetOrderByGameMode,
     findGridRoot,
     resolveActivePlayerIndex,
     readCricketMode,
+    readCricketGameModeInfo,
     buildGridSnapshot,
     computeTargetStates,
   };

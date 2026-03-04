@@ -236,9 +236,9 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### 📝 Beschreibung
 
-- Zweck: Leichtgewichtiges Farb-Theme für Cricket ohne große Layout-Eingriffe, damit die Spielansicht vertraut bleibt.
-- Aktivierung: Variante `cricket`.
-- Änderungen: setzt Farben und kleine UI-Anpassungen (z.B. Kontraste und Hervorhebungen).
+- Zweck: Leichtgewichtiges Farb-Theme für Cricket und Tactics ohne große Layout-Eingriffe, damit die Spielansicht vertraut bleibt.
+- Aktivierung: Cricket-Familie, also sichtbare Variante `cricket` oder `tactics`.
+- Änderungen: setzt Farben und kleine UI-Anpassungen (z.B. Kontraste und Hervorhebungen) und wird über die gemeinsame Cricket-Familien-Erkennung aktiviert.
 - Hinweis: rein visuell, keine Änderungen an Spiellogik oder Erkennung.
 
 ##### ✅ Einfache Variablen (Beispiele)
@@ -252,13 +252,13 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 **AD xConfig-Einstellungen (empfohlen)**
 
-- `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-Theme ein oder aus.
+- `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-/Tactics-Theme ein oder aus.
 - Kombination: Bei `Aus` wird auch der Trendpfeil (`Autodarts Animate Average Trend Arrow`) ausgeblendet.
 
 | Variable              | Standard                         | Wirkung                                                                                                          |
 | :-------------------- | :------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-cricket-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                                |
-| `VARIANT_NAME`        | `cricket`                        | Name der Spielvariante, bei der das Theme aktiv wird.                                                            |
+| `VARIANT_NAME`        | `cricket`                        | Basis-Variantename; die Aktivierung erweitert `cricket` im Shared Helper automatisch auf die sichtbaren Modi `Cricket` und `Tactics`. |
 | `xConfig_AVG_ANZEIGE` | `true`                           | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                                                    |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                                 |
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                                 |
@@ -273,6 +273,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 ##### ℹ️ Weitere Hinweise
 
 - CSS in `customCss` anpassen, wenn du Farben oder Abstände ändern möchtest.
+- Tactics nutzt bewusst dieselbe Theme-Datei; es gibt keine zweite Tactics-spezifische Theme-Codebasis.
 
 ---
 
@@ -1146,9 +1147,9 @@ Varianten:
 
 ##### 📝 Beschreibung
 
-- Zweck: blendet Nicht-Cricket-Felder aus und markiert 15–20/BULL nach Status.
-- Trigger/Erkennung: Variante `cricket`, liest die Cricket-Tabelle über den gemeinsamen Helper `Animation/autodarts-cricket-state-shared.js`.
-- Änderungen: Overlay-SVG mit Statusfarben (open/closed/offense/danger/dead) für bessere Entscheidungen; Board und Grid FX nutzen dieselbe Zustandslogik.
+- Zweck: blendet Nicht-Zielfelder aus und markiert die aktiven Cricket-/Tactics-Ziele nach Status.
+- Trigger/Erkennung: Cricket-Familie, also sichtbare Variante `cricket` oder `tactics`; liest die Tabelle über den gemeinsamen Helper `Animation/autodarts-cricket-state-shared.js`.
+- Änderungen: Overlay-SVG mit Statusfarben (open/closed/offense/danger/dead) für bessere Entscheidungen; Board und Grid FX nutzen dieselbe Zustandslogik und denselben dynamischen Zielsatz.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1167,7 +1168,7 @@ Varianten:
 | Variable                      | Standard                  | Wirkung                                                                                                                           |
 | :---------------------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
 | `CONFIG.variantElementId`     | `ad-ext-game-variant`     | Quelle für die Varianten-Erkennung.                                                                                               |
-| `CONFIG.tableSelector`        | `null`                    | Optional fixer Selector für die Cricket-Tabelle; `null` = automatische Erkennung, setze ihn wenn die Tabelle nicht gefunden wird. |
+| `CONFIG.tableSelector`        | `null`                    | Optional fixer Selector für die Cricket-/Tactics-Tabelle; `null` = automatische Erkennung, setze ihn wenn die Tabelle nicht gefunden wird. |
 | `CONFIG.playerSelector`       | `.ad-ext-player`          | Selector für Player-Karten.                                                                                                       |
 | `CONFIG.activePlayerSelector` | `.ad-ext-player-active`   | Selector für den aktiven Player.                                                                                                  |
 | `CONFIG.showDeadTargets`      | `true`                    | Zeigt Ziele, die alle geschlossen haben.                                                                                          |
@@ -1177,10 +1178,10 @@ Varianten:
 | `CONFIG.opacity.closed`       | `0.8`                     | Deckkraft für geschlossene Ziele.                                                                                                 |
 | `CONFIG.opacity.dead`         | `0.98`                    | Deckkraft für „dead“-Ziele.                                                                                                       |
 | `CONFIG.opacity.inactive`     | `0.8`                     | Deckkraft für inaktive Bereiche.                                                                                                  |
-| `CONFIG.highlight.offense`    | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für offensive Ziele (Standard-Cricket: Scoring, Cut-Throat: Angriffschance) inkl. Kontur-Boost. |
-| `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele (aktiver Spieler offen, Gegner geschlossen) inkl. Kontur-Boost. |
+| `CONFIG.highlight.offense`    | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für offensive Ziele (Standard-Cricket/-Tactics: Scoring, Cut-Throat: Angriffschance) inkl. Kontur-Boost. |
+| `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele in Cricket und Tactics (aktiver Spieler offen, Gegner geschlossen) inkl. Kontur-Boost. |
 | `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius.       |
-| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber und berechnet die regelkonformen Cricket-Zustände für Board und Matrix gemeinsam. |
+| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber und berechnet die regelkonformen Zustände für Cricket und Tactics gemeinsam. |
 | `xConfig_DEBUG`               | `false`                   | Aktiviert technische Debug-Logs in der Konsole (nur bei Bedarf einschalten).                                                     |
 
 ##### 🖼️ Beispiele/Screenshots
@@ -1189,8 +1190,8 @@ Varianten:
 
 🧭 Screenshot erklärt:
 
-- Das Overlay färbt nur Cricket-Ziele (15–20/Bull). Alle anderen Felder (1–14) werden dunkel/neutral ausgeblendet, damit der Fokus auf den Cricket-Zielen liegt.
-- **Grün** zeigt ein **offensives Ziel**: Du hast das Ziel bereits geschlossen (3 Marks), mindestens ein Gegner ist noch offen. In Standard-Cricket bedeutet das ein Scoring-Ziel, in Cut-Throat ein Angriffsfenster.
+- Das Overlay färbt nur die aktiven Ziele der laufenden Variante: in Cricket `15` bis `20` plus `Bull`, in Tactics `10` bis `20` plus `Bull`. Alle übrigen Felder bleiben dunkel/neutral.
+- **Grün** zeigt ein **offensives Ziel**: Du hast das Ziel bereits geschlossen (3 Marks), mindestens ein Gegner ist noch offen. In Standard-Cricket bzw. Standard-Tactics bedeutet das ein Scoring-Ziel, in Cut-Throat ein Angriffsfenster.
 - **Rot** zeigt **Danger**: Du bist noch offen, mindestens ein Gegner hat das Ziel geschlossen → der Gegner kann dort Druck aufbauen, du solltest es schließen.
 - **Neutral/hell** markiert **offene Ziele** (noch nicht geschlossen und aktuell ohne akute Gefahr).
 - **Gedämpfte/abgeschwächte Farben** stehen für **geschlossen/tot/inaktiv** (z.B. alle geschlossen, keine Punkte mehr möglich).  
@@ -1199,7 +1200,7 @@ Varianten:
 ##### ℹ️ Weitere Hinweise
 
 - Debug-Ausgaben kannst du über `xConfig_DEBUG` in AD xConfig aktivieren/deaktivieren.
-- Für unbekannte oder nicht-scoring Cricket-Modi unterdrückt der Helper taktische Grün/Rot-Hinweise bewusst und bleibt bei neutralen Zuständen.
+- Für unbekannte oder nicht-scoring Cricket-/Tactics-Modi unterdrückt der Helper taktische Grün/Rot-Hinweise bewusst und bleibt bei neutralen Zuständen.
 
 ---
 
@@ -1215,9 +1216,9 @@ Varianten:
 
 ##### 📝 Beschreibung
 
-- Zweck: Ergänzt die Cricket-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Offense/Pressure, Delta-Chips, Turn-Wipe).
-- Trigger/Erkennung: Nur Variante `cricket` und nur bei aktivem `Template/Autodarts Theme Cricket.user.js` (feste Modul-Bindung, kein separater Toggle).
-- Änderungen: Nutzt dieselbe Cricket-State-Basis wie der Board-Highlighter, setzt modul-eigene CSS-Klassen nur auf Spielerzellen/Badge-Node und entfernt sie beim Verlassen der Variante wieder.
+- Zweck: Ergänzt die Cricket-/Tactics-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Offense/Pressure, Delta-Chips, Turn-Wipe).
+- Trigger/Erkennung: Cricket-Familie, also sichtbare Variante `cricket` oder `tactics`, und nur bei aktivem `Template/Autodarts Theme Cricket.user.js` (feste Modul-Bindung, kein separater Toggle).
+- Änderungen: Nutzt dieselbe Cricket-State-Basis wie der Board-Highlighter, setzt modul-eigene CSS-Klassen nur auf Spielerzellen/Badge-Node und entfernt sie beim Verlassen der Variante wieder. Die Zeilenanzahl ergibt sich dynamisch aus der aktiven Variante.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1238,7 +1239,7 @@ Varianten:
 
 - `xConfig_ROW_RAIL_PULSE`: Sweep über die komplette betroffene Zeile.
   Sichtbild: Ein kurzer Lichtlauf zieht über die Zeile und macht Zustandswechsel sofort sichtbar.
-- `xConfig_BADGE_BEACON`: Hervorhebung des linken Ziel-Badges (20..15/Bull).
+- `xConfig_BADGE_BEACON`: Hervorhebung des linken Ziel-Badges der aktuell aktiven Ziele.
   Sichtbild: Badge wird deutlicher in den Vordergrund gesetzt; Burst-Effekt bei relevanten Triggern.
 - `xConfig_MARK_PROGRESS_ANIMATOR`: Progress-Animation am Mark-Symbol bei Trefferzuwachs.
   Sichtbild: Mark-Symbol „setzt“ sich sichtbar mit kurzer, levelabhängiger Intensität.
@@ -1269,7 +1270,7 @@ Varianten:
 | `xConfig_HIT_SPARK`                      | `true`   | Aktiviert den kurzen Spark-Effekt bei neuen Marks.                                                      |
 | `xConfig_ROUND_TRANSITION_WIPE`          | `true`   | Aktiviert Wipe-Overlay beim Turn-Wechsel.                                                               |
 | `xConfig_OPPONENT_PRESSURE_OVERLAY`      | `true`   | Aktiviert Pressure-Overlay bei Defensivdruck.                                                           |
-| `TARGETS`                                | `15..20,BULL` | Verarbeitete Cricket-Zielzeilen.                                                                    |
+| `snapshot.targetOrder`                   | dynamisch | Verarbeitete Zielzeilen: in Cricket `20..15,BULL`, in Tactics `20..10,BULL`. |
 | `CRICKET_THEME_STYLE_ID`                 | `autodarts-cricket-custom-style` | Feste Theme-Voraussetzung: Modul läuft nur bei aktivem Theme Cricket.                          |
 | `VARIANT_ID`                             | `ad-ext-game-variant` | Quelle der Varianten-Erkennung.                                                               |
 | `STYLE_ID`                               | `ad-ext-crfx-style` | Style-Tag für alle Modul-CSS-Regeln.                                                          |
@@ -1281,13 +1282,13 @@ Varianten:
 
 🧭 Screenshot erklärt:
 
-- Die linke Zielspalte (19/18/…) bleibt visuell vorne und wird bei Bedarf über `Badge Beacon` betont.
+- Die linke Zielspalte bleibt visuell vorne und wird bei Bedarf über `Badge Beacon` betont, unabhängig davon, ob gerade 7 oder 12 Zielzeilen aktiv sind.
 - Offensiv-Zeilen bekommen eine grüne Lane; Danger/Pressure nutzen klar getrennte Warnsignale.
 - Trefferzuwachs wird über `Mark Progress`, `Delta Chips` und optional `Hit Spark` direkt erkennbar gemacht.
 
 ##### ℹ️ Weitere Hinweise
 
-- Das Modul ist strikt Cricket-spezifisch und entfernt seine Klassen/Overlays beim Variantenwechsel.
+- Das Modul ist auf die Cricket-Familie begrenzt und entfernt seine Klassen/Overlays beim Wechsel zu Nicht-Cricket-Varianten.
 - Das Modul ist fest mit `Template: Autodarts Theme Cricket` gekoppelt (kein eigener Schalter dafür).
 - Die Effekte sind unabhängig schaltbar, um Side-Effekte zwischen den Features zu minimieren.
 - Parser-relevante Labelstrukturen bleiben unberührt: temporäre Overlays sitzen nur auf Spielerzellen oder auf dem Root-Wipe, nicht auf der linken Zielspalte.

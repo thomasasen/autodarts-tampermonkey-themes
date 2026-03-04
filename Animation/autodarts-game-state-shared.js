@@ -40,7 +40,27 @@
   }
 
   function normalizeVariant(value) {
-    return String(value || "").trim().toLowerCase();
+    return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  function classifyCricketGameMode(value) {
+    const normalized = normalizeVariant(value);
+    if (!normalized) {
+      return "";
+    }
+    if (normalized === "tactics" || normalized.startsWith("tactics ")) {
+      return "tactics";
+    }
+    if (
+      normalized === "hidden cricket" ||
+      normalized.startsWith("hidden cricket ")
+    ) {
+      return "hidden-cricket";
+    }
+    if (normalized === "cricket" || normalized.startsWith("cricket ")) {
+      return "cricket";
+    }
+    return "";
   }
 
   function getVariant() {
@@ -53,6 +73,37 @@
 
   function getVariantNormalized() {
     return normalizeVariant(getVariant());
+  }
+
+  function getCricketGameMode(options = {}) {
+    const includeHiddenCricket = Boolean(options.includeHiddenCricket);
+    const candidates = [
+      state.match?.settings?.gameMode,
+      state.match?.gameMode,
+      readVariantFromDom(),
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = classifyCricketGameMode(candidate);
+      if (!normalized) {
+        continue;
+      }
+      if (normalized === "hidden-cricket" && !includeHiddenCricket) {
+        continue;
+      }
+      return String(candidate || "").trim();
+    }
+
+    const variant = getVariantNormalized();
+    if (variant === "cricket" || variant.startsWith("cricket ")) {
+      return "Cricket";
+    }
+
+    return "";
+  }
+
+  function getCricketGameModeNormalized(options = {}) {
+    return classifyCricketGameMode(getCricketGameMode(options));
   }
 
   function isX01Variant(options = {}) {
@@ -70,6 +121,19 @@
   }
 
   function isCricketVariant(options = {}) {
+    const domMode = classifyCricketGameMode(readVariantFromDom());
+    if (domMode === "hidden-cricket" && !options.includeHiddenCricket) {
+      return false;
+    }
+
+    const gameMode = getCricketGameModeNormalized(options);
+    if (gameMode === "cricket" || gameMode === "tactics") {
+      return true;
+    }
+    if (gameMode === "hidden-cricket") {
+      return Boolean(options.includeHiddenCricket);
+    }
+
     const variant = getVariantNormalized();
     if (!variant) {
       return Boolean(options.allowMissing || options.allowEmpty);
@@ -296,6 +360,8 @@
     getVariantNormalized,
     isX01Variant,
     isCricketVariant,
+    getCricketGameMode,
+    getCricketGameModeNormalized,
     getOutMode,
     getCricketMode,
     getActivePlayerIndex,

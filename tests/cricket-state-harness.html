@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Cricket State Harness</title>
+    <title>Cricket / Tactics State Harness</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -26,7 +26,7 @@
     <script src="../Animation/autodarts-cricket-state-shared.js"></script>
   </head>
   <body>
-    <h1>Cricket State Harness</h1>
+    <h1>Cricket / Tactics State Harness</h1>
     <p id="summary">Running…</p>
     <ul id="results"></ul>
 
@@ -35,7 +35,29 @@
         "use strict";
 
         const helper = window.autodartsCricketStateShared;
-        const TARGETS = ["20", "19", "18", "17", "16", "15", "BULL"];
+        const CRICKET_TARGETS = helper.CRICKET_TARGET_ORDER || [
+          "20",
+          "19",
+          "18",
+          "17",
+          "16",
+          "15",
+          "BULL",
+        ];
+        const TACTICS_TARGETS = helper.TACTICS_TARGET_ORDER || [
+          "20",
+          "19",
+          "18",
+          "17",
+          "16",
+          "15",
+          "14",
+          "13",
+          "12",
+          "11",
+          "10",
+          "BULL",
+        ];
         const results = [];
 
         function markCell(mark, textOverride) {
@@ -48,10 +70,10 @@
           return cell;
         }
 
-        function buildLinearRoot(markSets, labelFormatter) {
+        function buildLinearRoot(targetOrder, markSets, labelFormatter) {
           const root = document.createElement("div");
           root.className = "grid-root";
-          TARGETS.forEach((label, index) => {
+          targetOrder.forEach((label, index) => {
             const labelCell = document.createElement("div");
             labelCell.className = "label-cell";
             labelCell.textContent = labelFormatter ? labelFormatter(label, index) : label;
@@ -64,10 +86,10 @@
           return root;
         }
 
-        function buildNestedRowRoot(markSets) {
+        function buildNestedRowRoot(targetOrder, markSets) {
           const root = document.createElement("div");
           root.className = "nested-root";
-          TARGETS.forEach((label, index) => {
+          targetOrder.forEach((label, index) => {
             const row = document.createElement("div");
             row.className = "row";
 
@@ -89,10 +111,10 @@
           return root;
         }
 
-        function buildDecoratedLabelRoot(markSets) {
+        function buildDecoratedLabelRoot(targetOrder, markSets) {
           const root = document.createElement("div");
           root.className = "decorated-root";
-          TARGETS.forEach((label, index) => {
+          targetOrder.forEach((label, index) => {
             const labelCell = document.createElement("div");
             labelCell.className = "label-cell";
             const labelNode = document.createElement("span");
@@ -118,22 +140,41 @@
           return root;
         }
 
-        function fakeGameState(activePlayerIndex, mode) {
-          return {
+        function fakeGameState(activePlayerIndex, scoringMode, gameMode, options) {
+          const config = options || {};
+          const state = {
             getActivePlayerIndex: function () {
               return activePlayerIndex;
             },
             getCricketMode: function () {
-              return mode || "";
+              return scoringMode || "";
             },
           };
+
+          if (config.includeGameMode !== false) {
+            state.getCricketGameMode = function () {
+              return gameMode || "";
+            };
+          }
+          if (config.includeFamilyVariant !== false) {
+            state.isCricketVariant = function () {
+              return true;
+            };
+          }
+
+          return state;
         }
 
-        function buildState(root, playerCount, activePlayerIndex, mode) {
+        function buildState(root, playerCount, activePlayerIndex, scoringMode, gameMode, options) {
           const snapshot = helper.buildGridSnapshot({
             root,
             playerCount,
-            gameStateShared: fakeGameState(activePlayerIndex, mode),
+            gameStateShared: fakeGameState(
+              activePlayerIndex,
+              scoringMode,
+              gameMode,
+              options
+            ),
           });
           if (!snapshot) {
             return { snapshot: null, states: null };
@@ -146,6 +187,10 @@
           };
         }
 
+        function createUniformMarkSets(targetOrder, producer) {
+          return targetOrder.map((label, index) => producer(label, index));
+        }
+
         function assert(condition, label, details) {
           results.push({
             label,
@@ -154,40 +199,73 @@
           });
         }
 
-        const twoPlayerOpen = TARGETS.map(() => [3, 0]);
-        const twoPlayerDanger = TARGETS.map(() => [0, 3]);
-        const threePlayer = TARGETS.map(() => [0, 3, 0]);
-        const solo = TARGETS.map(() => [3]);
+        const twoPlayerOpenCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3, 0]);
+        const twoPlayerDangerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3]);
+        const threePlayerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3, 0]);
+        const soloCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3]);
+        const twoPlayerOpenTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3, 0]);
+        const twoPlayerDangerTactics = createUniformMarkSets(TACTICS_TARGETS, () => [0, 3]);
+        const soloTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3]);
 
-        const case1 = buildState(buildLinearRoot(twoPlayerOpen), 2, 0, "standard");
+        const case1 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
         assert(
           case1.states.get("20").presentation === "offense",
           "Linear 2-player: active closed vs opponent open -> offense",
           JSON.stringify(case1.states.get("20"))
         );
 
-        const case2 = buildState(buildLinearRoot(twoPlayerDanger), 2, 0, "standard");
+        const case2 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerDangerCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
         assert(
           case2.states.get("20").presentation === "danger",
           "Linear 2-player: active open vs opponent closed -> danger",
           JSON.stringify(case2.states.get("20"))
         );
 
-        const case3 = buildState(buildLinearRoot(threePlayer), 3, 1, "cut-throat");
+        const case3 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, threePlayerCricket),
+          3,
+          1,
+          "cut-throat",
+          "Cricket"
+        );
         assert(
           case3.states.get("20").presentation === "offense",
           "Linear 3-player: active player index stays relative to player cells",
           JSON.stringify(case3.states.get("20"))
         );
 
-        const case4 = buildState(buildNestedRowRoot(twoPlayerDanger), 2, 0, "standard");
+        const case4 = buildState(
+          buildNestedRowRoot(CRICKET_TARGETS, twoPlayerDangerCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
         assert(
           case4.states.get("20").presentation === "danger",
           "Nested row container: wrapper children become player cells",
           JSON.stringify(case4.states.get("20"))
         );
 
-        const case5 = buildState(buildDecoratedLabelRoot(twoPlayerOpen), 2, 0, "standard");
+        const case5 = buildState(
+          buildDecoratedLabelRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
         assert(
           case5.snapshot && case5.snapshot.rows.length === 7,
           "Decorated labels: helper still finds all 7 Cricket targets",
@@ -206,7 +284,13 @@
           ].join(", ")
         );
 
-        const case7 = buildState(buildLinearRoot(solo), 1, 0, "standard");
+        const case7 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, soloCricket),
+          1,
+          0,
+          "standard",
+          "Cricket"
+        );
         assert(
           case7.states.get("20").presentation === "closed" &&
             !case7.states.get("20").dead,
@@ -214,13 +298,152 @@
           JSON.stringify(case7.states.get("20"))
         );
 
-        const case8 = buildState(buildLinearRoot(twoPlayerOpen), 2, 0, "mystery-mode");
+        const case8 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          0,
+          "mystery-mode",
+          "Cricket"
+        );
         assert(
           case8.states.get("20").presentation === "closed" &&
             !case8.states.get("20").offense &&
             !case8.states.get("20").danger,
           "Unknown mode: tactical highlights are suppressed",
           JSON.stringify(case8.states.get("20"))
+        );
+
+        const case9 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          0,
+          "standard",
+          "Tactics"
+        );
+        assert(
+          case9.snapshot &&
+            case9.snapshot.rows.length === 12 &&
+            case9.snapshot.targetOrder.join(",") === TACTICS_TARGETS.join(","),
+          "Tactics: snapshot resolves the full 20..10,BULL target set",
+          case9.snapshot ? case9.snapshot.targetOrder.join(",") : "snapshot=null"
+        );
+        assert(
+          case9.states.get("14").presentation === "offense" &&
+            case9.states.get("10").presentation === "offense",
+          "Tactics standard: 14 and 10 participate like normal scoring targets",
+          JSON.stringify({
+            fourteen: case9.states.get("14"),
+            ten: case9.states.get("10"),
+          })
+        );
+
+        const case10 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerDangerTactics),
+          2,
+          0,
+          "standard",
+          "Tactics"
+        );
+        assert(
+          case10.states.get("14").presentation === "danger" &&
+            case10.states.get("10").presentation === "danger",
+          "Tactics standard: 14 and 10 can also become danger targets",
+          JSON.stringify({
+            fourteen: case10.states.get("14"),
+            ten: case10.states.get("10"),
+          })
+        );
+
+        const case11 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          0,
+          "no-score",
+          "Tactics"
+        );
+        assert(
+          case11.states.get("12").presentation === "closed" &&
+            !case11.states.get("12").offense &&
+            !case11.states.get("12").danger,
+          "Tactics no-score: tactical highlights stay neutral",
+          JSON.stringify(case11.states.get("12"))
+        );
+
+        const case12 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, soloTactics),
+          1,
+          0,
+          "standard",
+          "Tactics"
+        );
+        assert(
+          case12.states.get("11").presentation === "closed" &&
+            !case12.states.get("11").dead,
+          "Solo Tactics: closed stays closed and never dead",
+          JSON.stringify(case12.states.get("11"))
+        );
+
+        const case13 = buildState(
+          buildDecoratedLabelRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          0,
+          "cut-throat",
+          "Tactics"
+        );
+        assert(
+          case13.snapshot && case13.snapshot.rows.length === 12,
+          "Decorated labels: helper still finds all 12 Tactics targets",
+          case13.snapshot ? `rows=${case13.snapshot.rows.length}` : "snapshot=null"
+        );
+
+        const case14 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          0,
+          "standard",
+          "",
+          {
+            includeGameMode: false,
+            includeFamilyVariant: false,
+          }
+        );
+        assert(
+          case14.snapshot &&
+            case14.snapshot.gameModeInfo &&
+            case14.snapshot.gameModeInfo.normalized === "tactics",
+          "Row inference: 10..14 force Tactics even without explicit game mode",
+          case14.snapshot
+            ? JSON.stringify(case14.snapshot.gameModeInfo)
+            : "snapshot=null"
+        );
+
+        const case15 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
+        assert(
+          case15.snapshot &&
+            case15.snapshot.rows.length === 7 &&
+            !case15.states.has("14"),
+          "Cricket mode filter: 10..14 are excluded when the game mode is Cricket",
+          case15.snapshot ? case15.snapshot.rows.map((row) => row.label).join(",") : "snapshot=null"
+        );
+
+        assert(
+          helper.normalizeLabel("14") === "14" &&
+            helper.normalizeLabel("Target 13") === "13" &&
+            helper.normalizeLabel("11 geschlossen") === "11" &&
+            helper.normalizeLabel("10") === "10",
+          "Tactics labels 10..14 normalize correctly",
+          [
+            helper.normalizeLabel("14"),
+            helper.normalizeLabel("Target 13"),
+            helper.normalizeLabel("11 geschlossen"),
+            helper.normalizeLabel("10"),
+          ].join(", ")
         );
 
         const summary = document.getElementById("summary");

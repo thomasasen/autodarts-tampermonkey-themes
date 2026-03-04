@@ -136,6 +136,26 @@
     return variantEl?.textContent?.trim().toLowerCase() || "";
   }
 
+  function classifyCricketGameMode(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) {
+      return "";
+    }
+    if (normalized === "tactics" || normalized.startsWith("tactics ")) {
+      return "tactics";
+    }
+    if (
+      normalized === "hidden cricket" ||
+      normalized.startsWith("hidden cricket ")
+    ) {
+      return "hidden-cricket";
+    }
+    if (normalized === "cricket" || normalized.startsWith("cricket ")) {
+      return "cricket";
+    }
+    return "";
+  }
+
   function isX01Variant(variantElementId, options) {
     const config = options || {};
     const variant = getVariantText(variantElementId);
@@ -163,7 +183,25 @@
       return Boolean(config.allowEmpty || config.allowMissing);
     }
 
-    return variant === "cricket" || variant.startsWith("cricket ");
+    const mode = classifyCricketGameMode(variant);
+    if (mode === "hidden-cricket") {
+      return Boolean(config.includeHiddenCricket);
+    }
+    return mode === "cricket" || mode === "tactics";
+  }
+
+  function getCricketGameMode(variantElementId, options) {
+    const config = options || {};
+    const variant = getVariantText(variantElementId);
+    const mode = classifyCricketGameMode(variant);
+
+    if (!mode) {
+      return "";
+    }
+    if (mode === "hidden-cricket" && !config.includeHiddenCricket) {
+      return "";
+    }
+    return variant;
   }
 
   function getBoardRadius(root) {
@@ -340,6 +378,7 @@
     getVariantText,
     isX01Variant,
     isCricketVariant,
+    getCricketGameMode,
     getBoardRadius,
     findBoard,
     ensureOverlayGroup,

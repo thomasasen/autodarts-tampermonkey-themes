@@ -218,15 +218,32 @@
   }
 
   function normalizeVariantLabel(rawVariant, category) {
-    const variant = String(rawVariant || "").trim().toLowerCase();
-    if (variant === "x01") {
+    const variant = String(rawVariant || "").trim();
+    const normalized = variant.toLowerCase();
+
+    if (normalized === "x01") {
       return "X01";
     }
-    if (variant === "all") {
+    if (normalized === "all") {
       return "Alle Modi";
     }
     if (variant) {
-      return variant.charAt(0).toUpperCase() + variant.slice(1);
+      const normalizedParts = normalized
+        .split("/")
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part) => {
+          if (part === "x01") {
+            return "X01";
+          }
+          if (part === "all") {
+            return "Alle Modi";
+          }
+          return part.charAt(0).toUpperCase() + part.slice(1);
+        });
+      if (normalizedParts.length) {
+        return normalizedParts.join(" / ");
+      }
     }
     return category === "themes" ? "Thema" : "Animation";
   }

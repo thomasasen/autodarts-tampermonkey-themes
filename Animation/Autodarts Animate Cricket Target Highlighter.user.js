@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.5
-// @description  Zeigt Zielzustaende im Cricket als Overlay direkt auf dem virtuellen Dartboard.
-// @xconfig-description  Markiert in Cricket relevante Zielzustaende auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
+// @version      2.6
+// @description  Zeigt Zielzustände in Cricket und Tactics als Overlay direkt auf dem virtuellen Dartboard.
+// @xconfig-description  Markiert in Cricket und Tactics relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
-// @xconfig-variant      cricket
+// @xconfig-variant      cricket / tactics
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-tech-anchor  animation-autodarts-animate-cricket-target-highlighter
 // @xconfig-background     assets/animation-cricket-target-highlighter-xConfig.png
@@ -27,11 +27,11 @@
 
   // xConfig: {"type":"toggle","label":"Dead-Ziele anzeigen","description":"Zeigt auch Ziele, die bei allen Spielern bereits geschlossen sind.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_DEAD_ZIELE_ANZEIGEN = true;
-  // xConfig: {"type":"select","label":"Farbthema","description":"Waehlt das Farbschema fuer Zielzustaende.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
+  // xConfig: {"type":"select","label":"Farbthema","description":"Wählt das Farbschema für Zielzustände.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
   const xConfig_FARBTHEMA = "standard";
-  // xConfig: {"type":"select","label":"Intensitaet","description":"Steuert Deckkraft und Kontrast der Markierungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
+  // xConfig: {"type":"select","label":"Intensität","description":"Steuert Deckkraft und Kontrast der Markierungen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
   const xConfig_INTENSITAET = "normal";
-  // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusaetzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
+  // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
   const xConfig_DEBUG = false;
 
   function resolveToggle(value, fallbackValue) {
@@ -187,15 +187,6 @@
     },
   };
 
-  const TARGETS = [
-    { label: "20", value: 20 },
-    { label: "19", value: 19 },
-    { label: "18", value: 18 },
-    { label: "17", value: 17 },
-    { label: "16", value: 16 },
-    { label: "15", value: 15 },
-    { label: "BULL", ring: "BULL" },
-  ];
   const ALL_TARGETS = [
     ...Array.from({ length: 20 }, (_, index) => {
       const value = index + 1;
@@ -203,7 +194,6 @@
     }),
     { label: "BULL", ring: "BULL" },
   ];
-  const CRICKET_LABELS = new Set(TARGETS.map((target) => target.label));
 
   const STYLE_ID = "autodarts-cricket-target-style";
   const OVERLAY_ID = "ad-ext-cricket-targets";
@@ -451,18 +441,22 @@
     overlay.style.setProperty("--ad-ext-cricket-stroke-width", `${strokeWidth}px`);
   }
 
-  function renderTargets(stateMap) {
+  function renderTargets(stateContext) {
+    const snapshot = stateContext?.snapshot || null;
+    const stateMap = stateContext?.stateMap || new Map();
     const board = findBoard();
     if (!board) {
       return;
     }
+
+    const activeTargets = snapshot?.targetSet || new Set();
 
     const overlay = ensureOverlayGroup(board.group, OVERLAY_ID);
     applyOverlayTheme(overlay, board.radius);
     clearOverlay(overlay);
 
     ALL_TARGETS.forEach((target) => {
-      const isCricketTarget = CRICKET_LABELS.has(target.label);
+      const isCricketTarget = activeTargets.has(target.label);
       const stateInfo = stateMap.get(target.label);
       if (isCricketTarget && !stateInfo) {
         return;
@@ -491,14 +485,17 @@
     });
   }
 
-  function buildStateKey(stateMap) {
-    return TARGETS.map((target) => {
-      const state = stateMap.get(target.label);
-      return `${target.label}:${state ? state.presentation : ""}`;
+  function buildStateKey(stateContext) {
+    const snapshot = stateContext?.snapshot || null;
+    const stateMap = stateContext?.stateMap || new Map();
+    const targetOrder = snapshot?.targetOrder || [];
+    return targetOrder.map((label) => {
+      const state = stateMap.get(label);
+      return `${label}:${state ? state.presentation : ""}`;
     }).join("|");
   }
 
-  function readStateMap() {
+  function readStateContext() {
     if (!cricketStateShared) {
       debugError("Shared cricket state helper missing");
       return null;
@@ -515,9 +512,13 @@
       return null;
     }
 
-    return cricketStateShared.computeTargetStates(snapshot, {
+    const stateMap = cricketStateShared.computeTargetStates(snapshot, {
       showDeadTargets: CONFIG.showDeadTargets,
     });
+    return {
+      snapshot,
+      stateMap,
+    };
   }
 
   function clearOverlayState() {
@@ -532,12 +533,12 @@
   function updateTargets() {
     if (!isCricketVariantActive()) {
       clearOverlayState();
-      debugLog("updateTargets: not cricket");
+      debugLog("updateTargets: not cricket/tactics");
       return;
     }
 
-    const stateMap = readStateMap();
-    if (!stateMap || !stateMap.size) {
+    const stateContext = readStateContext();
+    if (!stateContext || !stateContext.stateMap || !stateContext.stateMap.size) {
       clearOverlayState();
       debugLog("updateTargets: no state map");
       return;
@@ -550,7 +551,7 @@
     }
 
     const boardKey = `${board.radius}:${board.group.id || "board"}`;
-    const stateKey = buildStateKey(stateMap);
+    const stateKey = buildStateKey(stateContext);
     const existingOverlay =
       board.group && typeof board.group.querySelector === "function"
         ? board.group.querySelector(`#${OVERLAY_ID}`)
@@ -571,7 +572,7 @@
     lastStateKey = stateKey;
     lastBoardKey = boardKey;
     debugLog("updateTargets: render", { boardKey, stateKey });
-    renderTargets(stateMap);
+    renderTargets(stateContext);
   }
 
   const scheduleUpdate = createRafScheduler(updateTargets);

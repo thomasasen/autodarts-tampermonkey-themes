@@ -273,6 +273,26 @@ div.css-y3hfdd > .css-1igwmid{
     return variantEl?.textContent?.trim().toLowerCase() || "";
   }
 
+  function getCricketFamilyVariantName(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) {
+      return "";
+    }
+    if (normalized === "tactics" || normalized.startsWith("tactics ")) {
+      return "tactics";
+    }
+    if (
+      normalized === "hidden cricket" ||
+      normalized.startsWith("hidden cricket ")
+    ) {
+      return "hidden-cricket";
+    }
+    if (normalized === "cricket" || normalized.startsWith("cricket ")) {
+      return "cricket";
+    }
+    return "";
+  }
+
   function isVariantNameActive(variantName, matchMode = "equals") {
     const expectedVariant = String(variantName || "").trim().toLowerCase();
     if (!expectedVariant) {
@@ -322,7 +342,11 @@ div.css-y3hfdd > .css-1igwmid{
     }
 
     if (expectedVariant === "cricket") {
-      if (currentVariant.startsWith("cricket ")) {
+      const cricketFamilyVariant = getCricketFamilyVariantName(currentVariant);
+      if (
+        cricketFamilyVariant === "cricket" ||
+        cricketFamilyVariant === "tactics"
+      ) {
         return true;
       }
 
