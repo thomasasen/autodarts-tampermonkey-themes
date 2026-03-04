@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.10
+// @version      1.1.0
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -9,7 +9,7 @@
 // @xconfig-readme-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-tech-anchor  animation-autodarts-animate-cricket-grid-fx
 // @xconfig-background     assets/Autodarts-Animate-Cricket-Grid-FX.png
-// @xconfig-settings-version 6
+// @xconfig-settings-version 7
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -28,7 +28,7 @@
   const shared = window.autodartsAnimationShared || {};
   const cricketState = window.autodartsCricketStateShared || null;
   const gameState = window.autodartsGameStateShared || null;
-  const SCRIPT_VERSION = "1.0.10";
+  const SCRIPT_VERSION = "1.1.0";
   const FEATURE_KEY = "ad-ext/a-cricket-grid-fx";
   const SOURCE_PATH = "Animation/Autodarts Animate Cricket Grid FX.user.js";
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
@@ -79,8 +79,38 @@
   const xConfig_ROUND_TRANSITION_WIPE = true;
   // xConfig: {"type":"toggle","label":"Gegnerdruck-Overlay","description":"Markiert Zeilen mit akutem Defensivdruck.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
   const xConfig_OPPONENT_PRESSURE_OVERLAY = true;
+  // xConfig: {"type":"select","label":"Farbthema","description":"Farbschema fuer Offense-/Danger-Effekte. Soll dem Target Highlighter entsprechen.","options":[{"value":"standard","label":"Standard"},{"value":"high-contrast","label":"High Contrast"}]}
+  const xConfig_FARBTHEMA = "standard";
+  // xConfig: {"type":"select","label":"Intensitaet","description":"Deckkraft und Kontrast der Effekte. Soll dem Target Highlighter entsprechen.","options":[{"value":"subtle","label":"Dezent"},{"value":"normal","label":"Standard"},{"value":"strong","label":"Stark"}]}
+  const xConfig_INTENSITAET = "normal";
   // xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
   const xConfig_DEBUG = false;
+
+  const CRICKET_THEME_PRESETS = {
+    standard: {
+      offense: { r: 0, g: 178, b: 135 },
+      danger: { r: 239, g: 68, b: 68 },
+    },
+    "high-contrast": {
+      offense: { r: 34, g: 197, b: 94 },
+      danger: { r: 239, g: 68, b: 68 },
+    },
+  };
+
+  const CRICKET_INTENSITY_PRESETS = {
+    subtle: {
+      highlightOpacity: 0.32,
+      strokeBoost: 0.14,
+    },
+    normal: {
+      highlightOpacity: 0.45,
+      strokeBoost: 0.2,
+    },
+    strong: {
+      highlightOpacity: 0.62,
+      strokeBoost: 0.3,
+    },
+  };
 
   function resolveDebugToggle(value) {
     if (typeof value === "boolean") {
@@ -112,9 +142,31 @@
     return fallbackValue;
   }
 
+  function resolveStringChoice(value, fallbackValue, allowedValues) {
+    const normalizedValue = String(value || "").trim();
+    return allowedValues.includes(normalizedValue)
+      ? normalizedValue
+      : fallbackValue;
+  }
+
   const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
   const DEBUG_PREFIX = "[xConfig][Cricket Grid FX]";
   const DEBUG_TRACE_ENABLED = false;
+  const RESOLVED_THEME_KEY = resolveStringChoice(
+    xConfig_FARBTHEMA,
+    "standard",
+    ["standard", "high-contrast"]
+  );
+  const RESOLVED_INTENSITY_KEY = resolveStringChoice(
+    xConfig_INTENSITAET,
+    "normal",
+    ["subtle", "normal", "strong"]
+  );
+  const RESOLVED_THEME =
+    CRICKET_THEME_PRESETS[RESOLVED_THEME_KEY] || CRICKET_THEME_PRESETS.standard;
+  const RESOLVED_INTENSITY =
+    CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] ||
+    CRICKET_INTENSITY_PRESETS.normal;
 
   const CFG = {
     rowRailPulse: asBool(xConfig_ROW_RAIL_PULSE, true),
@@ -127,6 +179,10 @@
     hitSpark: asBool(xConfig_HIT_SPARK, true),
     roundWipe: asBool(xConfig_ROUND_TRANSITION_WIPE, true),
     pressureOverlay: asBool(xConfig_OPPONENT_PRESSURE_OVERLAY, true),
+    theme: RESOLVED_THEME,
+    intensity: RESOLVED_INTENSITY,
+    themeKey: RESOLVED_THEME_KEY,
+    intensityKey: RESOLVED_INTENSITY_KEY,
   };
 
   const state = {
@@ -323,6 +379,21 @@
       return 0;
     }
     return Math.max(0, Math.min(3, Math.round(numeric)));
+  }
+
+  function clampAlpha(value, fallback = 0) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return Math.max(0, Math.min(1, Number(fallback) || 0));
+    }
+    return Math.max(0, Math.min(1, numeric));
+  }
+
+  function rgbaColor(color, alpha) {
+    const r = Number.isFinite(color?.r) ? Math.round(color.r) : 0;
+    const g = Number.isFinite(color?.g) ? Math.round(color.g) : 0;
+    const b = Number.isFinite(color?.b) ? Math.round(color.b) : 0;
+    return `rgba(${r},${g},${b},${clampAlpha(alpha)})`;
   }
 
   function isCricketVariantActive() {
@@ -767,25 +838,48 @@
     }
   }
 
+  const offenseColor = CFG.theme.offense;
+  const dangerColor = CFG.theme.danger;
+  const effectAlpha = clampAlpha(CFG.intensity.highlightOpacity, 0.45);
+  const strokeAlpha = clampAlpha(effectAlpha + (CFG.intensity.strokeBoost || 0), 0.65);
+  const scoreBorderColor = rgbaColor(offenseColor, strokeAlpha);
+  const scoreBandStrong = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.44));
+  const scoreBandWeak = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.12));
+  const dangerBorderColor = rgbaColor(dangerColor, strokeAlpha);
+  const dangerBandStrong = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.3));
+  const dangerBandWeak = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.1));
+  const waveMidColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.8));
+  const waveEdgeColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.48));
+  const badgeBackColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.42));
+  const badgeBorderColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.88));
+  const markL1Color = rgbaColor(offenseColor, 0.62);
+  const markL2Color = rgbaColor(offenseColor, 0.78);
+  const markL3Color = rgbaColor(offenseColor, 0.92);
+  const deltaBackColor = rgbaColor(offenseColor, 0.95);
+  const sparkMidColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 1.05));
+  const sparkOuterColor = rgbaColor(offenseColor, 0);
+  const wipeMidColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.8));
+  const wipeEdgeColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.24));
+
   const CSS = `
 .${ROOT_CLASS}{position:relative;isolation:isolate;}
 .${ROOT_CLASS} .${CELL_CLASS}{position:relative;overflow:visible;transition:filter .18s ease,opacity .18s ease,box-shadow .18s ease,background .18s ease;}
 .${ROOT_CLASS} .${LABEL_CELL_CLASS}{position:relative;}
-.${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
-.${ROOT_CLASS} .${CELL_CLASS}.${SCORE_CLASS}{box-shadow:inset 0 0 0 1px rgba(16,185,129,.42);background-image:linear-gradient(90deg,rgba(16,185,129,.18) 0%,rgba(16,185,129,.04) 28%,rgba(16,185,129,.04) 72%,rgba(16,185,129,.18) 100%);}
+.${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 0 0 0 1px ${dangerBorderColor},inset 0 0 28px ${dangerBandStrong};background-image:repeating-linear-gradient(135deg,${dangerBandStrong} 0px,${dangerBandStrong} 8px,${dangerBandWeak} 8px,${dangerBandWeak} 16px);}
+.${ROOT_CLASS} .${CELL_CLASS}.${SCORE_CLASS}{box-shadow:inset 0 0 0 1px ${scoreBorderColor};background-image:linear-gradient(90deg,${scoreBandStrong} 0%,${scoreBandWeak} 28%,${scoreBandWeak} 72%,${scoreBandStrong} 100%);}
 .${ROOT_CLASS} .${CELL_CLASS}.${DEAD_CLASS}{filter:grayscale(.88) saturate(.25) brightness(.72);opacity:.72;}
-.${ROOT_CLASS} .${CELL_CLASS}.${PRESSURE_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
-.${ROOT_CLASS} .${ROW_WAVE_CLASS}{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(56,189,248,0) 0%,rgba(56,189,248,.32) 42%,rgba(125,211,252,.54) 52%,rgba(56,189,248,.32) 62%,rgba(56,189,248,0) 100%);transform:translateX(-110%);animation:adCrfxRowWave .76s cubic-bezier(.2,.7,.2,1) forwards;z-index:6;}
+.${ROOT_CLASS} .${CELL_CLASS}.${PRESSURE_CLASS}{box-shadow:inset 0 0 0 1px ${dangerBorderColor},inset 0 0 28px ${dangerBandStrong};background-image:repeating-linear-gradient(135deg,${dangerBandStrong} 0px,${dangerBandStrong} 8px,${dangerBandWeak} 8px,${dangerBandWeak} 16px);}
+.${ROOT_CLASS} .${ROW_WAVE_CLASS}{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(0,0,0,0) 0%,${waveEdgeColor} 42%,${waveMidColor} 52%,${waveEdgeColor} 62%,rgba(0,0,0,0) 100%);transform:translateX(-110%);animation:adCrfxRowWave .76s cubic-bezier(.2,.7,.2,1) forwards;z-index:6;}
 .${ROOT_CLASS} .${BADGE_CLASS}{position:absolute !important;left:8px !important;top:50% !important;transform:translateY(-50%);z-index:12;margin:0 !important;white-space:nowrap;pointer-events:none;}
-.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BEACON_CLASS}{box-shadow:0 0 0 1px rgba(56,189,248,.4),0 0 14px rgba(56,189,248,.42);background-color:rgba(8,47,73,.72)!important;}
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BEACON_CLASS}{box-shadow:0 0 0 1px ${badgeBorderColor},0 0 14px ${waveEdgeColor};background-color:${badgeBackColor}!important;}
 .${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BURST_CLASS}{animation:adCrfxBadgeBurst .7s ease;}
 .${ROOT_CLASS} .${MARK_PROGRESS_CLASS}{transform-origin:center center;animation:adCrfxMark .46s cubic-bezier(.2,.8,.2,1);}
-.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L1_CLASS}{filter:drop-shadow(0 0 4px rgba(56,189,248,.65));}
-.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L2_CLASS}{filter:drop-shadow(0 0 6px rgba(251,191,36,.78));}
-.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L3_CLASS}{filter:drop-shadow(0 0 8px rgba(34,197,94,.9));}
-.${ROOT_CLASS} .${DELTA_CLASS}{position:absolute;top:4px;right:6px;padding:1px 7px;border-radius:999px;font-size:2.22rem;font-weight:800;line-height:1.3;letter-spacing:.02em;color:#052e16;background:rgba(134,239,172,.95);box-shadow:0 4px 12px rgba(0,0,0,.38);pointer-events:none;z-index:10;animation:adCrfxDelta .92s ease forwards;}
-.${ROOT_CLASS} .${SPARK_CLASS}{position:absolute;left:50%;top:50%;width:44px;height:44px;border-radius:999px;pointer-events:none;transform:translate(-50%,-50%) scale(.2);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(125,211,252,.62) 34%,rgba(125,211,252,0) 72%);z-index:9;animation:adCrfxSpark .42s ease-out forwards;}
-.${ROOT_CLASS} .${WIPE_CLASS}{position:absolute;inset:0;pointer-events:none;z-index:11;background:linear-gradient(110deg,rgba(56,189,248,0) 0%,rgba(56,189,248,.12) 38%,rgba(125,211,252,.42) 50%,rgba(56,189,248,.12) 62%,rgba(56,189,248,0) 100%);transform:translateX(-135%);animation:adCrfxWipe .72s cubic-bezier(.2,.7,.2,1) forwards;}
+.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L1_CLASS}{filter:drop-shadow(0 0 4px ${markL1Color});}
+.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L2_CLASS}{filter:drop-shadow(0 0 6px ${markL2Color});}
+.${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L3_CLASS}{filter:drop-shadow(0 0 8px ${markL3Color});}
+.${ROOT_CLASS} .${DELTA_CLASS}{position:absolute;top:4px;right:6px;padding:1px 7px;border-radius:999px;font-size:2.22rem;font-weight:800;line-height:1.3;letter-spacing:.02em;color:#052e16;background:${deltaBackColor};box-shadow:0 4px 12px rgba(0,0,0,.38);pointer-events:none;z-index:10;animation:adCrfxDelta .92s ease forwards;}
+.${ROOT_CLASS} .${SPARK_CLASS}{position:absolute;left:50%;top:50%;width:44px;height:44px;border-radius:999px;pointer-events:none;transform:translate(-50%,-50%) scale(.2);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,${sparkMidColor} 34%,${sparkOuterColor} 72%);z-index:9;animation:adCrfxSpark .42s ease-out forwards;}
+.${ROOT_CLASS} .${WIPE_CLASS}{position:absolute;inset:0;pointer-events:none;z-index:11;background:linear-gradient(110deg,rgba(0,0,0,0) 0%,${wipeEdgeColor} 38%,${wipeMidColor} 50%,${wipeEdgeColor} 62%,rgba(0,0,0,0) 100%);transform:translateX(-135%);animation:adCrfxWipe .72s cubic-bezier(.2,.7,.2,1) forwards;}
 @keyframes adCrfxRowWave{0%{transform:translateX(-110%);opacity:0;}15%{opacity:1;}100%{transform:translateX(110%);opacity:0;}}
 @keyframes adCrfxBadgeBurst{0%{transform:translateY(-50%) scale(1);}24%{transform:translateY(-50%) scale(1.09);}100%{transform:translateY(-50%) scale(1);}}
 @keyframes adCrfxMark{0%{transform:scale(.72);opacity:.55;}45%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);opacity:1;}}
@@ -922,7 +1016,20 @@
     }
   });
   debugTrace("applied", {
-    effectsEnabled: Object.values(CFG).filter(Boolean).length,
+    effectsEnabled: [
+      CFG.rowRailPulse,
+      CFG.badgeBeacon,
+      CFG.markProgress,
+      CFG.threatEdge,
+      CFG.scoringLane,
+      CFG.deadRowCollapse,
+      CFG.deltaChips,
+      CFG.hitSpark,
+      CFG.roundWipe,
+      CFG.pressureOverlay,
+    ].filter(Boolean).length,
+    theme: CFG.themeKey,
+    intensity: CFG.intensityKey,
     executionSource: executionContext.executionSource,
   });
   schedule();

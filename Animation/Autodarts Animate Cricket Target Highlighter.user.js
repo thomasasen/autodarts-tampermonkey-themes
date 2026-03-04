@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.9
+// @version      2.11
 // @description  Zeigt Zielzustände in Cricket und Tactics als Overlay direkt auf dem virtuellen Dartboard.
 // @xconfig-description  Markiert in Cricket und Tactics relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
@@ -125,7 +125,7 @@
     CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] ||
     CRICKET_INTENSITY_PRESETS.normal;
   const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
-  const SCRIPT_VERSION = "2.9";
+  const SCRIPT_VERSION = "2.11";
   const FEATURE_KEY = "ad-ext/a-cricket-target";
   const SOURCE_PATH =
     "Animation/Autodarts Animate Cricket Target Highlighter.user.js";
@@ -682,12 +682,64 @@
     const snapshotBoardIndex = getFallbackBoardPlayerIndex(snapshot);
     const resolution = getActivePlayerResolution(snapshot);
     const resolutionSource = String(resolution?.source || "");
+    const sourceConfidence = String(
+      resolution?.sourceConfidence || "low"
+    ).toLowerCase();
+    const usesVisibleDom = Boolean(resolution?.usedVisibleDom);
+    const stabilityHold = Boolean(resolution?.stabilityHold);
+    const visibleActiveCandidates = Number.isFinite(
+      resolution?.visibleActiveCandidates
+    )
+      ? resolution.visibleActiveCandidates
+      : 0;
+    const playerCount = Number.isFinite(snapshot?.playerCount)
+      ? snapshot.playerCount
+      : Array.isArray(snapshot?.playerSlots)
+        ? snapshot.playerSlots.length
+        : 0;
     const { stateIndex, stateMappedIndex } =
       resolveStateMappedBoardPlayerIndex(snapshot);
-    const hasConflict =
+    const hasSnapshotBoardIndex =
       Number.isFinite(snapshotBoardIndex) &&
+      snapshotBoardIndex >= 0 &&
+      (playerCount <= 0 || snapshotBoardIndex < playerCount);
+    const hasStateMappedIndex =
       Number.isFinite(stateMappedIndex) &&
+      stateMappedIndex >= 0 &&
+      (playerCount <= 0 || stateMappedIndex < playerCount);
+    const hasConflict =
+      hasSnapshotBoardIndex &&
+      hasStateMappedIndex &&
       stateMappedIndex !== snapshotBoardIndex;
+    let boardPlayerIndex = hasSnapshotBoardIndex ? snapshotBoardIndex : 0;
+    let decisionSource = "snapshot-board-index";
+
+    if (!hasSnapshotBoardIndex && hasStateMappedIndex) {
+      boardPlayerIndex = stateMappedIndex;
+      decisionSource = "state-map-out-of-range-fallback";
+    } else if (hasConflict) {
+      const domSignalReliable =
+        usesVisibleDom &&
+        !stabilityHold &&
+        visibleActiveCandidates <= 1 &&
+        (sourceConfidence === "high" || sourceConfidence === "medium");
+      const shouldPreferStateMapped =
+        hasStateMappedIndex &&
+        (!domSignalReliable || stabilityHold || sourceConfidence === "low");
+      if (shouldPreferStateMapped) {
+        boardPlayerIndex = stateMappedIndex;
+        if (stabilityHold) {
+          decisionSource = "state-map-stability-hold-override";
+        } else if (sourceConfidence === "low") {
+          decisionSource = "state-map-low-confidence-override";
+        } else {
+          decisionSource = "state-map-conflict-override";
+        }
+      } else {
+        decisionSource = "snapshot-board-index-dom-priority";
+      }
+    }
+
     if (hasConflict) {
       debugLog("board-player-resolution-conflict", {
         _signature: [
@@ -706,13 +758,15 @@
         sourceConfidence: resolution?.sourceConfidence || "",
         stabilityHold: Boolean(resolution?.stabilityHold),
         stabilityReason: resolution?.stabilityReason || "",
+        decisionSource,
+        boardPlayerIndex,
         playerMappingSource: snapshot?.playerMappingSource || "",
       });
     }
 
     return {
-      boardPlayerIndex: snapshotBoardIndex,
-      decisionSource: "snapshot-board-index",
+      boardPlayerIndex,
+      decisionSource,
       snapshotBoardIndex,
       stateMappedIndex,
       stateIndex,
@@ -878,7 +932,7 @@
     overlay.style.setProperty("--ad-ext-cricket-closed-opacity", "1");
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-fill",
-      rgba(CONFIG.opacity.inactive, { r: 33, g: 33, b: 33 })
+      rgba(CONFIG.opacity.dead, { r: 33, g: 33, b: 33 })
     );
     overlay.style.setProperty(
       "--ad-ext-cricket-dead-stroke",
@@ -1127,6 +1181,8 @@
           shape.classList.add(OPEN_CLASS);
         }
         shape.dataset.boardPlayerIndex = String(boardPlayerIndex);
+        shape.dataset.targetLabel = String(target.label || "");
+        shape.dataset.targetPresentation = String(boardPresentation || "open");
         overlay.appendChild(shape);
       });
     });

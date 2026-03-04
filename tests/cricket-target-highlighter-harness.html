@@ -372,6 +372,39 @@
         function readMetrics() {
           const overlay = document.getElementById(overlayId);
           const visibleGrid = document.getElementById("grid");
+          function countOverlayShapesByLabel(className) {
+            const counts = {};
+            if (!overlay) {
+              return counts;
+            }
+            overlay
+              .querySelectorAll(`.${className}[data-target-label]`)
+              .forEach((shape) => {
+                const key = String(shape.getAttribute("data-target-label") || "");
+                if (!key) {
+                  return;
+                }
+                counts[key] = (counts[key] || 0) + 1;
+              });
+            return counts;
+          }
+          function readOverlayPresentationsByLabel() {
+            const presentations = {};
+            if (!overlay) {
+              return presentations;
+            }
+            overlay.querySelectorAll("[data-target-label]").forEach((shape) => {
+              const label = String(shape.getAttribute("data-target-label") || "");
+              const presentation = String(
+                shape.getAttribute("data-target-presentation") || ""
+              );
+              if (!label || !presentation || label in presentations) {
+                return;
+              }
+              presentations[label] = presentation;
+            });
+            return presentations;
+          }
           function countCellsByPlayer(className) {
             const counts = {};
             if (!visibleGrid) {
@@ -394,6 +427,34 @@
             deadShapes: overlay
               ? overlay.querySelectorAll(".ad-ext-cricket-target--dead").length
               : 0,
+            scoreShapesByLabel: countOverlayShapesByLabel(
+              "ad-ext-cricket-target--score"
+            ),
+            dangerShapesByLabel: countOverlayShapesByLabel(
+              "ad-ext-cricket-target--danger"
+            ),
+            deadShapesByLabel: countOverlayShapesByLabel(
+              "ad-ext-cricket-target--dead"
+            ),
+            overlayPresentationsByLabel: readOverlayPresentationsByLabel(),
+            overlayScoreFill: overlay
+              ? String(
+                  overlay.style.getPropertyValue("--ad-ext-cricket-score-fill") || ""
+                ).trim()
+              : "",
+            overlayDangerFill: overlay
+              ? String(
+                  overlay.style.getPropertyValue("--ad-ext-cricket-danger-fill") || ""
+                ).trim()
+              : "",
+            overlayDeadFill: overlay
+              ? String(
+                  overlay.style.getPropertyValue("--ad-ext-cricket-dead-fill") || ""
+                ).trim()
+              : "",
+            gridFxStyleText: String(
+              document.getElementById("ad-ext-crfx-style")?.textContent || ""
+            ),
             gridScoreCells: visibleGrid
               ? visibleGrid.querySelectorAll(".ad-ext-crfx-score").length
               : 0,
@@ -901,6 +962,13 @@
             "Screenshot-Regression: Board bleibt aktivspielerbezogen, Grid zeigt gleichzeitig dead, offense und pressure pro Spieler",
             JSON.stringify(case9)
           );
+          assert(
+            /rgba\(\s*33\s*,\s*33\s*,\s*33\s*,\s*0\.98\s*\)/i.test(
+              case9.overlayDeadFill || ""
+            ),
+            "Dead-Deckkraft: Target Highlighter nutzt den Dead-Opacity-Wert statt Inactive-Opacity",
+            String(case9.overlayDeadFill || "")
+          );
 
           const case10Left = await runScenario({
             variant: "Tactics",
@@ -1051,6 +1119,76 @@
               initial: case12Initial,
               conflict: case12Conflict,
             })
+          );
+
+          const case13 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "18": [1, 0],
+              "17": [0, 3],
+              "15": [0, 3],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapesByLabel["17"] === 4 &&
+                metrics.scoreShapesByLabel["15"] === 4 &&
+                metrics.dangerShapesByLabel["20"] === 4 &&
+                metrics.dangerShapesByLabel["10"] === 4
+              );
+            },
+          });
+          assert(
+            case13.overlay &&
+              case13.scoreShapes === 8 &&
+              case13.dangerShapes === 8 &&
+              case13.scoreShapesByLabel["17"] === 4 &&
+              case13.scoreShapesByLabel["15"] === 4 &&
+              case13.dangerShapesByLabel["20"] === 4 &&
+              case13.dangerShapesByLabel["10"] === 4 &&
+              case13.overlayPresentationsByLabel["17"] === "offense" &&
+              case13.overlayPresentationsByLabel["15"] === "offense" &&
+              case13.overlayPresentationsByLabel["20"] === "pressure" &&
+              case13.overlayPresentationsByLabel["10"] === "pressure" &&
+              case13.gridScoreCells === 4 &&
+              case13.gridThreatCells === 4 &&
+              case13.gridScoreCellsByPlayer["0"] === 2 &&
+              case13.gridScoreCellsByPlayer["1"] === 2 &&
+              case13.gridThreatCellsByPlayer["0"] === 2 &&
+              case13.gridThreatCellsByPlayer["1"] === 2,
+            "TEST2-Screenshot-Regel: 17/15 offensiv grün, 20/10 defensiv rot, Grid bleibt pro Spieler gegensätzlich",
+            JSON.stringify(case13)
+          );
+
+          const colorParity = {
+            overlayScoreFill: case13.overlayScoreFill || "",
+            overlayDangerFill: case13.overlayDangerFill || "",
+            gridFxStyleText: case13.gridFxStyleText || "",
+          };
+          assert(
+            /rgba\(\s*0\s*,\s*178\s*,\s*135\s*,/i.test(
+              colorParity.overlayScoreFill
+            ) &&
+              /rgba\(\s*239\s*,\s*68\s*,\s*68\s*,/i.test(
+                colorParity.overlayDangerFill
+              ) &&
+              /rgba\(\s*0\s*,\s*178\s*,\s*135\s*,/i.test(
+                colorParity.gridFxStyleText
+              ) &&
+              /rgba\(\s*239\s*,\s*68\s*,\s*68\s*,/i.test(
+                colorParity.gridFxStyleText
+              ),
+            "Farbparitaet: Grid FX und Target Highlighter verwenden dasselbe Offense-/Danger-RGB-Schema",
+            JSON.stringify(colorParity)
           );
 
           const summary = document.getElementById("summary");
