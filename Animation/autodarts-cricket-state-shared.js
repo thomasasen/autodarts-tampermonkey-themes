@@ -372,13 +372,9 @@
         const visiblePlayers = sortElementsByVisualOrder(
           players.filter(isVisiblePlayerNode)
         );
-        const activeVisiblePlayers = visiblePlayers.filter((player) => {
-          return (
-            player.matches(activePlayerSelector) ||
-            (typeof player.querySelector === "function" &&
-              player.querySelector(activePlayerSelector))
-          );
-        });
+        const activeVisiblePlayers = visiblePlayers.filter((player) =>
+          isActivePlayerNode(player, activePlayerSelector)
+        );
         const activeVisibleIndices = activeVisiblePlayers
           .map((player) => visiblePlayers.indexOf(player))
           .filter((candidateIndex) => candidateIndex >= 0);
@@ -445,6 +441,42 @@
 
   function isVisiblePlayerNode(element) {
     return isLayoutVisible(element);
+  }
+
+  function isActivePlayerNode(playerNode, activePlayerSelector) {
+    if (!isElement(playerNode)) {
+      return false;
+    }
+
+    if (playerNode.classList.contains("ad-ext-player-active")) {
+      return true;
+    }
+    if (playerNode.classList.contains("ad-ext-player-inactive")) {
+      return false;
+    }
+
+    if (
+      activePlayerSelector &&
+      typeof playerNode.matches === "function" &&
+      playerNode.matches(activePlayerSelector)
+    ) {
+      return true;
+    }
+
+    if (!activePlayerSelector || typeof playerNode.querySelector !== "function") {
+      return false;
+    }
+
+    const activeMarker = playerNode.querySelector(activePlayerSelector);
+    if (!isElement(activeMarker)) {
+      return false;
+    }
+
+    const ownerPlayer =
+      typeof activeMarker.closest === "function"
+        ? activeMarker.closest(PLAYER_SELECTOR)
+        : null;
+    return ownerPlayer === playerNode;
   }
 
   function sortElementsByVisualOrder(elements, options = {}) {
@@ -1009,10 +1041,7 @@
     const visiblePlayerCount = players.filter(isVisiblePlayerNode).length;
     const activePlayers = players.reduce((entries, player, index) => {
       const isVisible = isVisiblePlayerNode(player);
-      const isActive =
-        player.matches(activePlayerSelector) ||
-        (typeof player.querySelector === "function" &&
-          player.querySelector(activePlayerSelector));
+      const isActive = isActivePlayerNode(player, activePlayerSelector);
       if (isVisible && isActive) {
         entries.push({
           index,
@@ -1064,11 +1093,7 @@
     }
 
     const activeIndex = players.findIndex((player) => {
-      return (
-        player.matches(activePlayerSelector) ||
-        (typeof player.querySelector === "function" &&
-          player.querySelector(activePlayerSelector))
-      );
+      return isActivePlayerNode(player, activePlayerSelector);
     });
 
     return {
