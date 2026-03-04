@@ -2240,6 +2240,11 @@
         activePlayerIndex: resolvedActivePlayerIndex,
         activePlayerSource: activePlayerInfo.source,
         gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
+        gameStateMappedPlayerIndex: resolveMappedActivePlayerIndex(
+          { stateIndex: activePlayerInfo.stateIndex, index: activePlayerInfo.stateIndex },
+          playerSlots,
+          playerCount
+        ),
         playerMappingSource: playerMapping.playerMappingSource,
         resolutionSource: activePlayerResolution.source,
         resolutionDisplayIndex: activePlayerResolution.displayIndex,
@@ -2247,6 +2252,21 @@
         visibleActiveCandidates: Array.isArray(activePlayerInfo.activeCandidates)
           ? activePlayerInfo.activeCandidates.length
           : 0,
+        activeCandidates: Array.isArray(activePlayerInfo.activeCandidates)
+          ? activePlayerInfo.activeCandidates.map((candidate) => ({
+              index: candidate.index,
+              playerId: candidate.playerId || "",
+              nameKey: candidate.nameKey || "",
+            }))
+          : [],
+        playerSlots: playerSlots.map((slot) => ({
+          columnIndex: slot.columnIndex,
+          displayIndex: slot.displayIndex,
+          matchIndex: slot.matchIndex,
+          playerId: slot.playerId || "",
+          nameKey: slot.nameKey || "",
+          source: slot.source || "",
+        })),
         rootId: getDebugRootId(root),
       };
       const mismatchSignature = [

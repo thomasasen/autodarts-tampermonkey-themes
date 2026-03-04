@@ -226,6 +226,12 @@
   let unsubscribeGameState = null;
   let refreshTimer = null;
   let instanceReleased = false;
+  const boardDecisionState = {
+    conflictKey: "",
+    conflictCount: 0,
+    lastChosenIndex: null,
+    lastDecisionSource: "",
+  };
   const debugWarnSignatures = new Set();
 
   function stripDebugSignature(payload) {
@@ -389,6 +395,23 @@
     );
   }
 
+  function getPresentationForBoardIndex(stateInfo, boardPlayerIndex) {
+    const cellStates = Array.isArray(stateInfo?.cellStates)
+      ? stateInfo.cellStates
+      : [];
+    if (
+      Number.isFinite(boardPlayerIndex) &&
+      boardPlayerIndex >= 0 &&
+      boardPlayerIndex < cellStates.length
+    ) {
+      return String(
+        cellStates[boardPlayerIndex]?.presentation ||
+          getBoardPresentation(stateInfo)
+      );
+    }
+    return getBoardPresentation(stateInfo);
+  }
+
   function getActivePlayerResolution(snapshot) {
     const resolution = snapshot?.activePlayerResolution;
     return resolution && typeof resolution === "object" ? resolution : null;
@@ -504,6 +527,119 @@
       return snapshot.activePlayerIndex;
     }
     return 0;
+  }
+
+  function resolveStateMappedBoardPlayerIndex(snapshot) {
+    const stateIndex =
+      gameStateShared && typeof gameStateShared.getActivePlayerIndex === "function"
+        ? gameStateShared.getActivePlayerIndex()
+        : null;
+    if (!Number.isFinite(stateIndex)) {
+      return {
+        stateIndex: null,
+        stateMappedIndex: null,
+      };
+    }
+    const playerSlots = Array.isArray(snapshot?.playerSlots)
+      ? snapshot.playerSlots
+      : [];
+    const matchedSlot = playerSlots.find((slot) => slot?.matchIndex === stateIndex);
+    return {
+      stateIndex,
+      stateMappedIndex: Number.isFinite(matchedSlot?.columnIndex)
+        ? matchedSlot.columnIndex
+        : null,
+    };
+  }
+
+  function resetBoardDecisionState() {
+    boardDecisionState.conflictKey = "";
+    boardDecisionState.conflictCount = 0;
+    boardDecisionState.lastChosenIndex = null;
+    boardDecisionState.lastDecisionSource = "";
+  }
+
+  function resolveBoardRenderDecision(snapshot) {
+    const snapshotBoardIndex = getFallbackBoardPlayerIndex(snapshot);
+    const resolution = getActivePlayerResolution(snapshot);
+    const resolutionSource = String(resolution?.source || "");
+    const { stateIndex, stateMappedIndex } =
+      resolveStateMappedBoardPlayerIndex(snapshot);
+    const hasConflict =
+      resolutionSource.startsWith("visible-dom") &&
+      Number.isFinite(snapshotBoardIndex) &&
+      Number.isFinite(stateMappedIndex) &&
+      stateMappedIndex !== snapshotBoardIndex;
+
+    if (!hasConflict) {
+      resetBoardDecisionState();
+      boardDecisionState.lastChosenIndex = snapshotBoardIndex;
+      boardDecisionState.lastDecisionSource = "snapshot";
+      return {
+        boardPlayerIndex: snapshotBoardIndex,
+        decisionSource: "snapshot",
+        snapshotBoardIndex,
+        stateMappedIndex,
+        stateIndex,
+      };
+    }
+
+    const conflictKey = [
+      snapshotBoardIndex,
+      stateMappedIndex,
+      stateIndex,
+      resolutionSource,
+      snapshot?.playerMappingSource || "",
+      resolution?.matchIndex,
+    ].join("|");
+    if (boardDecisionState.conflictKey === conflictKey) {
+      boardDecisionState.conflictCount += 1;
+    } else {
+      boardDecisionState.conflictKey = conflictKey;
+      boardDecisionState.conflictCount = 1;
+    }
+
+    const previousChosenIndex = boardDecisionState.lastChosenIndex;
+    const shouldPreferState =
+      previousChosenIndex === stateMappedIndex ||
+      boardDecisionState.conflictCount >= 2;
+    const boardPlayerIndex = shouldPreferState
+      ? stateMappedIndex
+      : snapshotBoardIndex;
+    const decisionSource = shouldPreferState
+      ? "game-state-conflict-override"
+      : "snapshot-conflict-first-pass";
+
+    boardDecisionState.lastChosenIndex = boardPlayerIndex;
+    boardDecisionState.lastDecisionSource = decisionSource;
+
+    debugLog("board-player-render-override", {
+      _signature: [
+        conflictKey,
+        decisionSource,
+        boardDecisionState.conflictCount,
+      ].join("|"),
+      snapshotBoardIndex,
+      stateMappedIndex,
+      chosenBoardIndex: boardPlayerIndex,
+      stateIndex,
+      resolutionSource,
+      resolutionMatchIndex: resolution?.matchIndex,
+      resolutionDisplayIndex: resolution?.displayIndex,
+      visibleActiveCandidates: resolution?.visibleActiveCandidates || 0,
+      playerMappingSource: snapshot?.playerMappingSource || "",
+      conflictCount: boardDecisionState.conflictCount,
+      previousChosenIndex,
+      decisionSource,
+    });
+
+    return {
+      boardPlayerIndex,
+      decisionSource,
+      snapshotBoardIndex,
+      stateMappedIndex,
+      stateIndex,
+    };
   }
 
   function rgba(alpha, color = CONFIG.baseColor) {
@@ -872,7 +1008,10 @@
 
       buildTargetShapes(board.radius, target).forEach((shape) => {
         shape.classList.add(TARGET_CLASS);
-        const boardPresentation = getBoardPresentation(stateInfo);
+        const boardPresentation = getPresentationForBoardIndex(
+          stateInfo,
+          boardPlayerIndex
+        );
         if (!isCricketTarget) {
           shape.classList.add(INACTIVE_CLASS);
         } else if (
@@ -898,14 +1037,17 @@
   function buildStateKey(stateContext) {
     const snapshot = stateContext?.snapshot || null;
     const stateMap = stateContext?.stateMap || new Map();
+    const boardDecision = stateContext?.boardDecision || null;
     const targetOrder = snapshot?.targetOrder || [];
     const gameMode = snapshot?.gameModeInfo?.normalized || "";
     const modeFamily = snapshot?.modeInfo?.family || "";
     const playerMappingSource = snapshot?.playerMappingSource || "";
     const activeResolution = getActivePlayerResolution(snapshot);
-    const boardPlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
-      ? snapshot.boardPlayerIndex
-      : getFallbackBoardPlayerIndex(snapshot);
+    const boardPlayerIndex = Number.isFinite(boardDecision?.boardPlayerIndex)
+      ? boardDecision.boardPlayerIndex
+      : Number.isFinite(snapshot?.boardPlayerIndex)
+        ? snapshot.boardPlayerIndex
+        : getFallbackBoardPlayerIndex(snapshot);
     const playerSlots = Array.isArray(snapshot?.playerSlots)
       ? snapshot.playerSlots
           .map((slot) =>
@@ -932,7 +1074,10 @@
         const marks = Array.isArray(state?.marksByPlayer)
           ? state.marksByPlayer.join(",")
           : "";
-        const boardPresentation = getBoardPresentation(state);
+        const boardPresentation = getPresentationForBoardIndex(
+          state,
+          boardPlayerIndex
+        );
         return `${label}:${boardPresentation}:${marks}`;
       })
       .join("|");
@@ -953,6 +1098,10 @@
         : "",
       activePlayerIndex,
       boardPlayerIndex,
+      boardDecision?.decisionSource || "",
+      Number.isFinite(boardDecision?.stateMappedIndex)
+        ? boardDecision.stateMappedIndex
+        : "",
       playerCount,
       playerSlots,
       targets,
@@ -1029,13 +1178,17 @@
       showDeadTargets: CONFIG.showDeadTargets,
     });
     warnIfBoardResolutionLooksWrong(snapshot);
-    const boardPlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
-      ? snapshot.boardPlayerIndex
-      : getFallbackBoardPlayerIndex(snapshot);
+    const boardDecision = resolveBoardRenderDecision(snapshot);
+    const boardPlayerIndex = Number.isFinite(boardDecision?.boardPlayerIndex)
+      ? boardDecision.boardPlayerIndex
+      : Number.isFinite(snapshot?.boardPlayerIndex)
+        ? snapshot.boardPlayerIndex
+        : getFallbackBoardPlayerIndex(snapshot);
     return {
       snapshot,
       stateMap,
       boardPlayerIndex,
+      boardDecision,
     };
   }
 
@@ -1056,6 +1209,7 @@
     }
     lastStateKey = null;
     lastBoardKey = null;
+    resetBoardDecisionState();
   }
 
   function updateTargets() {
@@ -1121,6 +1275,7 @@
       boardKey,
       stateKey,
       boardPlayerIndex: stateContext.boardPlayerIndex,
+      boardDecision: stateContext.boardDecision,
       snapshotBoardPlayerIndex: stateContext.snapshot?.boardPlayerIndex,
       resolution: getActivePlayerResolution(stateContext.snapshot),
       playerMappingSource: stateContext.snapshot?.playerMappingSource || "",

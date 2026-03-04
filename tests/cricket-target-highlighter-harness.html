@@ -1004,6 +1004,55 @@
             JSON.stringify(case11)
           );
 
+          const case12Initial = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 8;
+            },
+          });
+          const case12Conflict = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 0,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 8;
+            },
+          });
+          assert(
+            case12Initial.overlay &&
+              case12Initial.dangerShapes === 8 &&
+              case12Conflict.overlay &&
+              case12Conflict.dangerShapes === 8 &&
+              case12Conflict.scoreShapes === 0,
+            "Ein späteres widersprüchliches DOM-Active überschreibt das bereits korrekte TEST2-Board nicht mehr",
+            JSON.stringify({
+              initial: case12Initial,
+              conflict: case12Conflict,
+            })
+          );
+
           const summary = document.getElementById("summary");
           const list = document.getElementById("results");
           const passed = results.filter((result) => result.pass).length;
