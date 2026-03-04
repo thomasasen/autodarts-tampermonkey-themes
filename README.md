@@ -564,7 +564,9 @@ Formatvarianten:
 - Wichtig: Funktioniert nur mit dem **virtuellen Dartboard**, nicht mit dem **Live Dartboard**.
 - Zielbereich: In `Cricket` werden `20` bis `15` plus `Bull` markiert, in `Tactics` `20` bis `10` plus `Bull`.
 - Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix in Cricket und Tactics dieselben Zustände zeigen.
-- Aktivspieler-Regel: Der sichtbar aktive Spieler in der UI (`.ad-ext-player-active`) hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
+- Aktivspieler-Regel: Der sichtbar aktive Spieler im primären Player-Display `#ad-ext-player-display` hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
+- Spieleranzahl-Regel: Die aus dem Grid erkannte Spaltenzahl hat Vorrang vor global gezählten `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen daher keine Phantom-Gegner.
+- Live-Refresh: Das Overlay reagiert auf DOM-/State-Events und besitzt zusätzlich einen festen 300-ms-Sicherheits-Takt, damit die Board-Farben nach jedem Wurf nachziehen.
 
 **Einstellungen einfach erklärt**
 
@@ -592,6 +594,8 @@ Formatvarianten:
 - Was macht es sichtbar? Zusätzliche Live-Effekte in der Cricket-/Tactics-Matrix für schnellere Orientierung.
 - Hinweis: Läuft in Kombination mit dem Cricket-Theme am sinnvollsten.
 - Zielbereich: Nutzt automatisch den passenden Zielsatz der aktiven Variante, also `20` bis `15` plus `Bull` in Cricket oder `20` bis `10` plus `Bull` in Tactics.
+- Zustandsbasis: Nutzt exakt dieselbe Shared-State-Logik wie der Board-Highlighter, inklusive sichtbarem Aktivspieler aus `#ad-ext-player-display` und Grid-vorrangiger Spieleranzahl.
+- Live-Refresh: Neben MutationObserver und Match-State-Events läuft ein 300-ms-Watchdog, damit Matrix-Farben und Effekte nach jedem Wurf synchron bleiben.
 
 **Einstellungen einfach erklärt**
 

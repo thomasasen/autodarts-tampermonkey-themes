@@ -60,10 +60,13 @@
         ];
         const results = [];
 
-        function markCell(mark, textOverride) {
+        function markCell(mark, textOverride, options) {
+          const config = options || {};
           const cell = document.createElement("div");
           cell.className = "player-cell";
-          cell.setAttribute("data-marks", String(mark));
+          if (config.includeAttribute !== false) {
+            cell.setAttribute("data-marks", String(mark));
+          }
           if (typeof textOverride === "string") {
             cell.textContent = textOverride;
           }
@@ -81,6 +84,22 @@
 
             markSets[index].forEach((mark) => {
               root.appendChild(markCell(mark));
+            });
+          });
+          return root;
+        }
+
+        function buildLinearTextRoot(targetOrder, textSets) {
+          const root = document.createElement("div");
+          root.className = "grid-root";
+          targetOrder.forEach((label, index) => {
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            labelCell.textContent = label;
+            root.appendChild(labelCell);
+
+            textSets[index].forEach((text) => {
+              root.appendChild(markCell(0, text, { includeAttribute: false }));
             });
           });
           return root;
@@ -140,17 +159,44 @@
           return root;
         }
 
-        function mountPlayerStrip(playerCount, activePlayerIndex) {
+        function mountPlayerStrip(playerCount, activePlayerIndex, options) {
+          const config = options || {};
           const host = document.createElement("div");
+          host.id = "ad-ext-player-display";
           host.className = "ad-ext-player-strip";
-          host.style.display = "none";
+          host.style.display = config.visible === false ? "none" : "flex";
+          host.style.gap = "8px";
 
           Array.from({ length: playerCount }, (_, index) => index).forEach((index) => {
             const player = document.createElement("div");
             player.className = "ad-ext-player";
+            player.textContent = `P${index + 1}`;
+            player.style.width = "80px";
+            player.style.height = "24px";
             if (index === activePlayerIndex) {
               player.classList.add("ad-ext-player-active");
             }
+            host.appendChild(player);
+          });
+
+          const hiddenActiveDuplicates = Number(config.hiddenActiveDuplicates) || 0;
+          Array.from({ length: hiddenActiveDuplicates }, (_, index) => index).forEach((index) => {
+            const hiddenWrap = document.createElement("div");
+            hiddenWrap.style.display = "none";
+            const player = document.createElement("div");
+            player.className = "ad-ext-player ad-ext-player-active";
+            player.textContent = `H${index + 1}`;
+            hiddenWrap.appendChild(player);
+            host.appendChild(hiddenWrap);
+          });
+
+          const extraVisiblePlayers = Number(config.extraVisiblePlayers) || 0;
+          Array.from({ length: extraVisiblePlayers }, (_, index) => index).forEach((index) => {
+            const player = document.createElement("div");
+            player.className = "ad-ext-player";
+            player.textContent = `E${index + 1}`;
+            player.style.width = "80px";
+            player.style.height = "24px";
             host.appendChild(player);
           });
 
@@ -187,7 +233,11 @@
           const config = options || {};
           const domPlayers =
             Number.isFinite(config.domPlayerCount) && config.domPlayerCount >= 0
-              ? mountPlayerStrip(config.domPlayerCount, config.domActivePlayerIndex)
+              ? mountPlayerStrip(config.domPlayerCount, config.domActivePlayerIndex, {
+                  visible: config.domVisible,
+                  hiddenActiveDuplicates: config.hiddenActiveDuplicates,
+                  extraVisiblePlayers: config.extraVisiblePlayers,
+                })
               : null;
 
           try {
@@ -236,6 +286,21 @@
         const twoPlayerOpenTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3, 0]);
         const twoPlayerDangerTactics = createUniformMarkSets(TACTICS_TARGETS, () => [0, 3]);
         const soloTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3]);
+        const tacticsScreenshotRegression = createUniformMarkSets(
+          TACTICS_TARGETS,
+          function (label) {
+            if (label === "20" || label === "17" || label === "15") {
+              return [3, 0];
+            }
+            if (label === "16") {
+              return [0, 3];
+            }
+            if (label === "19") {
+              return [3, 3];
+            }
+            return [0, 0];
+          }
+        );
 
         const case1 = buildState(
           buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
@@ -515,6 +580,7 @@
           {
             domPlayerCount: 2,
             domActivePlayerIndex: 0,
+            domVisible: true,
           }
         );
         assert(
@@ -539,6 +605,7 @@
           {
             domPlayerCount: 2,
             domActivePlayerIndex: 0,
+            domVisible: true,
           }
         );
         assert(
@@ -563,6 +630,7 @@
           {
             domPlayerCount: 2,
             domActivePlayerIndex: -1,
+            domVisible: false,
           }
         );
         assert(
@@ -574,6 +642,130 @@
             ? JSON.stringify({
                 activePlayerIndex: case18.snapshot.activePlayerIndex,
                 twenty: case18.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case19 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, tacticsScreenshotRegression),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+          }
+        );
+        assert(
+          case19.snapshot &&
+            case19.snapshot.activePlayerIndex === 0 &&
+            case19.snapshot.playerCount === 2 &&
+            case19.states.get("20").presentation === "offense" &&
+            case19.states.get("17").presentation === "offense" &&
+            case19.states.get("15").presentation === "offense" &&
+            case19.states.get("16").presentation === "danger" &&
+            case19.states.get("19").presentation === "dead",
+          "Tactics screenshot regression: TEST2 active yields green 20/17/15, red 16 and dead 19",
+          case19.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case19.snapshot.activePlayerIndex,
+                playerCount: case19.snapshot.playerCount,
+                twenty: case19.states.get("20"),
+                seventeen: case19.states.get("17"),
+                sixteen: case19.states.get("16"),
+                fifteen: case19.states.get("15"),
+                nineteen: case19.states.get("19"),
+              })
+            : "snapshot=null"
+        );
+
+        const case20 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+            hiddenActiveDuplicates: 1,
+          }
+        );
+        assert(
+          case20.snapshot &&
+            case20.snapshot.activePlayerIndex === 0 &&
+            case20.snapshot.visiblePlayerCount === 2 &&
+            case20.states.get("10").presentation === "offense",
+          "Hidden duplicate active players do not override the visible primary player display",
+          case20.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case20.snapshot.activePlayerIndex,
+                visiblePlayerCount: case20.snapshot.visiblePlayerCount,
+                playerSource: case20.snapshot.playerSource,
+                ten: case20.states.get("10"),
+              })
+            : "snapshot=null"
+        );
+
+        const case21 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          null,
+          0,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+            extraVisiblePlayers: 2,
+          }
+        );
+        assert(
+          case21.snapshot &&
+            case21.snapshot.playerCount === 2 &&
+            case21.snapshot.detectedPlayerCount === 2 &&
+            case21.snapshot.visiblePlayerCount === 4 &&
+            case21.snapshot.playerSource === "grid" &&
+            case21.states.get("20").presentation === "offense",
+          "Grid player count wins over extra visible DOM players and prevents phantom opponents",
+          case21.snapshot
+            ? JSON.stringify({
+                playerCount: case21.snapshot.playerCount,
+                detectedPlayerCount: case21.snapshot.detectedPlayerCount,
+                visiblePlayerCount: case21.snapshot.visiblePlayerCount,
+                playerSource: case21.snapshot.playerSource,
+                twenty: case21.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case22 = buildState(
+          buildLinearTextRoot(TACTICS_TARGETS, createUniformMarkSets(TACTICS_TARGETS, function (label) {
+            if (label === "20") {
+              return ["⊗", "/"];
+            }
+            if (label === "19") {
+              return ["X", "✕"];
+            }
+            return ["", ""];
+          })),
+          2,
+          0,
+          "standard",
+          "Tactics"
+        );
+        assert(
+          case22.snapshot &&
+            case22.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,1" &&
+            case22.snapshot.rows.find((row) => row.label === "19").marksByPlayer.join(",") === "2,2",
+          "Symbol parsing reads ⊗ as 3, X/✕ as 2 and / as 1 without data attributes",
+          case22.snapshot
+            ? JSON.stringify({
+                twenty: case22.snapshot.rows.find((row) => row.label === "20").marksByPlayer,
+                nineteen: case22.snapshot.rows.find((row) => row.label === "19").marksByPlayer,
               })
             : "snapshot=null"
         );

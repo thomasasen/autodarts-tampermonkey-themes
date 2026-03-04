@@ -139,13 +139,17 @@ Gründe:
 - Badge-Schutz: echte kleine Badge-Nodes bleiben separat erkennbar
 - Filterung zurück auf Cricket, wenn der Game-Mode `Cricket` ist
 - Fallback-Inferenz auf Tactics aus dem Grid selbst
-- Aktivspieler-Priorität: sichtbarer DOM-Aktivstatus vor verzögertem Match-State
+- Aktivspieler-Priorität: sichtbarer DOM-Aktivstatus im primären Player-Display vor verzögertem Match-State
+- Spieleranzahl-Priorität: erkannte Grid-Spaltenzahl vor global gezählten DOM-Spielern
+- Screenshot-Regression: aktiver Spieler `TEST2` ergibt in Tactics korrekt Grün auf `20`, `17`, `15`, Rot auf `16` und `dead` auf gemeinsam geschlossenen Zielen
+- Symbol-Parsing: `⊗` wird als `3`, `X`/`✕` als `2` und `/` als `1` erkannt
 
 `tests/cricket-target-highlighter-harness.html` prüft zusätzlich den konkreten Live-Regressionsfall:
 
 - Tactics mit sichtbarem aktivem Spieler links, aber bewusst abweichendem Game-State-Index
 - Board-Overlay bleibt dabei grün/offensiv auf `10`
 - `Theme Cricket` und `Cricket Grid FX` bleiben im selben DOM korrekt aktiv
+- Die tieferen Fachregeln für Screenshot-Regression, Geisterspieler und Phantom-Spieleranzahl werden in `tests/cricket-state-harness.html` geprüft, weil diese Fälle im Headless-Browser deutlich deterministischer abbildbar sind.
 
 ## Offene manuelle Live-Prüfung
 
@@ -155,6 +159,7 @@ Ein Punkt bleibt bewusst als manuelle Laufzeitprüfung offen, weil die offiziell
 - Sichtprüfung von `#ad-ext-game-variant`
 - Gegenprüfung von `match.variant`, `match.settings.gameMode` und `match.settings.mode`
 - Sichtprüfung von Theme, Board-Overlay und Grid FX mit realen 12 Zielzeilen
+- Kontrolle, dass Board- und Grid-Farben spätestens nach dem nächsten 300-ms-Zyklus nach jedem Wurf aktualisiert sind
 - Desktop und Mobile
 
 ## Ergebnis

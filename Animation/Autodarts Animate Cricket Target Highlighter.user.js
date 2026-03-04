@@ -489,10 +489,30 @@
     const snapshot = stateContext?.snapshot || null;
     const stateMap = stateContext?.stateMap || new Map();
     const targetOrder = snapshot?.targetOrder || [];
-    return targetOrder.map((label) => {
-      const state = stateMap.get(label);
-      return `${label}:${state ? state.presentation : ""}`;
-    }).join("|");
+    const gameMode = snapshot?.gameModeInfo?.normalized || "";
+    const modeFamily = snapshot?.modeInfo?.family || "";
+    const activePlayerIndex = Number.isFinite(snapshot?.activePlayerIndex)
+      ? snapshot.activePlayerIndex
+      : "";
+    const playerCount = Number.isFinite(snapshot?.playerCount)
+      ? snapshot.playerCount
+      : "";
+    const targets = targetOrder
+      .map((label) => {
+        const state = stateMap.get(label);
+        const marks = Array.isArray(state?.marksByPlayer)
+          ? state.marksByPlayer.join(",")
+          : "";
+        return `${label}:${state ? state.presentation : ""}:${marks}`;
+      })
+      .join("|");
+    return [
+      gameMode,
+      modeFamily,
+      activePlayerIndex,
+      playerCount,
+      targets,
+    ].join("|");
   }
 
   function readStateContext() {
@@ -593,4 +613,5 @@
   if (gameStateShared && typeof gameStateShared.subscribe === "function") {
     gameStateShared.subscribe(scheduleUpdate);
   }
+  setInterval(updateTargets, 300);
 })();

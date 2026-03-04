@@ -30,7 +30,7 @@
         align-items: start;
       }
 
-      #players {
+      #ad-ext-player-display {
         display: flex;
         gap: 12px;
         margin-bottom: 16px;
@@ -85,6 +85,7 @@
           scoringMode: "standard",
           gameMode: "Cricket",
         };
+        const subscribers = new Set();
 
         window.__targetHarnessState = sharedState;
         window.autodartsGameStateShared = {
@@ -107,6 +108,20 @@
           getActiveThrows: function () {
             return [];
           },
+          subscribe: function (listener) {
+            if (typeof listener !== "function") {
+              return function () {};
+            }
+            subscribers.add(listener);
+            return function () {
+              subscribers.delete(listener);
+            };
+          },
+        };
+        sharedState.emit = function () {
+          subscribers.forEach(function (listener) {
+            listener();
+          });
         };
       })();
     </script>
@@ -125,7 +140,7 @@
     <div id="fixture">
       <div>
         <div id="ad-ext-game-variant">Tactics</div>
-        <div id="players"></div>
+        <div id="ad-ext-player-display"></div>
         <div id="grid"></div>
       </div>
       <svg id="board" viewBox="-250 -250 500 500" aria-label="Board">
@@ -199,7 +214,7 @@
         }
 
         function renderPlayers(activePlayerIndex) {
-          const host = document.getElementById("players");
+          const host = document.getElementById("ad-ext-player-display");
           host.textContent = "";
           ["P1", "P2"].forEach((name, index) => {
             const player = document.createElement("div");
@@ -243,14 +258,19 @@
             dangerShapes: overlay
               ? overlay.querySelectorAll(".ad-ext-cricket-target--danger").length
               : 0,
+            deadShapes: overlay
+              ? overlay.querySelectorAll(".ad-ext-cricket-target--dead").length
+              : 0,
             gridScoreCells: document.querySelectorAll(".ad-ext-crfx-score").length,
             gridThreatCells: document.querySelectorAll(".ad-ext-crfx-threat").length,
+            gridDeadCells: document.querySelectorAll(".ad-ext-crfx-dead").length,
             themeApplied: Boolean(
               document.getElementById("autodarts-cricket-custom-style")
             ),
             gridFxActive: document.getElementById("grid")?.classList.contains(
               "ad-ext-crfx-root"
             ),
+            wrapperBadges: document.querySelectorAll(".label-cell.ad-ext-crfx-badge").length,
           };
         }
 
@@ -276,8 +296,11 @@
 
           renderPlayers(config.domActivePlayerIndex);
           renderGrid(config.targetOrder, config.marksByLabel);
+          if (typeof sharedState.emit === "function") {
+            sharedState.emit();
+          }
 
-          return waitForMetrics(config.readyWhen, 18);
+          return waitForMetrics(config.readyWhen, 72);
         }
 
         (async function run() {

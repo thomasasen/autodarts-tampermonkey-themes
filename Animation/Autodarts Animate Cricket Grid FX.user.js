@@ -248,13 +248,19 @@
 
   function createRowState(targetState) {
     const marksByPlayer = targetState ? targetState.marksByPlayer || [] : [];
+    const activePlayerIndex =
+      targetState && Number.isFinite(targetState.activePlayerIndex)
+        ? targetState.activePlayerIndex
+        : -1;
+    const presentation = targetState ? targetState.presentation : "open";
     return {
       offense: Boolean(targetState && targetState.offense),
       danger: Boolean(targetState && targetState.danger),
       dead: Boolean(targetState && targetState.dead),
       pressure: Boolean(targetState && targetState.pressure),
-      presentation: targetState ? targetState.presentation : "open",
-      key: `${marksByPlayer.join(",")}|${targetState ? targetState.presentation : ""}`,
+      activePlayerIndex,
+      presentation,
+      key: `${activePlayerIndex}|${presentation}|${marksByPlayer.join(",")}`,
     };
   }
 
@@ -651,5 +657,5 @@
   }
   window.addEventListener("resize", schedule, { passive: true });
   document.addEventListener("visibilitychange", schedule, { passive: true });
-  setInterval(schedule, 900);
+  setInterval(apply, 300);
 })();

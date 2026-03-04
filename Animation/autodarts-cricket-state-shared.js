@@ -28,6 +28,7 @@
   const LABEL_SELECTOR = "div, span, p, td, th";
   const PLAYER_SELECTOR = ".ad-ext-player";
   const ACTIVE_PLAYER_SELECTOR = ".ad-ext-player-active";
+  const PLAYER_DISPLAY_ID = "ad-ext-player-display";
   const DECORATION_CLASS_NAMES = new Set([
     "ad-ext-crfx-row-wave",
     "ad-ext-crfx-delta",
@@ -194,17 +195,106 @@
     return new Set(findLabelNodes(scope).map((node) => getNodeLabel(node))).size;
   }
 
+  function getPlayerDisplayRoot(options = {}) {
+    const doc = options.document || document;
+    return doc.getElementById(PLAYER_DISPLAY_ID);
+  }
+
+  function isVisiblePlayerNode(element) {
+    if (!isElement(element) || !element.isConnected) {
+      return false;
+    }
+
+    if (typeof element.getBoundingClientRect !== "function") {
+      return false;
+    }
+
+    const rect = element.getBoundingClientRect();
+    if (
+      !Number.isFinite(rect.width) ||
+      !Number.isFinite(rect.height) ||
+      rect.width <= 0 ||
+      rect.height <= 0
+    ) {
+      return false;
+    }
+
+    const style = getComputedStyle(element);
+    if (!style) {
+      return false;
+    }
+
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function uniqueElements(elements) {
+    const merged = [];
+    const seen = new Set();
+
+    elements.forEach((element) => {
+      if (!isElement(element) || seen.has(element)) {
+        return;
+      }
+      seen.add(element);
+      merged.push(element);
+    });
+
+    return merged;
+  }
+
+  function getPreferredPlayerNodes(options = {}) {
+    const doc = options.document || document;
+    const playerSelector = options.playerSelector || PLAYER_SELECTOR;
+    const playerDisplayRoot = getPlayerDisplayRoot(options);
+    const globalPlayers = toArray(doc.querySelectorAll(playerSelector)).filter(
+      (element) => isElement(element)
+    );
+    const directDisplayPlayers = playerDisplayRoot
+      ? getDirectChildren(playerDisplayRoot).filter((child) =>
+          child.matches(playerSelector)
+        )
+      : [];
+    const displayPlayers = playerDisplayRoot
+      ? toArray(playerDisplayRoot.querySelectorAll(playerSelector))
+      : [];
+    const visibleDirectDisplayPlayers = directDisplayPlayers.filter(
+      isVisiblePlayerNode
+    );
+    const visibleDisplayPlayers = displayPlayers.filter(isVisiblePlayerNode);
+    const visibleGlobalPlayers = globalPlayers.filter(isVisiblePlayerNode);
+
+    if (visibleDirectDisplayPlayers.length) {
+      return uniqueElements(visibleDirectDisplayPlayers);
+    }
+    if (visibleDisplayPlayers.length) {
+      return uniqueElements(visibleDisplayPlayers);
+    }
+    if (visibleGlobalPlayers.length) {
+      return uniqueElements(visibleGlobalPlayers);
+    }
+    return uniqueElements(globalPlayers);
+  }
+
+  function getVisiblePlayerCount(options = {}) {
+    return getPreferredPlayerNodes(options).filter(isVisiblePlayerNode).length;
+  }
+
   function getExpectedPlayerCount(options = {}) {
     const explicit = Number(options.playerCount);
     if (Number.isFinite(explicit) && explicit > 0) {
       return Math.round(explicit);
     }
 
-    const playerSelector = options.playerSelector || PLAYER_SELECTOR;
-    const playerNodes = toArray(
-      (options.document || document).querySelectorAll(playerSelector)
-    );
-    return playerNodes.length > 0 ? playerNodes.length : null;
+    const visiblePlayerCount = getVisiblePlayerCount(options);
+    return visiblePlayerCount > 0 ? visiblePlayerCount : null;
   }
 
   function findMostCommonDiff(indices) {
@@ -318,41 +408,66 @@
   }
 
   function resolveActivePlayerIndex(options = {}) {
+    const activeInfo = getResolvedActivePlayerInfo(options);
+    return activeInfo.index;
+  }
+
+  function getResolvedActivePlayerInfo(options = {}) {
     const gameStateShared = options.gameStateShared || null;
-    const playerSelector = options.playerSelector || PLAYER_SELECTOR;
     const activePlayerSelector =
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
-    const doc = options.document || document;
-    const players = toArray(doc.querySelectorAll(playerSelector));
+    const players = getPreferredPlayerNodes(options);
+    const visiblePlayerCount = players.filter(isVisiblePlayerNode).length;
     const activeIndices = players.reduce((indices, player, index) => {
-      if (
+      const isVisible = isVisiblePlayerNode(player);
+      const isActive =
         player.matches(activePlayerSelector) ||
-        player.querySelector(activePlayerSelector)
-      ) {
+        (typeof player.querySelector === "function" &&
+          player.querySelector(activePlayerSelector));
+      if (isVisible && isActive) {
         indices.push(index);
       }
       return indices;
     }, []);
 
-    if (activeIndices.length === 1) {
-      return activeIndices[0];
+    if (activeIndices.length > 0) {
+      return {
+        index: activeIndices[0],
+        source: "visible-dom",
+        visiblePlayerCount,
+        stateIndex:
+          gameStateShared && gameStateShared.getActivePlayerIndex
+            ? gameStateShared.getActivePlayerIndex()
+            : null,
+      };
     }
 
     const fromState = gameStateShared && gameStateShared.getActivePlayerIndex
       ? gameStateShared.getActivePlayerIndex()
       : null;
     if (Number.isFinite(fromState) && fromState >= 0) {
-      return fromState;
+      return {
+        index: fromState,
+        source: "game-state",
+        visiblePlayerCount,
+        stateIndex: fromState,
+      };
     }
 
     const activeIndex = players.findIndex((player) => {
       return (
         player.matches(activePlayerSelector) ||
-        player.querySelector(activePlayerSelector)
+        (typeof player.querySelector === "function" &&
+          player.querySelector(activePlayerSelector))
       );
     });
 
-    return activeIndex >= 0 ? activeIndex : 0;
+    return {
+      index: activeIndex >= 0 ? activeIndex : 0,
+      source: activeIndex >= 0 ? "dom-fallback" : "default-zero",
+      visiblePlayerCount,
+      stateIndex: fromState,
+    };
   }
 
   function readCricketMode(gameStateShared, options = {}) {
@@ -1026,7 +1141,9 @@
 
     const expectedPlayerCount = getExpectedPlayerCount(options);
     const gameStateShared = options.gameStateShared || null;
-    const activePlayerIndex = resolveActivePlayerIndex(options);
+    const activePlayerInfo = getResolvedActivePlayerInfo(options);
+    const activePlayerIndex = activePlayerInfo.index;
+    const visiblePlayerCount = activePlayerInfo.visiblePlayerCount;
 
     let parsedRows = buildRowsFromLinearGrid(root, expectedPlayerCount);
     if (!parsedRows) {
@@ -1050,13 +1167,43 @@
     const maxDetectedPlayers = parsedRows.rows.reduce((max, row) => {
       return Math.max(max, row.playerCells.length);
     }, 0);
-    const playerCount = Math.max(
-      expectedPlayerCount || 0,
+    const detectedPlayerCount = Math.max(
       parsedRows.detectedPlayerCount || 0,
-      maxDetectedPlayers,
-      activePlayerIndex + 1,
-      1
+      maxDetectedPlayers
     );
+
+    let playerCount = detectedPlayerCount;
+    let playerSource = "grid";
+    if (!(playerCount > 0)) {
+      if (Number.isFinite(expectedPlayerCount) && expectedPlayerCount > 0) {
+        playerCount = expectedPlayerCount;
+        playerSource =
+          Number.isFinite(Number(options.playerCount)) && Number(options.playerCount) > 0
+            ? "explicit"
+            : "visible-players";
+      } else {
+        playerCount = 1;
+        playerSource = "minimum-1";
+      }
+    }
+
+    if (
+      debugLog &&
+      ((visiblePlayerCount > 0 &&
+        detectedPlayerCount > 0 &&
+        visiblePlayerCount !== detectedPlayerCount) ||
+        (Number.isFinite(activePlayerInfo.stateIndex) &&
+          activePlayerInfo.source !== "game-state" &&
+          activePlayerInfo.stateIndex !== activePlayerIndex))
+    ) {
+      debugLog("buildGridSnapshot: player-source-mismatch", {
+        visiblePlayerCount,
+        detectedPlayerCount,
+        activePlayerIndex,
+        activePlayerSource: activePlayerInfo.source,
+        gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
+      });
+    }
 
     const rows = parsedRows.rows
       .filter((row) => targetSet.has(row.label))
@@ -1098,6 +1245,9 @@
       targetOrder,
       targetSet,
       playerCount,
+      visiblePlayerCount,
+      detectedPlayerCount,
+      playerSource,
       activePlayerIndex: Math.max(0, Math.min(activePlayerIndex, playerCount - 1)),
       modeInfo,
     };
@@ -1185,6 +1335,9 @@
     TACTICS_TARGET_ORDER,
     normalizeLabel,
     getTargetOrderByGameMode,
+    isVisiblePlayerNode,
+    getPreferredPlayerNodes,
+    getVisiblePlayerCount,
     findGridRoot,
     resolveActivePlayerIndex,
     readCricketMode,
