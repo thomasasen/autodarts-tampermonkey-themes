@@ -607,7 +607,26 @@
       return;
     }
     const resolution = getActivePlayerResolution(snapshot);
-    if (!resolution || !resolution.usedVisibleDom) {
+    if (!resolution) {
+      return;
+    }
+    if ((resolution.visibleActiveCandidates || 0) > 1) {
+      debugLog("board-player-resolution-ambiguous", {
+        _signature: [
+          snapshot?.playerMappingSource || "",
+          resolution.source || "",
+          resolution.matchIndex,
+          resolution.columnIndex,
+          resolution.visibleActiveCandidates || 0,
+        ].join("|"),
+        boardPlayerIndex: resolution.columnIndex,
+        matchIndex: resolution.matchIndex,
+        resolutionSource: resolution.source,
+        visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
+        playerMappingSource: snapshot?.playerMappingSource || "",
+      });
+    }
+    if (!resolution.usedVisibleDom) {
       return;
     }
     if (
@@ -626,11 +645,13 @@
         resolution.displayIndex,
         resolution.columnIndex,
         resolution.matchIndex,
+        resolution.visibleActiveCandidates || 0,
       ].join("|"),
       boardPlayerIndex: resolution.columnIndex,
       displayIndex: resolution.displayIndex,
       matchIndex: resolution.matchIndex,
       resolutionSource: resolution.source,
+      visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
       playerMappingSource: snapshot?.playerMappingSource || "",
     });
   }

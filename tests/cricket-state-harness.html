@@ -216,6 +216,13 @@
 
         function mountPlayerStrip(playerCount, activePlayerIndex, options) {
           const config = options || {};
+          const activeIndices = new Set(
+            Array.isArray(config.activePlayerIndices)
+              ? config.activePlayerIndices.filter((value) => Number.isFinite(value))
+              : Number.isFinite(activePlayerIndex)
+                ? [activePlayerIndex]
+                : []
+          );
           const players = Array.isArray(config.players) && config.players.length
             ? config.players.slice(0, playerCount)
             : Array.from({ length: playerCount }, (_, index) => ({
@@ -253,7 +260,7 @@
             nameNode.className = "ad-ext-player-name";
             nameNode.textContent = playerData.name || `P${playerIndex + 1}`;
             player.appendChild(nameNode);
-            if (playerIndex === activePlayerIndex) {
+            if (activeIndices.has(playerIndex)) {
               player.classList.add("ad-ext-player-active");
             }
             wrapper.appendChild(player);
@@ -350,6 +357,7 @@
                   domOrder: config.domOrder,
                   visualOrder: config.visualOrder,
                   includeIds: config.includeIds,
+                  activePlayerIndices: config.domActivePlayerIndices,
                 })
               : null;
 
@@ -1568,6 +1576,47 @@
             ? JSON.stringify({
                 resolution: readBoardResolution(case34),
                 twenty: case34.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case35 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "20" || label === "10") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domActivePlayerIndices: [0, 1],
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        assert(
+          case35.snapshot &&
+            case35.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case35)?.source === "visible-dom-state-id" &&
+            readBoardResolution(case35)?.visibleActiveCandidates === 2 &&
+            readBoardPresentation(case35, "20") === "pressure" &&
+            readCellPresentations(case35, "20").join(",") === "offense,pressure",
+          "Mehrere sichtbare Active-Klassen kippen das Board nicht mehr auf den ersten DOM-Spieler, sondern auf den echten Match-/State-Spieler",
+          case35.snapshot
+            ? JSON.stringify({
+                resolution: readBoardResolution(case35),
+                twenty: case35.states.get("20"),
               })
             : "snapshot=null"
         );

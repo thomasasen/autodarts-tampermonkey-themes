@@ -831,6 +831,9 @@
     const gameStateShared = options.gameStateShared || null;
     const activePlayerSelector =
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
+    const fromState = gameStateShared && gameStateShared.getActivePlayerIndex
+      ? gameStateShared.getActivePlayerIndex()
+      : null;
     const players = getPreferredPlayerNodes(options);
     const visiblePlayerCount = players.filter(isVisiblePlayerNode).length;
     const activePlayers = players.reduce((entries, player, index) => {
@@ -850,24 +853,28 @@
     }, []);
 
     if (activePlayers.length > 0) {
-      const activePlayer = activePlayers[0];
+      const activePlayer = activePlayers.length === 1 ? activePlayers[0] : null;
       return {
-        index: activePlayer.index,
-        displayIndex: activePlayer.index,
-        source: "visible-dom",
+        index:
+          activePlayer && Number.isFinite(activePlayer.index)
+            ? activePlayer.index
+            : Number.isFinite(fromState)
+              ? fromState
+            : activePlayers[0].index,
+        displayIndex: activePlayer ? activePlayer.index : null,
+        source: activePlayer ? "visible-dom" : "visible-dom-ambiguous",
         visiblePlayerCount,
-        playerId: activePlayer.identity?.playerId || "",
-        nameKey: activePlayer.identity?.nameKey || "",
-        stateIndex:
-          gameStateShared && gameStateShared.getActivePlayerIndex
-            ? gameStateShared.getActivePlayerIndex()
-            : null,
+        playerId: activePlayer?.identity?.playerId || "",
+        nameKey: activePlayer?.identity?.nameKey || "",
+        activeCandidates: activePlayers.map((entry) => ({
+          index: entry.index,
+          playerId: entry.identity?.playerId || "",
+          nameKey: entry.identity?.nameKey || "",
+        })),
+        stateIndex: fromState,
       };
     }
 
-    const fromState = gameStateShared && gameStateShared.getActivePlayerIndex
-      ? gameStateShared.getActivePlayerIndex()
-      : null;
     if (Number.isFinite(fromState) && fromState >= 0) {
       return {
         index: fromState,
@@ -876,6 +883,7 @@
         visiblePlayerCount,
         playerId: "",
         nameKey: "",
+        activeCandidates: [],
         stateIndex: fromState,
       };
     }
@@ -901,6 +909,17 @@
         activeIndex >= 0
           ? extractPlayerNodeIdentity(players[activeIndex]).nameKey || ""
           : "",
+      activeCandidates: activeIndex >= 0
+        ? [
+            {
+              index: activeIndex,
+              playerId:
+                extractPlayerNodeIdentity(players[activeIndex]).playerId || "",
+              nameKey:
+                extractPlayerNodeIdentity(players[activeIndex]).nameKey || "",
+            },
+          ]
+        : [],
       stateIndex: fromState,
     };
   }
@@ -1925,6 +1944,15 @@
     const stateIndex = Number.isFinite(activePlayerInfo?.stateIndex)
       ? activePlayerInfo.stateIndex
       : null;
+    const activeCandidates = Array.isArray(activePlayerInfo?.activeCandidates)
+      ? activePlayerInfo.activeCandidates
+          .filter((candidate) => candidate && Number.isFinite(candidate.index))
+          .map((candidate) => ({
+            index: candidate.index,
+            playerId: String(candidate.playerId || "").trim(),
+            nameKey: String(candidate.nameKey || "").trim(),
+          }))
+      : [];
     const playerId = String(activePlayerInfo?.playerId || "").trim();
     const nameKey = String(activePlayerInfo?.nameKey || "").trim();
     const fallbackIndex = Number.isFinite(activePlayerInfo?.index)
@@ -1963,6 +1991,61 @@
       };
     }
 
+    function resolveCandidate(candidate, sourcePrefix) {
+      if (!candidate || !Number.isFinite(candidate.index)) {
+        return null;
+      }
+      const candidatePlayerId = String(candidate.playerId || "").trim();
+      const candidateNameKey = String(candidate.nameKey || "").trim();
+      const candidateById = candidatePlayerId
+        ? findUniqueSlot(
+            (slot) => slot.playerId && slot.playerId === candidatePlayerId
+          )
+        : null;
+      if (candidateById) {
+        return {
+          ...buildResolution(candidateById, `${sourcePrefix}-id`),
+          displayIndex: candidate.index,
+          usedVisibleDom: true,
+        };
+      }
+      const candidateByName = candidateNameKey
+        ? findUniqueSlot(
+            (slot) => slot.nameKey && slot.nameKey === candidateNameKey
+          )
+        : null;
+      if (candidateByName) {
+        return {
+          ...buildResolution(candidateByName, `${sourcePrefix}-name`),
+          displayIndex: candidate.index,
+          usedVisibleDom: true,
+        };
+      }
+      const candidateByDisplay = findUniqueSlot(
+        (slot) => slot.displayIndex === candidate.index
+      );
+      if (candidateByDisplay) {
+        return {
+          ...buildResolution(candidateByDisplay, `${sourcePrefix}-display`),
+          displayIndex: candidate.index,
+          usedVisibleDom: true,
+        };
+      }
+      return null;
+    }
+
+    if (activeCandidates.length > 1 && stateIndex !== null) {
+      const candidateResolutions = activeCandidates
+        .map((candidate) => resolveCandidate(candidate, "visible-dom-state"))
+        .filter((resolution) => resolution && resolution.matchIndex === stateIndex);
+      const uniqueColumns = new Set(
+        candidateResolutions.map((resolution) => resolution.columnIndex)
+      );
+      if (candidateResolutions.length === 1 && uniqueColumns.size === 1) {
+        return candidateResolutions[0];
+      }
+    }
+
     const slotByPlayerId = playerId
       ? findUniqueSlot((slot) => slot.playerId && slot.playerId === playerId)
       : null;
@@ -1998,6 +2081,21 @@
     }
     if (slotByName) {
       return buildResolution(slotByName, "identity-name");
+    }
+
+    if (activeCandidates.length > 1) {
+      const candidateResolutions = activeCandidates
+        .map((candidate) => resolveCandidate(candidate, "visible-dom-candidate"))
+        .filter(Boolean);
+      const uniqueColumns = new Map();
+      candidateResolutions.forEach((resolution) => {
+        if (!uniqueColumns.has(resolution.columnIndex)) {
+          uniqueColumns.set(resolution.columnIndex, resolution);
+        }
+      });
+      if (uniqueColumns.size === 1) {
+        return Array.from(uniqueColumns.values())[0];
+      }
     }
 
     if (hasDomFallbackIndex) {
@@ -2126,6 +2224,9 @@
         resolutionSource: activePlayerResolution.source,
         resolutionDisplayIndex: activePlayerResolution.displayIndex,
         resolutionMatchIndex: activePlayerResolution.matchIndex,
+        visibleActiveCandidates: Array.isArray(activePlayerInfo.activeCandidates)
+          ? activePlayerInfo.activeCandidates.length
+          : 0,
         rootId: getDebugRootId(root),
       };
       const mismatchSignature = [
@@ -2246,6 +2347,9 @@
         columnIndex: activePlayerResolution.columnIndex,
         source: activePlayerResolution.source,
         usedVisibleDom: Boolean(activePlayerResolution.usedVisibleDom),
+        visibleActiveCandidates: Array.isArray(activePlayerInfo.activeCandidates)
+          ? activePlayerInfo.activeCandidates.length
+          : 0,
       },
       modeInfo,
     };

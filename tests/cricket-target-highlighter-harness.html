@@ -227,9 +227,23 @@
           return marksByLabel;
         }
 
-        function renderPlayers(activePlayerIndex, players, domOrder, visualOrder, includeIds) {
+        function renderPlayers(
+          activePlayerIndex,
+          players,
+          domOrder,
+          visualOrder,
+          includeIds,
+          activePlayerIndices
+        ) {
           const host = document.getElementById("ad-ext-player-display");
           host.textContent = "";
+          const activeIndices = new Set(
+            Array.isArray(activePlayerIndices)
+              ? activePlayerIndices.filter((value) => Number.isFinite(value))
+              : Number.isFinite(activePlayerIndex)
+                ? [activePlayerIndex]
+                : []
+          );
           const playerList = Array.isArray(players) && players.length
             ? players
             : [
@@ -260,7 +274,7 @@
             if (includeIds !== false && playerInfo.id) {
               player.setAttribute("data-player-id", String(playerInfo.id));
             }
-            if (playerIndex === activePlayerIndex) {
+            if (activeIndices.has(playerIndex)) {
               player.classList.add("ad-ext-player-active");
             }
             const nameNode = document.createElement("span");
@@ -442,7 +456,8 @@
             config.players,
             config.playerDomOrder,
             config.playerVisualOrder,
-            config.includeIds
+            config.includeIds,
+            config.domActivePlayerIndices
           );
           renderGrid(config.targetOrder, config.marksByLabel, {
             hiddenGrids: config.hiddenGrids,
@@ -888,6 +903,42 @@
               left: case10Left,
               right: case10Right,
             })
+          );
+
+          const case11 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            domActivePlayerIndices: [0, 1],
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapes === 0 &&
+                metrics.dangerShapes === 8 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
+            },
+          });
+          assert(
+            case11.overlay &&
+              case11.scoreShapes === 0 &&
+              case11.dangerShapes === 8 &&
+              case11.gridScoreCells === 2 &&
+              case11.gridThreatCells === 2 &&
+              case11.gridScoreCellsByPlayer["0"] === 2 &&
+              case11.gridThreatCellsByPlayer["1"] === 2,
+            "Doppelte sichtbare Active-Klassen beim Spielerwechsel lassen das Board weiter auf den echten aktiven Spieler TEST2 zeigen",
+            JSON.stringify(case11)
           );
 
           const summary = document.getElementById("summary");
