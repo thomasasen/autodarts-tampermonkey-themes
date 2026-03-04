@@ -410,6 +410,35 @@
           return targetOrder.map((label, index) => producer(label, index));
         }
 
+        function createThrowForLabel(label, multiplier) {
+          const normalizedLabel = String(label || "").toUpperCase();
+          const resolvedMultiplier = Number.isFinite(multiplier)
+            ? Math.max(1, Math.min(3, Math.round(multiplier)))
+            : 1;
+          if (normalizedLabel === "BULL") {
+            const isDoubleBull = resolvedMultiplier >= 2;
+            return {
+              segment: {
+                name: isDoubleBull ? "DBULL" : "S25",
+                number: 25,
+                multiplier: isDoubleBull ? 2 : 1,
+                bed: isDoubleBull ? "Inner Bull" : "Outer Bull",
+              },
+            };
+          }
+          const numeric = Number(label);
+          const prefix = resolvedMultiplier === 3 ? "T" : resolvedMultiplier === 2 ? "D" : "S";
+          const bed = resolvedMultiplier === 3 ? "Triple" : resolvedMultiplier === 2 ? "Double" : "Single";
+          return {
+            segment: {
+              name: `${prefix}${numeric}`,
+              number: numeric,
+              multiplier: resolvedMultiplier,
+              bed,
+            },
+          };
+        }
+
         function assert(condition, label, details) {
           results.push({
             label,
@@ -439,7 +468,7 @@
             helper.__moduleId === "autodarts-cricket-state-shared" &&
             helper.__apiVersion === 2 &&
             helper.__buildSignature ===
-              "autodarts-cricket-state-shared@2:2026-03-turn-preview-zero-fallback",
+              "autodarts-cricket-state-shared@2:2026-03-turn-preview-active-baseline",
           "Shared helper exposes moduleId, apiVersion and buildSignature for runtime compatibility checks",
           helper
             ? JSON.stringify({
@@ -1167,6 +1196,267 @@
                 seventeen: case25b.states.get("17"),
               })
             : "snapshot=null"
+        );
+
+        const case25c = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            activeThrows: [
+              {
+                segment: {
+                  name: "T17",
+                  number: 17,
+                  multiplier: 3,
+                  bed: "Triple",
+                },
+              },
+            ],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "S17",
+                        number: 17,
+                        multiplier: 1,
+                        bed: "Single",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        );
+        assert(
+          case25c.snapshot &&
+            case25c.snapshot.rows.find((row) => row.label === "17").marksByPlayer.join(",") === "1,3" &&
+            case25c.states.get("17").presentation === "offense" &&
+            readCellPresentations(case25c, "17").join(",") === "pressure,offense",
+          "Turn-Fallback und aktive Wurfvorschau werden kombiniert: TEST1 behält 1 Mark auf 17, TEST2 sieht mit T17 sofort offense",
+          case25c.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case25c.snapshot.activePlayerIndex,
+                seventeenRow: case25c.snapshot.rows.find((row) => row.label === "17"),
+                seventeen: case25c.states.get("17"),
+              })
+            : "snapshot=null"
+        );
+
+        const case25d = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "17") {
+                return [1, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            activeThrows: [
+              {
+                segment: {
+                  name: "D17",
+                  number: 17,
+                  multiplier: 2,
+                  bed: "Double",
+                },
+              },
+            ],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:02:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "S17",
+                        number: 17,
+                        multiplier: 1,
+                        bed: "Single",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        );
+        assert(
+          case25d.snapshot &&
+            case25d.snapshot.rows.find((row) => row.label === "17").marksByPlayer.join(",") === "1,3" &&
+            case25d.states.get("17").presentation === "offense" &&
+            readCellPresentations(case25d, "17").join(",") === "pressure,offense",
+          "Aktiver D17 nutzt bei bestehender gegnerischer DOM-Markierung die eigene Turn-Baseline: TEST2 schließt 17 sofort offensiv",
+          case25d.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case25d.snapshot.activePlayerIndex,
+                seventeenRow: case25d.snapshot.rows.find((row) => row.label === "17"),
+                seventeen: case25d.states.get("17"),
+              })
+            : "snapshot=null"
+        );
+
+        const case25e = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, () => [1, 0])
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            activeThrows: TACTICS_TARGETS.map((label) =>
+              createThrowForLabel(label, 2)
+            ),
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:05:30.000Z",
+                  throws: TACTICS_TARGETS.map((label) =>
+                    createThrowForLabel(label, 1)
+                  ),
+                },
+              ],
+            },
+          }
+        );
+        const case25eFailures = TACTICS_TARGETS.filter((label) => {
+          const row = case25e.snapshot?.rows.find((entry) => entry.label === label);
+          const state = case25e.states?.get(label);
+          const cells = readCellPresentations(case25e, label).join(",");
+          return (
+            !row ||
+            row.marksByPlayer.join(",") !== "1,3" ||
+            !state ||
+            state.presentation !== "offense" ||
+            cells !== "pressure,offense"
+          );
+        });
+        assert(
+          case25e.snapshot && case25eFailures.length === 0,
+          "Generische Tactics-Logik: alle Targets 20..10 und Bull folgen derselben Merge-/Regelbewertung wie 17",
+          case25eFailures.length
+            ? JSON.stringify({
+                failedLabels: case25eFailures,
+                sampleRows: case25eFailures
+                  .slice(0, 3)
+                  .map((label) => case25e.snapshot?.rows.find((row) => row.label === label)),
+              })
+            : "ok"
+        );
+
+        const case25f = buildState(
+          buildLinearRoot(
+            CRICKET_TARGETS,
+            createUniformMarkSets(CRICKET_TARGETS, () => [1, 0])
+          ),
+          2,
+          1,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            activeThrows: CRICKET_TARGETS.map((label) =>
+              createThrowForLabel(label, 2)
+            ),
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:06:30.000Z",
+                  throws: CRICKET_TARGETS.map((label) =>
+                    createThrowForLabel(label, 1)
+                  ),
+                },
+              ],
+            },
+          }
+        );
+        const case25fFailures = CRICKET_TARGETS.filter((label) => {
+          const row = case25f.snapshot?.rows.find((entry) => entry.label === label);
+          const state = case25f.states?.get(label);
+          const cells = readCellPresentations(case25f, label).join(",");
+          return (
+            !row ||
+            row.marksByPlayer.join(",") !== "1,3" ||
+            !state ||
+            state.presentation !== "offense" ||
+            cells !== "pressure,offense"
+          );
+        });
+        assert(
+          case25f.snapshot && case25fFailures.length === 0,
+          "Generische Cricket-Logik: alle Targets 20..15 und Bull folgen denselben Cricket-Regeln und Merge-Regeln",
+          case25fFailures.length
+            ? JSON.stringify({
+                failedLabels: case25fFailures,
+                sampleRows: case25fFailures
+                  .slice(0, 3)
+                  .map((label) => case25f.snapshot?.rows.find((row) => row.label === label)),
+              })
+            : "ok"
         );
 
         cleanupMountedGridRoots();

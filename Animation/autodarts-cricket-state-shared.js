@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-turn-preview-zero-fallback`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-turn-preview-active-baseline`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -3008,29 +3008,31 @@
         for (let index = 0; index < playerCount; index += 1) {
           marksByPlayer.push(readMarks(playerCells[index], row.label));
         }
+        const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
         const domHasAnyMarks = marksByPlayer.some((mark) => clampMark(mark) > 0);
-        let usedTurnPreview = false;
         const turnMarks = turnMarksByLabel.get(row.label);
-        if (
-          Array.isArray(turnMarks) &&
-          turnMarks.length &&
-          !domHasAnyMarks
-        ) {
-          for (let index = 0; index < playerCount; index += 1) {
-            marksByPlayer[index] = Math.max(
-              clampMark(marksByPlayer[index]),
-              clampMark(turnMarks[index])
-            );
+        if (Array.isArray(turnMarks) && turnMarks.length) {
+          if (!domHasAnyMarks) {
+            for (let index = 0; index < playerCount; index += 1) {
+              marksByPlayer[index] = Math.max(
+                clampMark(marksByPlayer[index]),
+                clampMark(turnMarks[index])
+              );
+            }
+          } else if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
+            const activeTurnMarks = clampMark(turnMarks[resolvedActivePlayerIndex]);
+            if (activeTurnMarks > 0) {
+              marksByPlayer[resolvedActivePlayerIndex] = Math.max(
+                clampMark(marksByPlayer[resolvedActivePlayerIndex]),
+                activeTurnMarks
+              );
+            }
           }
-          usedTurnPreview = true;
         }
-        if (!usedTurnPreview) {
-          const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
-          if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
-            marksByPlayer[resolvedActivePlayerIndex] = clampMark(
-              (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
-            );
-          }
+        if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
+          marksByPlayer[resolvedActivePlayerIndex] = clampMark(
+            (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
+          );
         }
         return {
           label: row.label,

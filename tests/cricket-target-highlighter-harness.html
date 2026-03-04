@@ -204,6 +204,7 @@
           "10",
           "BULL",
         ];
+        const CRICKET_TARGETS = ["20", "19", "18", "17", "16", "15", "BULL"];
         const overlayId = "ad-ext-cricket-targets";
         const results = [];
         const sharedState = window.__targetHarnessState;
@@ -225,6 +226,43 @@
             marksByLabel[label] = overrides[label].slice();
           });
           return marksByLabel;
+        }
+
+        function buildUniformMarkMap(targetOrder, markPair) {
+          const marks = Array.isArray(markPair) ? markPair.slice(0, 2) : [0, 0];
+          return targetOrder.reduce((result, label) => {
+            result[label] = marks.slice();
+            return result;
+          }, {});
+        }
+
+        function createThrowForLabel(label, multiplier) {
+          const normalizedLabel = String(label || "").toUpperCase();
+          const resolvedMultiplier = Number.isFinite(multiplier)
+            ? Math.max(1, Math.min(3, Math.round(multiplier)))
+            : 1;
+          if (normalizedLabel === "BULL") {
+            const isDoubleBull = resolvedMultiplier >= 2;
+            return {
+              segment: {
+                name: isDoubleBull ? "DBULL" : "S25",
+                number: 25,
+                multiplier: isDoubleBull ? 2 : 1,
+                bed: isDoubleBull ? "Inner Bull" : "Outer Bull",
+              },
+            };
+          }
+          const numeric = Number(label);
+          const prefix = resolvedMultiplier === 3 ? "T" : resolvedMultiplier === 2 ? "D" : "S";
+          const bed = resolvedMultiplier === 3 ? "Triple" : resolvedMultiplier === 2 ? "Double" : "Single";
+          return {
+            segment: {
+              name: `${prefix}${numeric}`,
+              number: numeric,
+              multiplier: resolvedMultiplier,
+              bed,
+            },
+          };
         }
 
         function renderPlayers(
@@ -1217,6 +1255,248 @@
               case14.gridThreatCellsByPlayer["0"] === 1,
             "Turn-History darf eine bereits belegte DOM-Zeile nicht überlagern: bei aktivem TEST2 bleibt 17 offensiv grün",
             JSON.stringify(case14)
+          );
+
+          const case15 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {}),
+            activeThrows: [
+              {
+                segment: {
+                  name: "T17",
+                  number: 17,
+                  multiplier: 3,
+                  bed: "Triple",
+                },
+              },
+            ],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "S17",
+                        number: 17,
+                        multiplier: 1,
+                        bed: "Single",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return metrics.scoreShapesByLabel["17"] === 4;
+            },
+          });
+          assert(
+            case15.overlay &&
+              case15.scoreShapesByLabel["17"] === 4 &&
+              !case15.dangerShapesByLabel["17"] &&
+              case15.overlayPresentationsByLabel["17"] === "offense" &&
+              case15.gridScoreCellsByPlayer["1"] === 1 &&
+              case15.gridThreatCellsByPlayer["0"] === 1,
+            "Aktiver T17 wird trotz gegnerischer S17-Turn-History sofort korrekt als offense für TEST2 gezeigt",
+            JSON.stringify(case15)
+          );
+
+          const case16 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "17": [1, 0],
+            }),
+            activeThrows: [
+              {
+                segment: {
+                  name: "D17",
+                  number: 17,
+                  multiplier: 2,
+                  bed: "Double",
+                },
+              },
+            ],
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:02:30.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "S17",
+                        number: 17,
+                        multiplier: 1,
+                        bed: "Single",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return metrics.scoreShapesByLabel["17"] === 4;
+            },
+          });
+          assert(
+            case16.overlay &&
+              case16.scoreShapesByLabel["17"] === 4 &&
+              !case16.dangerShapesByLabel["17"] &&
+              case16.overlayPresentationsByLabel["17"] === "offense" &&
+              case16.gridScoreCellsByPlayer["1"] === 1 &&
+              case16.gridThreatCellsByPlayer["0"] === 1,
+            "Bei vorhandener gegnerischer DOM-Markierung schließt TEST2 mit D17 plus eigener Turn-Baseline sofort offensiv auf 17",
+            JSON.stringify(case16)
+          );
+
+          const case17 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildUniformMarkMap(TACTICS_TARGETS, [1, 0]),
+            activeThrows: TACTICS_TARGETS.map((label) =>
+              createThrowForLabel(label, 2)
+            ),
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:07:30.000Z",
+                  throws: TACTICS_TARGETS.map((label) =>
+                    createThrowForLabel(label, 1)
+                  ),
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return TACTICS_TARGETS.every(
+                (label) => metrics.scoreShapesByLabel[label] === 4
+              );
+            },
+          });
+          const case17Failures = TACTICS_TARGETS.filter((label) => {
+            return (
+              case17.scoreShapesByLabel[label] !== 4 ||
+              Boolean(case17.dangerShapesByLabel[label]) ||
+              case17.overlayPresentationsByLabel[label] !== "offense"
+            );
+          });
+          assert(
+            case17.overlay &&
+              case17Failures.length === 0 &&
+              case17.gridScoreCellsByPlayer["1"] === TACTICS_TARGETS.length &&
+              case17.gridThreatCellsByPlayer["0"] === TACTICS_TARGETS.length,
+            "Generische Tactics-Regelprüfung: alle Targets 20..10 und Bull reagieren konsistent nach Cricket-/Target-Regeln",
+            case17Failures.length
+              ? JSON.stringify({
+                  failedLabels: case17Failures,
+                  scoreByLabel: case17.scoreShapesByLabel,
+                  dangerByLabel: case17.dangerShapesByLabel,
+                  presentations: case17.overlayPresentationsByLabel,
+                })
+              : JSON.stringify({
+                  gridScoreCellsByPlayer: case17.gridScoreCellsByPlayer,
+                  gridThreatCellsByPlayer: case17.gridThreatCellsByPlayer,
+                })
+          );
+
+          const case18 = await runScenario({
+            variant: "Cricket",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: CRICKET_TARGETS,
+            marksByLabel: buildUniformMarkMap(CRICKET_TARGETS, [1, 0]),
+            activeThrows: CRICKET_TARGETS.map((label) =>
+              createThrowForLabel(label, 2)
+            ),
+            matchState: {
+              players: [
+                { id: "player-1", name: "TEST1" },
+                { id: "player-2", name: "TEST2" },
+              ],
+              turns: [
+                {
+                  playerId: "player-2",
+                  finishedAt: "2026-03-04T15:08:30.000Z",
+                  throws: CRICKET_TARGETS.map((label) =>
+                    createThrowForLabel(label, 1)
+                  ),
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return CRICKET_TARGETS.every(
+                (label) => metrics.scoreShapesByLabel[label] === 4
+              );
+            },
+          });
+          const case18Failures = CRICKET_TARGETS.filter((label) => {
+            return (
+              case18.scoreShapesByLabel[label] !== 4 ||
+              Boolean(case18.dangerShapesByLabel[label]) ||
+              case18.overlayPresentationsByLabel[label] !== "offense"
+            );
+          });
+          assert(
+            case18.overlay &&
+              case18Failures.length === 0 &&
+              case18.gridScoreCellsByPlayer["1"] === CRICKET_TARGETS.length &&
+              case18.gridThreatCellsByPlayer["0"] === CRICKET_TARGETS.length &&
+              !case18.scoreShapesByLabel["14"] &&
+              !case18.scoreShapesByLabel["10"],
+            "Generische Cricket-Regelprüfung: nur 20..15 und Bull sind aktiv und folgen denselben Offense-/Danger-Regeln",
+            case18Failures.length
+              ? JSON.stringify({
+                  failedLabels: case18Failures,
+                  scoreByLabel: case18.scoreShapesByLabel,
+                  dangerByLabel: case18.dangerShapesByLabel,
+                  presentations: case18.overlayPresentationsByLabel,
+                })
+              : JSON.stringify({
+                  gridScoreCellsByPlayer: case18.gridScoreCellsByPlayer,
+                  gridThreatCellsByPlayer: case18.gridThreatCellsByPlayer,
+                })
           );
 
           const colorParity = {
