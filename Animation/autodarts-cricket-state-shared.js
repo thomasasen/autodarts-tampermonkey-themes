@@ -1351,6 +1351,9 @@
 
   function readMatchTurns(gameStateShared) {
     const match = readMatchData(gameStateShared);
+    if (!match || typeof match !== "object") {
+      return null;
+    }
     if (!Array.isArray(match.players) || !Array.isArray(match.turns)) {
       return null;
     }
@@ -1549,6 +1552,40 @@
     return merged;
   }
 
+  function maybeIncludeLabelCellAsPlayerCell(
+    playerCells,
+    labelCell,
+    label,
+    expectedPlayerCount
+  ) {
+    const normalizedCells = Array.isArray(playerCells)
+      ? playerCells.filter((cell) => isElement(cell))
+      : [];
+    if (!isElement(labelCell) || normalizedCells.includes(labelCell)) {
+      return normalizedCells;
+    }
+
+    const resolvedExpectedCount = Number.isFinite(Number(expectedPlayerCount))
+      ? Math.max(0, Math.round(Number(expectedPlayerCount)))
+      : 0;
+    const labelCellHasMarks = hasMarkHints(labelCell, label);
+    const compositeLayoutHint = getDirectChildren(labelCell).length > 1;
+
+    if (!labelCellHasMarks && !compositeLayoutHint) {
+      return normalizedCells;
+    }
+
+    const resolvedCells = [labelCell, ...normalizedCells];
+    if (
+      resolvedExpectedCount > 0 &&
+      resolvedCells.length > resolvedExpectedCount
+    ) {
+      return resolvedCells.slice(0, resolvedExpectedCount);
+    }
+
+    return resolvedCells;
+  }
+
   function extractPlayerCellsFromRow(
     rowElement,
     labelNode,
@@ -1714,11 +1751,16 @@
       }
 
       const labelCell = rowSlice[0];
-      const playerCells = sanitizePlayerCells(
-        rowSlice.slice(1),
+      const playerCells = maybeIncludeLabelCellAsPlayerCell(
+        sanitizePlayerCells(
+          rowSlice.slice(1),
+          labelCell,
+          labelCell,
+          expectedPlayerCount || rowSpan - 1
+        ),
         labelCell,
-        labelCell,
-        expectedPlayerCount || rowSpan - 1
+        label,
+        expectedPlayerCount
       );
       if (!playerCells.length) {
         continue;
@@ -1766,10 +1808,15 @@
           ? extractPlayerCellsByAlignment(root, labelNode, label, expectedPlayerCount)
           : [];
 
-      const playerCells = sanitizePlayerCells(
-        mergeUniqueElements(extracted.playerCells, alignedCells),
-        labelNode,
+      const playerCells = maybeIncludeLabelCellAsPlayerCell(
+        sanitizePlayerCells(
+          mergeUniqueElements(extracted.playerCells, alignedCells),
+          labelNode,
+          extracted.labelCell,
+          expectedPlayerCount
+        ),
         extracted.labelCell,
+        label,
         expectedPlayerCount
       );
       if (!playerCells.length) {

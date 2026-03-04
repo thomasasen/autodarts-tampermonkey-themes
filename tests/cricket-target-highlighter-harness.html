@@ -268,18 +268,45 @@
           });
         }
 
-        function renderGridInto(grid, targetOrder, marksByLabel) {
+        function renderGridInto(grid, targetOrder, marksByLabel, options) {
+          const config = options || {};
+          const labelCellPlayerIndex = Number.isFinite(config.labelCellPlayerIndex)
+            ? config.labelCellPlayerIndex
+            : null;
           grid.textContent = "";
           targetOrder.forEach((label) => {
+            const markValues = marksByLabel[label] || [0, 0];
             const labelCell = document.createElement("div");
             labelCell.className = "label-cell";
             labelCell.dataset.rowLabel = label;
             const badge = document.createElement("span");
             badge.textContent = label;
             labelCell.appendChild(badge);
+
+            if (
+              labelCellPlayerIndex !== null &&
+              labelCellPlayerIndex >= 0 &&
+              labelCellPlayerIndex < markValues.length
+            ) {
+              const labelMark = markValues[labelCellPlayerIndex] || 0;
+              labelCell.dataset.playerIndex = String(labelCellPlayerIndex);
+              labelCell.setAttribute("data-marks", String(labelMark));
+              const markSlot = document.createElement("span");
+              markSlot.className = "label-mark-slot";
+              if (labelMark > 0) {
+                const icon = document.createElement("img");
+                icon.setAttribute("alt", String(labelMark));
+                markSlot.appendChild(icon);
+              }
+              labelCell.appendChild(markSlot);
+            }
+
             grid.appendChild(labelCell);
 
-            (marksByLabel[label] || [0, 0]).forEach((mark, playerIndex) => {
+            markValues.forEach((mark, playerIndex) => {
+              if (playerIndex === labelCellPlayerIndex) {
+                return;
+              }
               const cell = document.createElement("div");
               cell.className = "player-cell";
               cell.dataset.rowLabel = label;
@@ -301,7 +328,7 @@
           const config = options || {};
           const grid = document.getElementById("grid");
           clearExtraGrids();
-          renderGridInto(grid, targetOrder, marksByLabel);
+          renderGridInto(grid, targetOrder, marksByLabel, config);
 
           (config.hiddenGrids || []).forEach((gridConfig, index) => {
             const hiddenGrid = document.createElement("div");
@@ -310,10 +337,15 @@
             hiddenGrid.style.display = "none";
             hiddenGrid.style.gridTemplateColumns =
               getComputedStyle(grid).gridTemplateColumns;
+            const hiddenConfig = {
+              ...config,
+              ...(gridConfig || {}),
+            };
             renderGridInto(
               hiddenGrid,
               gridConfig.targetOrder || targetOrder,
-              gridConfig.marksByLabel || {}
+              gridConfig.marksByLabel || {},
+              hiddenConfig
             );
             grid.parentNode.insertBefore(hiddenGrid, grid);
           });
@@ -352,6 +384,12 @@
               : 0,
             gridDeadCells: visibleGrid
               ? visibleGrid.querySelectorAll(".ad-ext-crfx-dead").length
+              : 0,
+            gridLabelScoreCells: visibleGrid
+              ? visibleGrid.querySelectorAll(".label-cell.ad-ext-crfx-score").length
+              : 0,
+            gridLabelThreatCells: visibleGrid
+              ? visibleGrid.querySelectorAll(".label-cell.ad-ext-crfx-threat").length
               : 0,
             gridScoreCellsByPlayer: countCellsByPlayer("ad-ext-crfx-score"),
             gridThreatCellsByPlayer: countCellsByPlayer("ad-ext-crfx-threat"),
@@ -404,6 +442,7 @@
           );
           renderGrid(config.targetOrder, config.marksByLabel, {
             hiddenGrids: config.hiddenGrids,
+            labelCellPlayerIndex: config.labelCellPlayerIndex,
           });
           if (typeof sharedState.emit === "function") {
             sharedState.emit();
@@ -615,6 +654,83 @@
               case6.gridFxActive,
             "Auch bei verdrehter DOM-Reihenfolge bleibt die visuelle TEST2-Spalte die rote Danger-Seite",
             JSON.stringify(case6)
+          );
+
+          const case7 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 0,
+            domActivePlayerIndex: 0,
+            targetOrder: TACTICS_TARGETS,
+            labelCellPlayerIndex: 0,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapes === 4 &&
+                metrics.gridScoreCells === 1 &&
+                metrics.gridLabelScoreCells === 1
+              );
+            },
+          });
+          assert(
+            case7.overlay &&
+              case7.scoreShapes === 4 &&
+              case7.dangerShapes === 0 &&
+              case7.gridScoreCells === 1 &&
+              case7.gridLabelScoreCells === 1 &&
+              case7.gridScoreCellsByPlayer["0"] === 1 &&
+              case7.gridThreatCells === 0 &&
+              case7.themeApplied &&
+              case7.gridFxActive,
+            "Kombinierte Label-/Spielerzelle: ein geschlossener T20 färbt die echte erste Feldzelle grün statt die leere Folgezelle",
+            JSON.stringify(case7)
+          );
+
+          const case8 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            targetOrder: TACTICS_TARGETS,
+            labelCellPlayerIndex: 0,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {}),
+            matchState: {
+              players: [{ id: "player-1" }, { id: "player-2" }],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:00.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T20",
+                        number: 20,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 1;
+            },
+          });
+          assert(
+            case8.overlay &&
+              case8.scoreShapes === 0 &&
+              case8.dangerShapes === 4 &&
+              case8.gridScoreCells === 0 &&
+              case8.gridThreatCells === 1 &&
+              case8.gridLabelThreatCells === 0 &&
+              case8.gridThreatCellsByPlayer["1"] === 1 &&
+              case8.themeApplied &&
+              case8.gridFxActive,
+            "Kombinierte Label-/Spielerzelle: nach dem Spielerwechsel bleibt die Danger-Markierung auf der echten aktiven Gegnerspalte",
+            JSON.stringify(case8)
           );
 
           const summary = document.getElementById("summary");

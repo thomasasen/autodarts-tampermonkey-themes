@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.8
+// @version      1.0.9
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -280,6 +280,13 @@
     return String(cellStates[index]?.presentation || "neutral");
   }
 
+  function syncClassState(node, className, enabled) {
+    if (!node || !className) {
+      return;
+    }
+    node.classList.toggle(className, Boolean(enabled));
+  }
+
   function pulseRow(row) {
     if (!CFG.rowRailPulse) {
       return;
@@ -514,7 +521,7 @@
     }
 
     state.root = snapshot.root;
-    snapshot.root.classList.add(ROOT_CLASS);
+    syncClassState(snapshot.root, ROOT_CLASS, true);
 
     const targetStates = cricketState.computeTargetStates(snapshot, {
       showDeadTargets: true,
@@ -550,38 +557,39 @@
 
       row.playerCells.forEach((cell, index) => {
         const cellPresentation = readCellPresentation(targetState, index);
-        cell.classList.add(CELL_CLASS);
-        cell.classList.remove(
+        syncClassState(cell, CELL_CLASS, true);
+        syncClassState(
+          cell,
           THREAT_CLASS,
-          SCORE_CLASS,
-          DEAD_CLASS,
-          PRESSURE_CLASS
-        );
-        if (
           CFG.threatEdge &&
-          (cellPresentation === "danger" || cellPresentation === "pressure")
-        ) {
-          cell.classList.add(THREAT_CLASS);
-        }
-        if (CFG.scoringLane && cellPresentation === "offense") {
-          cell.classList.add(SCORE_CLASS);
-        }
-        if (CFG.deadRowCollapse && cellPresentation === "dead") {
-          cell.classList.add(DEAD_CLASS);
-        }
-        if (CFG.pressureOverlay && cellPresentation === "pressure") {
-          cell.classList.add(PRESSURE_CLASS);
-        }
+            (cellPresentation === "danger" || cellPresentation === "pressure")
+        );
+        syncClassState(
+          cell,
+          SCORE_CLASS,
+          CFG.scoringLane && cellPresentation === "offense"
+        );
+        syncClassState(
+          cell,
+          DEAD_CLASS,
+          CFG.deadRowCollapse && cellPresentation === "dead"
+        );
+        syncClassState(
+          cell,
+          PRESSURE_CLASS,
+          CFG.pressureOverlay && cellPresentation === "pressure"
+        );
       });
 
       if (row.labelCell) {
-        row.labelCell.classList.add(LABEL_CELL_CLASS);
+        syncClassState(row.labelCell, LABEL_CELL_CLASS, true);
       }
 
       const badgeNode = getDecoratableBadgeNode(row);
       if (badgeNode) {
-        badgeNode.classList.add(BADGE_CLASS);
-        badgeNode.classList.toggle(
+        syncClassState(badgeNode, BADGE_CLASS, true);
+        syncClassState(
+          badgeNode,
           BADGE_BEACON_CLASS,
           CFG.badgeBeacon &&
             (targetState.offense || targetState.danger || targetState.pressure)

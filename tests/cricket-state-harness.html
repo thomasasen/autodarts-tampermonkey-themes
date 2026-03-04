@@ -172,6 +172,48 @@
           return root;
         }
 
+        function buildCombinedLabelPlayerRoot(targetOrder, markSets, options) {
+          const config = options || {};
+          const labelPlayerIndex = Number.isFinite(config.labelPlayerIndex)
+            ? config.labelPlayerIndex
+            : 0;
+          const root = document.createElement("div");
+          root.className = "combined-label-player-root";
+          targetOrder.forEach((label, index) => {
+            const markValues = Array.isArray(markSets[index]) ? markSets[index] : [];
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            labelCell.setAttribute(
+              "data-marks",
+              String(markValues[labelPlayerIndex] ?? 0)
+            );
+
+            const labelNode = document.createElement("span");
+            labelNode.className = "label-text";
+            labelNode.textContent = label;
+            labelCell.appendChild(labelNode);
+
+            const markSlot = document.createElement("span");
+            markSlot.className = "label-mark-slot";
+            const markValue = markValues[labelPlayerIndex] ?? 0;
+            if (markValue > 0) {
+              const icon = document.createElement("img");
+              icon.setAttribute("alt", String(markValue));
+              markSlot.appendChild(icon);
+            }
+            labelCell.appendChild(markSlot);
+
+            root.appendChild(labelCell);
+            markValues.forEach((mark, playerIndex) => {
+              if (playerIndex === labelPlayerIndex) {
+                return;
+              }
+              root.appendChild(markCell(mark));
+            });
+          });
+          return root;
+        }
+
         function mountPlayerStrip(playerCount, activePlayerIndex, options) {
           const config = options || {};
           const players = Array.isArray(config.players) && config.players.length
@@ -490,6 +532,54 @@
                 .map((row) => `${row.label}:${row.badgeNode === null}`)
                 .join(",")
             : "snapshot=null"
+        );
+
+        const case6Combined = buildState(
+          buildCombinedLabelPlayerRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
+        assert(
+          case6Combined.snapshot &&
+            case6Combined.snapshot.rows.every(
+              (row) => row.playerCells[0] === row.labelCell
+            ),
+          "Combined label/player cell: label cell is promoted to the first player slot",
+          case6Combined.snapshot
+            ? case6Combined.snapshot.rows
+                .map((row) => `${row.label}:${row.playerCells[0] === row.labelCell}`)
+                .join(",")
+            : "snapshot=null"
+        );
+        assert(
+          case6Combined.states.get("20").presentation === "offense" &&
+            readCellPresentations(case6Combined, "20").join(",") ===
+              "offense,neutral",
+          "Combined label/player cell: offense stays on the label-bearing first column",
+          JSON.stringify({
+            state: case6Combined.states.get("20"),
+            cells: readCellPresentations(case6Combined, "20"),
+          })
+        );
+
+        const case6CombinedDanger = buildState(
+          buildCombinedLabelPlayerRoot(CRICKET_TARGETS, twoPlayerDangerCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
+        assert(
+          case6CombinedDanger.states.get("20").presentation === "danger" &&
+            readCellPresentations(case6CombinedDanger, "20").join(",") ===
+              "pressure,neutral",
+          "Combined label/player cell: an open leading cell stays mapped even when its visible marks are zero",
+          JSON.stringify({
+            state: case6CombinedDanger.states.get("20"),
+            cells: readCellPresentations(case6CombinedDanger, "20"),
+          })
         );
 
         assert(
