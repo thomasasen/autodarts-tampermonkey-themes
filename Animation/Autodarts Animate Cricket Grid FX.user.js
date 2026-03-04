@@ -40,6 +40,7 @@
   const DEAD_CLASS = "ad-ext-crfx-dead";
   const PRESSURE_CLASS = "ad-ext-crfx-pressure";
   const BADGE_CLASS = "ad-ext-crfx-badge";
+  const LABEL_CELL_CLASS = "ad-ext-crfx-label-cell";
   const BADGE_BEACON_CLASS = "ad-ext-crfx-badge-beacon";
   const BADGE_BURST_CLASS = "ad-ext-crfx-badge-burst";
   const MARK_PROGRESS_CLASS = "ad-ext-crfx-mark-progress";
@@ -368,6 +369,9 @@
     toArray(root.querySelectorAll(`.${BADGE_CLASS}`)).forEach((node) => {
       node.classList.remove(BADGE_CLASS, BADGE_BEACON_CLASS, BADGE_BURST_CLASS);
     });
+    toArray(root.querySelectorAll(`.${LABEL_CELL_CLASS}`)).forEach((node) => {
+      node.classList.remove(LABEL_CELL_CLASS);
+    });
     toArray(root.querySelectorAll(`.${MARK_PROGRESS_CLASS}`)).forEach((node) => {
       node.classList.remove(
         MARK_PROGRESS_CLASS,
@@ -488,9 +492,15 @@
         }
       });
 
-      if (row.badgeNode) {
-        row.badgeNode.classList.add(BADGE_CLASS);
-        row.badgeNode.classList.toggle(
+      if (row.labelCell) {
+        row.labelCell.classList.add(LABEL_CELL_CLASS);
+      }
+
+      const badgeNode =
+        row.badgeNode && row.badgeNode !== row.labelCell ? row.badgeNode : null;
+      if (badgeNode) {
+        badgeNode.classList.add(BADGE_CLASS);
+        badgeNode.classList.toggle(
           BADGE_BEACON_CLASS,
           CFG.badgeBeacon &&
             (targetState.offense || targetState.danger || targetState.pressure)
@@ -548,12 +558,13 @@
   const CSS = `
 .${ROOT_CLASS}{position:relative;isolation:isolate;}
 .${ROOT_CLASS} .${CELL_CLASS}{position:relative;overflow:visible;transition:filter .18s ease,opacity .18s ease,box-shadow .18s ease,background .18s ease;}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS}{position:relative;}
 .${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
 .${ROOT_CLASS} .${CELL_CLASS}.${SCORE_CLASS}{box-shadow:inset 0 0 0 1px rgba(16,185,129,.42);background-image:linear-gradient(90deg,rgba(16,185,129,.18) 0%,rgba(16,185,129,.04) 28%,rgba(16,185,129,.04) 72%,rgba(16,185,129,.18) 100%);}
 .${ROOT_CLASS} .${CELL_CLASS}.${DEAD_CLASS}{filter:grayscale(.88) saturate(.25) brightness(.72);opacity:.72;}
 .${ROOT_CLASS} .${CELL_CLASS}.${PRESSURE_CLASS}{box-shadow:inset 0 0 0 1px rgba(251,113,133,.45),inset 0 0 28px rgba(190,24,93,.18);background-image:repeating-linear-gradient(135deg,rgba(251,113,133,.12) 0px,rgba(251,113,133,.12) 8px,rgba(251,113,133,.04) 8px,rgba(251,113,133,.04) 16px);}
 .${ROOT_CLASS} .${ROW_WAVE_CLASS}{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(56,189,248,0) 0%,rgba(56,189,248,.32) 42%,rgba(125,211,252,.54) 52%,rgba(56,189,248,.32) 62%,rgba(56,189,248,0) 100%);transform:translateX(-110%);animation:adCrfxRowWave .76s cubic-bezier(.2,.7,.2,1) forwards;z-index:6;}
-.${ROOT_CLASS} .${BADGE_CLASS}{position:absolute !important;left:8px !important;top:50% !important;transform:translateY(-50%);z-index:12;margin:0 !important;white-space:nowrap;}
+.${ROOT_CLASS} .${BADGE_CLASS}{position:absolute !important;left:8px !important;top:50% !important;transform:translateY(-50%);z-index:12;margin:0 !important;white-space:nowrap;pointer-events:none;}
 .${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BEACON_CLASS}{box-shadow:0 0 0 1px rgba(56,189,248,.4),0 0 14px rgba(56,189,248,.42);background-color:rgba(8,47,73,.72)!important;}
 .${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BURST_CLASS}{animation:adCrfxBadgeBurst .7s ease;}
 .${ROOT_CLASS} .${MARK_PROGRESS_CLASS}{transform-origin:center center;animation:adCrfxMark .46s cubic-bezier(.2,.8,.2,1);}
