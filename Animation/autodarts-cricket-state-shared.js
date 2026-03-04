@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-active-player-stability-hold`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-player-display-horizontal-order`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -370,7 +370,12 @@
           (node) => isElement(node)
         );
         const visiblePlayers = sortElementsByVisualOrder(
-          players.filter(isVisiblePlayerNode)
+          players.filter(isVisiblePlayerNode),
+          {
+            preferHorizontal: true,
+            rowTolerance: 12,
+            sameRowTopTolerance: 64,
+          }
         );
         const activeVisiblePlayers = visiblePlayers.filter((player) =>
           isActivePlayerNode(player, activePlayerSelector)
@@ -483,6 +488,13 @@
     const rowTolerance = Number.isFinite(options.rowTolerance)
       ? options.rowTolerance
       : 8;
+    const preferHorizontal = Boolean(options.preferHorizontal);
+    const sameRowOverlapRatio = Number.isFinite(options.sameRowOverlapRatio)
+      ? Math.max(0, Math.min(1, options.sameRowOverlapRatio))
+      : 0.45;
+    const sameRowTopTolerance = Number.isFinite(options.sameRowTopTolerance)
+      ? Math.max(0, options.sameRowTopTolerance)
+      : 48;
 
     return uniqueElements(elements)
       .filter((element) => isElement(element))
@@ -493,11 +505,27 @@
           index,
           top: Number.isFinite(rect.top) ? rect.top : 0,
           left: Number.isFinite(rect.left) ? rect.left : 0,
+          bottom: Number.isFinite(rect.bottom) ? rect.bottom : 0,
           width: Number.isFinite(rect.width) ? rect.width : 0,
           height: Number.isFinite(rect.height) ? rect.height : 0,
         };
       })
       .sort((first, second) => {
+        if (preferHorizontal) {
+          const overlap = Math.max(
+            0,
+            Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top)
+          );
+          const minHeight = Math.max(0, Math.min(first.height, second.height));
+          const overlapRatio = minHeight > 0 ? overlap / minHeight : 0;
+          const topDelta = Math.abs(first.top - second.top);
+          const sameRow =
+            overlapRatio >= sameRowOverlapRatio || topDelta <= sameRowTopTolerance;
+
+          if (sameRow && first.left !== second.left) {
+            return first.left - second.left;
+          }
+        }
         if (Math.abs(first.top - second.top) > rowTolerance) {
           return first.top - second.top;
         }
@@ -692,15 +720,31 @@
     const visibleGlobalPlayers = globalPlayers.filter(isVisiblePlayerNode);
 
     if (visibleDirectDisplayPlayers.length) {
-      return sortElementsByVisualOrder(visibleDirectDisplayPlayers);
+      return sortElementsByVisualOrder(visibleDirectDisplayPlayers, {
+        preferHorizontal: true,
+        rowTolerance: 12,
+        sameRowTopTolerance: 64,
+      });
     }
     if (visibleDisplayPlayers.length) {
-      return sortElementsByVisualOrder(visibleDisplayPlayers);
+      return sortElementsByVisualOrder(visibleDisplayPlayers, {
+        preferHorizontal: true,
+        rowTolerance: 12,
+        sameRowTopTolerance: 64,
+      });
     }
     if (visibleGlobalPlayers.length) {
-      return sortElementsByVisualOrder(visibleGlobalPlayers);
+      return sortElementsByVisualOrder(visibleGlobalPlayers, {
+        preferHorizontal: true,
+        rowTolerance: 12,
+        sameRowTopTolerance: 64,
+      });
     }
-    return sortElementsByVisualOrder(globalPlayers);
+    return sortElementsByVisualOrder(globalPlayers, {
+      preferHorizontal: true,
+      rowTolerance: 12,
+      sameRowTopTolerance: 64,
+    });
   }
 
   function getVisiblePlayerCount(options = {}) {
