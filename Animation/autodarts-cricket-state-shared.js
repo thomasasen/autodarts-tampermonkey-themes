@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-active-player-root-fix`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-active-player-stability-hold`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -45,8 +45,12 @@
   let cachedGridRoot = null;
   let lastUnknownModeKey = "";
   const DEBUG_TRACE_ENABLED = false;
+  const ACTIVE_PLAYER_STABILITY_HOLD_MS = 2500;
+  const ACTIVE_PLAYER_LOW_CONFIRMATIONS = 3;
+  const GAME_STATE_STALE_MS = 4500;
   const debugWarningSignatures = new Set();
   const debugRootIds = new WeakMap();
+  const activePlayerStabilityStateByKey = new Map();
   let nextDebugRootId = 1;
 
   function toArray(value) {
@@ -341,6 +345,11 @@
     const playerSelector = options.playerSelector || PLAYER_SELECTOR;
     const activePlayerSelector =
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
+    const gameStateShared = options.gameStateShared || null;
+    const stateIndex =
+      gameStateShared && typeof gameStateShared.getActivePlayerIndex === "function"
+        ? gameStateShared.getActivePlayerIndex()
+        : null;
     const gridRoot = isElement(options.gridRoot) ? options.gridRoot : null;
     const gridRect =
       gridRoot && typeof gridRoot.getBoundingClientRect === "function"
@@ -360,7 +369,9 @@
         const players = toArray(root.querySelectorAll(playerSelector)).filter(
           (node) => isElement(node)
         );
-        const visiblePlayers = players.filter(isVisiblePlayerNode);
+        const visiblePlayers = sortElementsByVisualOrder(
+          players.filter(isVisiblePlayerNode)
+        );
         const activeVisiblePlayers = visiblePlayers.filter((player) => {
           return (
             player.matches(activePlayerSelector) ||
@@ -368,6 +379,9 @@
               player.querySelector(activePlayerSelector))
           );
         });
+        const activeVisibleIndices = activeVisiblePlayers
+          .map((player) => visiblePlayers.indexOf(player))
+          .filter((candidateIndex) => candidateIndex >= 0);
         const rect =
           typeof root.getBoundingClientRect === "function"
             ? root.getBoundingClientRect()
@@ -391,6 +405,20 @@
           score += 420;
         } else if (activeVisiblePlayers.length > 1) {
           score += 220;
+        }
+        if (Number.isFinite(stateIndex)) {
+          if (activeVisibleIndices.length === 1) {
+            if (activeVisibleIndices[0] === stateIndex) {
+              score += 720;
+            } else {
+              score -= 380;
+            }
+          } else if (activeVisibleIndices.length > 1) {
+            score -= 160;
+          }
+          if (stateIndex >= visiblePlayers.length) {
+            score -= 120;
+          }
         }
         score += Math.min(260, viewportArea / 3500);
         score += Math.min(140, area / 7000);
@@ -585,6 +613,14 @@
     const state = gameStateShared.getState();
     const match = state && state.match;
     return match && typeof match === "object" ? match : null;
+  }
+
+  function readGameStateSnapshot(gameStateShared) {
+    if (!gameStateShared || typeof gameStateShared.getState !== "function") {
+      return null;
+    }
+    const snapshot = gameStateShared.getState();
+    return snapshot && typeof snapshot === "object" ? snapshot : null;
   }
 
   function uniqueElements(elements) {
@@ -2254,6 +2290,268 @@
     );
   }
 
+  function classifyActiveResolutionConfidence(source) {
+    const normalized = String(source || "").trim().toLowerCase();
+    if (!normalized) {
+      return "low";
+    }
+
+    if (
+      normalized === "visible-dom-id" ||
+      normalized === "visible-dom-name" ||
+      normalized === "game-state-match" ||
+      normalized.startsWith("visible-dom-state-")
+    ) {
+      return "high";
+    }
+
+    if (
+      normalized === "visible-dom-display" ||
+      normalized === "dom-fallback-display" ||
+      normalized.startsWith("identity-") ||
+      normalized.startsWith("visible-dom-candidate-")
+    ) {
+      return "medium";
+    }
+
+    if (
+      normalized === "dom-fallback-index" ||
+      normalized === "index-fallback"
+    ) {
+      return "low";
+    }
+
+    return "medium";
+  }
+
+  function getActiveResolutionStabilityKey(options = {}) {
+    const rootId = String(options.rootId || "no-root");
+    const playerDisplayRootId = String(options.playerDisplayRootId || "no-display-root");
+    const playerCount = Number.isFinite(options.playerCount)
+      ? options.playerCount
+      : 0;
+    const gameStateSnapshot = options.gameStateSnapshot || null;
+    const matchId = String(gameStateSnapshot?.match?.id || "");
+    const topic = String(gameStateSnapshot?.topic || "");
+    const identity = matchId || topic || "no-match";
+    return `${identity}|${rootId}|${playerDisplayRootId}|${playerCount}`;
+  }
+
+  function stabilizeActivePlayerResolution(options = {}) {
+    const key = String(options.key || "");
+    const now = Number.isFinite(options.now) ? options.now : Date.now();
+    const playerCount = Number.isFinite(options.playerCount)
+      ? Math.max(1, options.playerCount)
+      : 1;
+    const fallbackIndex = Number.isFinite(options.fallbackIndex)
+      ? Math.max(0, Math.min(options.fallbackIndex, playerCount - 1))
+      : 0;
+    const candidateIndex = Number.isFinite(options.candidateIndex)
+      ? Math.max(0, Math.min(options.candidateIndex, playerCount - 1))
+      : fallbackIndex;
+    const rawSource = String(options.rawSource || "");
+    const rawDisplayIndex = Number.isFinite(options.displayIndex)
+      ? options.displayIndex
+      : null;
+    const rawMatchIndex = Number.isFinite(options.matchIndex)
+      ? options.matchIndex
+      : null;
+    const rawUsedVisibleDom = Boolean(options.usedVisibleDom);
+    const candidateConfidence = classifyActiveResolutionConfidence(rawSource);
+    const holdMs = Number.isFinite(options.holdMs)
+      ? Math.max(0, options.holdMs)
+      : ACTIVE_PLAYER_STABILITY_HOLD_MS;
+    const requiredLowConfirmations = Number.isFinite(options.lowConfirmations)
+      ? Math.max(1, Math.round(options.lowConfirmations))
+      : ACTIVE_PLAYER_LOW_CONFIRMATIONS;
+
+    const previous =
+      key && activePlayerStabilityStateByKey.has(key)
+        ? activePlayerStabilityStateByKey.get(key)
+        : null;
+    const previousStableConfidence = String(previous?.stableConfidence || "low");
+    const previousStableIndex = Number.isFinite(previous?.stableIndex)
+      ? previous.stableIndex
+      : null;
+    const previousStableAgeMs =
+      previous && Number.isFinite(previous.stableUpdatedAt)
+        ? Math.max(0, now - previous.stableUpdatedAt)
+        : 0;
+
+    let stabilityHold = false;
+    let stabilityReason = "";
+    let effectiveIndex = candidateIndex;
+    let effectiveSource = rawSource;
+    let effectiveConfidence = candidateConfidence;
+    let effectiveDisplayIndex = rawDisplayIndex;
+    let effectiveMatchIndex = rawMatchIndex;
+    let stableUpdatedAt = now;
+    let pendingLowIndex = Number.isFinite(previous?.pendingLowIndex)
+      ? previous.pendingLowIndex
+      : null;
+    let pendingLowCount = Number.isFinite(previous?.pendingLowCount)
+      ? previous.pendingLowCount
+      : 0;
+
+    const canHoldOnFreshStable =
+      previous &&
+      previousStableIndex !== null &&
+      candidateConfidence === "low" &&
+      candidateIndex !== previousStableIndex &&
+      (previousStableConfidence === "high" ||
+        previousStableConfidence === "medium") &&
+      previousStableAgeMs <= holdMs;
+
+    if (!previous) {
+      pendingLowIndex = null;
+      pendingLowCount = 0;
+    } else if (candidateConfidence === "high") {
+      pendingLowIndex = null;
+      pendingLowCount = 0;
+    } else if (canHoldOnFreshStable) {
+      stabilityHold = true;
+      stabilityReason = "low-confidence-flip";
+      effectiveIndex = previousStableIndex;
+      effectiveSource = String(previous?.stableSource || rawSource);
+      effectiveConfidence = classifyActiveResolutionConfidence(effectiveSource);
+      effectiveDisplayIndex = Number.isFinite(previous?.stableDisplayIndex)
+        ? previous.stableDisplayIndex
+        : rawDisplayIndex;
+      effectiveMatchIndex = Number.isFinite(previous?.stableMatchIndex)
+        ? previous.stableMatchIndex
+        : rawMatchIndex;
+      stableUpdatedAt = Number.isFinite(previous?.stableUpdatedAt)
+        ? previous.stableUpdatedAt
+        : now;
+      pendingLowIndex = candidateIndex;
+      pendingLowCount =
+        pendingLowIndex === previous?.pendingLowIndex
+          ? (previous?.pendingLowCount || 0) + 1
+          : 1;
+    } else if (
+      previous &&
+      candidateConfidence === "low" &&
+      previousStableIndex !== null &&
+      candidateIndex !== previousStableIndex
+    ) {
+      pendingLowIndex =
+        pendingLowIndex !== null && pendingLowIndex === candidateIndex
+          ? pendingLowIndex
+          : candidateIndex;
+      pendingLowCount =
+        pendingLowIndex === previous?.pendingLowIndex
+          ? (previous?.pendingLowCount || 0) + 1
+          : 1;
+      if (pendingLowCount < requiredLowConfirmations) {
+        stabilityHold = true;
+        stabilityReason = "low-confidence-unconfirmed";
+        effectiveIndex = previousStableIndex;
+        effectiveSource = String(previous?.stableSource || rawSource);
+        effectiveConfidence = classifyActiveResolutionConfidence(effectiveSource);
+        effectiveDisplayIndex = Number.isFinite(previous?.stableDisplayIndex)
+          ? previous.stableDisplayIndex
+          : rawDisplayIndex;
+        effectiveMatchIndex = Number.isFinite(previous?.stableMatchIndex)
+          ? previous.stableMatchIndex
+          : rawMatchIndex;
+        stableUpdatedAt = Number.isFinite(previous?.stableUpdatedAt)
+          ? previous.stableUpdatedAt
+          : now;
+      } else {
+        pendingLowIndex = null;
+        pendingLowCount = 0;
+      }
+    } else {
+      pendingLowIndex = null;
+      pendingLowCount = 0;
+    }
+
+    if (!stabilityHold) {
+      stableUpdatedAt = now;
+    }
+
+    const nextState = {
+      stableIndex: effectiveIndex,
+      stableSource: effectiveSource,
+      stableConfidence: effectiveConfidence,
+      stableDisplayIndex: effectiveDisplayIndex,
+      stableMatchIndex: effectiveMatchIndex,
+      stableUpdatedAt,
+      pendingLowIndex,
+      pendingLowCount,
+      lastRawIndex: candidateIndex,
+      lastRawSource: rawSource,
+      lastUpdatedAt: now,
+    };
+    if (key) {
+      activePlayerStabilityStateByKey.set(key, nextState);
+      if (activePlayerStabilityStateByKey.size > 256) {
+        const oldestKey = activePlayerStabilityStateByKey.keys().next().value;
+        if (oldestKey) {
+          activePlayerStabilityStateByKey.delete(oldestKey);
+        }
+      }
+    }
+
+    return {
+      index: effectiveIndex,
+      source: effectiveSource,
+      rawSource,
+      sourceConfidence: effectiveConfidence,
+      stabilityHold,
+      stabilityReason,
+      stabilityAgeMs: Math.max(0, now - stableUpdatedAt),
+      displayIndex: effectiveDisplayIndex,
+      matchIndex: effectiveMatchIndex,
+      rawDisplayIndex,
+      rawMatchIndex,
+      usedVisibleDom:
+        String(effectiveSource || "").startsWith("visible-dom") ||
+        (rawUsedVisibleDom && effectiveSource === rawSource),
+      pendingLowCount,
+      pendingLowIndex,
+      rawIndex: candidateIndex,
+    };
+  }
+
+  function maybeWarnGameStateMissingOrStale(debugLog, options = {}) {
+    if (typeof debugLog !== "function") {
+      return;
+    }
+    const gameStateSnapshot = options.gameStateSnapshot || null;
+    const updatedAt = Number.isFinite(gameStateSnapshot?.updatedAt)
+      ? gameStateSnapshot.updatedAt
+      : 0;
+    const ageMs = updatedAt > 0 ? Math.max(0, Date.now() - updatedAt) : null;
+    const stale = ageMs === null || ageMs > GAME_STATE_STALE_MS;
+    if (!stale) {
+      return;
+    }
+
+    const payload = {
+      rootId: String(options.rootId || "no-root"),
+      source: String(gameStateSnapshot?.source || "none"),
+      topic: String(gameStateSnapshot?.topic || ""),
+      payloadKind: String(gameStateSnapshot?.payloadKind || ""),
+      ageMs,
+      staleThresholdMs: GAME_STATE_STALE_MS,
+      playerMappingSource: String(options.playerMappingSource || ""),
+    };
+    const signature = [
+      payload.rootId,
+      payload.source,
+      payload.topic,
+      payload.payloadKind,
+      ageMs === null ? "missing" : "stale",
+    ].join("|");
+    debugWarnOnce(
+      debugLog,
+      "buildGridSnapshot: game-state-missing-or-stale",
+      signature,
+      payload
+    );
+  }
+
   function buildGridSnapshot(options = {}) {
     const debugLog =
       typeof options.debugLog === "function" ? options.debugLog : null;
@@ -2262,7 +2560,13 @@
       return null;
     }
 
+    const rootId = getDebugRootId(root);
     const gameStateShared = options.gameStateShared || null;
+    const gameStateSnapshot = readGameStateSnapshot(gameStateShared);
+    const matchFromState =
+      gameStateSnapshot && typeof gameStateSnapshot.match === "object"
+        ? gameStateSnapshot.match
+        : null;
     const playerContextOptions = {
       ...options,
       gridRoot: root,
@@ -2324,18 +2628,56 @@
     const playerMapping = buildPlayerSlotMapping({
       ...playerContextOptions,
       gameStateShared,
-      match: readMatchData(gameStateShared),
+      match: matchFromState || readMatchData(gameStateShared),
       activePlayerInfo,
       playerCount,
     });
     const playerSlots = Array.isArray(playerMapping.playerSlots)
       ? playerMapping.playerSlots.slice(0, playerCount)
       : [];
-    const activePlayerResolution = resolveActivePlayerResolution(
+    const activePlayerResolutionRaw = resolveActivePlayerResolution(
       activePlayerInfo,
       playerSlots,
       playerCount
     );
+    const stabilizedResolution = stabilizeActivePlayerResolution({
+      key: getActiveResolutionStabilityKey({
+        rootId,
+        playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerCount,
+        gameStateSnapshot,
+      }),
+      now: Date.now(),
+      playerCount,
+      fallbackIndex: Number.isFinite(activePlayerInfo.index)
+        ? activePlayerInfo.index
+        : 0,
+      candidateIndex: Number.isFinite(activePlayerResolutionRaw.columnIndex)
+        ? activePlayerResolutionRaw.columnIndex
+        : 0,
+      rawSource: activePlayerResolutionRaw.source,
+      displayIndex: activePlayerResolutionRaw.displayIndex,
+      matchIndex: activePlayerResolutionRaw.matchIndex,
+      usedVisibleDom: Boolean(activePlayerResolutionRaw.usedVisibleDom),
+    });
+    const activePlayerResolution = {
+      ...activePlayerResolutionRaw,
+      columnIndex: stabilizedResolution.index,
+      displayIndex: stabilizedResolution.displayIndex,
+      matchIndex: stabilizedResolution.matchIndex,
+      source: stabilizedResolution.source,
+      rawSource: stabilizedResolution.rawSource,
+      sourceConfidence: stabilizedResolution.sourceConfidence,
+      stabilityHold: stabilizedResolution.stabilityHold,
+      stabilityReason: stabilizedResolution.stabilityReason,
+      stabilityAgeMs: stabilizedResolution.stabilityAgeMs,
+      rawDisplayIndex: stabilizedResolution.rawDisplayIndex,
+      rawMatchIndex: stabilizedResolution.rawMatchIndex,
+      rawIndex: stabilizedResolution.rawIndex,
+      usedVisibleDom: Boolean(stabilizedResolution.usedVisibleDom),
+      pendingLowCount: stabilizedResolution.pendingLowCount,
+      pendingLowIndex: stabilizedResolution.pendingLowIndex,
+    };
     const resolvedActivePlayerIndex = activePlayerResolution.columnIndex;
     const displayMappedPlayerIndex = Number.isFinite(activePlayerInfo.displayIndex)
       ? resolveMappedActivePlayerIndex(
@@ -2367,6 +2709,39 @@
       gameStateShared,
       targetSet
     );
+    if (debugLog && activePlayerResolution.stabilityHold) {
+      const holdPayload = {
+        rootId,
+        playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
+        rawSource: activePlayerResolution.rawSource || "",
+        rawIndex: Number.isFinite(activePlayerResolution.rawIndex)
+          ? activePlayerResolution.rawIndex
+          : null,
+        stabilizedSource: activePlayerResolution.source || "",
+        stabilizedIndex: resolvedActivePlayerIndex,
+        sourceConfidence: activePlayerResolution.sourceConfidence || "low",
+        stabilityReason: activePlayerResolution.stabilityReason || "",
+        stabilityAgeMs: activePlayerResolution.stabilityAgeMs,
+        pendingLowCount: activePlayerResolution.pendingLowCount || 0,
+      };
+      const holdSignature = [
+        holdPayload.rootId,
+        holdPayload.playerDisplayRootId,
+        holdPayload.rawSource,
+        holdPayload.rawIndex,
+        holdPayload.stabilizedSource,
+        holdPayload.stabilizedIndex,
+        holdPayload.sourceConfidence,
+        holdPayload.stabilityReason,
+      ].join("|");
+      debugWarnOnce(
+        debugLog,
+        "buildGridSnapshot: active-player-stability-hold",
+        holdSignature,
+        holdPayload
+      );
+    }
     if (debugLog && (activePlayerInfo.playerDisplayRootCount || 0) > 1) {
       const rootConflictPayload = {
         selectedPlayerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
@@ -2379,7 +2754,9 @@
           ? activePlayerInfo.stateIndex
           : null,
         playerMappingSource: playerMapping.playerMappingSource,
-        rootId: getDebugRootId(root),
+        resolutionSource: activePlayerResolution.source,
+        sourceConfidence: activePlayerResolution.sourceConfidence || "low",
+        rootId,
       };
       const rootConflictSignature = [
         rootConflictPayload.rootId,
@@ -2429,7 +2806,7 @@
         playerMappingSource: playerMapping.playerMappingSource,
         playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
         playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
-        rootId: getDebugRootId(root),
+        rootId,
       };
       const conflictSignature = [
         conflictPayload.rootId,
@@ -2489,7 +2866,11 @@
           nameKey: slot.nameKey || "",
           source: slot.source || "",
         })),
-        rootId: getDebugRootId(root),
+        sourceConfidence: activePlayerResolution.sourceConfidence || "low",
+        rawResolutionSource: activePlayerResolution.rawSource || "",
+        stabilityHold: Boolean(activePlayerResolution.stabilityHold),
+        stabilityReason: activePlayerResolution.stabilityReason || "",
+        rootId,
         playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
         playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
       };
@@ -2516,7 +2897,7 @@
         expectedPlayerCount,
         visiblePlayerCount,
         playerSource,
-        rootId: getDebugRootId(root),
+        rootId,
       };
       const repairSignature = [
         repairPayload.rootId,
@@ -2543,6 +2924,12 @@
         preview: Object.fromEntries(turnMarksByLabel.entries()),
       });
     }
+
+    maybeWarnGameStateMissingOrStale(debugLog, {
+      rootId,
+      gameStateSnapshot,
+      playerMappingSource: playerMapping.playerMappingSource,
+    });
 
     const rows = parsedRows.rows
       .filter((row) => targetSet.has(row.label))
@@ -2610,6 +2997,22 @@
         matchIndex: activePlayerResolution.matchIndex,
         columnIndex: activePlayerResolution.columnIndex,
         source: activePlayerResolution.source,
+        rawSource: activePlayerResolution.rawSource || "",
+        sourceConfidence: activePlayerResolution.sourceConfidence || "low",
+        stabilityHold: Boolean(activePlayerResolution.stabilityHold),
+        stabilityReason: activePlayerResolution.stabilityReason || "",
+        stabilityAgeMs: Number.isFinite(activePlayerResolution.stabilityAgeMs)
+          ? activePlayerResolution.stabilityAgeMs
+          : 0,
+        rawDisplayIndex: Number.isFinite(activePlayerResolution.rawDisplayIndex)
+          ? activePlayerResolution.rawDisplayIndex
+          : null,
+        rawMatchIndex: Number.isFinite(activePlayerResolution.rawMatchIndex)
+          ? activePlayerResolution.rawMatchIndex
+          : null,
+        rawIndex: Number.isFinite(activePlayerResolution.rawIndex)
+          ? activePlayerResolution.rawIndex
+          : null,
         usedVisibleDom: Boolean(activePlayerResolution.usedVisibleDom),
         visibleActiveCandidates: Array.isArray(activePlayerInfo.activeCandidates)
           ? activePlayerInfo.activeCandidates.length

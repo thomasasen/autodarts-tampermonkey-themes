@@ -422,12 +422,72 @@
     return true;
   }
 
+  function revokeFeatureInstance(featureKey, options) {
+    const normalizedFeatureKey = String(featureKey || "").trim();
+    if (!normalizedFeatureKey) {
+      return {
+        revoked: false,
+        reason: "missing-feature-key",
+        ownerMeta: null,
+      };
+    }
+
+    const registry = getFeatureRegistry();
+    const existing = registry.get(normalizedFeatureKey);
+    if (!existing) {
+      return {
+        revoked: false,
+        reason: "not-found",
+        ownerMeta: null,
+      };
+    }
+
+    const config = options && typeof options === "object" ? options : {};
+    const payload = {
+      reason: String(config.reason || "revoked-by-runtime"),
+      requestedBy: String(config.requestedBy || "unknown"),
+      details:
+        config.details && typeof config.details === "object"
+          ? config.details
+          : null,
+      owner: toOwnerMeta(existing),
+    };
+
+    if (typeof existing.onDispose === "function") {
+      try {
+        existing.onDispose(payload);
+      } catch (error) {
+        console.warn(
+          "[autodarts-animation-shared] feature revoke dispose failed",
+          {
+            featureKey: normalizedFeatureKey,
+            error,
+          }
+        );
+      }
+    }
+
+    registry.delete(normalizedFeatureKey);
+    return {
+      revoked: true,
+      reason: "revoked",
+      ownerMeta: toOwnerMeta(existing),
+    };
+  }
+
   function getFeatureInstance(featureKey) {
     const normalizedFeatureKey = String(featureKey || "").trim();
     if (!normalizedFeatureKey) {
       return null;
     }
     return toOwnerMeta(getFeatureRegistry().get(normalizedFeatureKey));
+  }
+
+  function listFeatureInstances() {
+    const registry = getFeatureRegistry();
+    return Array.from(registry.values())
+      .map((record) => toOwnerMeta(record))
+      .filter(Boolean);
   }
 
   function markOverlayOwner(overlay, meta) {
@@ -568,7 +628,9 @@
     clearOverlay,
     claimFeatureInstance,
     releaseFeatureInstance,
+    revokeFeatureInstance,
     getFeatureInstance,
+    listFeatureInstances,
     markOverlayOwner,
     readOverlayOwner,
     polar,

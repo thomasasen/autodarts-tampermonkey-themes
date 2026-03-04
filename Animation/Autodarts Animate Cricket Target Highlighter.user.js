@@ -132,7 +132,7 @@
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-active-player-root-fix`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-active-player-stability-hold`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
@@ -232,12 +232,6 @@
   let unsubscribeGameState = null;
   let refreshTimer = null;
   let instanceReleased = false;
-  const boardDecisionState = {
-    conflictKey: "",
-    conflictCount: 0,
-    lastChosenIndex: null,
-    lastDecisionSource: "",
-  };
   const debugWarnSignatures = new Set();
   const debugInfoSignatures = new Map();
 
@@ -684,13 +678,6 @@
     };
   }
 
-  function resetBoardDecisionState() {
-    boardDecisionState.conflictKey = "";
-    boardDecisionState.conflictCount = 0;
-    boardDecisionState.lastChosenIndex = null;
-    boardDecisionState.lastDecisionSource = "";
-  }
-
   function resolveBoardRenderDecision(snapshot) {
     const snapshotBoardIndex = getFallbackBoardPlayerIndex(snapshot);
     const resolution = getActivePlayerResolution(snapshot);
@@ -698,82 +685,34 @@
     const { stateIndex, stateMappedIndex } =
       resolveStateMappedBoardPlayerIndex(snapshot);
     const hasConflict =
-      resolutionSource.startsWith("visible-dom") &&
       Number.isFinite(snapshotBoardIndex) &&
       Number.isFinite(stateMappedIndex) &&
       stateMappedIndex !== snapshotBoardIndex;
-
-    if (!hasConflict) {
-      resetBoardDecisionState();
-      boardDecisionState.lastChosenIndex = snapshotBoardIndex;
-      boardDecisionState.lastDecisionSource = "snapshot";
-      return {
-        boardPlayerIndex: snapshotBoardIndex,
-        decisionSource: "snapshot",
+    if (hasConflict) {
+      debugLog("board-player-resolution-conflict", {
+        _signature: [
+          snapshotBoardIndex,
+          stateMappedIndex,
+          stateIndex,
+          resolutionSource,
+          resolution?.sourceConfidence || "",
+          resolution?.stabilityHold ? "hold" : "direct",
+          snapshot?.playerMappingSource || "",
+        ].join("|"),
         snapshotBoardIndex,
         stateMappedIndex,
         stateIndex,
-      };
+        resolutionSource,
+        sourceConfidence: resolution?.sourceConfidence || "",
+        stabilityHold: Boolean(resolution?.stabilityHold),
+        stabilityReason: resolution?.stabilityReason || "",
+        playerMappingSource: snapshot?.playerMappingSource || "",
+      });
     }
-
-    const conflictKey = [
-      snapshotBoardIndex,
-      stateMappedIndex,
-      stateIndex,
-      resolutionSource,
-      snapshot?.playerMappingSource || "",
-      resolution?.matchIndex,
-    ].join("|");
-    if (boardDecisionState.conflictKey === conflictKey) {
-      boardDecisionState.conflictCount += 1;
-    } else {
-      boardDecisionState.conflictKey = conflictKey;
-      boardDecisionState.conflictCount = 1;
-    }
-
-    const previousChosenIndex = boardDecisionState.lastChosenIndex;
-    const shouldForceStateForVisibleConflict =
-      resolutionSource.startsWith("visible-dom") &&
-      Number.isFinite(stateMappedIndex);
-    const shouldPreferState =
-      shouldForceStateForVisibleConflict ||
-      previousChosenIndex === stateMappedIndex ||
-      boardDecisionState.conflictCount >= 2;
-    const boardPlayerIndex = shouldPreferState
-      ? stateMappedIndex
-      : snapshotBoardIndex;
-    const decisionSource = shouldPreferState
-      ? shouldForceStateForVisibleConflict
-        ? "game-state-visible-override"
-        : "game-state-conflict-override"
-      : "snapshot-conflict-first-pass";
-
-    boardDecisionState.lastChosenIndex = boardPlayerIndex;
-    boardDecisionState.lastDecisionSource = decisionSource;
-
-    debugLog("board-player-render-override", {
-      _signature: [
-        conflictKey,
-        decisionSource,
-        boardDecisionState.conflictCount,
-      ].join("|"),
-      snapshotBoardIndex,
-      stateMappedIndex,
-      chosenBoardIndex: boardPlayerIndex,
-      stateIndex,
-      resolutionSource,
-      resolutionMatchIndex: resolution?.matchIndex,
-      resolutionDisplayIndex: resolution?.displayIndex,
-      visibleActiveCandidates: resolution?.visibleActiveCandidates || 0,
-      playerMappingSource: snapshot?.playerMappingSource || "",
-      conflictCount: boardDecisionState.conflictCount,
-      previousChosenIndex,
-      decisionSource,
-    });
 
     return {
-      boardPlayerIndex,
-      decisionSource,
+      boardPlayerIndex: snapshotBoardIndex,
+      decisionSource: "snapshot-board-index",
       snapshotBoardIndex,
       stateMappedIndex,
       stateIndex,
@@ -1248,6 +1187,9 @@
       playerMappingSource,
       snapshot?.runtimeSourceHint || "",
       activeResolution?.source || "",
+      activeResolution?.sourceConfidence || "",
+      activeResolution?.stabilityHold ? "hold" : "direct",
+      activeResolution?.stabilityReason || "",
       Number.isFinite(activeResolution?.displayIndex)
         ? activeResolution.displayIndex
         : "",
@@ -1406,6 +1348,13 @@
         ? boardDecision.stateIndex
         : null,
       resolutionSource: resolution?.source || "",
+      sourceConfidence: resolution?.sourceConfidence || "",
+      stabilityHold: Boolean(resolution?.stabilityHold),
+      stabilityReason: resolution?.stabilityReason || "",
+      stabilityAgeMs: Number.isFinite(resolution?.stabilityAgeMs)
+        ? resolution.stabilityAgeMs
+        : 0,
+      rawResolutionSource: resolution?.rawSource || "",
       resolutionDisplayIndex: Number.isFinite(resolution?.displayIndex)
         ? resolution.displayIndex
         : null,
@@ -1437,12 +1386,34 @@
       payload.stateMappedIndex,
       payload.stateIndex,
       payload.resolutionSource,
+      payload.sourceConfidence,
+      payload.stabilityHold ? "hold" : "direct",
+      payload.stabilityReason,
       payload.playerMappingSource,
       JSON.stringify(targetSummary),
       JSON.stringify(playerSlots),
       (payload.overlayOrder || []).join(","),
     ].join("|");
     debugInfoOnChange("board-render-state", payload, signature);
+    const compactAge = Number.isFinite(payload.gameStateAgeMs)
+      ? Math.floor(payload.gameStateAgeMs / 1000)
+      : "na";
+    const compactLine = [
+      `board=${payload.boardPlayerIndex}`,
+      `snapshot=${payload.snapshotBoardIndex}`,
+      `decision=${payload.decisionSource}`,
+      `stateMap=${payload.stateMappedIndex}`,
+      `src=${payload.resolutionSource || "none"}`,
+      `conf=${payload.sourceConfidence || "low"}`,
+      `hold=${payload.stabilityHold ? "1" : "0"}`,
+      `reason=${payload.stabilityReason || "-"}`,
+      `root=${payload.playerDisplayRootId || "-"}/${payload.playerDisplayRootCount || 0}`,
+      `gs=${payload.gameStateSource || "none"}`,
+      `topic=${payload.gameStateTopic || "-"}`,
+      `kind=${payload.gameStatePayloadKind || "-"}`,
+      `age_s=${compactAge}`,
+    ].join(" ");
+    debugInfoOnChange("board-render-state-compact", compactLine, compactLine);
   }
 
   function readStateContext() {
@@ -1497,7 +1468,6 @@
     }
     lastStateKey = null;
     lastBoardKey = null;
-    resetBoardDecisionState();
   }
 
   function updateTargets() {

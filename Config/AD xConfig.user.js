@@ -57,6 +57,8 @@
   const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
   const RUNTIME_EVENT_NAME = "ad-xconfig:changed";
   const SETTING_ACTION_EVENT_NAME = "ad-xconfig:setting-action";
+  const HOT_RELOAD_FALLBACK_GUARD_KEY =
+    "ad-xconfig:hot-reload-fallback-once";
   const RUNTIME_CLEANUP_INTERVAL_MS = 450;
   function debugLog(message, ...args) {
     console.info(`[xConfig] ${message}`, ...args);
@@ -876,9 +878,20 @@
     const getExecutedFeatureInfo = (featureRef) => {
       const resolvedFeatureId =
         resolveFeatureIdFromReference(featureRef) || String(featureRef || "");
-      return cloneRuntimeValue(
-        state.runtime.executedFeatureInfo.get(resolvedFeatureId) || null
-      );
+      const recordedInfo = state.runtime.executedFeatureInfo.get(resolvedFeatureId);
+      if (!recordedInfo) {
+        return null;
+      }
+      const sourceSignature = buildFeatureSourceSignature(resolvedFeatureId);
+      return cloneRuntimeValue({
+        ...recordedInfo,
+        sourceSha:
+          recordedInfo.sourceSha || sourceSignature.sourceSha || "",
+        buildSignatureHint:
+          recordedInfo.buildSignatureHint ||
+          sourceSignature.buildSignatureHint ||
+          "",
+      });
     };
     const runtimeApi = {
       loaderMode: LOADER_MODE,
@@ -1374,8 +1387,20 @@
 
     const disabledFeatureIds = Array.from(state.runtime.knownFeatureIds).filter((featureId) => !isRuntimeFeatureEnabled(featureId));
     disabledFeatureIds.forEach((featureId) => {
-      clearRuntimeHandlesForFeature(featureId);
-      cleanupFeatureArtifacts(featureId);
+      const hasRuntimeState =
+        state.runtime.executedFeatures.has(featureId) ||
+        state.runtime.executedFeatureInfo.has(featureId) ||
+        hasFeatureSingletonInstance(featureId);
+      if (!hasRuntimeState) {
+        return;
+      }
+      resetFeatureExecutionState(featureId, {
+        additionalPaths: collectFeatureModulePaths(featureId),
+        singletonDetails: {
+          reason: "runtime-cleanup-disabled",
+          featureId,
+        },
+      });
     });
 
     cleanupThemePreviewSpace();
@@ -2819,6 +2844,158 @@
     return entry && typeof entry === "object" ? entry : null;
   }
 
+  function extractBuildSignatureHintFromCode(scriptText) {
+    const source = String(scriptText || "");
+    if (!source) {
+      return "";
+    }
+
+    const explicitLiteralMatch = source.match(
+      /(?:__buildSignature|BUILD_SIGNATURE)\s*[:=]\s*["'`]([^"'`]+)["'`]/,
+    );
+    if (explicitLiteralMatch && explicitLiteralMatch[1]) {
+      return String(explicitLiteralMatch[1]).trim();
+    }
+
+    const datedTokenMatch = source.match(
+      /[A-Za-z0-9_.-]+@\d+:\d{4}-\d{2}-[A-Za-z0-9-]+/,
+    );
+    if (datedTokenMatch && datedTokenMatch[0]) {
+      return String(datedTokenMatch[0]).trim();
+    }
+
+    const versionMatch = source.match(/@version\s+([^\r\n]+)/);
+    if (versionMatch && versionMatch[1]) {
+      return `version:${String(versionMatch[1]).trim()}`;
+    }
+
+    return "";
+  }
+
+  function getFeatureModuleSourcePath(featureId, moduleCache = state.runtime.moduleCache) {
+    const normalizedFeatureId = String(featureId || "").trim();
+    if (!normalizedFeatureId) {
+      return "";
+    }
+    const sourceFromCache = normalizeSourcePath(
+      moduleCache?.featureSources?.[normalizedFeatureId] || "",
+    ).replace(/^\/+/, "");
+    if (sourceFromCache) {
+      return sourceFromCache;
+    }
+    return normalizeSourcePath(getFeatureSourcePathById(normalizedFeatureId)).replace(/^\/+/, "");
+  }
+
+  function collectFeatureModulePaths(featureId, moduleCache = state.runtime.moduleCache) {
+    const sourcePath = getFeatureModuleSourcePath(featureId, moduleCache);
+    if (!sourcePath) {
+      return [];
+    }
+
+    const files = moduleCache?.files && typeof moduleCache.files === "object"
+      ? moduleCache.files
+      : {};
+    const visited = new Set();
+    const stack = [sourcePath];
+
+    while (stack.length) {
+      const currentPath = normalizeSourcePath(stack.pop() || "").replace(/^\/+/, "");
+      if (!currentPath || visited.has(currentPath)) {
+        continue;
+      }
+      visited.add(currentPath);
+      const entry = files[currentPath];
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+      normalizeStringArray(entry.requires).forEach((requiredPath) => {
+        const normalizedRequiredPath = normalizeSourcePath(requiredPath || "").replace(/^\/+/, "");
+        if (normalizedRequiredPath && !visited.has(normalizedRequiredPath)) {
+          stack.push(normalizedRequiredPath);
+        }
+      });
+    }
+
+    return Array.from(visited).sort((left, right) => left.localeCompare(right));
+  }
+
+  function buildFeatureSourceSignature(featureId, moduleCache = state.runtime.moduleCache) {
+    const paths = collectFeatureModulePaths(featureId, moduleCache);
+    const files = moduleCache?.files && typeof moduleCache.files === "object"
+      ? moduleCache.files
+      : {};
+    const fileShas = {};
+    paths.forEach((path) => {
+      fileShas[path] = String(files[path]?.sha || "");
+    });
+    const signature = paths
+      .map((path) => `${path}@${fileShas[path] || ""}`)
+      .join("|");
+    const sourcePath = getFeatureModuleSourcePath(featureId, moduleCache);
+    const sourceEntry = sourcePath ? files[sourcePath] : null;
+    return {
+      featureId: String(featureId || ""),
+      sourcePath,
+      sourceSha: String(sourceEntry?.sha || ""),
+      buildSignatureHint: extractBuildSignatureHintFromCode(sourceEntry?.content || ""),
+      paths,
+      fileShas,
+      signature,
+    };
+  }
+
+  function captureLoadedFeatureSourceSignatures() {
+    const snapshot = new Map();
+    state.runtime.executedFeatures.forEach((featureId) => {
+      snapshot.set(featureId, buildFeatureSourceSignature(featureId));
+    });
+    return snapshot;
+  }
+
+  function resolveFeatureRuntimeSingletonKey(featureId) {
+    const normalizedFeatureId = String(featureId || "").trim();
+    if (!normalizedFeatureId) {
+      return "";
+    }
+    return `ad-ext/${normalizedFeatureId}`;
+  }
+
+  function revokeFeatureSingletonInstance(featureId, details = {}) {
+    const shared = window.autodartsAnimationShared;
+    if (!shared || typeof shared.revokeFeatureInstance !== "function") {
+      return {
+        revoked: false,
+        reason: "runtime-shared-missing",
+        ownerMeta: null,
+      };
+    }
+    const featureKey = resolveFeatureRuntimeSingletonKey(featureId);
+    if (!featureKey) {
+      return {
+        revoked: false,
+        reason: "missing-feature-key",
+        ownerMeta: null,
+      };
+    }
+    return shared.revokeFeatureInstance(featureKey, {
+      reason: "xconfig-hot-reload",
+      requestedBy: "ad-xconfig-loader",
+      details,
+    });
+  }
+
+  function hasFeatureSingletonInstance(featureId) {
+    const shared = window.autodartsAnimationShared;
+    if (!shared || typeof shared.getFeatureInstance !== "function") {
+      return false;
+    }
+    const featureKey = resolveFeatureRuntimeSingletonKey(featureId);
+    if (!featureKey) {
+      return false;
+    }
+    return Boolean(shared.getFeatureInstance(featureKey));
+  }
+
   function toInlineJsLiteral(value) {
     if (typeof value === "boolean") {
       return value ? "true" : "false";
@@ -2984,6 +3161,10 @@
         state.runtime.executedFeatureInfo.set(featureId, {
           featureId: String(featureId),
           sourcePath: normalizedPath,
+          sourceSha: String(fileEntry?.sha || ""),
+          buildSignatureHint:
+            extractBuildSignatureHintFromCode(String(fileEntry?.content || "")) ||
+            (fileEntry?.sha ? `sha:${String(fileEntry.sha).slice(0, 12)}` : ""),
           reason: String(executionReason || "runtime"),
           loaderMode: FEATURE_EXECUTION_LOADER_MODE,
           loadedAt: new Date().toISOString(),
@@ -3050,6 +3231,127 @@
     publishRuntimeState(`loader-${reason}`);
     if (state.panelHost && state.panelOpen) {
       renderPanel();
+    }
+  }
+
+  function resetFeatureExecutionState(featureId, options = {}) {
+    const normalizedFeatureId = String(featureId || "").trim();
+    if (!normalizedFeatureId) {
+      return;
+    }
+
+    const config = options && typeof options === "object" ? options : {};
+    const additionalPaths = Array.isArray(config.additionalPaths)
+      ? config.additionalPaths
+      : [];
+
+    clearRuntimeHandlesForFeature(normalizedFeatureId);
+    cleanupFeatureArtifacts(normalizedFeatureId);
+    revokeFeatureSingletonInstance(normalizedFeatureId, config.singletonDetails || {});
+
+    state.runtime.executedFeatures.delete(normalizedFeatureId);
+    state.runtime.executedFeatureInfo.delete(normalizedFeatureId);
+
+    const sourcePath = getFeatureModuleSourcePath(normalizedFeatureId);
+    if (sourcePath) {
+      state.runtime.executedFiles.delete(sourcePath);
+    }
+    additionalPaths.forEach((path) => {
+      const normalizedPath = normalizeSourcePath(path || "").replace(/^\/+/, "");
+      if (normalizedPath) {
+        state.runtime.executedFiles.delete(normalizedPath);
+      }
+    });
+  }
+
+  function applyPostSyncHotReload(previousSignatures, reason = "post-sync-refresh") {
+    const previousMap = previousSignatures instanceof Map ? previousSignatures : new Map();
+    const staleFeatureIds = [];
+    const errors = [];
+
+    previousMap.forEach((previousSignature, featureId) => {
+      if (!state.runtime.executedFeatures.has(featureId)) {
+        return;
+      }
+      if (!isRuntimeFeatureEnabled(featureId)) {
+        return;
+      }
+
+      const currentSignature = buildFeatureSourceSignature(featureId);
+      const hasChanged =
+        String(previousSignature?.signature || "") !==
+        String(currentSignature?.signature || "");
+      if (!hasChanged) {
+        return;
+      }
+
+      const stalePayload = {
+        featureId,
+        reason,
+        previousSourcePath: previousSignature?.sourcePath || "",
+        nextSourcePath: currentSignature?.sourcePath || "",
+        previousSourceSha: previousSignature?.sourceSha || "",
+        nextSourceSha: currentSignature?.sourceSha || "",
+        previousBuildSignatureHint: previousSignature?.buildSignatureHint || "",
+        nextBuildSignatureHint: currentSignature?.buildSignatureHint || "",
+      };
+      debugWarn("AD xConfig Loader: feature-stale-runtime-detected", stalePayload);
+
+      try {
+        resetFeatureExecutionState(featureId, {
+          additionalPaths: Array.from(
+            new Set([
+              ...(Array.isArray(previousSignature?.paths) ? previousSignature.paths : []),
+              ...(Array.isArray(currentSignature?.paths) ? currentSignature.paths : []),
+            ]),
+          ),
+          singletonDetails: stalePayload,
+        });
+        staleFeatureIds.push(featureId);
+        debugLog("AD xConfig Loader: feature-hot-reloaded", stalePayload);
+      } catch (error) {
+        errors.push({
+          featureId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        debugError("AD xConfig Loader: feature-hot-reload-failed", {
+          ...stalePayload,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+
+    return {
+      staleFeatureIds,
+      errors,
+    };
+  }
+
+  function triggerSingleHotReloadFallback(reason, details = {}) {
+    try {
+      const existingFlag = sessionStorage.getItem(HOT_RELOAD_FALLBACK_GUARD_KEY);
+      if (existingFlag === "1") {
+        return false;
+      }
+      sessionStorage.setItem(HOT_RELOAD_FALLBACK_GUARD_KEY, "1");
+      debugWarn("AD xConfig Loader: feature-hot-reload-failed", {
+        reason: String(reason || "unknown"),
+        fallback: "location.reload",
+        details,
+      });
+      window.location.reload();
+      return true;
+    } catch (error) {
+      debugError("AD xConfig Loader: hot-reload fallback failed", error);
+      return false;
+    }
+  }
+
+  function clearHotReloadFallbackGuard() {
+    try {
+      sessionStorage.removeItem(HOT_RELOAD_FALLBACK_GUARD_KEY);
+    } catch (_) {
+      // Ignore sessionStorage errors.
     }
   }
 
@@ -3334,6 +3636,7 @@
     renderPanel();
 
     const job = (async () => {
+      const preSyncSignatures = captureLoadedFeatureSourceSignatures();
       const tryRawFallback = async (reasonMessage) => {
         try {
           const rawPayload = await fetchFeatureRegistryFromRawSources();
@@ -3357,6 +3660,14 @@
           state.gitLoad.lastSuccessCount = features.length;
           debugLog(`AD xConfig Loader: RAW fallback aktiv (${features.length} Module, ${cacheCount} Cache-Dateien).`);
 
+          const hotReloadResult = applyPostSyncHotReload(preSyncSignatures, "post-sync-refresh");
+          if (hotReloadResult.errors.length) {
+            triggerSingleHotReloadFallback("post-sync-refresh-error", {
+              errors: hotReloadResult.errors,
+            });
+          } else {
+            clearHotReloadFallbackGuard();
+          }
           executeEnabledFeaturesFromCache("post-sync");
 
           if (state.config) {
@@ -3456,6 +3767,14 @@
         clearGitApiBackoff();
         debugLog(`AD xConfig Loader: Git sync erfolgreich (${features.length} Module, ${Object.keys(state.runtime.moduleCache?.files || {}).length} Cache-Dateien).`);
 
+        const hotReloadResult = applyPostSyncHotReload(preSyncSignatures, "post-sync-refresh");
+        if (hotReloadResult.errors.length) {
+          triggerSingleHotReloadFallback("post-sync-refresh-error", {
+            errors: hotReloadResult.errors,
+          });
+        } else {
+          clearHotReloadFallbackGuard();
+        }
         executeEnabledFeaturesFromCache("post-sync");
 
         if (state.config) {
@@ -4506,14 +4825,14 @@
     saveConfig().then(() => {
       // Re-run enabled feature scripts so updated xConfig_* values are applied immediately.
       if (isRuntimeFeatureEnabled(featureId)) {
-        clearRuntimeHandlesForFeature(featureId);
-        cleanupFeatureArtifacts(featureId);
-        state.runtime.executedFeatures.delete(featureId);
-        state.runtime.executedFeatureInfo.delete(featureId);
-        const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
-        if (sourcePath) {
-          state.runtime.executedFiles.delete(sourcePath);
-        }
+        resetFeatureExecutionState(featureId, {
+          additionalPaths: collectFeatureModulePaths(featureId),
+          singletonDetails: {
+            reason: "config-setting-change",
+            featureId,
+            settingKey,
+          },
+        });
       }
       executeEnabledFeaturesFromCache("config-change");
       queueRuntimeCleanup();
@@ -4917,14 +5236,13 @@
     featureState.enabled = enabled;
 
     if (previousEnabled !== enabled) {
-      clearRuntimeHandlesForFeature(featureId);
-      cleanupFeatureArtifacts(featureId);
-      state.runtime.executedFeatures.delete(featureId);
-      state.runtime.executedFeatureInfo.delete(featureId);
-      const sourcePath = normalizeSourcePath(getFeatureSourcePathById(featureId)).replace(/^\/+/, "");
-      if (sourcePath) {
-        state.runtime.executedFiles.delete(sourcePath);
-      }
+      resetFeatureExecutionState(featureId, {
+        additionalPaths: collectFeatureModulePaths(featureId),
+        singletonDetails: {
+          reason: enabled ? "feature-toggle-enable" : "feature-toggle-disable",
+          featureId,
+        },
+      });
     }
 
     executeEnabledFeaturesFromCache("config-change");
@@ -5281,7 +5599,13 @@
     }
 
     state.runtime.knownFeatureIds.forEach((featureId) => {
-      clearRuntimeHandlesForFeature(featureId);
+      resetFeatureExecutionState(featureId, {
+        additionalPaths: collectFeatureModulePaths(featureId),
+        singletonDetails: {
+          reason: "runtime-cleanup-dispose",
+          featureId,
+        },
+      });
     });
     stopRuntimeCleanupEngine();
     restoreRuntimeHooks();
