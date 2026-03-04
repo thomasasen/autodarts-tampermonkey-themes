@@ -219,6 +219,12 @@
 
         function fakeGameState(activePlayerIndex, scoringMode, gameMode, options) {
           const config = options || {};
+          const playerCount =
+            Number.isFinite(config.domPlayerCount) && config.domPlayerCount >= 0
+              ? config.domPlayerCount
+              : Number.isFinite(config.playerCount) && config.playerCount > 0
+                ? config.playerCount
+                : 2;
           const state = {
             getActivePlayerIndex: function () {
               return activePlayerIndex;
@@ -228,6 +234,25 @@
             },
             getActiveThrows: function () {
               return Array.isArray(config.activeThrows) ? config.activeThrows : [];
+            },
+            getState: function () {
+              if (config.matchState) {
+                return {
+                  match: config.matchState,
+                  updatedAt: 1,
+                  source: "test",
+                };
+              }
+              return {
+                match: {
+                  players: Array.from({ length: playerCount }, (_, index) => ({
+                    id: `player-${index + 1}`,
+                  })),
+                  turns: [],
+                },
+                updatedAt: 1,
+                source: "test",
+              };
             },
           };
 
@@ -264,7 +289,7 @@
                 activePlayerIndex,
                 scoringMode,
                 gameMode,
-                options
+                Object.assign({}, options, { playerCount })
               ),
             });
             if (!snapshot) {
@@ -851,6 +876,54 @@
                 playerCount: case24.snapshot.playerCount,
                 playerSource: case24.snapshot.playerSource,
                 twenty: case24.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case25 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            matchState: {
+              players: [{ id: "player-1" }, { id: "player-2" }],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:00.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T20",
+                        number: 20,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        );
+        assert(
+          case25.snapshot &&
+            case25.snapshot.activePlayerIndex === 1 &&
+            case25.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
+            case25.states.get("20").presentation === "danger",
+          "Nach einem gegnerischen T20 wird 20 für den nächsten aktiven Spieler sofort als danger erkannt",
+          case25.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case25.snapshot.activePlayerIndex,
+                twenty: case25.states.get("20"),
               })
             : "snapshot=null"
         );

@@ -85,6 +85,10 @@
           scoringMode: "standard",
           gameMode: "Cricket",
           activeThrows: [],
+          matchState: {
+            players: [{ id: "player-1" }, { id: "player-2" }],
+            turns: [],
+          },
         };
         const subscribers = new Set();
 
@@ -110,6 +114,13 @@
             return Array.isArray(sharedState.activeThrows)
               ? sharedState.activeThrows
               : [];
+          },
+          getState: function () {
+            return {
+              match: sharedState.matchState,
+              updatedAt: 1,
+              source: "test",
+            };
           },
           subscribe: function (listener) {
             if (typeof listener !== "function") {
@@ -299,6 +310,10 @@
           sharedState.activeThrows = Array.isArray(config.activeThrows)
             ? config.activeThrows.slice()
             : [];
+          sharedState.matchState = config.matchState || {
+            players: [{ id: "player-1" }, { id: "player-2" }],
+            turns: [],
+          };
 
           renderPlayers(config.domActivePlayerIndex);
           renderGrid(config.targetOrder, config.marksByLabel);
@@ -366,6 +381,48 @@
               case2.gridFxActive,
             "Ein laufender T20-Wurf färbt 20 sofort grün, auch wenn das Grid noch 0/0 anzeigt",
             JSON.stringify(case2)
+          );
+
+          const case3 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {}),
+            matchState: {
+              players: [{ id: "player-1" }, { id: "player-2" }],
+              turns: [
+                {
+                  playerId: "player-1",
+                  finishedAt: "2026-03-04T15:00:00.000Z",
+                  throws: [
+                    {
+                      segment: {
+                        name: "T20",
+                        number: 20,
+                        multiplier: 3,
+                        bed: "Triple",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            readyWhen: function (metrics) {
+              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 2;
+            },
+          });
+          assert(
+            case3.overlay &&
+              case3.scoreShapes === 0 &&
+              case3.dangerShapes === 4 &&
+              case3.gridScoreCells === 0 &&
+              case3.gridThreatCells === 2 &&
+              case3.themeApplied &&
+              case3.gridFxActive,
+            "Nach dem Spielerwechsel färbt ein gegnerischer T20 die 20 sofort rot",
+            JSON.stringify(case3)
           );
 
           const summary = document.getElementById("summary");

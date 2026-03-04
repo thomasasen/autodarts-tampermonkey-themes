@@ -1153,6 +1153,7 @@ Varianten:
 - Aktivspieler-Priorität: Der Shared Helper verwendet zuerst den sichtbar aktiven Spieler aus dem primären Player-Display `#ad-ext-player-display` mit der DOM-Klasse `.ad-ext-player-active`; nur ohne eindeutigen sichtbaren DOM-Aktivstatus fällt er auf den Match-/WebSocket-State zurück. Damit bleiben Board-Overlay und Matrix auch bei kurzen State-Verzögerungen konsistent.
 - Spieleranzahl-Priorität: Die aus dem Grid erkannte Spielerzahl schlägt global gezählte `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen dadurch keine Phantom-Gegner.
 - Live-Wurf-Vorschau: Laufende Würfe aus `gameStateShared.getActiveThrows()` werden direkt auf den aktiven Spieler projiziert. Dadurch wird ein Ziel schon nach dem ersten schließenden Dart als `offense` erkannt, auch wenn das Grid-DOM noch nicht vollständig nachgezogen hat.
+- Spielerwechsel-Vorschau: Bereits abgeschlossene Würfe aus `gameStateShared.getState().match.turns` werden zusätzlich als kumulative Vorschau verarbeitet. Wechselt der Zug nach einem schließenden Dart, wird dasselbe Ziel beim nun aktiven Gegner sofort als `danger` erkannt, auch wenn das Grid-DOM noch hinterherhinkt.
 - Live-Refresh: Zusätzlich zu MutationObserver und Match-State-Events läuft ein 300-ms-Watchdog, damit Board-Segmente nach jedem Wurf zuverlässig nachziehen.
 
 ##### ✅ Einfache Variablen (Beispiele)
@@ -1185,7 +1186,7 @@ Varianten:
 | `CONFIG.highlight.offense`    | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für offensive Ziele (Standard-Cricket/-Tactics: Scoring, Cut-Throat: Angriffschance) inkl. Kontur-Boost. |
 | `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele in Cricket und Tactics (aktiver Spieler offen, Gegner geschlossen) inkl. Kontur-Boost. |
 | `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius.       |
-| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber, priorisiert den sichtbar aktiven Spieler aus `#ad-ext-player-display` vor verzögertem Match-State, berücksichtigt laufende `activeThrows` sofort für den aktiven Spieler, repariert kleine Grid-Unterzählungen gezielt aus dem sichtbaren Player-Display und berechnet die regelkonformen Zustände für Cricket und Tactics gemeinsam. |
+| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber, priorisiert den sichtbar aktiven Spieler aus `#ad-ext-player-display` vor verzögertem Match-State, berücksichtigt laufende `activeThrows` sofort für den aktiven Spieler, verarbeitet abgeschlossene Würfe aus `match.turns` als Sofort-Vorschau für den nächsten Spieler, repariert kleine Grid-Unterzählungen gezielt aus dem sichtbaren Player-Display und berechnet die regelkonformen Zustände für Cricket und Tactics gemeinsam. |
 | `xConfig_DEBUG`               | `false`                   | Aktiviert technische Debug-Logs in der Konsole (nur bei Bedarf einschalten).                                                     |
 
 ##### 🖼️ Beispiele/Screenshots
@@ -1226,6 +1227,7 @@ Varianten:
 - Änderungen: Nutzt dieselbe Cricket-State-Basis wie der Board-Highlighter, setzt modul-eigene CSS-Klassen nur auf Spielerzellen/Badge-Node und entfernt sie beim Verlassen der Variante wieder. Die Zeilenanzahl ergibt sich dynamisch aus der aktiven Variante.
 - Stabilität: Große Wrapper oder komplette Label-Zellen werden nicht mehr als Badge-Ziele verwendet; Badge-Effekte greifen nur auf kleine, dedizierte Label-Nodes, damit das Matrix-Layout in Cricket und Tactics nicht kippt.
 - Live-Wurf-Vorschau: Da dieselbe Shared-State-Basis wie im Board-Highlighter genutzt wird, werden auch laufende Würfe aus `activeThrows` sofort in Offense-/Danger-Zeilen übersetzt.
+- Spielerwechsel-Vorschau: Zusätzlich übernimmt das Grid bereits abgeschlossene Würfe aus `match.turns`, damit Danger-Zeilen nach dem Spielerwechsel sofort sichtbar werden, noch bevor das Matrix-DOM vollständig synchronisiert ist.
 - Live-Refresh: Nutzt MutationObserver, Match-State-Events und einen festen 300-ms-Watchdog, damit Zeilenklassen und Effekte auch bei kurzen DOM-/WebSocket-Verzögerungen aktuell bleiben.
 
 ##### ✅ Einfache Variablen (Beispiele)

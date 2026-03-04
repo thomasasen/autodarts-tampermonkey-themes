@@ -969,6 +969,78 @@
     return marksByLabel;
   }
 
+  function readMatchTurns(gameStateShared) {
+    if (!gameStateShared || typeof gameStateShared.getState !== "function") {
+      return null;
+    }
+
+    const state = gameStateShared.getState();
+    const match = state && state.match;
+    if (!match || typeof match !== "object") {
+      return null;
+    }
+    if (!Array.isArray(match.players) || !Array.isArray(match.turns)) {
+      return null;
+    }
+
+    return match;
+  }
+
+  function readTurnMarksByLabel(gameStateShared, targetSet, playerCount) {
+    const match = readMatchTurns(gameStateShared);
+    if (!match || !(playerCount > 0)) {
+      return new Map();
+    }
+
+    const playerIndexById = new Map();
+    match.players.forEach((player, index) => {
+      const playerId =
+        player && (player.id || player.userId || player.playerId || "");
+      if (!playerId || index >= playerCount) {
+        return;
+      }
+      playerIndexById.set(String(playerId), index);
+    });
+
+    if (!playerIndexById.size) {
+      return new Map();
+    }
+
+    const marksByLabel = new Map();
+    match.turns.forEach((turn) => {
+      if (!turn || typeof turn !== "object" || !Array.isArray(turn.throws)) {
+        return;
+      }
+
+      const playerId = String(turn.playerId || "");
+      const playerIndex = playerIndexById.get(playerId);
+      if (!Number.isFinite(playerIndex) || playerIndex < 0 || playerIndex >= playerCount) {
+        return;
+      }
+
+      turn.throws.forEach((throwData) => {
+        const label = readThrowLabel(throwData, targetSet);
+        if (!label) {
+          return;
+        }
+
+        const marks = readThrowMultiplier(throwData, label);
+        if (!(marks > 0)) {
+          return;
+        }
+
+        const currentMarks =
+          marksByLabel.get(label) || new Array(playerCount).fill(0);
+        currentMarks[playerIndex] = clampMark(
+          (currentMarks[playerIndex] || 0) + marks
+        );
+        marksByLabel.set(label, currentMarks);
+      });
+    });
+
+    return marksByLabel;
+  }
+
   function findDirectChildContaining(root, node) {
     if (!isElement(root) || !node) {
       return null;
@@ -1428,6 +1500,11 @@
       0,
       Math.min(activePlayerIndex, playerCount - 1)
     );
+    const turnMarksByLabel = readTurnMarksByLabel(
+      gameStateShared,
+      targetSet,
+      playerCount
+    );
     const activeThrowMarksByLabel = readActiveThrowMarksByLabel(
       gameStateShared,
       targetSet
@@ -1445,6 +1522,11 @@
         preview: Object.fromEntries(activeThrowMarksByLabel.entries()),
       });
     }
+    if (debugLog && turnMarksByLabel.size > 0) {
+      debugLog("buildGridSnapshot: turn-derived-preview", {
+        preview: Object.fromEntries(turnMarksByLabel.entries()),
+      });
+    }
 
     const rows = parsedRows.rows
       .filter((row) => targetSet.has(row.label))
@@ -1454,11 +1536,21 @@
         for (let index = 0; index < playerCount; index += 1) {
           marksByPlayer.push(readMarks(playerCells[index], row.label));
         }
-        const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
-        if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
-          marksByPlayer[resolvedActivePlayerIndex] = clampMark(
-            (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
-          );
+        const turnMarks = turnMarksByLabel.get(row.label);
+        if (Array.isArray(turnMarks) && turnMarks.length) {
+          for (let index = 0; index < playerCount; index += 1) {
+            marksByPlayer[index] = Math.max(
+              clampMark(marksByPlayer[index]),
+              clampMark(turnMarks[index])
+            );
+          }
+        } else {
+          const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
+          if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
+            marksByPlayer[resolvedActivePlayerIndex] = clampMark(
+              (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
+            );
+          }
         }
         return {
           label: row.label,
