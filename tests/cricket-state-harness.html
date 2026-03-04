@@ -140,6 +140,24 @@
           return root;
         }
 
+        function mountPlayerStrip(playerCount, activePlayerIndex) {
+          const host = document.createElement("div");
+          host.className = "ad-ext-player-strip";
+          host.style.display = "none";
+
+          Array.from({ length: playerCount }, (_, index) => index).forEach((index) => {
+            const player = document.createElement("div");
+            player.className = "ad-ext-player";
+            if (index === activePlayerIndex) {
+              player.classList.add("ad-ext-player-active");
+            }
+            host.appendChild(player);
+          });
+
+          document.body.appendChild(host);
+          return host;
+        }
+
         function fakeGameState(activePlayerIndex, scoringMode, gameMode, options) {
           const config = options || {};
           const state = {
@@ -166,25 +184,37 @@
         }
 
         function buildState(root, playerCount, activePlayerIndex, scoringMode, gameMode, options) {
-          const snapshot = helper.buildGridSnapshot({
-            root,
-            playerCount,
-            gameStateShared: fakeGameState(
-              activePlayerIndex,
-              scoringMode,
-              gameMode,
-              options
-            ),
-          });
-          if (!snapshot) {
-            return { snapshot: null, states: null };
+          const config = options || {};
+          const domPlayers =
+            Number.isFinite(config.domPlayerCount) && config.domPlayerCount >= 0
+              ? mountPlayerStrip(config.domPlayerCount, config.domActivePlayerIndex)
+              : null;
+
+          try {
+            const snapshot = helper.buildGridSnapshot({
+              root,
+              playerCount,
+              gameStateShared: fakeGameState(
+                activePlayerIndex,
+                scoringMode,
+                gameMode,
+                options
+              ),
+            });
+            if (!snapshot) {
+              return { snapshot: null, states: null };
+            }
+            return {
+              snapshot,
+              states: helper.computeTargetStates(snapshot, {
+                showDeadTargets: true,
+              }),
+            };
+          } finally {
+            if (domPlayers) {
+              domPlayers.remove();
+            }
           }
-          return {
-            snapshot,
-            states: helper.computeTargetStates(snapshot, {
-              showDeadTargets: true,
-            }),
-          };
         }
 
         function createUniformMarkSets(targetOrder, producer) {
@@ -474,6 +504,78 @@
             helper.normalizeLabel("11 geschlossen"),
             helper.normalizeLabel("10"),
           ].join(", ")
+        );
+
+        const case16 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          1,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+          }
+        );
+        assert(
+          case16.snapshot &&
+            case16.snapshot.activePlayerIndex === 0 &&
+            case16.states.get("20").presentation === "offense",
+          "DOM active player overrides stale game-state index in Cricket",
+          case16.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case16.snapshot.activePlayerIndex,
+                twenty: case16.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case17 = buildState(
+          buildLinearRoot(TACTICS_TARGETS, twoPlayerOpenTactics),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+          }
+        );
+        assert(
+          case17.snapshot &&
+            case17.snapshot.activePlayerIndex === 0 &&
+            case17.states.get("10").presentation === "offense",
+          "DOM active player overrides stale game-state index in Tactics",
+          case17.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case17.snapshot.activePlayerIndex,
+                ten: case17.states.get("10"),
+              })
+            : "snapshot=null"
+        );
+
+        const case18 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerDangerCricket),
+          2,
+          1,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: -1,
+          }
+        );
+        assert(
+          case18.snapshot &&
+            case18.snapshot.activePlayerIndex === 1 &&
+            case18.states.get("20").presentation === "offense",
+          "Without a visible DOM active player, the helper still falls back to game state",
+          case18.snapshot
+            ? JSON.stringify({
+                activePlayerIndex: case18.snapshot.activePlayerIndex,
+                twenty: case18.states.get("20"),
+              })
+            : "snapshot=null"
         );
 
         const summary = document.getElementById("summary");

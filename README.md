@@ -564,6 +564,7 @@ Formatvarianten:
 - Wichtig: Funktioniert nur mit dem **virtuellen Dartboard**, nicht mit dem **Live Dartboard**.
 - Zielbereich: In `Cricket` werden `20` bis `15` plus `Bull` markiert, in `Tactics` `20` bis `10` plus `Bull`.
 - Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix in Cricket und Tactics dieselben Zustände zeigen.
+- Aktivspieler-Regel: Der sichtbar aktive Spieler in der UI (`.ad-ext-player-active`) hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
 
 **Einstellungen einfach erklärt**
 

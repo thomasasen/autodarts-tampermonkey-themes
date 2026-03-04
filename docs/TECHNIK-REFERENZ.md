@@ -1150,6 +1150,7 @@ Varianten:
 - Zweck: blendet Nicht-Zielfelder aus und markiert die aktiven Cricket-/Tactics-Ziele nach Status.
 - Trigger/Erkennung: Cricket-Familie, also sichtbare Variante `cricket` oder `tactics`; liest die Tabelle über den gemeinsamen Helper `Animation/autodarts-cricket-state-shared.js`.
 - Änderungen: Overlay-SVG mit Statusfarben (open/closed/offense/danger/dead) für bessere Entscheidungen; Board und Grid FX nutzen dieselbe Zustandslogik und denselben dynamischen Zielsatz.
+- Aktivspieler-Priorität: Der Shared Helper verwendet zuerst den sichtbar aktiven Spieler aus der DOM-Klasse `.ad-ext-player-active`; nur ohne eindeutigen DOM-Aktivstatus fällt er auf den Match-/WebSocket-State zurück. Damit bleiben Board-Overlay und Matrix auch bei kurzen State-Verzögerungen konsistent.
 
 ##### ✅ Einfache Variablen (Beispiele)
 
@@ -1181,7 +1182,7 @@ Varianten:
 | `CONFIG.highlight.offense`    | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für offensive Ziele (Standard-Cricket/-Tactics: Scoring, Cut-Throat: Angriffschance) inkl. Kontur-Boost. |
 | `CONFIG.highlight.danger`     | RGB/Opacity               | Objekt mit `r/g/b`, `opacity` und `strokeBoost`; Farbe für Danger-Ziele in Cricket und Tactics (aktiver Spieler offen, Gegner geschlossen) inkl. Kontur-Boost. |
 | `CONFIG.ringRatios`           | Objekt                    | Objekt mit `outerBullInner/outerBullOuter`, `tripleInner/tripleOuter`, `doubleInner/doubleOuter`; Anteile des Board-Radius.       |
-| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber und berechnet die regelkonformen Zustände für Cricket und Tactics gemeinsam. |
+| `Animation/autodarts-cricket-state-shared.js` | Shared Helper | Liest Grid-Layout, trennt Label-/Spielerzellen sauber, priorisiert den sichtbar aktiven Spieler vor verzögertem Match-State und berechnet die regelkonformen Zustände für Cricket und Tactics gemeinsam. |
 | `xConfig_DEBUG`               | `false`                   | Aktiviert technische Debug-Logs in der Konsole (nur bei Bedarf einschalten).                                                     |
 
 ##### 🖼️ Beispiele/Screenshots

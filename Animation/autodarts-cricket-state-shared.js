@@ -323,6 +323,20 @@
     const activePlayerSelector =
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
     const doc = options.document || document;
+    const players = toArray(doc.querySelectorAll(playerSelector));
+    const activeIndices = players.reduce((indices, player, index) => {
+      if (
+        player.matches(activePlayerSelector) ||
+        player.querySelector(activePlayerSelector)
+      ) {
+        indices.push(index);
+      }
+      return indices;
+    }, []);
+
+    if (activeIndices.length === 1) {
+      return activeIndices[0];
+    }
 
     const fromState = gameStateShared && gameStateShared.getActivePlayerIndex
       ? gameStateShared.getActivePlayerIndex()
@@ -331,7 +345,6 @@
       return fromState;
     }
 
-    const players = toArray(doc.querySelectorAll(playerSelector));
     const activeIndex = players.findIndex((player) => {
       return (
         player.matches(activePlayerSelector) ||

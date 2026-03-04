@@ -139,6 +139,13 @@ Gründe:
 - Badge-Schutz: echte kleine Badge-Nodes bleiben separat erkennbar
 - Filterung zurück auf Cricket, wenn der Game-Mode `Cricket` ist
 - Fallback-Inferenz auf Tactics aus dem Grid selbst
+- Aktivspieler-Priorität: sichtbarer DOM-Aktivstatus vor verzögertem Match-State
+
+`tests/cricket-target-highlighter-harness.html` prüft zusätzlich den konkreten Live-Regressionsfall:
+
+- Tactics mit sichtbarem aktivem Spieler links, aber bewusst abweichendem Game-State-Index
+- Board-Overlay bleibt dabei grün/offensiv auf `10`
+- `Theme Cricket` und `Cricket Grid FX` bleiben im selben DOM korrekt aktiv
 
 ## Offene manuelle Live-Prüfung
 

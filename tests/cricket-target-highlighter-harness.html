@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cricket / Tactics Target Highlighter Harness</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #111;
+        color: #f5f5f5;
+      }
+
+      .pass {
+        color: #86efac;
+      }
+
+      .fail {
+        color: #fca5a5;
+      }
+
+      code {
+        color: #93c5fd;
+      }
+
+      #fixture {
+        display: grid;
+        grid-template-columns: 1fr 540px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      #players {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .ad-ext-player {
+        min-width: 120px;
+        padding: 12px;
+        border: 2px solid #333;
+      }
+
+      .ad-ext-player-active {
+        border-color: #9fdb58;
+      }
+
+      #grid {
+        display: grid;
+        grid-template-columns: 72px repeat(2, 96px);
+        gap: 4px;
+      }
+
+      #grid > div {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #1b1b1b;
+        color: #f5f5f5;
+      }
+
+      .label-cell {
+        justify-content: flex-start;
+        padding-left: 10px;
+      }
+
+      .player-cell {
+        position: relative;
+      }
+
+      #board {
+        width: 520px;
+        height: 520px;
+        background: #000;
+      }
+    </style>
+    <script>
+      (function () {
+        "use strict";
+
+        const sharedState = {
+          activePlayerIndex: 0,
+          scoringMode: "standard",
+          gameMode: "Cricket",
+        };
+
+        window.__targetHarnessState = sharedState;
+        window.autodartsGameStateShared = {
+          __initialized: true,
+          getActivePlayerIndex: function () {
+            return sharedState.activePlayerIndex;
+          },
+          getCricketMode: function () {
+            return sharedState.scoringMode;
+          },
+          getCricketGameMode: function () {
+            return sharedState.gameMode;
+          },
+          isCricketVariant: function () {
+            return true;
+          },
+          getActiveTurn: function () {
+            return null;
+          },
+          getActiveThrows: function () {
+            return [];
+          },
+        };
+      })();
+    </script>
+    <script src="../Template/autodarts-theme-shared.js"></script>
+    <script src="../Animation/autodarts-animation-shared.js"></script>
+    <script src="../Animation/autodarts-cricket-state-shared.js"></script>
+    <script src="../Template/Autodarts%20Theme%20Cricket.user.js"></script>
+    <script src="../Animation/Autodarts%20Animate%20Cricket%20Grid%20FX.user.js"></script>
+    <script src="../Animation/Autodarts%20Animate%20Cricket%20Target%20Highlighter.user.js"></script>
+  </head>
+  <body>
+    <h1>Cricket / Tactics Target Highlighter Harness</h1>
+    <p id="summary">Running…</p>
+    <ul id="results"></ul>
+
+    <div id="fixture">
+      <div>
+        <div id="ad-ext-game-variant">Tactics</div>
+        <div id="players"></div>
+        <div id="grid"></div>
+      </div>
+      <svg id="board" viewBox="-250 -250 500 500" aria-label="Board">
+        <g id="board-base">
+          <circle r="210" fill="#202124"></circle>
+          <circle r="150" fill="#2b2b2b"></circle>
+          <circle r="15" fill="#9fdb58"></circle>
+          <text x="0" y="-220">20</text>
+          <text x="68" y="-206">1</text>
+          <text x="130" y="-174">18</text>
+          <text x="178" y="-118">4</text>
+          <text x="205" y="-48">13</text>
+          <text x="205" y="30">6</text>
+          <text x="178" y="102">10</text>
+          <text x="130" y="164">15</text>
+          <text x="68" y="202">2</text>
+          <text x="0" y="218">17</text>
+          <text x="-68" y="202">3</text>
+          <text x="-130" y="164">19</text>
+          <text x="-178" y="102">7</text>
+          <text x="-205" y="30">16</text>
+          <text x="-205" y="-48">8</text>
+          <text x="-178" y="-118">11</text>
+          <text x="-130" y="-174">14</text>
+          <text x="-68" y="-206">9</text>
+          <text x="-6" y="-230">5</text>
+          <text x="6" y="236">12</text>
+        </g>
+      </svg>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const TACTICS_TARGETS = [
+          "20",
+          "19",
+          "18",
+          "17",
+          "16",
+          "15",
+          "14",
+          "13",
+          "12",
+          "11",
+          "10",
+          "BULL",
+        ];
+        const overlayId = "ad-ext-cricket-targets";
+        const results = [];
+        const sharedState = window.__targetHarnessState;
+
+        function assert(condition, label, details) {
+          results.push({
+            label,
+            pass: Boolean(condition),
+            details: details || "",
+          });
+        }
+
+        function buildMarkMap(targetOrder, overrides) {
+          const marksByLabel = {};
+          targetOrder.forEach((label) => {
+            marksByLabel[label] = [0, 0];
+          });
+          Object.keys(overrides || {}).forEach((label) => {
+            marksByLabel[label] = overrides[label].slice();
+          });
+          return marksByLabel;
+        }
+
+        function renderPlayers(activePlayerIndex) {
+          const host = document.getElementById("players");
+          host.textContent = "";
+          ["P1", "P2"].forEach((name, index) => {
+            const player = document.createElement("div");
+            player.className = "ad-ext-player";
+            if (index === activePlayerIndex) {
+              player.classList.add("ad-ext-player-active");
+            }
+            player.textContent = name;
+            host.appendChild(player);
+          });
+        }
+
+        function renderGrid(targetOrder, marksByLabel) {
+          const grid = document.getElementById("grid");
+          grid.textContent = "";
+          targetOrder.forEach((label) => {
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            const badge = document.createElement("span");
+            badge.textContent = label;
+            labelCell.appendChild(badge);
+            grid.appendChild(labelCell);
+
+            (marksByLabel[label] || [0, 0]).forEach((mark) => {
+              const cell = document.createElement("div");
+              cell.className = "player-cell";
+              cell.setAttribute("data-marks", String(mark));
+              cell.textContent = String(mark);
+              grid.appendChild(cell);
+            });
+          });
+        }
+
+        function readMetrics() {
+          const overlay = document.getElementById(overlayId);
+          return {
+            overlay: Boolean(overlay),
+            scoreShapes: overlay
+              ? overlay.querySelectorAll(".ad-ext-cricket-target--score").length
+              : 0,
+            dangerShapes: overlay
+              ? overlay.querySelectorAll(".ad-ext-cricket-target--danger").length
+              : 0,
+            gridScoreCells: document.querySelectorAll(".ad-ext-crfx-score").length,
+            gridThreatCells: document.querySelectorAll(".ad-ext-crfx-threat").length,
+            themeApplied: Boolean(
+              document.getElementById("autodarts-cricket-custom-style")
+            ),
+            gridFxActive: document.getElementById("grid")?.classList.contains(
+              "ad-ext-crfx-root"
+            ),
+          };
+        }
+
+        function waitForMetrics(predicate, attemptsLeft) {
+          return new Promise((resolve) => {
+            const metrics = readMetrics();
+            if (!predicate || predicate(metrics) || attemptsLeft <= 0) {
+              resolve(metrics);
+              return;
+            }
+
+            setTimeout(async function () {
+              resolve(await waitForMetrics(predicate, attemptsLeft - 1));
+            }, 120);
+          });
+        }
+
+        async function runScenario(config) {
+          document.getElementById("ad-ext-game-variant").textContent = config.variant;
+          sharedState.activePlayerIndex = config.stateActivePlayerIndex;
+          sharedState.scoringMode = config.scoringMode;
+          sharedState.gameMode = config.variant;
+
+          renderPlayers(config.domActivePlayerIndex);
+          renderGrid(config.targetOrder, config.marksByLabel);
+
+          return waitForMetrics(config.readyWhen, 18);
+        }
+
+        (async function run() {
+          const case1 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 0,
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 2;
+            },
+          });
+          assert(
+            case1.overlay &&
+              case1.scoreShapes === 4 &&
+              case1.dangerShapes === 0 &&
+              case1.gridScoreCells === 2 &&
+              case1.gridThreatCells === 0 &&
+              case1.themeApplied &&
+              case1.gridFxActive,
+            "Tactics mismatch: DOM-active player keeps target 10 on offense across highlighter, Theme Cricket and Grid FX",
+            JSON.stringify(case1)
+          );
+
+          const summary = document.getElementById("summary");
+          const list = document.getElementById("results");
+          const passed = results.filter((result) => result.pass).length;
+
+          summary.textContent = `${passed}/${results.length} checks passed`;
+          summary.className = passed === results.length ? "pass" : "fail";
+          document.body.dataset.status = passed === results.length ? "pass" : "fail";
+          document.body.dataset.completed = "true";
+
+          results.forEach((result) => {
+            const item = document.createElement("li");
+            item.className = result.pass ? "pass" : "fail";
+            item.innerHTML = `${result.pass ? "PASS" : "FAIL"} <strong>${result.label}</strong><br><code>${result.details}</code>`;
+            list.appendChild(item);
+          });
+        })();
+      })();
+    </script>
+  </body>
+</html>
