@@ -614,7 +614,7 @@ Formatvarianten:
   Vorteil: Wechsel sind klar erkennbar, auch in schnellen Matches.
 - `Gegnerdruck-Overlay`: Markiert Zeilen mit akutem Defensivdruck.
   Vorteil: Hilft dir, Prioritäten unter Druck besser zu setzen.
-- Hinweis zur Stabilität: Die Effekte arbeiten nur noch auf echten Spielerzellen und lassen die linke Zielspalte parser-stabil.
+- Hinweis zur Stabilität: Die Effekte arbeiten nur noch auf echten Spielerzellen und kleinen dedizierten Badge-Nodes; große Wrapper oder komplette Label-Zellen der linken Zielspalte bleiben unberührt.
 - Empfehlung: Starte mit Standardwerten und aktiviere nur Effekte, die dir im Spiel wirklich helfen.
 
 **Vorschau**

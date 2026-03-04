@@ -72,6 +72,8 @@ Gründe:
 - `Animation/Autodarts Animate Cricket Grid FX.user.js`
   - reagiert jetzt ebenfalls auf `Tactics`
   - verarbeitet die Zeilenanzahl dynamisch über den Shared Snapshot
+  - setzt Badge-Klassen nur noch auf kleine, dedizierte Label-Nodes
+  - schützt große Wrapper- und komplette Label-Zellen davor, versehentlich absolut positioniert zu werden
   - bleibt an dasselbe Cricket-Theme gekoppelt, nutzt aber denselben Family-State wie der Board-Highlighter
 
 ### 5. Theme und xConfig
@@ -110,6 +112,8 @@ Gründe:
 
 - `10..14` werden jetzt normalisiert und geparst.
 - Bull-Aliase (`25`, `Bull`, `Bullseye`) bleiben erhalten.
+- Plain-Text-Label-Zellen erzeugen keine künstlichen Badge-Nodes mehr.
+- Dedizierte kleine Badge-Nodes bleiben als eigenständige Zielelemente erhalten.
 - Die Sortierung bleibt korrekt:
   - Cricket: `20` bis `15`, dann `Bull`
   - Tactics: `20` bis `10`, dann `Bull`
@@ -131,6 +135,8 @@ Gründe:
 - Tactics in `No Score`
 - Solo-Tactics
 - dekorierte Labels mit 12 Zeilen
+- Badge-Schutz: Plain-Text-Label-Zellen erzeugen kein künstliches Badge
+- Badge-Schutz: echte kleine Badge-Nodes bleiben separat erkennbar
 - Filterung zurück auf Cricket, wenn der Game-Mode `Cricket` ist
 - Fallback-Inferenz auf Tactics aus dem Grid selbst
 

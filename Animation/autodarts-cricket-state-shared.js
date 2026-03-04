@@ -667,16 +667,19 @@
   function findBadgeNode(labelCell, fallbackNode, label) {
     const container = labelCell || fallbackNode;
     if (!isElement(container)) {
-      return fallbackNode || null;
+      return null;
     }
 
-    const candidates = [
-      container,
-      ...toArray(container.querySelectorAll(LABEL_SELECTOR)),
-    ].filter((node) => getNodeLabel(node) === label);
+    const candidates = toArray(container.querySelectorAll(LABEL_SELECTOR))
+      .filter((node) => getNodeLabel(node) === label)
+      .filter((node) => {
+        return !toArray(node.querySelectorAll(LABEL_SELECTOR)).some((child) => {
+          return child !== node && getNodeLabel(child) === label;
+        });
+      });
 
     if (!candidates.length) {
-      return fallbackNode || container;
+      return null;
     }
 
     return candidates
@@ -1054,7 +1057,7 @@
           label: row.label,
           rowElement: row.rowElement,
           labelCell: row.labelCell || null,
-          badgeNode: row.badgeNode || row.labelCell || null,
+          badgeNode: row.badgeNode || null,
           playerCells,
           marksByPlayer,
         };

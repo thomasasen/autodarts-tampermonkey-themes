@@ -274,13 +274,14 @@
   }
 
   function burstBadge(row) {
-    if (!CFG.badgeBeacon || !row.badgeNode) {
+    const badgeNode = getDecoratableBadgeNode(row);
+    if (!CFG.badgeBeacon || !badgeNode) {
       return;
     }
-    row.badgeNode.classList.remove(BADGE_BURST_CLASS);
-    void row.badgeNode.offsetWidth;
-    row.badgeNode.classList.add(BADGE_BURST_CLASS);
-    setTimeout(() => row.badgeNode?.classList.remove(BADGE_BURST_CLASS), 700);
+    badgeNode.classList.remove(BADGE_BURST_CLASS);
+    void badgeNode.offsetWidth;
+    badgeNode.classList.add(BADGE_BURST_CLASS);
+    setTimeout(() => badgeNode?.classList.remove(BADGE_BURST_CLASS), 700);
   }
 
   function animateMark(cell, markNow) {
@@ -411,6 +412,61 @@
     });
   }
 
+  function getElementRect(element) {
+    if (!element || typeof element.getBoundingClientRect !== "function") {
+      return null;
+    }
+    return element.getBoundingClientRect();
+  }
+
+  function isDecoratableBadgeNode(badgeNode, labelCell) {
+    if (!badgeNode || !labelCell || badgeNode === labelCell) {
+      return false;
+    }
+
+    const badgeRect = getElementRect(badgeNode);
+    const cellRect = getElementRect(labelCell);
+    if (!badgeRect || !cellRect) {
+      return false;
+    }
+
+    if (
+      !Number.isFinite(badgeRect.width) ||
+      !Number.isFinite(badgeRect.height) ||
+      !Number.isFinite(cellRect.width) ||
+      !Number.isFinite(cellRect.height)
+    ) {
+      return false;
+    }
+
+    if (
+      badgeRect.width <= 0 ||
+      badgeRect.height <= 0 ||
+      cellRect.width <= 0 ||
+      cellRect.height <= 0
+    ) {
+      return false;
+    }
+
+    if (badgeRect.width >= cellRect.width * 0.78) {
+      return false;
+    }
+    if (badgeRect.height >= cellRect.height * 0.9) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function getDecoratableBadgeNode(row) {
+    if (!row) {
+      return null;
+    }
+    return isDecoratableBadgeNode(row.badgeNode, row.labelCell)
+      ? row.badgeNode
+      : null;
+  }
+
   function apply() {
     if (!isContextActive()) {
       if (!loggedVariantSkip) {
@@ -496,8 +552,7 @@
         row.labelCell.classList.add(LABEL_CELL_CLASS);
       }
 
-      const badgeNode =
-        row.badgeNode && row.badgeNode !== row.labelCell ? row.badgeNode : null;
+      const badgeNode = getDecoratableBadgeNode(row);
       if (badgeNode) {
         badgeNode.classList.add(BADGE_CLASS);
         badgeNode.classList.toggle(

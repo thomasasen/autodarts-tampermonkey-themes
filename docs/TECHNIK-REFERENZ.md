@@ -1219,6 +1219,7 @@ Varianten:
 - Zweck: Ergänzt die Cricket-/Tactics-Zielmatrix um kombinierbare Grid-Effekte für schnellere Orientierung (Row-Sweep, Badge-Fokus, Mark-Progress, Threat/Offense/Pressure, Delta-Chips, Turn-Wipe).
 - Trigger/Erkennung: Cricket-Familie, also sichtbare Variante `cricket` oder `tactics`, und nur bei aktivem `Template/Autodarts Theme Cricket.user.js` (feste Modul-Bindung, kein separater Toggle).
 - Änderungen: Nutzt dieselbe Cricket-State-Basis wie der Board-Highlighter, setzt modul-eigene CSS-Klassen nur auf Spielerzellen/Badge-Node und entfernt sie beim Verlassen der Variante wieder. Die Zeilenanzahl ergibt sich dynamisch aus der aktiven Variante.
+- Stabilität: Große Wrapper oder komplette Label-Zellen werden nicht mehr als Badge-Ziele verwendet; Badge-Effekte greifen nur auf kleine, dedizierte Label-Nodes, damit das Matrix-Layout in Cricket und Tactics nicht kippt.
 
 ##### ✅ Einfache Variablen (Beispiele)
 

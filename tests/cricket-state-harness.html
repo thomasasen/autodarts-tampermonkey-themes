@@ -271,6 +271,36 @@
           "Decorated labels: helper still finds all 7 Cricket targets",
           case5.snapshot ? `rows=${case5.snapshot.rows.length}` : "snapshot=null"
         );
+        assert(
+          case5.snapshot &&
+            case5.snapshot.rows.every(
+              (row) => row.badgeNode && row.badgeNode !== row.labelCell
+            ),
+          "Decorated labels: dedicated badge nodes stay separate from label cells",
+          case5.snapshot
+            ? case5.snapshot.rows
+                .map((row) => `${row.label}:${row.badgeNode === row.labelCell}`)
+                .join(",")
+            : "snapshot=null"
+        );
+
+        const case6 = buildState(
+          buildLinearRoot(CRICKET_TARGETS, twoPlayerOpenCricket),
+          2,
+          0,
+          "standard",
+          "Cricket"
+        );
+        assert(
+          case6.snapshot &&
+            case6.snapshot.rows.every((row) => row.badgeNode === null),
+          "Plain text label cells do not create synthetic badge nodes",
+          case6.snapshot
+            ? case6.snapshot.rows
+                .map((row) => `${row.label}:${row.badgeNode === null}`)
+                .join(",")
+            : "snapshot=null"
+        );
 
         assert(
           helper.normalizeLabel("25") === "BULL" &&
