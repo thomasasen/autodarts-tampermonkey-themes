@@ -141,6 +141,8 @@ Gründe:
 - Fallback-Inferenz auf Tactics aus dem Grid selbst
 - Aktivspieler-Priorität: sichtbarer DOM-Aktivstatus im primären Player-Display vor verzögertem Match-State
 - Spieleranzahl-Priorität: erkannte Grid-Spaltenzahl vor global gezählten DOM-Spielern
+- Live-Wurf-Vorschau: laufende `activeThrows` werden sofort auf den aktiven Spieler angerechnet, damit ein frisch geschlossenes Ziel schon während des laufenden Zuges grün wird
+- Unterzählungs-Reparatur: wenn das Grid genau eine Spielerspalte zu wenig liefert, darf der Shared Helper diese Lücke gezielt aus dem sichtbaren Player-Display ergänzen, ohne frühere Phantomspieler-Fälle wieder zu öffnen
 - Screenshot-Regression: aktiver Spieler `TEST2` ergibt in Tactics korrekt Grün auf `20`, `17`, `15`, Rot auf `16` und `dead` auf gemeinsam geschlossenen Zielen
 - Symbol-Parsing: `⊗` wird als `3`, `X`/`✕` als `2` und `/` als `1` erkannt
 
@@ -148,6 +150,7 @@ Gründe:
 
 - Tactics mit sichtbarem aktivem Spieler links, aber bewusst abweichendem Game-State-Index
 - Board-Overlay bleibt dabei grün/offensiv auf `10`
+- ein laufender `T20` färbt `20` sofort grün, auch wenn das Grid testweise noch `0/0` zeigt
 - `Theme Cricket` und `Cricket Grid FX` bleiben im selben DOM korrekt aktiv
 - Die tieferen Fachregeln für Screenshot-Regression, Geisterspieler und Phantom-Spieleranzahl werden in `tests/cricket-state-harness.html` geprüft, weil diese Fälle im Headless-Browser deutlich deterministischer abbildbar sind.
 

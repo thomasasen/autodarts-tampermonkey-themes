@@ -84,6 +84,7 @@
           activePlayerIndex: 0,
           scoringMode: "standard",
           gameMode: "Cricket",
+          activeThrows: [],
         };
         const subscribers = new Set();
 
@@ -106,7 +107,9 @@
             return null;
           },
           getActiveThrows: function () {
-            return [];
+            return Array.isArray(sharedState.activeThrows)
+              ? sharedState.activeThrows
+              : [];
           },
           subscribe: function (listener) {
             if (typeof listener !== "function") {
@@ -293,6 +296,9 @@
           sharedState.activePlayerIndex = config.stateActivePlayerIndex;
           sharedState.scoringMode = config.scoringMode;
           sharedState.gameMode = config.variant;
+          sharedState.activeThrows = Array.isArray(config.activeThrows)
+            ? config.activeThrows.slice()
+            : [];
 
           renderPlayers(config.domActivePlayerIndex);
           renderGrid(config.targetOrder, config.marksByLabel);
@@ -327,6 +333,39 @@
               case1.gridFxActive,
             "Tactics mismatch: DOM-active player keeps target 10 on offense across highlighter, Theme Cricket and Grid FX",
             JSON.stringify(case1)
+          );
+
+          const case2 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 0,
+            domActivePlayerIndex: 0,
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {}),
+            activeThrows: [
+              {
+                segment: {
+                  name: "T20",
+                  number: 20,
+                  multiplier: 3,
+                  bed: "Triple",
+                },
+              },
+            ],
+            readyWhen: function (metrics) {
+              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 2;
+            },
+          });
+          assert(
+            case2.overlay &&
+              case2.scoreShapes === 4 &&
+              case2.dangerShapes === 0 &&
+              case2.gridScoreCells === 2 &&
+              case2.gridThreatCells === 0 &&
+              case2.themeApplied &&
+              case2.gridFxActive,
+            "Ein laufender T20-Wurf färbt 20 sofort grün, auch wenn das Grid noch 0/0 anzeigt",
+            JSON.stringify(case2)
           );
 
           const summary = document.getElementById("summary");

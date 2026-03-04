@@ -105,6 +105,19 @@
           return root;
         }
 
+        function buildSingleColumnLinearRoot(targetOrder, markValues) {
+          const root = document.createElement("div");
+          root.className = "grid-root";
+          targetOrder.forEach((label, index) => {
+            const labelCell = document.createElement("div");
+            labelCell.className = "label-cell";
+            labelCell.textContent = label;
+            root.appendChild(labelCell);
+            root.appendChild(markCell(markValues[index]));
+          });
+          return root;
+        }
+
         function buildNestedRowRoot(targetOrder, markSets) {
           const root = document.createElement("div");
           root.className = "nested-root";
@@ -213,6 +226,9 @@
             getCricketMode: function () {
               return scoringMode || "";
             },
+            getActiveThrows: function () {
+              return Array.isArray(config.activeThrows) ? config.activeThrows : [];
+            },
           };
 
           if (config.includeGameMode !== false) {
@@ -283,6 +299,9 @@
         const twoPlayerDangerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3]);
         const threePlayerCricket = createUniformMarkSets(CRICKET_TARGETS, () => [0, 3, 0]);
         const soloCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3]);
+        const singleColumnCricket = CRICKET_TARGETS.map((label) =>
+          label === "20" ? 3 : 0
+        );
         const twoPlayerOpenTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3, 0]);
         const twoPlayerDangerTactics = createUniformMarkSets(TACTICS_TARGETS, () => [0, 3]);
         const soloTactics = createUniformMarkSets(TACTICS_TARGETS, () => [3]);
@@ -766,6 +785,72 @@
             ? JSON.stringify({
                 twenty: case22.snapshot.rows.find((row) => row.label === "20").marksByPlayer,
                 nineteen: case22.snapshot.rows.find((row) => row.label === "19").marksByPlayer,
+              })
+            : "snapshot=null"
+        );
+
+        const case23 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, () => [0, 0])
+          ),
+          2,
+          0,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+            activeThrows: [
+              {
+                segment: {
+                  name: "T20",
+                  number: 20,
+                  multiplier: 3,
+                  bed: "Triple",
+                },
+              },
+            ],
+          }
+        );
+        assert(
+          case23.snapshot &&
+            case23.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
+            case23.states.get("20").presentation === "offense",
+          "Active throws preview closes 20 immediately after a first-dart T20 in Tactics",
+          case23.snapshot
+            ? JSON.stringify({
+                playerCount: case23.snapshot.playerCount,
+                twenty: case23.states.get("20"),
+              })
+            : "snapshot=null"
+        );
+
+        const case24 = buildState(
+          buildSingleColumnLinearRoot(CRICKET_TARGETS, singleColumnCricket),
+          null,
+          0,
+          "standard",
+          "Cricket",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+          }
+        );
+        assert(
+          case24.snapshot &&
+            case24.snapshot.playerCount === 2 &&
+            case24.snapshot.playerSource === "visible-gap-repair" &&
+            case24.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
+            case24.states.get("20").presentation === "offense",
+          "A one-column grid undercount is repaired from the visible player strip without reviving phantom players",
+          case24.snapshot
+            ? JSON.stringify({
+                playerCount: case24.snapshot.playerCount,
+                playerSource: case24.snapshot.playerSource,
+                twenty: case24.states.get("20"),
               })
             : "snapshot=null"
         );

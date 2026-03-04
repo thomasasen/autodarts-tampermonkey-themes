@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.0.6
+// @version      1.0.7
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte

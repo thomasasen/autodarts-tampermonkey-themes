@@ -759,6 +759,216 @@
     return 0;
   }
 
+  function readThrowLabelFromValue(value, targetSet) {
+    const label = normalizeLabel(value);
+    if (!label) {
+      return "";
+    }
+    if (targetSet instanceof Set && targetSet.size > 0 && !targetSet.has(label)) {
+      return "";
+    }
+    return label;
+  }
+
+  function readThrowNumberValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    if (numeric === 25) {
+      return 25;
+    }
+    if (numeric >= 1 && numeric <= 20) {
+      return Math.round(numeric);
+    }
+    return null;
+  }
+
+  function readThrowLabel(throwData, targetSet) {
+    if (!throwData || typeof throwData !== "object") {
+      return "";
+    }
+
+    const stringCandidates = [
+      throwData.segment?.name,
+      throwData.segment,
+      throwData.name,
+      throwData.notation,
+      throwData.dart,
+      throwData.label,
+      throwData.target,
+      throwData.display,
+      throwData.displayValue,
+    ];
+
+    for (const candidate of stringCandidates) {
+      const label = readThrowLabelFromValue(candidate, targetSet);
+      if (label) {
+        return label;
+      }
+    }
+
+    const numericCandidates = [
+      throwData.segment?.number,
+      throwData.number,
+      throwData.targetNumber,
+      throwData.segmentNumber,
+    ];
+
+    for (const candidate of numericCandidates) {
+      const number = readThrowNumberValue(candidate);
+      if (number === null) {
+        continue;
+      }
+      const label = number === 25 ? "BULL" : String(number);
+      if (!(targetSet instanceof Set) || targetSet.size === 0 || targetSet.has(label)) {
+        return label;
+      }
+    }
+
+    return "";
+  }
+
+  function readThrowMultiplierFromText(value, label) {
+    const text = normalizeWhitespace(value).toUpperCase();
+    if (!text) {
+      return null;
+    }
+
+    if (/MISS|OUTSIDE|BOUNCE/i.test(text)) {
+      return 0;
+    }
+
+    if (label === "BULL") {
+      if (
+        /(^|[^0-9])25([^0-9]|$)|S25|SINGLE\s*25|OUTER\s*BULL/i.test(text)
+      ) {
+        return 1;
+      }
+      if (
+        /DBULL|DOUBLE\s*BULL|INNER\s*BULL|BULLSEYE|(^|[^A-Z])BULL([^A-Z]|$)/i.test(
+          text
+        )
+      ) {
+        return 2;
+      }
+    }
+
+    if (/TRIPLE|(^|[^A-Z])T(?:20|19|18|17|16|15|14|13|12|11|10)([^0-9]|$)/i.test(text)) {
+      return 3;
+    }
+    if (/DOUBLE|(^|[^A-Z])D(?:20|19|18|17|16|15|14|13|12|11|10|25)([^0-9]|$)/i.test(text)) {
+      return 2;
+    }
+    if (
+      /SINGLE(?:INNER|OUTER)?|(^|[^A-Z])S(?:I|O)?(?:20|19|18|17|16|15|14|13|12|11|10|25)([^0-9]|$)/i.test(
+        text
+      )
+    ) {
+      return 1;
+    }
+
+    return null;
+  }
+
+  function readThrowMultiplier(throwData, label) {
+    if (!throwData || typeof throwData !== "object") {
+      return 0;
+    }
+
+    const numericCandidates = [
+      throwData.segment?.multiplier,
+      throwData.multiplier,
+    ];
+    for (const candidate of numericCandidates) {
+      const numeric = Number(candidate);
+      if (Number.isFinite(numeric) && numeric >= 0 && numeric <= 3) {
+        return clampMark(numeric);
+      }
+    }
+
+    const textCandidates = [
+      throwData.segment?.bed,
+      throwData.bed,
+      throwData.segment?.name,
+      throwData.segment,
+      throwData.name,
+      throwData.notation,
+      throwData.dart,
+      throwData.display,
+      throwData.displayValue,
+    ];
+    for (const candidate of textCandidates) {
+      const parsed = readThrowMultiplierFromText(candidate, label);
+      if (parsed !== null) {
+        return clampMark(parsed);
+      }
+    }
+
+    const scoreCandidates = [throwData.score, throwData.points, throwData.value];
+    const numberCandidates = [
+      throwData.segment?.number,
+      throwData.number,
+      throwData.targetNumber,
+      throwData.segmentNumber,
+    ];
+    const score = scoreCandidates
+      .map((candidate) => Number(candidate))
+      .find((candidate) => Number.isFinite(candidate));
+    const number = numberCandidates
+      .map(readThrowNumberValue)
+      .find((candidate) => candidate !== null);
+    if (Number.isFinite(score) && number !== undefined && number !== null) {
+      if (number === 25) {
+        if (score === 25) {
+          return 1;
+        }
+        if (score === 50) {
+          return 2;
+        }
+      } else if (number > 0) {
+        const multiplier = score / number;
+        if (Number.isFinite(multiplier) && multiplier >= 1 && multiplier <= 3) {
+          return clampMark(multiplier);
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  function readActiveThrowMarksByLabel(gameStateShared, targetSet) {
+    if (
+      !gameStateShared ||
+      typeof gameStateShared.getActiveThrows !== "function"
+    ) {
+      return new Map();
+    }
+
+    const throws = gameStateShared.getActiveThrows();
+    if (!Array.isArray(throws) || !throws.length) {
+      return new Map();
+    }
+
+    const marksByLabel = new Map();
+    throws.forEach((throwData) => {
+      const label = readThrowLabel(throwData, targetSet);
+      if (!label) {
+        return;
+      }
+      const marks = readThrowMultiplier(throwData, label);
+      if (!(marks > 0)) {
+        return;
+      }
+      marksByLabel.set(
+        label,
+        clampMark((marksByLabel.get(label) || 0) + marks)
+      );
+    });
+
+    return marksByLabel;
+  }
+
   function findDirectChildContaining(root, node) {
     if (!isElement(root) || !node) {
       return null;
@@ -1174,6 +1384,15 @@
 
     let playerCount = detectedPlayerCount;
     let playerSource = "grid";
+    if (
+      playerCount > 0 &&
+      Number.isFinite(expectedPlayerCount) &&
+      expectedPlayerCount > playerCount &&
+      expectedPlayerCount - playerCount === 1
+    ) {
+      playerCount = expectedPlayerCount;
+      playerSource = "visible-gap-repair";
+    }
     if (!(playerCount > 0)) {
       if (Number.isFinite(expectedPlayerCount) && expectedPlayerCount > 0) {
         playerCount = expectedPlayerCount;
@@ -1205,6 +1424,28 @@
       });
     }
 
+    const resolvedActivePlayerIndex = Math.max(
+      0,
+      Math.min(activePlayerIndex, playerCount - 1)
+    );
+    const activeThrowMarksByLabel = readActiveThrowMarksByLabel(
+      gameStateShared,
+      targetSet
+    );
+    if (debugLog && playerSource === "visible-gap-repair") {
+      debugLog("buildGridSnapshot: repaired player undercount", {
+        detectedPlayerCount,
+        expectedPlayerCount,
+        visiblePlayerCount,
+      });
+    }
+    if (debugLog && activeThrowMarksByLabel.size > 0) {
+      debugLog("buildGridSnapshot: active-throw-preview", {
+        activePlayerIndex: resolvedActivePlayerIndex,
+        preview: Object.fromEntries(activeThrowMarksByLabel.entries()),
+      });
+    }
+
     const rows = parsedRows.rows
       .filter((row) => targetSet.has(row.label))
       .map((row) => {
@@ -1212,6 +1453,12 @@
         const marksByPlayer = [];
         for (let index = 0; index < playerCount; index += 1) {
           marksByPlayer.push(readMarks(playerCells[index], row.label));
+        }
+        const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
+        if (throwMarks > 0 && resolvedActivePlayerIndex >= 0) {
+          marksByPlayer[resolvedActivePlayerIndex] = clampMark(
+            (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
+          );
         }
         return {
           label: row.label,
@@ -1248,7 +1495,7 @@
       visiblePlayerCount,
       detectedPlayerCount,
       playerSource,
-      activePlayerIndex: Math.max(0, Math.min(activePlayerIndex, playerCount - 1)),
+      activePlayerIndex: resolvedActivePlayerIndex,
       modeInfo,
     };
   }
