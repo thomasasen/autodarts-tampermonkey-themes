@@ -35,7 +35,10 @@
     "ad-ext-crfx-spark",
     "ad-ext-crfx-wipe",
   ]);
-  const DECORATION_ROOT_IDS = new Set(["ad-ext-cricket-targets"]);
+  const DECORATION_ROOT_IDS = new Set([
+    "ad-ext-cricket-targets",
+    "ad-ext-cricket-targets-v2",
+  ]);
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT"]);
 
   let cachedGridRoot = null;

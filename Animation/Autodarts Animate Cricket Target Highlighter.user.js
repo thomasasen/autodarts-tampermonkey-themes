@@ -196,7 +196,8 @@
   ];
 
   const STYLE_ID = "autodarts-cricket-target-style";
-  const OVERLAY_ID = "ad-ext-cricket-targets";
+  const LEGACY_OVERLAY_ID = "ad-ext-cricket-targets";
+  const OVERLAY_ID = "ad-ext-cricket-targets-v2";
   const TARGET_CLASS = "ad-ext-cricket-target";
   const OPEN_CLASS = "ad-ext-cricket-target--open";
   const CLOSED_CLASS = "ad-ext-cricket-target--closed";
@@ -289,12 +290,233 @@
     return resolution && typeof resolution === "object" ? resolution : null;
   }
 
+  function isElement(node) {
+    return Boolean(node) && node.nodeType === 1;
+  }
+
+  function isLayoutVisible(element) {
+    if (!isElement(element) || !element.isConnected) {
+      return false;
+    }
+    let current = element;
+    while (isElement(current)) {
+      const style = getComputedStyle(current);
+      if (!style) {
+        return false;
+      }
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.opacity === "0"
+      ) {
+        return false;
+      }
+      current = current.parentElement;
+    }
+    const rect = element.getBoundingClientRect();
+    return (
+      Number.isFinite(rect.width) &&
+      Number.isFinite(rect.height) &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
+  }
+
+  function normalizeIdentityKey(value) {
+    return String(value || "")
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/[^\p{L}\p{N}@._ -]+/gu, "")
+      .trim();
+  }
+
+  function readNodeAttribute(element, attributeName) {
+    if (!isElement(element) || !attributeName) {
+      return "";
+    }
+    return String(element.getAttribute(attributeName) || "").trim();
+  }
+
+  function readPlayerNodeIdentity(node) {
+    if (!isElement(node)) {
+      return { playerId: "", nameKey: "" };
+    }
+    const playerId =
+      readNodeAttribute(node, "data-player-id") ||
+      readNodeAttribute(node, "data-user-id") ||
+      readNodeAttribute(node, "data-id") ||
+      readNodeAttribute(node, "data-player");
+    const nameNode =
+      node.querySelector(".ad-ext-player-name") ||
+      node.querySelector("[data-player-name]") ||
+      node.querySelector("[data-username]") ||
+      node.querySelector("[data-name]");
+    const rawName = nameNode?.textContent || node.textContent || "";
+    return {
+      playerId,
+      nameKey: normalizeIdentityKey(rawName),
+    };
+  }
+
+  function sortPlayerNodesByVisualOrder(nodes) {
+    return (Array.isArray(nodes) ? nodes.slice() : [])
+      .filter((node) => isElement(node))
+      .map((node, index) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          node,
+          index,
+          top: Number.isFinite(rect.top) ? rect.top : 0,
+          left: Number.isFinite(rect.left) ? rect.left : 0,
+          width: Number.isFinite(rect.width) ? rect.width : 0,
+          height: Number.isFinite(rect.height) ? rect.height : 0,
+        };
+      })
+      .sort((first, second) => {
+        if (Math.abs(first.top - second.top) > 8) {
+          return first.top - second.top;
+        }
+        if (first.left !== second.left) {
+          return first.left - second.left;
+        }
+        if (first.width !== second.width) {
+          return first.width - second.width;
+        }
+        if (first.height !== second.height) {
+          return first.height - second.height;
+        }
+        return first.index - second.index;
+      })
+      .map((entry) => entry.node);
+  }
+
+  function getFallbackBoardPlayerIndex(snapshot) {
+    if (Number.isFinite(snapshot?.boardPlayerIndex)) {
+      return snapshot.boardPlayerIndex;
+    }
+    if (Number.isFinite(snapshot?.activePlayerIndex)) {
+      return snapshot.activePlayerIndex;
+    }
+    return 0;
+  }
+
+  function resolveLiveBoardResolution(snapshot) {
+    const fallbackResolution = getActivePlayerResolution(snapshot);
+    const fallbackIndex = getFallbackBoardPlayerIndex(snapshot);
+    const playerSlots = Array.isArray(snapshot?.playerSlots)
+      ? snapshot.playerSlots
+      : [];
+    if (
+      !playerSlots.length ||
+      !cricketStateShared ||
+      typeof cricketStateShared.resolveActivePlayerResolution !== "function"
+    ) {
+      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
+    }
+
+    const playerDisplayRoot = document.getElementById("ad-ext-player-display");
+    if (!playerDisplayRoot) {
+      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
+    }
+
+    const visiblePlayers = sortPlayerNodesByVisualOrder(
+      Array.from(playerDisplayRoot.querySelectorAll(CONFIG.playerSelector)).filter(
+        isLayoutVisible
+      )
+    );
+    if (!visiblePlayers.length) {
+      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
+    }
+
+    const activeEntries = visiblePlayers.reduce((entries, player, displayIndex) => {
+      const isActive =
+        player.matches(CONFIG.activePlayerSelector) ||
+        (typeof player.querySelector === "function" &&
+          player.querySelector(CONFIG.activePlayerSelector));
+      if (!isActive) {
+        return entries;
+      }
+      const identity = readPlayerNodeIdentity(player);
+      entries.push({
+        index: displayIndex,
+        playerId: identity.playerId || "",
+        nameKey: identity.nameKey || "",
+      });
+      return entries;
+    }, []);
+
+    if (!activeEntries.length) {
+      return fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
+    }
+
+    const stateIndex =
+      gameStateShared && typeof gameStateShared.getActivePlayerIndex === "function"
+        ? gameStateShared.getActivePlayerIndex()
+        : Number.isFinite(fallbackResolution?.matchIndex)
+          ? fallbackResolution.matchIndex
+          : null;
+    const activeInfo =
+      activeEntries.length === 1
+        ? {
+            index: activeEntries[0].index,
+            displayIndex: activeEntries[0].index,
+            source: "visible-dom",
+            playerId: activeEntries[0].playerId || "",
+            nameKey: activeEntries[0].nameKey || "",
+            activeCandidates: activeEntries,
+            stateIndex,
+          }
+        : {
+            index: Number.isFinite(stateIndex) ? stateIndex : activeEntries[0].index,
+            displayIndex: null,
+            source: "visible-dom-ambiguous",
+            playerId: "",
+            nameKey: "",
+            activeCandidates: activeEntries,
+            stateIndex,
+          };
+    const resolved = cricketStateShared.resolveActivePlayerResolution(
+      activeInfo,
+      playerSlots,
+      Number.isFinite(snapshot?.playerCount) ? snapshot.playerCount : playerSlots.length
+    );
+    return resolved && Number.isFinite(resolved.columnIndex)
+      ? resolved
+      : fallbackResolution || { columnIndex: fallbackIndex, source: "snapshot-board" };
+  }
+
+  function resolveRenderBoardPlayerIndex(snapshot) {
+    const resolution = resolveLiveBoardResolution(snapshot);
+    return Number.isFinite(resolution?.columnIndex)
+      ? resolution.columnIndex
+      : getFallbackBoardPlayerIndex(snapshot);
+  }
+
+  function getRenderBoardPresentation(stateInfo, boardPlayerIndex) {
+    const cellStates = Array.isArray(stateInfo?.cellStates) ? stateInfo.cellStates : [];
+    if (
+      Number.isFinite(boardPlayerIndex) &&
+      boardPlayerIndex >= 0 &&
+      boardPlayerIndex < cellStates.length
+    ) {
+      return String(cellStates[boardPlayerIndex]?.presentation || "open");
+    }
+    return getBoardPresentation(stateInfo);
+  }
+
   function rgba(alpha, color = CONFIG.baseColor) {
     const { r, g, b } = color;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   const STYLE_TEXT = `
+#${LEGACY_OVERLAY_ID} {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 .${TARGET_CLASS} {
   fill: var(--ad-ext-cricket-fill, transparent);
   stroke: var(--ad-ext-cricket-stroke, transparent);
@@ -502,6 +724,9 @@
   function renderTargets(stateContext) {
     const snapshot = stateContext?.snapshot || null;
     const stateMap = stateContext?.stateMap || new Map();
+    const boardPlayerIndex = Number.isFinite(stateContext?.boardPlayerIndex)
+      ? stateContext.boardPlayerIndex
+      : resolveRenderBoardPlayerIndex(snapshot);
     const board = findBoard();
     if (!board) {
       return;
@@ -510,6 +735,13 @@
     const activeTargets = snapshot?.targetSet || new Set();
 
     const overlay = ensureOverlayGroup(board.group, OVERLAY_ID);
+    const legacyOverlay =
+      board.group && typeof board.group.querySelector === "function"
+        ? board.group.querySelector(`#${LEGACY_OVERLAY_ID}`)
+        : null;
+    if (legacyOverlay) {
+      clearOverlay(legacyOverlay);
+    }
     applyOverlayTheme(overlay, board.radius);
     clearOverlay(overlay);
 
@@ -522,7 +754,10 @@
 
       buildTargetShapes(board.radius, target).forEach((shape) => {
         shape.classList.add(TARGET_CLASS);
-        const boardPresentation = getBoardPresentation(stateInfo);
+        const boardPresentation = getRenderBoardPresentation(
+          stateInfo,
+          boardPlayerIndex
+        );
         if (!isCricketTarget) {
           shape.classList.add(INACTIVE_CLASS);
         } else if (
@@ -552,6 +787,7 @@
     const modeFamily = snapshot?.modeInfo?.family || "";
     const playerMappingSource = snapshot?.playerMappingSource || "";
     const activeResolution = getActivePlayerResolution(snapshot);
+    const liveBoardResolution = resolveLiveBoardResolution(snapshot);
     const playerSlots = Array.isArray(snapshot?.playerSlots)
       ? snapshot.playerSlots
           .map((slot) =>
@@ -566,11 +802,9 @@
           )
           .join(",")
       : "";
-    const activePlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
-      ? snapshot.boardPlayerIndex
-      : Number.isFinite(snapshot?.activePlayerIndex)
-        ? snapshot.activePlayerIndex
-      : "";
+    const activePlayerIndex = Number.isFinite(liveBoardResolution?.columnIndex)
+      ? liveBoardResolution.columnIndex
+      : getFallbackBoardPlayerIndex(snapshot);
     const playerCount = Number.isFinite(snapshot?.playerCount)
       ? snapshot.playerCount
       : "";
@@ -580,7 +814,10 @@
         const marks = Array.isArray(state?.marksByPlayer)
           ? state.marksByPlayer.join(",")
           : "";
-        const boardPresentation = getBoardPresentation(state);
+        const boardPresentation = getRenderBoardPresentation(
+          state,
+          activePlayerIndex
+        );
         return `${label}:${boardPresentation}:${marks}`;
       })
       .join("|");
@@ -595,6 +832,7 @@
       Number.isFinite(activeResolution?.matchIndex)
         ? activeResolution.matchIndex
         : "",
+      liveBoardResolution?.source || "",
       playerSlots,
       activePlayerIndex,
       playerCount,
@@ -607,6 +845,7 @@
       return;
     }
     const resolution = getActivePlayerResolution(snapshot);
+    const liveResolution = resolveLiveBoardResolution(snapshot);
     if (!resolution) {
       return;
     }
@@ -623,6 +862,26 @@
         matchIndex: resolution.matchIndex,
         resolutionSource: resolution.source,
         visibleActiveCandidates: resolution.visibleActiveCandidates || 0,
+        playerMappingSource: snapshot?.playerMappingSource || "",
+      });
+    }
+    if (
+      liveResolution &&
+      Number.isFinite(liveResolution.columnIndex) &&
+      Number.isFinite(snapshot?.boardPlayerIndex) &&
+      liveResolution.columnIndex !== snapshot.boardPlayerIndex
+    ) {
+      debugLog("board-player-resolution-live-override", {
+        _signature: [
+          snapshot?.playerMappingSource || "",
+          snapshot.boardPlayerIndex,
+          liveResolution.columnIndex,
+          liveResolution.source || "",
+        ].join("|"),
+        snapshotBoardPlayerIndex: snapshot.boardPlayerIndex,
+        liveBoardPlayerIndex: liveResolution.columnIndex,
+        liveResolutionSource: liveResolution.source || "",
+        snapshotResolutionSource: resolution.source || "",
         playerMappingSource: snapshot?.playerMappingSource || "",
       });
     }
@@ -677,9 +936,11 @@
       showDeadTargets: CONFIG.showDeadTargets,
     });
     warnIfBoardResolutionLooksWrong(snapshot);
+    const boardPlayerIndex = resolveRenderBoardPlayerIndex(snapshot);
     return {
       snapshot,
       stateMap,
+      boardPlayerIndex,
     };
   }
 
@@ -687,6 +948,13 @@
     const board = findBoard();
     if (board) {
       clearOverlay(ensureOverlayGroup(board.group, OVERLAY_ID));
+      const legacyOverlay =
+        board.group && typeof board.group.querySelector === "function"
+          ? board.group.querySelector(`#${LEGACY_OVERLAY_ID}`)
+          : null;
+      if (legacyOverlay) {
+        clearOverlay(legacyOverlay);
+      }
     }
     lastStateKey = null;
     lastBoardKey = null;
@@ -736,8 +1004,10 @@
     debugTrace("updateTargets: render", {
       boardKey,
       stateKey,
-      boardPlayerIndex: stateContext.snapshot?.boardPlayerIndex,
+      boardPlayerIndex: stateContext.boardPlayerIndex,
+      snapshotBoardPlayerIndex: stateContext.snapshot?.boardPlayerIndex,
       resolution: getActivePlayerResolution(stateContext.snapshot),
+      liveResolution: resolveLiveBoardResolution(stateContext.snapshot),
       playerMappingSource: stateContext.snapshot?.playerMappingSource || "",
     });
     renderTargets(stateContext);
