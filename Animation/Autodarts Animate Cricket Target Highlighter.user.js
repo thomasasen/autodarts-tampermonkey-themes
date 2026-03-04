@@ -132,7 +132,7 @@
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-runtime-ownership`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-active-player-root-fix`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
@@ -1360,6 +1360,15 @@
     const snapshot = stateContext?.snapshot || null;
     const stateMap = stateContext?.stateMap || new Map();
     const boardDecision = stateContext?.boardDecision || null;
+    const gameStateSnapshot =
+      gameStateShared && typeof gameStateShared.getState === "function"
+        ? gameStateShared.getState()
+        : null;
+    const gameStateUpdatedAt = Number.isFinite(gameStateSnapshot?.updatedAt)
+      ? gameStateSnapshot.updatedAt
+      : 0;
+    const gameStateAgeMs =
+      gameStateUpdatedAt > 0 ? Math.max(0, Date.now() - gameStateUpdatedAt) : null;
     const boardPlayerIndex = Number.isFinite(stateContext?.boardPlayerIndex)
       ? stateContext.boardPlayerIndex
       : getFallbackBoardPlayerIndex(snapshot);
@@ -1403,8 +1412,17 @@
       resolutionMatchIndex: Number.isFinite(resolution?.matchIndex)
         ? resolution.matchIndex
         : null,
+      playerDisplayRootId: resolution?.playerDisplayRootId || "",
+      playerDisplayRootCount: Number.isFinite(resolution?.playerDisplayRootCount)
+        ? resolution.playerDisplayRootCount
+        : 0,
       playerMappingSource: snapshot?.playerMappingSource || "",
       runtimeSourceHint: snapshot?.runtimeSourceHint || "",
+      gameStateSource: gameStateSnapshot?.source || "",
+      gameStateTopic: gameStateSnapshot?.topic || "",
+      gameStatePayloadKind: gameStateSnapshot?.payloadKind || "",
+      gameStateUpdatedAt,
+      gameStateAgeMs,
       overlayOrder:
         overlayInfo?.overlayOrder || summarizeBoardOverlayStack(board?.group),
       protectedAnchorId: overlayInfo?.protectedAnchorId || "",

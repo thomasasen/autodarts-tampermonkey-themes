@@ -10,7 +10,8 @@
 
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
-  const BUILD_SIGNATURE = `${MODULE_ID}@${API_VERSION}:2026-03-runtime-ownership`;
+  const BUILD_SIGNATURE =
+    `${MODULE_ID}@${API_VERSION}:2026-03-active-player-root-fix`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -299,9 +300,119 @@
     ).size;
   }
 
+  function getViewportIntersectionArea(rect) {
+    if (!rect) {
+      return 0;
+    }
+    const viewportWidth =
+      Number.isFinite(window.innerWidth) && window.innerWidth > 0
+        ? window.innerWidth
+        : 0;
+    const viewportHeight =
+      Number.isFinite(window.innerHeight) && window.innerHeight > 0
+        ? window.innerHeight
+        : 0;
+    if (!(viewportWidth > 0) || !(viewportHeight > 0)) {
+      return 0;
+    }
+    const left = Math.max(0, rect.left);
+    const right = Math.min(viewportWidth, rect.right);
+    const top = Math.max(0, rect.top);
+    const bottom = Math.min(viewportHeight, rect.bottom);
+    const width = right - left;
+    const height = bottom - top;
+    if (!(width > 0) || !(height > 0)) {
+      return 0;
+    }
+    return width * height;
+  }
+
+  function getPlayerDisplayRootCandidates(options = {}) {
+    const doc = options.document || document;
+    const explicitRoot = isElement(options.playerDisplayRoot)
+      ? [options.playerDisplayRoot]
+      : [];
+    const idMatches = toArray(doc.querySelectorAll(`[id="${PLAYER_DISPLAY_ID}"]`));
+    return uniqueElements([...explicitRoot, ...idMatches]);
+  }
+
   function getPlayerDisplayRoot(options = {}) {
     const doc = options.document || document;
-    return doc.getElementById(PLAYER_DISPLAY_ID);
+    const playerSelector = options.playerSelector || PLAYER_SELECTOR;
+    const activePlayerSelector =
+      options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
+    const gridRoot = isElement(options.gridRoot) ? options.gridRoot : null;
+    const gridRect =
+      gridRoot && typeof gridRoot.getBoundingClientRect === "function"
+        ? gridRoot.getBoundingClientRect()
+        : null;
+    const roots = getPlayerDisplayRootCandidates(options);
+
+    if (!roots.length) {
+      return doc.getElementById(PLAYER_DISPLAY_ID);
+    }
+    if (roots.length === 1) {
+      return roots[0];
+    }
+
+    const scoredRoots = roots
+      .map((root, index) => {
+        const players = toArray(root.querySelectorAll(playerSelector)).filter(
+          (node) => isElement(node)
+        );
+        const visiblePlayers = players.filter(isVisiblePlayerNode);
+        const activeVisiblePlayers = visiblePlayers.filter((player) => {
+          return (
+            player.matches(activePlayerSelector) ||
+            (typeof player.querySelector === "function" &&
+              player.querySelector(activePlayerSelector))
+          );
+        });
+        const rect =
+          typeof root.getBoundingClientRect === "function"
+            ? root.getBoundingClientRect()
+            : null;
+        const area =
+          rect &&
+          Number.isFinite(rect.width) &&
+          Number.isFinite(rect.height) &&
+          rect.width > 0 &&
+          rect.height > 0
+            ? rect.width * rect.height
+            : 0;
+        const viewportArea = getViewportIntersectionArea(rect);
+
+        let score = 0;
+        if (isLayoutVisible(root)) {
+          score += 1000;
+        }
+        score += Math.min(visiblePlayers.length, 4) * 260;
+        if (activeVisiblePlayers.length === 1) {
+          score += 420;
+        } else if (activeVisiblePlayers.length > 1) {
+          score += 220;
+        }
+        score += Math.min(260, viewportArea / 3500);
+        score += Math.min(140, area / 7000);
+        if (gridRect && rect) {
+          const verticalDistance = Math.abs(gridRect.top - rect.bottom);
+          score += Math.max(0, 220 - Math.min(220, verticalDistance));
+        }
+
+        return {
+          root,
+          index,
+          score,
+        };
+      })
+      .sort((first, second) => {
+        if (first.score !== second.score) {
+          return second.score - first.score;
+        }
+        return first.index - second.index;
+      });
+
+    return scoredRoots[0]?.root || roots[0];
   }
 
   function isVisiblePlayerNode(element) {
@@ -851,6 +962,10 @@
     const gameStateShared = options.gameStateShared || null;
     const activePlayerSelector =
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
+    const displayRoots = getPlayerDisplayRootCandidates(options);
+    const selectedDisplayRoot = getPlayerDisplayRoot(options);
+    const selectedDisplayRootId = getDebugRootId(selectedDisplayRoot);
+    const displayRootCount = displayRoots.length;
     const fromState = gameStateShared && gameStateShared.getActivePlayerIndex
       ? gameStateShared.getActivePlayerIndex()
       : null;
@@ -886,6 +1001,8 @@
         visiblePlayerCount,
         playerId: activePlayer?.identity?.playerId || "",
         nameKey: activePlayer?.identity?.nameKey || "",
+        playerDisplayRootId: selectedDisplayRootId,
+        playerDisplayRootCount: displayRootCount,
         activeCandidates: activePlayers.map((entry) => ({
           index: entry.index,
           playerId: entry.identity?.playerId || "",
@@ -903,6 +1020,8 @@
         visiblePlayerCount,
         playerId: "",
         nameKey: "",
+        playerDisplayRootId: selectedDisplayRootId,
+        playerDisplayRootCount: displayRootCount,
         activeCandidates: [],
         stateIndex: fromState,
       };
@@ -921,6 +1040,8 @@
       displayIndex: activeIndex >= 0 ? activeIndex : null,
       source: activeIndex >= 0 ? "dom-fallback" : "default-zero",
       visiblePlayerCount,
+      playerDisplayRootId: selectedDisplayRootId,
+      playerDisplayRootCount: displayRootCount,
       playerId:
         activeIndex >= 0
           ? extractPlayerNodeIdentity(players[activeIndex]).playerId || ""
@@ -2066,16 +2187,6 @@
       }
     }
 
-    if (stateIndex !== null) {
-      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
-      if (matchedSlot) {
-        return buildResolution(
-          matchedSlot,
-          usedVisibleDom ? "game-state-match-preferred" : "game-state-match"
-        );
-      }
-    }
-
     const slotByPlayerId = playerId
       ? findUniqueSlot((slot) => slot.playerId && slot.playerId === playerId)
       : null;
@@ -2088,6 +2199,13 @@
       : null;
     if (usedVisibleDom && slotByName) {
       return buildResolution(slotByName, "visible-dom-name");
+    }
+
+    if (stateIndex !== null) {
+      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
+      if (matchedSlot) {
+        return buildResolution(matchedSlot, "game-state-match");
+      }
     }
 
     if (usedVisibleDom && displayIndex !== null) {
@@ -2144,9 +2262,14 @@
       return null;
     }
 
-    const expectedPlayerCount = getExpectedPlayerCount(options);
     const gameStateShared = options.gameStateShared || null;
-    const activePlayerInfo = getResolvedActivePlayerInfo(options);
+    const playerContextOptions = {
+      ...options,
+      gridRoot: root,
+      gameStateShared,
+    };
+    const expectedPlayerCount = getExpectedPlayerCount(playerContextOptions);
+    const activePlayerInfo = getResolvedActivePlayerInfo(playerContextOptions);
     const visiblePlayerCount = activePlayerInfo.visiblePlayerCount;
 
     let parsedRows = buildRowsFromLinearGrid(root, expectedPlayerCount);
@@ -2199,7 +2322,7 @@
     }
 
     const playerMapping = buildPlayerSlotMapping({
-      ...options,
+      ...playerContextOptions,
       gameStateShared,
       match: readMatchData(gameStateShared),
       activePlayerInfo,
@@ -2244,6 +2367,35 @@
       gameStateShared,
       targetSet
     );
+    if (debugLog && (activePlayerInfo.playerDisplayRootCount || 0) > 1) {
+      const rootConflictPayload = {
+        selectedPlayerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
+        activePlayerSource: activePlayerInfo.source,
+        activePlayerDisplayIndex: Number.isFinite(activePlayerInfo.displayIndex)
+          ? activePlayerInfo.displayIndex
+          : null,
+        gameStateActivePlayerIndex: Number.isFinite(activePlayerInfo.stateIndex)
+          ? activePlayerInfo.stateIndex
+          : null,
+        playerMappingSource: playerMapping.playerMappingSource,
+        rootId: getDebugRootId(root),
+      };
+      const rootConflictSignature = [
+        rootConflictPayload.rootId,
+        rootConflictPayload.selectedPlayerDisplayRootId,
+        rootConflictPayload.playerDisplayRootCount,
+        rootConflictPayload.activePlayerDisplayIndex,
+        rootConflictPayload.gameStateActivePlayerIndex,
+        rootConflictPayload.playerMappingSource,
+      ].join("|");
+      debugWarnOnce(
+        debugLog,
+        "buildGridSnapshot: multiple-player-display-roots",
+        rootConflictSignature,
+        rootConflictPayload
+      );
+    }
     if (
       debugLog &&
       activePlayerInfo.source === "visible-dom" &&
@@ -2275,6 +2427,8 @@
           source: slot.source || "",
         })),
         playerMappingSource: playerMapping.playerMappingSource,
+        playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
         rootId: getDebugRootId(root),
       };
       const conflictSignature = [
@@ -2336,6 +2490,8 @@
           source: slot.source || "",
         })),
         rootId: getDebugRootId(root),
+        playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
       };
       const mismatchSignature = [
         mismatchPayload.rootId,
@@ -2458,6 +2614,8 @@
         visibleActiveCandidates: Array.isArray(activePlayerInfo.activeCandidates)
           ? activePlayerInfo.activeCandidates.length
           : 0,
+        playerDisplayRootId: activePlayerInfo.playerDisplayRootId || "",
+        playerDisplayRootCount: activePlayerInfo.playerDisplayRootCount || 0,
       },
       runtimeSourceHint: getRuntimeSourceHint(),
       modeInfo,

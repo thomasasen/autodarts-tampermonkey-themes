@@ -13,11 +13,14 @@
   // with DOM-based fallbacks.
 
   const CHANNEL_MATCHES = "autodarts.matches";
+  const TOPIC_STATE_SUFFIX = ".state";
 
   const state = {
     match: null,
     updatedAt: 0,
     source: "none",
+    topic: "",
+    payloadKind: "",
   };
 
   const subscribers = new Set();
@@ -267,13 +270,50 @@
     });
   }
 
-  function applyMatch(match, source = "websocket") {
+  function classifyPayloadKind(payload) {
+    if (!payload || typeof payload !== "object") {
+      return "unknown";
+    }
+    if (Array.isArray(payload.players) && Array.isArray(payload.turns)) {
+      return "match-state";
+    }
+    if (Array.isArray(payload.players)) {
+      return "match-partial";
+    }
+    if (Array.isArray(payload.throws) || payload.event || payload.type) {
+      return "event";
+    }
+    return "unknown";
+  }
+
+  function isLikelyMatchStatePayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+    if (!Array.isArray(payload.players)) {
+      return false;
+    }
+    return (
+      Number.isFinite(payload.player) ||
+      Array.isArray(payload.turns) ||
+      Array.isArray(payload.gameScores) ||
+      Boolean(payload.settings)
+    );
+  }
+
+  function applyMatch(match, source = "websocket", meta = null) {
     if (!match || typeof match !== "object") {
       return;
     }
     state.match = match;
     state.updatedAt = Date.now();
     state.source = source;
+    state.topic =
+      meta && typeof meta.topic === "string" ? String(meta.topic) : "";
+    state.payloadKind =
+      meta && typeof meta.payloadKind === "string"
+        ? String(meta.payloadKind)
+        : classifyPayloadKind(match);
     emitUpdate();
   }
 
@@ -293,8 +333,28 @@
       return;
     }
 
-    if (parsed.channel === CHANNEL_MATCHES && parsed.data && !parsed.data.body) {
-      applyMatch(parsed.data, "websocket");
+    if (parsed.channel !== CHANNEL_MATCHES || !parsed.data || parsed.data.body) {
+      return;
+    }
+
+    const topic = String(parsed.topic || "");
+    const payloadKind = classifyPayloadKind(parsed.data);
+    const fromStateTopic = topic.endsWith(TOPIC_STATE_SUFFIX);
+    const fromStateShape = isLikelyMatchStatePayload(parsed.data);
+
+    if (fromStateTopic && fromStateShape) {
+      applyMatch(parsed.data, "websocket-state-topic", {
+        topic,
+        payloadKind,
+      });
+      return;
+    }
+
+    if (!topic && fromStateShape) {
+      applyMatch(parsed.data, "websocket-state-shape", {
+        topic,
+        payloadKind,
+      });
     }
   }
 
@@ -337,6 +397,8 @@
       match: safeClone(state.match),
       updatedAt: state.updatedAt,
       source: state.source,
+      topic: state.topic,
+      payloadKind: state.payloadKind,
     };
   }
 
