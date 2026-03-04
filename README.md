@@ -566,6 +566,7 @@ Formatvarianten:
 - Logik: Nutzt dieselbe Cricket-State-Basis wie `Cricket Grid FX`, damit Board und Matrix in Cricket und Tactics dieselben Zustände zeigen.
 - Perspektive: Das Board bleibt strikt in der Sicht des aktiven Spielers. Das Grid zeigt dieselben Zielzustände parallel pro Spielerzelle, sodass dieselbe Zeile gleichzeitig grün und rot sein kann.
 - Aktivspieler-Regel: Der sichtbar aktive Spieler im primären Player-Display `#ad-ext-player-display` hat Vorrang vor einem eventuell verzögerten Match-State; erst ohne sichtbaren Aktivstatus fällt der Helper auf den Game-State zurück.
+- Snapshot-Hinweis: Der Shared Helper legt die finale Board-Perspektive zusätzlich als `snapshot.boardPlayerIndex` und `snapshot.activePlayerResolution` offen. Damit lässt sich im Debug schnell prüfen, aus welcher Quelle das Board seinen aktiven Spieler bezieht.
 - Spielerzuordnung: Die Cricket-State-Basis führt Player-Display, Grid-Spalten und `match.players` über sichtbare Links-nach-Rechts-Reihenfolge plus ID-/Namensabgleich zusammen. Dadurch bleiben Board-Farben auch dann korrekt, wenn DOM-Reihenfolge und Match-Reihenfolge voneinander abweichen.
 - Spieleranzahl-Regel: Die aus dem Grid erkannte Spaltenzahl hat Vorrang vor global gezählten `.ad-ext-player`-Nodes. Zusätzliche oder versteckte DOM-Spieler erzeugen daher keine Phantom-Gegner.
 - Grid-Root-Regel: Ein sichtbar gerendertes aktuelles Grid hat Vorrang vor versteckten Alt-Grids derselben Seite. Damit bleiben Board-Farben auch nach React-Re-Rendern oder SPA-Wechseln am richtigen Match-Grid.

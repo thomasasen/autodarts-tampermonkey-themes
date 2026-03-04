@@ -284,6 +284,11 @@
     );
   }
 
+  function getActivePlayerResolution(snapshot) {
+    const resolution = snapshot?.activePlayerResolution;
+    return resolution && typeof resolution === "object" ? resolution : null;
+  }
+
   function rgba(alpha, color = CONFIG.baseColor) {
     const { r, g, b } = color;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -546,6 +551,7 @@
     const gameMode = snapshot?.gameModeInfo?.normalized || "";
     const modeFamily = snapshot?.modeInfo?.family || "";
     const playerMappingSource = snapshot?.playerMappingSource || "";
+    const activeResolution = getActivePlayerResolution(snapshot);
     const playerSlots = Array.isArray(snapshot?.playerSlots)
       ? snapshot.playerSlots
           .map((slot) =>
@@ -560,8 +566,10 @@
           )
           .join(",")
       : "";
-    const activePlayerIndex = Number.isFinite(snapshot?.activePlayerIndex)
-      ? snapshot.activePlayerIndex
+    const activePlayerIndex = Number.isFinite(snapshot?.boardPlayerIndex)
+      ? snapshot.boardPlayerIndex
+      : Number.isFinite(snapshot?.activePlayerIndex)
+        ? snapshot.activePlayerIndex
       : "";
     const playerCount = Number.isFinite(snapshot?.playerCount)
       ? snapshot.playerCount
@@ -580,11 +588,51 @@
       gameMode,
       modeFamily,
       playerMappingSource,
+      activeResolution?.source || "",
+      Number.isFinite(activeResolution?.displayIndex)
+        ? activeResolution.displayIndex
+        : "",
+      Number.isFinite(activeResolution?.matchIndex)
+        ? activeResolution.matchIndex
+        : "",
       playerSlots,
       activePlayerIndex,
       playerCount,
       targets,
     ].join("|");
+  }
+
+  function warnIfBoardResolutionLooksWrong(snapshot) {
+    if (!DEBUG_ENABLED) {
+      return;
+    }
+    const resolution = getActivePlayerResolution(snapshot);
+    if (!resolution || !resolution.usedVisibleDom) {
+      return;
+    }
+    if (
+      !Number.isFinite(resolution.displayIndex) ||
+      !Number.isFinite(resolution.columnIndex)
+    ) {
+      return;
+    }
+    if (resolution.displayIndex === resolution.columnIndex) {
+      return;
+    }
+    debugLog("board-player-resolution-mismatch", {
+      _signature: [
+        snapshot?.playerMappingSource || "",
+        resolution.source || "",
+        resolution.displayIndex,
+        resolution.columnIndex,
+        resolution.matchIndex,
+      ].join("|"),
+      boardPlayerIndex: resolution.columnIndex,
+      displayIndex: resolution.displayIndex,
+      matchIndex: resolution.matchIndex,
+      resolutionSource: resolution.source,
+      playerMappingSource: snapshot?.playerMappingSource || "",
+    });
   }
 
   function readStateContext() {
@@ -607,6 +655,7 @@
     const stateMap = cricketStateShared.computeTargetStates(snapshot, {
       showDeadTargets: CONFIG.showDeadTargets,
     });
+    warnIfBoardResolutionLooksWrong(snapshot);
     return {
       snapshot,
       stateMap,
@@ -663,7 +712,13 @@
 
     lastStateKey = stateKey;
     lastBoardKey = boardKey;
-    debugTrace("updateTargets: render", { boardKey, stateKey });
+    debugTrace("updateTargets: render", {
+      boardKey,
+      stateKey,
+      boardPlayerIndex: stateContext.snapshot?.boardPlayerIndex,
+      resolution: getActivePlayerResolution(stateContext.snapshot),
+      playerMappingSource: stateContext.snapshot?.playerMappingSource || "",
+    });
     renderTargets(stateContext);
   }
 

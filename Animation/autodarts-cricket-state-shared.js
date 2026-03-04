@@ -833,24 +833,31 @@
       options.activePlayerSelector || ACTIVE_PLAYER_SELECTOR;
     const players = getPreferredPlayerNodes(options);
     const visiblePlayerCount = players.filter(isVisiblePlayerNode).length;
-    const activeIndices = players.reduce((indices, player, index) => {
+    const activePlayers = players.reduce((entries, player, index) => {
       const isVisible = isVisiblePlayerNode(player);
       const isActive =
         player.matches(activePlayerSelector) ||
         (typeof player.querySelector === "function" &&
           player.querySelector(activePlayerSelector));
       if (isVisible && isActive) {
-        indices.push(index);
+        entries.push({
+          index,
+          player,
+          identity: extractPlayerNodeIdentity(player),
+        });
       }
-      return indices;
+      return entries;
     }, []);
 
-    if (activeIndices.length > 0) {
+    if (activePlayers.length > 0) {
+      const activePlayer = activePlayers[0];
       return {
-        index: activeIndices[0],
-        displayIndex: activeIndices[0],
+        index: activePlayer.index,
+        displayIndex: activePlayer.index,
         source: "visible-dom",
         visiblePlayerCount,
+        playerId: activePlayer.identity?.playerId || "",
+        nameKey: activePlayer.identity?.nameKey || "",
         stateIndex:
           gameStateShared && gameStateShared.getActivePlayerIndex
             ? gameStateShared.getActivePlayerIndex()
@@ -867,6 +874,8 @@
         displayIndex: null,
         source: "game-state",
         visiblePlayerCount,
+        playerId: "",
+        nameKey: "",
         stateIndex: fromState,
       };
     }
@@ -884,6 +893,14 @@
       displayIndex: activeIndex >= 0 ? activeIndex : null,
       source: activeIndex >= 0 ? "dom-fallback" : "default-zero",
       visiblePlayerCount,
+      playerId:
+        activeIndex >= 0
+          ? extractPlayerNodeIdentity(players[activeIndex]).playerId || ""
+          : "",
+      nameKey:
+        activeIndex >= 0
+          ? extractPlayerNodeIdentity(players[activeIndex]).nameKey || ""
+          : "",
       stateIndex: fromState,
     };
   }
@@ -1889,34 +1906,113 @@
   }
 
   function resolveMappedActivePlayerIndex(activePlayerInfo, playerSlots, playerCount) {
+    return resolveActivePlayerResolution(
+      activePlayerInfo,
+      playerSlots,
+      playerCount
+    ).columnIndex;
+  }
+
+  function resolveActivePlayerResolution(
+    activePlayerInfo,
+    playerSlots,
+    playerCount
+  ) {
     const slots = Array.isArray(playerSlots) ? playerSlots : [];
     const displayIndex = Number.isFinite(activePlayerInfo?.displayIndex)
       ? activePlayerInfo.displayIndex
       : null;
-    if (displayIndex !== null) {
-      const matchedSlot = slots.find((slot) => slot.displayIndex === displayIndex);
-      if (matchedSlot && Number.isFinite(matchedSlot.columnIndex)) {
-        return matchedSlot.columnIndex;
-      }
-    }
-
     const stateIndex = Number.isFinite(activePlayerInfo?.stateIndex)
       ? activePlayerInfo.stateIndex
       : null;
-    if (stateIndex !== null) {
-      const matchedSlot = slots.find((slot) => slot.matchIndex === stateIndex);
-      if (matchedSlot && Number.isFinite(matchedSlot.columnIndex)) {
-        return matchedSlot.columnIndex;
-      }
-    }
-
+    const playerId = String(activePlayerInfo?.playerId || "").trim();
+    const nameKey = String(activePlayerInfo?.nameKey || "").trim();
     const fallbackIndex = Number.isFinite(activePlayerInfo?.index)
       ? activePlayerInfo.index
       : 0;
-    if (playerCount > 0) {
-      return Math.max(0, Math.min(fallbackIndex, playerCount - 1));
+    const usedVisibleDom =
+      displayIndex !== null && activePlayerInfo?.source === "visible-dom";
+    const hasDomFallbackIndex =
+      displayIndex !== null && activePlayerInfo?.source === "dom-fallback";
+
+    function findUniqueSlot(predicate) {
+      const matches = slots.filter((slot) => predicate(slot));
+      return matches.length === 1 ? matches[0] : null;
     }
-    return 0;
+
+    function buildResolution(slot, source) {
+      if (slot && Number.isFinite(slot.columnIndex)) {
+        return {
+          displayIndex,
+          matchIndex: Number.isFinite(slot.matchIndex) ? slot.matchIndex : stateIndex,
+          columnIndex: slot.columnIndex,
+          source,
+          usedVisibleDom,
+        };
+      }
+      const columnIndex =
+        playerCount > 0
+          ? Math.max(0, Math.min(fallbackIndex, playerCount - 1))
+          : 0;
+      return {
+        displayIndex,
+        matchIndex: stateIndex,
+        columnIndex,
+        source,
+        usedVisibleDom,
+      };
+    }
+
+    const slotByPlayerId = playerId
+      ? findUniqueSlot((slot) => slot.playerId && slot.playerId === playerId)
+      : null;
+    if (usedVisibleDom && slotByPlayerId) {
+      return buildResolution(slotByPlayerId, "visible-dom-id");
+    }
+
+    const slotByName = nameKey
+      ? findUniqueSlot((slot) => slot.nameKey && slot.nameKey === nameKey)
+      : null;
+    if (usedVisibleDom && slotByName) {
+      return buildResolution(slotByName, "visible-dom-name");
+    }
+
+    if (usedVisibleDom && displayIndex !== null) {
+      const matchedSlot = findUniqueSlot(
+        (slot) => slot.displayIndex === displayIndex
+      );
+      if (matchedSlot) {
+        return buildResolution(matchedSlot, "visible-dom-display");
+      }
+    }
+
+    if (stateIndex !== null) {
+      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
+      if (matchedSlot) {
+        return buildResolution(matchedSlot, "game-state-match");
+      }
+    }
+
+    if (slotByPlayerId) {
+      return buildResolution(slotByPlayerId, "identity-id");
+    }
+    if (slotByName) {
+      return buildResolution(slotByName, "identity-name");
+    }
+
+    if (hasDomFallbackIndex) {
+      const fallbackSlot = findUniqueSlot(
+        (slot) => slot.displayIndex === displayIndex
+      );
+      if (fallbackSlot) {
+        return buildResolution(fallbackSlot, "dom-fallback-display");
+      }
+    }
+
+    return buildResolution(
+      null,
+      hasDomFallbackIndex ? "dom-fallback-index" : "index-fallback"
+    );
   }
 
   function buildGridSnapshot(options = {}) {
@@ -1991,11 +2087,12 @@
     const playerSlots = Array.isArray(playerMapping.playerSlots)
       ? playerMapping.playerSlots.slice(0, playerCount)
       : [];
-    const resolvedActivePlayerIndex = resolveMappedActivePlayerIndex(
+    const activePlayerResolution = resolveActivePlayerResolution(
       activePlayerInfo,
       playerSlots,
       playerCount
     );
+    const resolvedActivePlayerIndex = activePlayerResolution.columnIndex;
     const turnMarksByLabel = readTurnMarksByLabel(
       gameStateShared,
       targetSet,
@@ -2012,19 +2109,28 @@
         visiblePlayerCount !== detectedPlayerCount) ||
         (Number.isFinite(activePlayerInfo.stateIndex) &&
           activePlayerInfo.source !== "game-state" &&
-          activePlayerInfo.stateIndex !== resolvedActivePlayerIndex))
+          resolveMappedActivePlayerIndex(
+            { stateIndex: activePlayerInfo.stateIndex, index: activePlayerInfo.stateIndex },
+            playerSlots,
+            playerCount
+          ) !== resolvedActivePlayerIndex))
     ) {
       const mismatchPayload = {
+        playerSource,
         visiblePlayerCount,
         detectedPlayerCount,
         activePlayerIndex: resolvedActivePlayerIndex,
         activePlayerSource: activePlayerInfo.source,
         gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
         playerMappingSource: playerMapping.playerMappingSource,
+        resolutionSource: activePlayerResolution.source,
+        resolutionDisplayIndex: activePlayerResolution.displayIndex,
+        resolutionMatchIndex: activePlayerResolution.matchIndex,
         rootId: getDebugRootId(root),
       };
       const mismatchSignature = [
         mismatchPayload.rootId,
+        mismatchPayload.playerSource,
         visiblePlayerCount,
         detectedPlayerCount,
         mismatchPayload.activePlayerSource,
@@ -2133,6 +2239,14 @@
       playerSlots,
       playerMappingSource: playerMapping.playerMappingSource,
       activePlayerIndex: resolvedActivePlayerIndex,
+      boardPlayerIndex: resolvedActivePlayerIndex,
+      activePlayerResolution: {
+        displayIndex: activePlayerResolution.displayIndex,
+        matchIndex: activePlayerResolution.matchIndex,
+        columnIndex: activePlayerResolution.columnIndex,
+        source: activePlayerResolution.source,
+        usedVisibleDom: Boolean(activePlayerResolution.usedVisibleDom),
+      },
       modeInfo,
     };
   }
@@ -2217,7 +2331,12 @@
 
       const activePlayerIndex = Math.max(
         0,
-        Math.min(snapshot.activePlayerIndex || 0, marksByPlayer.length - 1)
+        Math.min(
+          Number.isFinite(snapshot.boardPlayerIndex)
+            ? snapshot.boardPlayerIndex
+            : snapshot.activePlayerIndex || 0,
+          marksByPlayer.length - 1
+        )
       );
       const supportsTacticalHighlights =
         snapshot.modeInfo && snapshot.modeInfo.supportsTacticalHighlights;
@@ -2275,6 +2394,7 @@
     buildPlayerSlotMapping,
     findGridRoot,
     resolveActivePlayerIndex,
+    resolveActivePlayerResolution,
     readCricketMode,
     readCricketGameModeInfo,
     buildGridSnapshot,

@@ -247,13 +247,16 @@
 
           resolvedDomOrder.forEach((playerIndex) => {
             const playerInfo = playerList[playerIndex] || {};
-            const player = document.createElement("div");
-            player.className = "ad-ext-player";
-            player.style.order = String(
+            const wrapper = document.createElement("div");
+            wrapper.className = `player-wrap player-wrap-${playerIndex}`;
+            wrapper.style.display = "flex";
+            wrapper.style.order = String(
               Number.isFinite(resolvedVisualOrder[playerIndex])
                 ? resolvedVisualOrder[playerIndex]
                 : playerIndex
             );
+            const player = document.createElement("div");
+            player.className = "ad-ext-player";
             if (includeIds !== false && playerInfo.id) {
               player.setAttribute("data-player-id", String(playerInfo.id));
             }
@@ -264,7 +267,8 @@
             nameNode.className = "ad-ext-player-name";
             nameNode.textContent = playerInfo.name || `P${playerIndex + 1}`;
             player.appendChild(nameNode);
-            host.appendChild(player);
+            wrapper.appendChild(player);
+            host.appendChild(wrapper);
           });
         }
 
@@ -818,6 +822,72 @@
               case9.gridFxActive,
             "Screenshot-Regression: Board bleibt aktivspielerbezogen, Grid zeigt gleichzeitig dead, offense und pressure pro Spieler",
             JSON.stringify(case9)
+          );
+
+          const case10Left = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 0,
+            domActivePlayerIndex: 0,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapes === 8 &&
+                metrics.dangerShapes === 0 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
+            },
+          });
+          const case10Right = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 0],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapes === 0 &&
+                metrics.dangerShapes === 8 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
+            },
+          });
+          assert(
+            case10Left.overlay &&
+              case10Right.overlay &&
+              case10Left.scoreShapes === 8 &&
+              case10Left.dangerShapes === 0 &&
+              case10Right.scoreShapes === 0 &&
+              case10Right.dangerShapes === 8 &&
+              case10Left.gridScoreCells === case10Right.gridScoreCells &&
+              case10Left.gridThreatCells === case10Right.gridThreatCells &&
+              JSON.stringify(case10Left.gridScoreCellsByPlayer) ===
+                JSON.stringify(case10Right.gridScoreCellsByPlayer) &&
+              JSON.stringify(case10Left.gridThreatCellsByPlayer) ===
+                JSON.stringify(case10Right.gridThreatCellsByPlayer),
+            "Nur der aktive Spieler wechselt: das Board kippt zwischen offense und danger, das Grid bleibt pro Spieler unverändert",
+            JSON.stringify({
+              left: case10Left,
+              right: case10Right,
+            })
           );
 
           const summary = document.getElementById("summary");

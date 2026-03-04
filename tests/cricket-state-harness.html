@@ -236,11 +236,14 @@
 
           domOrder.forEach((playerIndex) => {
             const playerData = players[playerIndex] || {};
-            const player = document.createElement("div");
-            player.className = "ad-ext-player";
-            player.style.order = String(
+            const wrapper = document.createElement("div");
+            wrapper.className = `player-wrap player-wrap-${playerIndex}`;
+            wrapper.style.display = "flex";
+            wrapper.style.order = String(
               Number.isFinite(visualOrder[playerIndex]) ? visualOrder[playerIndex] : playerIndex
             );
+            const player = document.createElement("div");
+            player.className = "ad-ext-player";
             player.style.width = "80px";
             player.style.height = "24px";
             if (config.includeIds !== false && playerData.id) {
@@ -253,7 +256,8 @@
             if (playerIndex === activePlayerIndex) {
               player.classList.add("ad-ext-player-active");
             }
-            host.appendChild(player);
+            wrapper.appendChild(player);
+            host.appendChild(wrapper);
           });
 
           const hiddenActiveDuplicates = Number(config.hiddenActiveDuplicates) || 0;
@@ -411,6 +415,15 @@
           return Array.isArray(entry?.cellStates)
             ? entry.cellStates.map((cellState) => cellState.presentation)
             : [];
+        }
+
+        function readBoardPresentation(state, label) {
+          const entry = state && state.states ? state.states.get(label) : null;
+          return String(entry?.boardPresentation || entry?.presentation || "");
+        }
+
+        function readBoardResolution(state) {
+          return state?.snapshot?.activePlayerResolution || null;
         }
 
         const twoPlayerOpenCricket = createUniformMarkSets(CRICKET_TARGETS, () => [3, 0]);
@@ -1228,6 +1241,8 @@
         assert(
           case28.snapshot &&
             case28.snapshot.activePlayerIndex === 1 &&
+            case28.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case28)?.source === "visible-dom-display" &&
             case28.snapshot.playerSlots.map((slot) => slot.playerId).join(",") ===
               "player-1,player-2" &&
             case28.states.get("20").presentation === "pressure" &&
@@ -1287,6 +1302,8 @@
         );
         assert(
           case29.snapshot &&
+            case29.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case29)?.usedVisibleDom === true &&
             case29.snapshot.playerSlots.map((slot) => slot.playerId).join(",") ===
               "player-1,player-2" &&
             case29.snapshot.playerMappingSource === "id-match" &&
@@ -1342,6 +1359,8 @@
           case30.snapshot &&
             case30.snapshot.playerMappingSource === "name-match" &&
             case30.snapshot.activePlayerIndex === 1 &&
+            case30.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case30)?.source === "game-state-match" &&
             case30.states.get("20").presentation === "pressure" &&
             readCellPresentations(case30, "20").join(",") === "offense,pressure",
           "Ohne IDs wird der aktive Spieler über Namensabgleich trotzdem auf die richtige Grid-Spalte gemappt",
@@ -1427,18 +1446,128 @@
         );
         assert(
           case32.snapshot &&
+            case32.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case32)?.columnIndex === 1 &&
+            readBoardResolution(case32)?.usedVisibleDom === true &&
             case32.states.get("20").presentation === "dead" &&
             readCellPresentations(case32, "20").join(",") === "dead,dead" &&
             case32.states.get("18").presentation === "offense" &&
+            readBoardPresentation(case32, "18") === "offense" &&
             readCellPresentations(case32, "18").join(",") === "pressure,offense" &&
             case32.states.get("10").presentation === "pressure" &&
+            readBoardPresentation(case32, "10") === "pressure" &&
             readCellPresentations(case32, "10").join(",") === "offense,pressure",
           "Screenshot-Regression: Board bleibt aktivspielerbezogen, Grid zeigt gleichzeitig dead, offense und pressure pro Spieler",
           case32.snapshot
             ? JSON.stringify({
+                resolution: case32.snapshot.activePlayerResolution,
                 twenty: case32.states.get("20"),
                 eighteen: case32.states.get("18"),
                 ten: case32.states.get("10"),
+              })
+            : "snapshot=null"
+        );
+
+        const case33Left = buildState(
+          buildLinearRoot(TACTICS_TARGETS, createUniformMarkSets(TACTICS_TARGETS, function (label) {
+            if (label === "20" || label === "10") {
+              return [3, 0];
+            }
+            return [0, 0];
+          })),
+          2,
+          0,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 0,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        const case33Right = buildState(
+          buildLinearRoot(TACTICS_TARGETS, createUniformMarkSets(TACTICS_TARGETS, function (label) {
+            if (label === "20" || label === "10") {
+              return [3, 0];
+            }
+            return [0, 0];
+          })),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        assert(
+          case33Left.snapshot &&
+            case33Right.snapshot &&
+            readCellPresentations(case33Left, "20").join(",") ===
+              readCellPresentations(case33Right, "20").join(",") &&
+            readBoardPresentation(case33Left, "20") === "offense" &&
+            readBoardPresentation(case33Right, "20") === "pressure" &&
+            case33Left.snapshot.boardPlayerIndex === 0 &&
+            case33Right.snapshot.boardPlayerIndex === 1,
+          "Gleiche Marks, anderer aktiver Spieler: cellStates bleiben stabil, nur die Board-Perspektive kippt",
+          JSON.stringify({
+            left: {
+              resolution: readBoardResolution(case33Left),
+              boardTwenty: readBoardPresentation(case33Left, "20"),
+              cellsTwenty: readCellPresentations(case33Left, "20"),
+            },
+            right: {
+              resolution: readBoardResolution(case33Right),
+              boardTwenty: readBoardPresentation(case33Right, "20"),
+              cellsTwenty: readCellPresentations(case33Right, "20"),
+            },
+          })
+        );
+
+        const case34 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "20") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: false,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        assert(
+          case34.snapshot &&
+            case34.snapshot.boardPlayerIndex === 1 &&
+            readBoardResolution(case34)?.source === "game-state-match" &&
+            readBoardPresentation(case34, "20") === "pressure",
+          "Ohne sichtbaren DOM-Aktivspieler fällt das Board deterministisch auf den Match-/State-Index zurück",
+          case34.snapshot
+            ? JSON.stringify({
+                resolution: readBoardResolution(case34),
+                twenty: case34.states.get("20"),
               })
             : "snapshot=null"
         );
