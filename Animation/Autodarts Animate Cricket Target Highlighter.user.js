@@ -732,18 +732,19 @@
     }
 
     const previousChosenIndex = boardDecisionState.lastChosenIndex;
-    const shouldForceStateForDisplayConflict =
-      resolutionSource === "visible-dom-display";
+    const shouldForceStateForVisibleConflict =
+      resolutionSource.startsWith("visible-dom") &&
+      Number.isFinite(stateMappedIndex);
     const shouldPreferState =
-      shouldForceStateForDisplayConflict ||
+      shouldForceStateForVisibleConflict ||
       previousChosenIndex === stateMappedIndex ||
       boardDecisionState.conflictCount >= 2;
     const boardPlayerIndex = shouldPreferState
       ? stateMappedIndex
       : snapshotBoardIndex;
     const decisionSource = shouldPreferState
-      ? shouldForceStateForDisplayConflict
-        ? "game-state-display-override"
+      ? shouldForceStateForVisibleConflict
+        ? "game-state-visible-override"
         : "game-state-conflict-override"
       : "snapshot-conflict-first-pass";
 

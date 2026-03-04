@@ -2066,6 +2066,16 @@
       }
     }
 
+    if (stateIndex !== null) {
+      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
+      if (matchedSlot) {
+        return buildResolution(
+          matchedSlot,
+          usedVisibleDom ? "game-state-match-preferred" : "game-state-match"
+        );
+      }
+    }
+
     const slotByPlayerId = playerId
       ? findUniqueSlot((slot) => slot.playerId && slot.playerId === playerId)
       : null;
@@ -2078,13 +2088,6 @@
       : null;
     if (usedVisibleDom && slotByName) {
       return buildResolution(slotByName, "visible-dom-name");
-    }
-
-    if (stateIndex !== null) {
-      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
-      if (matchedSlot) {
-        return buildResolution(matchedSlot, "game-state-match");
-      }
     }
 
     if (usedVisibleDom && displayIndex !== null) {
