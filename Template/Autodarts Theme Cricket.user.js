@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Theme Cricket.user
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.6
+// @version      2.7
 // @description  Visuelles Cricket-/Tactics-Theme für eine ruhigere und klarere Darstellung.
 // @xconfig-description  Aktiviert ein Cricket-/Tactics-Theme mit stimmigem Layout, Farben und guter Lesbarkeit.
 // @xconfig-title  Theme Cricket
@@ -26,7 +26,7 @@
 
 	const {attachTheme, initPreviewPlacement} = window.autodartsThemeShared;
 	const animationShared = window.autodartsAnimationShared || {};
-	const SCRIPT_VERSION = "2.6";
+	const SCRIPT_VERSION = "2.7";
 	const FEATURE_KEY = "ad-ext/theme-cricket";
 	const SOURCE_PATH = "Template/Autodarts Theme Cricket.user.js";
 	const STYLE_ID = "autodarts-cricket-custom-style";
@@ -175,23 +175,18 @@ height:100px !important;
   gap: 0.35rem !important;
 }
 
-#ad-ext-player-display > div{
-  flex: 0 1 auto !important;
-}
-
 #ad-ext-player-display .ad-ext-player{
-  min-height: 170px !important;
+  min-height: 185px !important;
 }
 
 #ad-ext-player-display .ad-ext-player > .chakra-stack{
-  min-height: 170px !important;
+  min-height: 185px !important;
   padding-top: 0.3rem !important;
   padding-bottom: 0.3rem !important;
 }
 
 div.css-y3hfdd{
-  grid-template-rows: auto auto !important;
-  row-gap: 0.15rem !important;
+  gap: 0 !important;
 }
 
 p.chakra-text.css-1j0bqop{
@@ -215,11 +210,12 @@ font-size: 1.8rem !important;
 }
 
 .ad-ext-player-inactive .chakra-stack.css-37hv00 {
-  height: 20px !important;
+  height: auto !important;
+  min-height: 2.2rem !important;
 }
 
 .ad-ext-player.ad-ext-player-inactive.css-1en42kf{
-  display: ruby-text !important;
+  display: block !important;
 }
 
 .ad-ext-player-inactive .chakra-text.css-11cuipc {
