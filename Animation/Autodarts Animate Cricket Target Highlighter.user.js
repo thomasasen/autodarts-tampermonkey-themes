@@ -205,30 +205,83 @@
   const SCORE_CLASS = "ad-ext-cricket-target--score";
   const DANGER_CLASS = "ad-ext-cricket-target--danger";
   const DEBUG_PREFIX = "[xConfig][Cricket Target Highlighter]";
+  const DEBUG_TRACE_ENABLED = false;
 
   let lastStateKey = null;
   let lastBoardKey = null;
+  const debugWarnSignatures = new Set();
 
-  function debugLog(event, payload) {
+  function stripDebugSignature(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return payload;
+    }
+    const nextPayload = { ...payload };
+    delete nextPayload._signature;
+    return nextPayload;
+  }
+
+  function buildDebugSignature(event, payload) {
+    const explicitSignature =
+      payload && typeof payload === "object" ? payload._signature : "";
+    if (explicitSignature) {
+      return `${event}|${explicitSignature}`;
+    }
+    try {
+      return `${event}|${JSON.stringify(stripDebugSignature(payload))}`;
+    } catch (error) {
+      return event;
+    }
+  }
+
+  function debugLog(event, payload, level = "warn") {
     if (!DEBUG_ENABLED) {
       return;
     }
-    if (typeof payload === "undefined") {
-      console.log(`${DEBUG_PREFIX} ${event}`);
+    const normalizedPayload = stripDebugSignature(payload);
+    if (level === "trace") {
+      if (!DEBUG_TRACE_ENABLED) {
+        return;
+      }
+      if (typeof normalizedPayload === "undefined") {
+        console.log(`${DEBUG_PREFIX} ${event}`);
+        return;
+      }
+      console.log(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
       return;
     }
-    console.log(`${DEBUG_PREFIX} ${event}`, payload);
+    if (level === "error") {
+      if (typeof normalizedPayload === "undefined") {
+        console.error(`${DEBUG_PREFIX} ${event}`);
+        return;
+      }
+      console.error(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
+      return;
+    }
+
+    const signature = buildDebugSignature(event, payload);
+    if (debugWarnSignatures.has(signature)) {
+      return;
+    }
+    debugWarnSignatures.add(signature);
+    if (typeof normalizedPayload === "undefined") {
+      console.warn(`${DEBUG_PREFIX} ${event}`);
+      return;
+    }
+    console.warn(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
   }
 
   function debugError(event, payload) {
-    if (!DEBUG_ENABLED) {
-      return;
-    }
-    if (typeof payload === "undefined") {
-      console.error(`${DEBUG_PREFIX} ${event}`);
-      return;
-    }
-    console.error(`${DEBUG_PREFIX} ${event}`, payload);
+    debugLog(event, payload, "error");
+  }
+
+  function debugTrace(event, payload) {
+    debugLog(event, payload, "trace");
+  }
+
+  function getBoardPresentation(stateInfo) {
+    return String(
+      stateInfo?.boardPresentation || stateInfo?.presentation || "open"
+    );
   }
 
   function rgba(alpha, color = CONFIG.baseColor) {
@@ -464,18 +517,19 @@
 
       buildTargetShapes(board.radius, target).forEach((shape) => {
         shape.classList.add(TARGET_CLASS);
+        const boardPresentation = getBoardPresentation(stateInfo);
         if (!isCricketTarget) {
           shape.classList.add(INACTIVE_CLASS);
         } else if (
-          stateInfo.presentation === "danger" ||
-          stateInfo.presentation === "pressure"
+          boardPresentation === "danger" ||
+          boardPresentation === "pressure"
         ) {
           shape.classList.add(DANGER_CLASS);
-        } else if (stateInfo.presentation === "offense") {
+        } else if (boardPresentation === "offense") {
           shape.classList.add(SCORE_CLASS);
-        } else if (stateInfo.presentation === "dead") {
+        } else if (boardPresentation === "dead") {
           shape.classList.add(DEAD_CLASS);
-        } else if (stateInfo.presentation === "closed") {
+        } else if (boardPresentation === "closed") {
           shape.classList.add(CLOSED_CLASS);
         } else {
           shape.classList.add(OPEN_CLASS);
@@ -518,12 +572,8 @@
         const marks = Array.isArray(state?.marksByPlayer)
           ? state.marksByPlayer.join(",")
           : "";
-        const cellStates = Array.isArray(state?.cellStates)
-          ? state.cellStates
-              .map((cellState) => cellState?.presentation || "")
-              .join(",")
-          : "";
-        return `${label}:${state ? state.presentation : ""}:${marks}:${cellStates}`;
+        const boardPresentation = getBoardPresentation(state);
+        return `${label}:${boardPresentation}:${marks}`;
       })
       .join("|");
     return [
@@ -575,20 +625,20 @@
   function updateTargets() {
     if (!isCricketVariantActive()) {
       clearOverlayState();
-      debugLog("updateTargets: not cricket/tactics");
+      debugTrace("updateTargets: not cricket/tactics");
       return;
     }
 
     const stateContext = readStateContext();
     if (!stateContext || !stateContext.stateMap || !stateContext.stateMap.size) {
       clearOverlayState();
-      debugLog("updateTargets: no state map");
+      debugTrace("updateTargets: no state map");
       return;
     }
 
     const board = findBoard();
     if (!board) {
-      debugLog("updateTargets: no board");
+      debugTrace("updateTargets: no board");
       return;
     }
 
@@ -613,14 +663,14 @@
 
     lastStateKey = stateKey;
     lastBoardKey = boardKey;
-    debugLog("updateTargets: render", { boardKey, stateKey });
+    debugTrace("updateTargets: render", { boardKey, stateKey });
     renderTargets(stateContext);
   }
 
   const scheduleUpdate = createRafScheduler(updateTargets);
 
   ensureStyle(STYLE_ID, STYLE_TEXT);
-  debugLog("init", {
+  debugTrace("init", {
     debug: DEBUG_ENABLED,
     showDeadTargets: RESOLVED_SHOW_DEAD_TARGETS,
     theme: RESOLVED_THEME_KEY,

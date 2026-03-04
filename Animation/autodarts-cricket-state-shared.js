@@ -40,6 +40,10 @@
 
   let cachedGridRoot = null;
   let lastUnknownModeKey = "";
+  const DEBUG_TRACE_ENABLED = false;
+  const debugWarningSignatures = new Set();
+  const debugRootIds = new WeakMap();
+  let nextDebugRootId = 1;
 
   function toArray(value) {
     return Array.isArray(value) ? value : Array.from(value || []);
@@ -51,6 +55,44 @@
       return 0;
     }
     return Math.max(0, Math.min(3, Math.round(numeric)));
+  }
+
+  function getDebugRootId(root) {
+    if (!isElement(root)) {
+      return "no-root";
+    }
+    let rootId = debugRootIds.get(root);
+    if (!rootId) {
+      rootId = `root-${nextDebugRootId++}`;
+      debugRootIds.set(root, rootId);
+    }
+    return rootId;
+  }
+
+  function emitDebugLog(debugLog, event, payload, level = "warn") {
+    if (typeof debugLog !== "function") {
+      return;
+    }
+    debugLog(event, payload, level);
+  }
+
+  function debugTrace(debugLog, event, payload) {
+    if (!DEBUG_TRACE_ENABLED) {
+      return;
+    }
+    emitDebugLog(debugLog, event, payload, "trace");
+  }
+
+  function debugWarnOnce(debugLog, event, signature, payload) {
+    if (typeof debugLog !== "function") {
+      return;
+    }
+    const key = `${event}|${signature}`;
+    if (debugWarningSignatures.has(key)) {
+      return;
+    }
+    debugWarningSignatures.add(key);
+    emitDebugLog(debugLog, event, payload, "warn");
   }
 
   function isElement(node) {
@@ -692,12 +734,10 @@
       if (direct) {
         cachedGridRoot = direct;
       }
-      if (debugLog) {
-        debugLog("findGridRoot: tableSelector", {
-          tableSelector,
-          found: Boolean(direct),
-        });
-      }
+      debugTrace(debugLog, "findGridRoot: tableSelector", {
+        tableSelector,
+        found: Boolean(direct),
+      });
       return direct;
     }
 
@@ -775,12 +815,10 @@
 
     const best = findBestRoot(true) || findBestRoot(false);
     cachedGridRoot = best ? best.node : null;
-    if (debugLog) {
-      debugLog("findGridRoot: result", {
-        found: Boolean(cachedGridRoot),
-        visible: Boolean(cachedGridRoot && isLayoutVisible(cachedGridRoot)),
-      });
-    }
+    debugTrace(debugLog, "findGridRoot: result", {
+      found: Boolean(cachedGridRoot),
+      visible: Boolean(cachedGridRoot && isLayoutVisible(cachedGridRoot)),
+    });
     return cachedGridRoot;
   }
 
@@ -883,10 +921,15 @@
       family = "neutral";
       if (debugLog && normalized && lastUnknownModeKey !== normalized) {
         lastUnknownModeKey = normalized;
-        debugLog("readCricketMode: unknown mode treated as neutral", {
+        debugWarnOnce(
+          debugLog,
+          "readCricketMode: unknown mode treated as neutral",
+          normalized,
+          {
           raw,
           normalized,
-        });
+          }
+        );
       }
     }
 
@@ -955,7 +998,7 @@
 
     const inferredMode = inferCricketGameMode(parsedRows);
     if (debugLog && inferredMode === "tactics") {
-      debugLog("readCricketGameModeInfo: inferred tactics from parsed rows", {
+      debugTrace(debugLog, "readCricketGameModeInfo: inferred tactics from parsed rows", {
         labels: (parsedRows?.rows || []).map((row) => row.label),
       });
     }
@@ -1894,9 +1937,7 @@
       parsedRows = buildRowsFromContainers(root, expectedPlayerCount);
     }
     if (!parsedRows || !parsedRows.rows.length) {
-      if (debugLog) {
-        debugLog("buildGridSnapshot: no rows");
-      }
+      debugTrace(debugLog, "buildGridSnapshot: no rows");
       return null;
     }
 
@@ -1973,31 +2014,61 @@
           activePlayerInfo.source !== "game-state" &&
           activePlayerInfo.stateIndex !== resolvedActivePlayerIndex))
     ) {
-      debugLog("buildGridSnapshot: player-source-mismatch", {
+      const mismatchPayload = {
         visiblePlayerCount,
         detectedPlayerCount,
         activePlayerIndex: resolvedActivePlayerIndex,
         activePlayerSource: activePlayerInfo.source,
         gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
         playerMappingSource: playerMapping.playerMappingSource,
-        playerSlots,
-      });
+        rootId: getDebugRootId(root),
+      };
+      const mismatchSignature = [
+        mismatchPayload.rootId,
+        visiblePlayerCount,
+        detectedPlayerCount,
+        mismatchPayload.activePlayerSource,
+        mismatchPayload.gameStateActivePlayerIndex,
+        mismatchPayload.activePlayerIndex,
+        mismatchPayload.playerMappingSource,
+      ].join("|");
+      debugWarnOnce(
+        debugLog,
+        "buildGridSnapshot: player-source-mismatch",
+        mismatchSignature,
+        mismatchPayload
+      );
     }
     if (debugLog && playerSource === "visible-gap-repair") {
-      debugLog("buildGridSnapshot: repaired player undercount", {
+      const repairPayload = {
         detectedPlayerCount,
         expectedPlayerCount,
         visiblePlayerCount,
-      });
+        playerSource,
+        rootId: getDebugRootId(root),
+      };
+      const repairSignature = [
+        repairPayload.rootId,
+        detectedPlayerCount,
+        expectedPlayerCount,
+        visiblePlayerCount,
+        playerSource,
+      ].join("|");
+      debugWarnOnce(
+        debugLog,
+        "buildGridSnapshot: repaired player undercount",
+        repairSignature,
+        repairPayload
+      );
     }
     if (debugLog && activeThrowMarksByLabel.size > 0) {
-      debugLog("buildGridSnapshot: active-throw-preview", {
+      debugTrace(debugLog, "buildGridSnapshot: active-throw-preview", {
         activePlayerIndex: resolvedActivePlayerIndex,
         preview: Object.fromEntries(activeThrowMarksByLabel.entries()),
       });
     }
     if (debugLog && turnMarksByLabel.size > 0) {
-      debugLog("buildGridSnapshot: turn-derived-preview", {
+      debugTrace(debugLog, "buildGridSnapshot: turn-derived-preview", {
         preview: Object.fromEntries(turnMarksByLabel.entries()),
       });
     }
@@ -2040,11 +2111,9 @@
       });
 
     if (!rows.length) {
-      if (debugLog) {
-        debugLog("buildGridSnapshot: no rows after target filter", {
-          gameMode: gameModeInfo.normalized,
-        });
-      }
+      debugTrace(debugLog, "buildGridSnapshot: no rows after target filter", {
+        gameMode: gameModeInfo.normalized,
+      });
       return null;
     }
 
@@ -2068,6 +2137,68 @@
     };
   }
 
+  function evaluatePlayerTargetState(
+    marksByPlayer,
+    playerIndex,
+    options = {}
+  ) {
+    const resolvedMarks = Array.isArray(marksByPlayer)
+      ? marksByPlayer.map((value) => clampMark(value))
+      : [];
+    const resolvedIndex =
+      resolvedMarks.length > 0
+        ? Math.max(0, Math.min(playerIndex || 0, resolvedMarks.length - 1))
+        : 0;
+    const marks = resolvedMarks[resolvedIndex] || 0;
+    const opponentMarks = resolvedMarks.filter(
+      (_, index) => index !== resolvedIndex
+    );
+    const dead =
+      options.showDeadTargets !== false &&
+      resolvedMarks.length > 1 &&
+      resolvedMarks.every((mark) => mark >= 3);
+    const supportsTacticalHighlights = Boolean(
+      options.supportsTacticalHighlights
+    );
+    const offense =
+      supportsTacticalHighlights &&
+      marks >= 3 &&
+      opponentMarks.some((mark) => mark < 3) &&
+      !dead;
+    const danger =
+      supportsTacticalHighlights &&
+      marks < 3 &&
+      opponentMarks.some((mark) => mark >= 3) &&
+      !dead;
+    const pressure = danger && marks <= 1;
+    const closed = marks >= 3 && !offense && !dead;
+
+    let presentation = "open";
+    if (dead) {
+      presentation = "dead";
+    } else if (offense) {
+      presentation = "offense";
+    } else if (pressure) {
+      presentation = "pressure";
+    } else if (danger) {
+      presentation = "danger";
+    } else if (closed) {
+      presentation = "closed";
+    }
+
+    return {
+      index: resolvedIndex,
+      marks,
+      isActivePlayer: resolvedIndex === options.activePlayerIndex,
+      presentation,
+      offense,
+      danger,
+      pressure,
+      closed,
+      dead,
+    };
+  }
+
   function computeTargetStates(snapshot, options = {}) {
     const showDeadTargets = options.showDeadTargets !== false;
     const stateMap = new Map();
@@ -2088,67 +2219,23 @@
         0,
         Math.min(snapshot.activePlayerIndex || 0, marksByPlayer.length - 1)
       );
-      const activeMarks = marksByPlayer[activePlayerIndex] || 0;
-      const opponentMarks = marksByPlayer.filter(
-        (_, index) => index !== activePlayerIndex
-      );
-      const anyOpponentOpen = opponentMarks.some((mark) => mark < 3);
-      const anyOpponentClosed = opponentMarks.some((mark) => mark >= 3);
-      const dead =
-        showDeadTargets &&
-        marksByPlayer.length > 1 &&
-        marksByPlayer.every((mark) => mark >= 3);
       const supportsTacticalHighlights =
         snapshot.modeInfo && snapshot.modeInfo.supportsTacticalHighlights;
-      const offense =
-        Boolean(supportsTacticalHighlights) &&
-        activeMarks >= 3 &&
-        anyOpponentOpen &&
-        !dead;
-      const danger =
-        Boolean(supportsTacticalHighlights) &&
-        activeMarks < 3 &&
-        anyOpponentClosed &&
-        !dead;
-      const pressure = danger && activeMarks <= 1;
-      const closed = activeMarks >= 3 && !offense && !dead;
       const cellStates = marksByPlayer.map((marks, index) => {
-        const isActivePlayer = index === activePlayerIndex;
-        let cellPresentation = "neutral";
-        if (dead) {
-          cellPresentation = "dead";
-        } else if (isActivePlayer) {
-          if (offense) {
-            cellPresentation = "offense";
-          } else if (pressure) {
-            cellPresentation = "pressure";
-          } else if (danger) {
-            cellPresentation = "danger";
-          } else if (closed) {
-            cellPresentation = "closed";
-          } else {
-            cellPresentation = "open";
-          }
-        }
-
-        return {
-          index,
-          marks,
-          isActivePlayer,
-          presentation: cellPresentation,
-        };
+        return evaluatePlayerTargetState(marksByPlayer, index, {
+          activePlayerIndex,
+          showDeadTargets,
+          supportsTacticalHighlights,
+        });
       });
-
-      let presentation = "open";
-      if (dead) {
-        presentation = "dead";
-      } else if (offense) {
-        presentation = "offense";
-      } else if (danger) {
-        presentation = "danger";
-      } else if (closed) {
-        presentation = "closed";
-      }
+      const boardState =
+        cellStates[activePlayerIndex] ||
+        evaluatePlayerTargetState(marksByPlayer, activePlayerIndex, {
+          activePlayerIndex,
+          showDeadTargets,
+          supportsTacticalHighlights,
+        });
+      const presentation = boardState.presentation || "open";
 
       stateMap.set(row.label, {
         label: row.label,
@@ -2156,13 +2243,15 @@
         rawMode: snapshot.modeInfo ? snapshot.modeInfo.raw : "",
         activePlayerIndex,
         marksByPlayer,
-        activeMarks,
-        offense,
-        danger,
-        pressure,
-        closed,
-        dead,
+        activeMarks: boardState.marks,
+        offense: boardState.offense,
+        danger: boardState.danger,
+        pressure: boardState.pressure,
+        closed: boardState.closed,
+        dead: boardState.dead,
         presentation,
+        boardPresentation: presentation,
+        boardState,
         cellStates,
       });
     });
@@ -2189,6 +2278,7 @@
     readCricketMode,
     readCricketGameModeInfo,
     buildGridSnapshot,
+    evaluatePlayerTargetState,
     computeTargetStates,
   };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -460,8 +460,8 @@
           "Cricket"
         );
         assert(
-          case2.states.get("20").presentation === "danger",
-          "Linear 2-player: active open vs opponent closed -> danger",
+          case2.states.get("20").presentation === "pressure",
+          "Linear 2-player: active open vs opponent closed -> pressure",
           JSON.stringify(case2.states.get("20"))
         );
 
@@ -486,8 +486,8 @@
           "Cricket"
         );
         assert(
-          case4.states.get("20").presentation === "danger",
-          "Nested row container: wrapper children become player cells",
+          case4.states.get("20").presentation === "pressure",
+          "Nested row container: wrapper children become player cells and preserve pressure",
           JSON.stringify(case4.states.get("20"))
         );
 
@@ -556,7 +556,7 @@
         assert(
           case6Combined.states.get("20").presentation === "offense" &&
             readCellPresentations(case6Combined, "20").join(",") ===
-              "offense,neutral",
+              "offense,pressure",
           "Combined label/player cell: offense stays on the label-bearing first column",
           JSON.stringify({
             state: case6Combined.states.get("20"),
@@ -572,9 +572,9 @@
           "Cricket"
         );
         assert(
-          case6CombinedDanger.states.get("20").presentation === "danger" &&
+          case6CombinedDanger.states.get("20").presentation === "pressure" &&
             readCellPresentations(case6CombinedDanger, "20").join(",") ===
-              "pressure,neutral",
+              "pressure,offense",
           "Combined label/player cell: an open leading cell stays mapped even when its visible marks are zero",
           JSON.stringify({
             state: case6CombinedDanger.states.get("20"),
@@ -655,9 +655,9 @@
           "Tactics"
         );
         assert(
-          case10.states.get("14").presentation === "danger" &&
-            case10.states.get("10").presentation === "danger",
-          "Tactics standard: 14 and 10 can also become danger targets",
+          case10.states.get("14").presentation === "pressure" &&
+            case10.states.get("10").presentation === "pressure",
+          "Tactics standard: 14 and 10 can also become pressure targets",
           JSON.stringify({
             fourteen: case10.states.get("14"),
             ten: case10.states.get("10"),
@@ -850,7 +850,7 @@
             case19.states.get("20").presentation === "offense" &&
             case19.states.get("17").presentation === "offense" &&
             case19.states.get("15").presentation === "offense" &&
-            case19.states.get("16").presentation === "danger" &&
+            case19.states.get("16").presentation === "pressure" &&
             case19.states.get("19").presentation === "dead",
           "Tactics screenshot regression: TEST2 active yields green 20/17/15, red 16 and dead 19",
           case19.snapshot
@@ -984,7 +984,7 @@
           case23.snapshot &&
             case23.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
             case23.states.get("20").presentation === "offense" &&
-            readCellPresentations(case23, "20").join(",") === "offense,neutral",
+            readCellPresentations(case23, "20").join(",") === "offense,pressure",
           "Active throws preview closes 20 immediately after a first-dart T20 in Tactics",
           case23.snapshot
             ? JSON.stringify({
@@ -1060,9 +1060,9 @@
           case25.snapshot &&
             case25.snapshot.activePlayerIndex === 1 &&
             case25.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") === "3,0" &&
-            case25.states.get("20").presentation === "danger" &&
-            readCellPresentations(case25, "20").join(",") === "neutral,pressure",
-          "Nach einem gegnerischen T20 wird 20 für den nächsten aktiven Spieler sofort als danger erkannt",
+            case25.states.get("20").presentation === "pressure" &&
+            readCellPresentations(case25, "20").join(",") === "offense,pressure",
+          "Nach einem gegnerischen T20 wird 20 für den nächsten aktiven Spieler sofort als pressure erkannt, während die Gegnerspalte offensiv bleibt",
           case25.snapshot
             ? JSON.stringify({
                 activePlayerIndex: case25.snapshot.activePlayerIndex,
@@ -1111,8 +1111,8 @@
             case26Snapshot &&
               case26Snapshot.root === visibleRoot &&
               hiddenRoot.isConnected &&
-              case26States.get("20").presentation === "danger" &&
-              case26States.get("10").presentation === "danger" &&
+              case26States.get("20").presentation === "pressure" &&
+              case26States.get("10").presentation === "pressure" &&
               case26States.get("18").presentation === "open",
             "Ein sichtbares aktuelles Grid schlÃ¤gt ein verstecktes Alt-Grid bei der Root-Erkennung",
             case26Snapshot
@@ -1175,8 +1175,8 @@
               case27Snapshot &&
               firstSnapshot.root === firstRoot &&
               case27Snapshot.root === secondRoot &&
-              case27States.get("20").presentation === "danger" &&
-              case27States.get("10").presentation === "danger",
+              case27States.get("20").presentation === "pressure" &&
+              case27States.get("10").presentation === "pressure",
             "Ein versteckt verbundenes gecachtes Alt-Grid wird nach dem Re-Render nicht weiterverwendet",
             case27Snapshot
               ? JSON.stringify({
@@ -1230,10 +1230,10 @@
             case28.snapshot.activePlayerIndex === 1 &&
             case28.snapshot.playerSlots.map((slot) => slot.playerId).join(",") ===
               "player-1,player-2" &&
-            case28.states.get("20").presentation === "danger" &&
-            readCellPresentations(case28, "20").join(",") === "neutral,pressure" &&
-            readCellPresentations(case28, "15").join(",") === "neutral,pressure",
-          "Die visuelle Player-Reihenfolge schlägt die DOM-Reihenfolge und hält danger auf der aktiven TEST2-Spalte",
+            case28.states.get("20").presentation === "pressure" &&
+            readCellPresentations(case28, "20").join(",") === "offense,pressure" &&
+            readCellPresentations(case28, "15").join(",") === "offense,pressure",
+          "Die visuelle Player-Reihenfolge schlägt die DOM-Reihenfolge und hält offense/pressure auf den richtigen TEST-Spalten",
           case28.snapshot
             ? JSON.stringify({
                 activePlayerIndex: case28.snapshot.activePlayerIndex,
@@ -1292,8 +1292,8 @@
             case29.snapshot.playerMappingSource === "id-match" &&
             case29.snapshot.rows.find((row) => row.label === "20").marksByPlayer.join(",") ===
               "3,0" &&
-            case29.states.get("20").presentation === "danger" &&
-            readCellPresentations(case29, "20").join(",") === "neutral,pressure",
+            case29.states.get("20").presentation === "pressure" &&
+            readCellPresentations(case29, "20").join(",") === "offense,pressure",
           "Historische Turns werden trotz vertauschter match.players-Reihenfolge per ID auf die richtige Grid-Spalte remappt",
           case29.snapshot
             ? JSON.stringify({
@@ -1342,8 +1342,8 @@
           case30.snapshot &&
             case30.snapshot.playerMappingSource === "name-match" &&
             case30.snapshot.activePlayerIndex === 1 &&
-            case30.states.get("20").presentation === "danger" &&
-            readCellPresentations(case30, "20").join(",") === "neutral,pressure",
+            case30.states.get("20").presentation === "pressure" &&
+            readCellPresentations(case30, "20").join(",") === "offense,pressure",
           "Ohne IDs wird der aktive Spieler über Namensabgleich trotzdem auf die richtige Grid-Spalte gemappt",
           case30.snapshot
             ? JSON.stringify({
@@ -1381,11 +1381,11 @@
         );
         assert(
           case31.snapshot &&
-            case31.states.get("20").presentation === "danger" &&
-            case31.states.get("15").presentation === "danger" &&
-            readCellPresentations(case31, "20").join(",") === "neutral,pressure" &&
-            readCellPresentations(case31, "15").join(",") === "neutral,pressure",
-          "Cricket spiegelt dieselbe aktive-Spieler-Perspektive wie Tactics: TEST2 sieht TEST1s geschlossene 20 und 15 sofort rot",
+            case31.states.get("20").presentation === "pressure" &&
+            case31.states.get("15").presentation === "pressure" &&
+            readCellPresentations(case31, "20").join(",") === "offense,pressure" &&
+            readCellPresentations(case31, "15").join(",") === "offense,pressure",
+          "Cricket spiegelt dieselbe Board-/Grid-Trennung wie Tactics: TEST2 sieht TEST1s geschlossene 20 und 15 sofort rot, TEST1 bleibt offensiv grün",
           case31.snapshot
             ? JSON.stringify({
                 activePlayerIndex: case31.snapshot.activePlayerIndex,
@@ -1393,6 +1393,91 @@
                 fifteen: case31.states.get("15"),
               })
             : "snapshot=null"
+        );
+
+        const case32 = buildState(
+          buildLinearRoot(
+            TACTICS_TARGETS,
+            createUniformMarkSets(TACTICS_TARGETS, function (label) {
+              if (label === "20") {
+                return [3, 3];
+              }
+              if (label === "18") {
+                return [1, 3];
+              }
+              if (label === "10") {
+                return [3, 0];
+              }
+              return [0, 0];
+            })
+          ),
+          2,
+          1,
+          "standard",
+          "Tactics",
+          {
+            domPlayerCount: 2,
+            domActivePlayerIndex: 1,
+            domVisible: true,
+            domPlayers: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+          }
+        );
+        assert(
+          case32.snapshot &&
+            case32.states.get("20").presentation === "dead" &&
+            readCellPresentations(case32, "20").join(",") === "dead,dead" &&
+            case32.states.get("18").presentation === "offense" &&
+            readCellPresentations(case32, "18").join(",") === "pressure,offense" &&
+            case32.states.get("10").presentation === "pressure" &&
+            readCellPresentations(case32, "10").join(",") === "offense,pressure",
+          "Screenshot-Regression: Board bleibt aktivspielerbezogen, Grid zeigt gleichzeitig dead, offense und pressure pro Spieler",
+          case32.snapshot
+            ? JSON.stringify({
+                twenty: case32.states.get("20"),
+                eighteen: case32.states.get("18"),
+                ten: case32.states.get("10"),
+              })
+            : "snapshot=null"
+        );
+
+        const debugEntries = [];
+        const debugRoot = buildSingleColumnLinearRoot(CRICKET_TARGETS, singleColumnCricket);
+        const debugPlayers = mountPlayerStrip(2, 0, {
+          visible: true,
+        });
+        try {
+          const debugOptions = {
+            root: debugRoot,
+            gameStateShared: fakeGameState(0, "standard", "Cricket", {
+              domPlayerCount: 2,
+              domActivePlayerIndex: 0,
+              domVisible: true,
+            }),
+            debugLog: function (event, payload, level) {
+              debugEntries.push({
+                event,
+                level: level || "warn",
+                payload,
+              });
+            },
+          };
+          helper.buildGridSnapshot(debugOptions);
+          helper.buildGridSnapshot(debugOptions);
+        } finally {
+          debugPlayers.remove();
+        }
+        assert(
+          debugEntries.filter((entry) => {
+            return entry.event === "buildGridSnapshot: player-source-mismatch";
+          }).length === 1 &&
+            debugEntries.filter((entry) => {
+              return entry.event === "buildGridSnapshot: repaired player undercount";
+            }).length === 1,
+          "Debug dedupe: dieselbe Player-Mismatch-/Undercount-Signatur wird nur einmal geloggt",
+          JSON.stringify(debugEntries)
         );
 
         const summary = document.getElementById("summary");

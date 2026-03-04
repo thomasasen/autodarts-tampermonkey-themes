@@ -462,7 +462,11 @@
               "10": [3, 0],
             }),
             readyWhen: function (metrics) {
-              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 1;
+              return (
+                metrics.scoreShapes === 4 &&
+                metrics.gridScoreCells === 1 &&
+                metrics.gridThreatCells === 1
+              );
             },
           });
           assert(
@@ -471,10 +475,11 @@
               case1.dangerShapes === 0 &&
               case1.gridScoreCells === 1 &&
               case1.gridScoreCellsByPlayer["0"] === 1 &&
-              case1.gridThreatCells === 0 &&
+              case1.gridThreatCells === 1 &&
+              case1.gridThreatCellsByPlayer["1"] === 1 &&
               case1.themeApplied &&
               case1.gridFxActive,
-            "Tactics mismatch: DOM-active player keeps target 10 on offense across highlighter, Theme Cricket and Grid FX",
+            "Tactics mismatch: DOM-active player keeps target 10 am Board offensiv, während das Grid gleichzeitig Gegnerdruck zeigt",
             JSON.stringify(case1)
           );
 
@@ -496,7 +501,11 @@
               },
             ],
             readyWhen: function (metrics) {
-              return metrics.scoreShapes === 4 && metrics.gridScoreCells === 1;
+              return (
+                metrics.scoreShapes === 4 &&
+                metrics.gridScoreCells === 1 &&
+                metrics.gridThreatCells === 1
+              );
             },
           });
           assert(
@@ -505,10 +514,11 @@
               case2.dangerShapes === 0 &&
               case2.gridScoreCells === 1 &&
               case2.gridScoreCellsByPlayer["0"] === 1 &&
-              case2.gridThreatCells === 0 &&
+              case2.gridThreatCells === 1 &&
+              case2.gridThreatCellsByPlayer["1"] === 1 &&
               case2.themeApplied &&
               case2.gridFxActive,
-            "Ein laufender T20-Wurf färbt 20 sofort grün, auch wenn das Grid noch 0/0 anzeigt",
+            "Ein laufender T20-Wurf färbt 20 sofort grün am Board und zeigt im Grid gleichzeitig offense plus pressure",
             JSON.stringify(case2)
           );
 
@@ -539,19 +549,24 @@
               ],
             },
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 1;
+              return (
+                metrics.dangerShapes === 4 &&
+                metrics.gridScoreCells === 1 &&
+                metrics.gridThreatCells === 1
+              );
             },
           });
           assert(
             case3.overlay &&
               case3.scoreShapes === 0 &&
               case3.dangerShapes === 4 &&
-              case3.gridScoreCells === 0 &&
+              case3.gridScoreCells === 1 &&
+              case3.gridScoreCellsByPlayer["0"] === 1 &&
               case3.gridThreatCells === 1 &&
               case3.gridThreatCellsByPlayer["1"] === 1 &&
               case3.themeApplied &&
               case3.gridFxActive,
-            "Nach dem Spielerwechsel färbt ein gegnerischer T20 die 20 sofort rot",
+            "Nach dem Spielerwechsel färbt ein gegnerischer T20 die 20 sofort rot am Board, während die geschlossene Gegnerspalte offensiv bleibt",
             JSON.stringify(case3)
           );
 
@@ -573,20 +588,25 @@
               },
             ],
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
+              return (
+                metrics.dangerShapes === 8 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
             },
           });
           assert(
             case4.overlay &&
               case4.scoreShapes === 0 &&
               case4.dangerShapes === 8 &&
-              case4.gridScoreCells === 0 &&
+              case4.gridScoreCells === 2 &&
+              case4.gridScoreCellsByPlayer["0"] === 2 &&
               case4.gridThreatCells === 2 &&
               case4.gridThreatCellsByPlayer["1"] === 2 &&
               case4.themeApplied &&
               case4.gridFxActive &&
               case4.wrapperBadges === 0,
-            "Ein sichtbares Grid bleibt auch neben einem versteckten Alt-Grid die aktive Datenquelle",
+            "Ein sichtbares Grid bleibt auch neben einem versteckten Alt-Grid die aktive Datenquelle und hält offense/pressure pro Spieler getrennt",
             JSON.stringify(case4)
           );
 
@@ -605,20 +625,26 @@
               "15": [3, 0],
             }),
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
+              return (
+                metrics.dangerShapes === 8 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
             },
           });
           assert(
             case5.overlay &&
               case5.scoreShapes === 0 &&
               case5.dangerShapes === 8 &&
-              case5.gridScoreCells === 0 &&
+              case5.gridScoreCells === 2 &&
+              case5.gridScoreCellsByPlayer["0"] === 2 &&
               case5.gridThreatCells === 2 &&
               case5.gridThreatCellsByPlayer["1"] === 2 &&
               !case5.gridThreatCellsByPlayer["0"] &&
+              !case5.gridScoreCellsByPlayer["1"] &&
               case5.themeApplied &&
               case5.gridFxActive,
-            "Wenn TEST1 20 und 15 geschlossen hat, sieht der aktive TEST2 beide Ziele sofort rot im Grid und am Board",
+            "Wenn TEST1 20 und 15 geschlossen hat, sieht TEST2 beide Ziele sofort rot am Board, während das Grid TEST1 offensiv grün belässt",
             JSON.stringify(case5)
           );
 
@@ -639,20 +665,26 @@
               "15": [3, 0],
             }),
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 8 && metrics.gridThreatCells === 2;
+              return (
+                metrics.dangerShapes === 8 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2
+              );
             },
           });
           assert(
             case6.overlay &&
               case6.scoreShapes === 0 &&
               case6.dangerShapes === 8 &&
-              case6.gridScoreCells === 0 &&
+              case6.gridScoreCells === 2 &&
+              case6.gridScoreCellsByPlayer["0"] === 2 &&
               case6.gridThreatCells === 2 &&
               case6.gridThreatCellsByPlayer["1"] === 2 &&
               !case6.gridThreatCellsByPlayer["0"] &&
+              !case6.gridScoreCellsByPlayer["1"] &&
               case6.themeApplied &&
               case6.gridFxActive,
-            "Auch bei verdrehter DOM-Reihenfolge bleibt die visuelle TEST2-Spalte die rote Danger-Seite",
+            "Auch bei verdrehter DOM-Reihenfolge bleiben offense und pressure auf den visuell richtigen TEST-Spalten",
             JSON.stringify(case6)
           );
 
@@ -670,7 +702,8 @@
               return (
                 metrics.scoreShapes === 4 &&
                 metrics.gridScoreCells === 1 &&
-                metrics.gridLabelScoreCells === 1
+                metrics.gridLabelScoreCells === 1 &&
+                metrics.gridThreatCells === 1
               );
             },
           });
@@ -681,10 +714,12 @@
               case7.gridScoreCells === 1 &&
               case7.gridLabelScoreCells === 1 &&
               case7.gridScoreCellsByPlayer["0"] === 1 &&
-              case7.gridThreatCells === 0 &&
+              case7.gridThreatCells === 1 &&
+              case7.gridThreatCellsByPlayer["1"] === 1 &&
+              case7.gridLabelThreatCells === 0 &&
               case7.themeApplied &&
               case7.gridFxActive,
-            "Kombinierte Label-/Spielerzelle: ein geschlossener T20 färbt die echte erste Feldzelle grün statt die leere Folgezelle",
+            "Kombinierte Label-/Spielerzelle: ein geschlossener T20 färbt die echte erste Feldzelle grün und die Gegnerspalte gleichzeitig rot",
             JSON.stringify(case7)
           );
 
@@ -716,21 +751,73 @@
               ],
             },
             readyWhen: function (metrics) {
-              return metrics.dangerShapes === 4 && metrics.gridThreatCells === 1;
+              return (
+                metrics.dangerShapes === 4 &&
+                metrics.gridScoreCells === 1 &&
+                metrics.gridThreatCells === 1
+              );
             },
           });
           assert(
             case8.overlay &&
               case8.scoreShapes === 0 &&
               case8.dangerShapes === 4 &&
-              case8.gridScoreCells === 0 &&
+              case8.gridScoreCells === 1 &&
+              case8.gridLabelScoreCells === 1 &&
+              case8.gridScoreCellsByPlayer["0"] === 1 &&
               case8.gridThreatCells === 1 &&
               case8.gridLabelThreatCells === 0 &&
               case8.gridThreatCellsByPlayer["1"] === 1 &&
               case8.themeApplied &&
               case8.gridFxActive,
-            "Kombinierte Label-/Spielerzelle: nach dem Spielerwechsel bleibt die Danger-Markierung auf der echten aktiven Gegnerspalte",
+            "Kombinierte Label-/Spielerzelle: nach dem Spielerwechsel bleibt offense auf der Labelzelle und pressure auf der echten aktiven Gegnerspalte",
             JSON.stringify(case8)
+          );
+
+          const case9 = await runScenario({
+            variant: "Tactics",
+            scoringMode: "standard",
+            stateActivePlayerIndex: 1,
+            domActivePlayerIndex: 1,
+            players: [
+              { id: "player-1", name: "TEST1" },
+              { id: "player-2", name: "TEST2" },
+            ],
+            targetOrder: TACTICS_TARGETS,
+            marksByLabel: buildMarkMap(TACTICS_TARGETS, {
+              "20": [3, 3],
+              "18": [1, 3],
+              "10": [3, 0],
+            }),
+            readyWhen: function (metrics) {
+              return (
+                metrics.scoreShapes === 4 &&
+                metrics.dangerShapes === 4 &&
+                metrics.deadShapes === 4 &&
+                metrics.gridScoreCells === 2 &&
+                metrics.gridThreatCells === 2 &&
+                metrics.gridDeadCells === 2
+              );
+            },
+          });
+          assert(
+            case9.overlay &&
+              case9.scoreShapes === 4 &&
+              case9.dangerShapes === 4 &&
+              case9.deadShapes === 4 &&
+              case9.gridScoreCells === 2 &&
+              case9.gridThreatCells === 2 &&
+              case9.gridDeadCells === 2 &&
+              case9.gridScoreCellsByPlayer["0"] === 1 &&
+              case9.gridScoreCellsByPlayer["1"] === 1 &&
+              case9.gridThreatCellsByPlayer["0"] === 1 &&
+              case9.gridThreatCellsByPlayer["1"] === 1 &&
+              case9.gridDeadCellsByPlayer["0"] === 1 &&
+              case9.gridDeadCellsByPlayer["1"] === 1 &&
+              case9.themeApplied &&
+              case9.gridFxActive,
+            "Screenshot-Regression: Board bleibt aktivspielerbezogen, Grid zeigt gleichzeitig dead, offense und pressure pro Spieler",
+            JSON.stringify(case9)
           );
 
           const summary = document.getElementById("summary");

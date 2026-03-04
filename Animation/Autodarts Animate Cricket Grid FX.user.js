@@ -107,6 +107,7 @@
 
   const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
   const DEBUG_PREFIX = "[xConfig][Cricket Grid FX]";
+  const DEBUG_TRACE_ENABLED = false;
 
   const CFG = {
     rowRailPulse: asBool(xConfig_ROW_RAIL_PULSE, true),
@@ -128,16 +129,73 @@
     turnToken: "",
   };
   let loggedVariantSkip = false;
+  const debugWarnSignatures = new Set();
 
-  function debugLog(event, payload) {
+  function stripDebugSignature(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return payload;
+    }
+    const nextPayload = { ...payload };
+    delete nextPayload._signature;
+    return nextPayload;
+  }
+
+  function buildDebugSignature(event, payload) {
+    const explicitSignature =
+      payload && typeof payload === "object" ? payload._signature : "";
+    if (explicitSignature) {
+      return `${event}|${explicitSignature}`;
+    }
+    try {
+      return `${event}|${JSON.stringify(stripDebugSignature(payload))}`;
+    } catch (error) {
+      return event;
+    }
+  }
+
+  function debugLog(event, payload, level = "warn") {
     if (!DEBUG_ENABLED) {
       return;
     }
-    if (typeof payload === "undefined") {
-      console.log(`${DEBUG_PREFIX} ${event}`);
+    const normalizedPayload = stripDebugSignature(payload);
+    if (level === "trace") {
+      if (!DEBUG_TRACE_ENABLED) {
+        return;
+      }
+      if (typeof normalizedPayload === "undefined") {
+        console.log(`${DEBUG_PREFIX} ${event}`);
+        return;
+      }
+      console.log(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
       return;
     }
-    console.log(`${DEBUG_PREFIX} ${event}`, payload);
+    if (level === "error") {
+      if (typeof normalizedPayload === "undefined") {
+        console.error(`${DEBUG_PREFIX} ${event}`);
+        return;
+      }
+      console.error(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
+      return;
+    }
+
+    const signature = buildDebugSignature(event, payload);
+    if (debugWarnSignatures.has(signature)) {
+      return;
+    }
+    debugWarnSignatures.add(signature);
+    if (typeof normalizedPayload === "undefined") {
+      console.warn(`${DEBUG_PREFIX} ${event}`);
+      return;
+    }
+    console.warn(`${DEBUG_PREFIX} ${event}`, normalizedPayload);
+  }
+
+  function debugError(event, payload) {
+    debugLog(event, payload, "error");
+  }
+
+  function debugTrace(event, payload) {
+    debugLog(event, payload, "trace");
   }
 
   const ensureStyle =
@@ -429,7 +487,7 @@
 
   function readSnapshot() {
     if (!cricketState) {
-      debugLog("shared-helper-missing");
+      debugError("shared-helper-missing");
       return null;
     }
 
@@ -499,7 +557,7 @@
   function apply() {
     if (!isContextActive()) {
       if (!loggedVariantSkip) {
-        debugLog("variant-skip", { reason: "not-cricket-family-context" });
+        debugTrace("variant-skip", { reason: "not-cricket-family-context" });
         loggedVariantSkip = true;
       }
       reset();
@@ -534,7 +592,7 @@
     const turnToken = getTurnToken(snapshot.activePlayerIndex);
     if (CFG.roundWipe && state.turnToken && turnToken !== state.turnToken) {
       addWipe(snapshot.root);
-      debugLog("trigger", { type: "turn-change", turnToken });
+      debugTrace("trigger", { type: "turn-change", turnToken });
     }
     state.turnToken = turnToken;
 
@@ -637,7 +695,7 @@
     });
 
     if (changedRows > 0) {
-      debugLog("trigger", {
+      debugTrace("trigger", {
         changedRows,
         rowsScanned: snapshot.rows.length,
       });
@@ -674,7 +732,7 @@
   ensureStyle(STYLE_ID, CSS);
 
   const schedule = makeScheduler(apply);
-  debugLog("applied", {
+  debugTrace("applied", {
     effectsEnabled: Object.values(CFG).filter(Boolean).length,
   });
   schedule();

@@ -143,12 +143,12 @@ Gründe:
 - Spieleranzahl-Priorität: erkannte Grid-Spaltenzahl vor global gezählten DOM-Spielern
 - Grid-Root-Priorität: sichtbares aktuelles Grid vor versteckten, aber noch verbundenen Alt-Grids derselben Seite
 - Live-Wurf-Vorschau: laufende `activeThrows` werden sofort auf den aktiven Spieler angerechnet, damit ein frisch geschlossenes Ziel schon während des laufenden Zuges grün wird
-- Spielerwechsel-Vorschau: abgeschlossene Würfe aus `match.turns` werden zusätzlich kumulativ eingerechnet, damit nach dem Spielerwechsel dieselben Ziele beim nun aktiven Gegner sofort rot erscheinen
+- Spielerwechsel-Vorschau: abgeschlossene Würfe aus `match.turns` werden zusätzlich kumulativ eingerechnet, damit nach dem Spielerwechsel dieselben Ziele beim nun aktiven Gegner sofort als roter Defensivzustand erscheinen
 - Unterzählungs-Reparatur: wenn das Grid genau eine Spielerspalte zu wenig liefert, darf der Shared Helper diese Lücke gezielt aus dem sichtbaren Player-Display ergänzen, ohne frühere Phantomspieler-Fälle wieder zu öffnen
 - Spielerzuordnung: sichtbare Links-nach-Rechts-Reihenfolge plus ID-/Namensabgleich zwischen Player-Display, Grid-Spalten und `match.players`
-- Aktive-Zellen-Regel: dauerhafte Grid-Farben liegen nur noch auf der aktiven Spielerzelle; Gegnerzellen bleiben neutral, solange es nicht um `dead` geht
+- Grid-Perspektive: dauerhafte Grid-Farben werden pro echter Spielerzelle gesetzt. Dadurch kann dieselbe Zeile gleichzeitig offensiv grün und defensiv rot sein; `dead` dimmt weiterhin beide Seiten
 - Screenshot-Regression: aktiver Spieler `TEST2` ergibt in Tactics korrekt Grün auf `20`, `17`, `15`, Rot auf `16` und `dead` auf gemeinsam geschlossenen Zielen
-- Spielerwechsel-Regression: nach einem gegnerischen `T20` erscheint `20` beim nächsten aktiven Spieler sofort als `danger`, auch wenn das Grid noch `0/0` zeigt
+- Spielerwechsel-Regression: nach einem gegnerischen `T20` erscheint `20` beim nächsten aktiven Spieler sofort als roter Defensivzustand, auch wenn das Grid noch `0/0` zeigt
 - Alt-Grid-Regression: ein verstecktes verbundenes Vorher-Grid darf weder Board noch Matrix vom sichtbaren aktuellen Grid abziehen
 - Symbol-Parsing: `⊗` wird als `3`, `X`/`✕` als `2` und `/` als `1` erkannt
 
@@ -157,7 +157,7 @@ Gründe:
 - Tactics mit sichtbarem aktivem Spieler links, aber bewusst abweichendem Game-State-Index
 - Board-Overlay bleibt dabei grün/offensiv auf `10`
 - ein laufender `T20` färbt `20` sofort grün, auch wenn das Grid testweise noch `0/0` zeigt
-- wenn `TEST1` ein Ziel bereits geschlossen hat und `TEST2` aktiv ist, erscheint dasselbe Ziel für `TEST2` sofort rot, sowohl im Board-Overlay als auch nur auf der aktiven TEST2-Zelle im Grid
+- wenn `TEST1` ein Ziel bereits geschlossen hat und `TEST2` aktiv ist, erscheint dasselbe Ziel für `TEST2` sofort rot im Board-Overlay, während das Grid parallel TEST1 grün und TEST2 rot zeigt
 - `Theme Cricket` und `Cricket Grid FX` bleiben im selben DOM korrekt aktiv
 - Die tieferen Fachregeln für Screenshot-Regression, Geisterspieler und Phantom-Spieleranzahl werden in `tests/cricket-state-harness.html` geprüft, weil diese Fälle im Headless-Browser deutlich deterministischer abbildbar sind.
 
