@@ -2080,19 +2080,19 @@
       return buildResolution(slotByName, "visible-dom-name");
     }
 
+    if (stateIndex !== null) {
+      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
+      if (matchedSlot) {
+        return buildResolution(matchedSlot, "game-state-match");
+      }
+    }
+
     if (usedVisibleDom && displayIndex !== null) {
       const matchedSlot = findUniqueSlot(
         (slot) => slot.displayIndex === displayIndex
       );
       if (matchedSlot) {
         return buildResolution(matchedSlot, "visible-dom-display");
-      }
-    }
-
-    if (stateIndex !== null) {
-      const matchedSlot = findUniqueSlot((slot) => slot.matchIndex === stateIndex);
-      if (matchedSlot) {
-        return buildResolution(matchedSlot, "game-state-match");
       }
     }
 
@@ -2211,6 +2211,27 @@
       playerCount
     );
     const resolvedActivePlayerIndex = activePlayerResolution.columnIndex;
+    const displayMappedPlayerIndex = Number.isFinite(activePlayerInfo.displayIndex)
+      ? resolveMappedActivePlayerIndex(
+          {
+            displayIndex: activePlayerInfo.displayIndex,
+            index: activePlayerInfo.displayIndex,
+            source: "dom-fallback",
+          },
+          playerSlots,
+          playerCount
+        )
+      : null;
+    const stateMappedPlayerIndex = Number.isFinite(activePlayerInfo.stateIndex)
+      ? resolveMappedActivePlayerIndex(
+          {
+            stateIndex: activePlayerInfo.stateIndex,
+            index: activePlayerInfo.stateIndex,
+          },
+          playerSlots,
+          playerCount
+        )
+      : null;
     const turnMarksByLabel = readTurnMarksByLabel(
       gameStateShared,
       targetSet,
@@ -2220,6 +2241,53 @@
       gameStateShared,
       targetSet
     );
+    if (
+      debugLog &&
+      activePlayerInfo.source === "visible-dom" &&
+      Number.isFinite(displayMappedPlayerIndex) &&
+      Number.isFinite(stateMappedPlayerIndex) &&
+      displayMappedPlayerIndex !== stateMappedPlayerIndex
+    ) {
+      const conflictPayload = {
+        activePlayerSource: activePlayerInfo.source,
+        resolutionSource: activePlayerResolution.source,
+        displayMappedPlayerIndex,
+        gameStateMappedPlayerIndex: stateMappedPlayerIndex,
+        gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
+        resolutionDisplayIndex: activePlayerResolution.displayIndex,
+        resolutionMatchIndex: activePlayerResolution.matchIndex,
+        activeCandidates: Array.isArray(activePlayerInfo.activeCandidates)
+          ? activePlayerInfo.activeCandidates.map((candidate) => ({
+              index: candidate.index,
+              playerId: candidate.playerId || "",
+              nameKey: candidate.nameKey || "",
+            }))
+          : [],
+        playerSlots: playerSlots.map((slot) => ({
+          columnIndex: slot.columnIndex,
+          displayIndex: slot.displayIndex,
+          matchIndex: slot.matchIndex,
+          playerId: slot.playerId || "",
+          nameKey: slot.nameKey || "",
+          source: slot.source || "",
+        })),
+        playerMappingSource: playerMapping.playerMappingSource,
+        rootId: getDebugRootId(root),
+      };
+      const conflictSignature = [
+        conflictPayload.rootId,
+        conflictPayload.displayMappedPlayerIndex,
+        conflictPayload.gameStateMappedPlayerIndex,
+        conflictPayload.gameStateActivePlayerIndex,
+        conflictPayload.playerMappingSource,
+      ].join("|");
+      debugWarnOnce(
+        debugLog,
+        "buildGridSnapshot: board-source-conflict",
+        conflictSignature,
+        conflictPayload
+      );
+    }
     if (
       debugLog &&
       ((visiblePlayerCount > 0 &&
@@ -2240,11 +2308,8 @@
         activePlayerIndex: resolvedActivePlayerIndex,
         activePlayerSource: activePlayerInfo.source,
         gameStateActivePlayerIndex: activePlayerInfo.stateIndex,
-        gameStateMappedPlayerIndex: resolveMappedActivePlayerIndex(
-          { stateIndex: activePlayerInfo.stateIndex, index: activePlayerInfo.stateIndex },
-          playerSlots,
-          playerCount
-        ),
+        gameStateMappedPlayerIndex: stateMappedPlayerIndex,
+        displayMappedPlayerIndex,
         playerMappingSource: playerMapping.playerMappingSource,
         resolutionSource: activePlayerResolution.source,
         resolutionDisplayIndex: activePlayerResolution.displayIndex,
