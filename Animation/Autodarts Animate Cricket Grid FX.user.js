@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1.3
+// @version      1.1.4
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -28,7 +28,7 @@
   const shared = window.autodartsAnimationShared || {};
   const cricketState = window.autodartsCricketStateShared || null;
   const gameState = window.autodartsGameStateShared || null;
-  const SCRIPT_VERSION = "1.1.3";
+  const SCRIPT_VERSION = "1.1.4";
   const FEATURE_KEY = "ad-ext/a-cricket-grid-fx";
   const SOURCE_PATH = "Animation/Autodarts Animate Cricket Grid FX.user.js";
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
@@ -481,11 +481,18 @@
     node.classList.toggle(className, Boolean(enabled));
   }
 
+  function isDomElement(node) {
+    return Boolean(node && typeof node.querySelector === "function");
+  }
+
   function pulseRow(row) {
     if (!CFG.rowRailPulse) {
       return;
     }
     row.playerCells.forEach((cell) => {
+      if (!isDomElement(cell)) {
+        return;
+      }
       toArray(cell.querySelectorAll(`.${ROW_WAVE_CLASS}`)).forEach((node) =>
         node.remove()
       );
@@ -508,7 +515,7 @@
   }
 
   function animateMark(cell, markNow) {
-    if (!CFG.markProgress) {
+    if (!CFG.markProgress || !isDomElement(cell)) {
       return;
     }
     const target = cell.querySelector(
@@ -542,7 +549,12 @@
   }
 
   function addDelta(cell, delta) {
-    if (!CFG.deltaChips || !Number.isFinite(delta) || delta <= 0) {
+    if (
+      !CFG.deltaChips ||
+      !Number.isFinite(delta) ||
+      delta <= 0 ||
+      !isDomElement(cell)
+    ) {
       return;
     }
     const chip = document.createElement("span");
@@ -553,7 +565,7 @@
   }
 
   function addSpark(cell) {
-    if (!CFG.hitSpark) {
+    if (!CFG.hitSpark || !isDomElement(cell)) {
       return;
     }
     toArray(cell.querySelectorAll(`.${SPARK_CLASS}`)).forEach((node) =>
@@ -793,6 +805,20 @@
       let increased = false;
       row.playerCells.forEach((cell, index) => {
         const delta = clampMark(currentMarks[index]) - clampMark(prevMarks[index] || 0);
+        if (!isDomElement(cell)) {
+          if (delta > 0) {
+            debugLog("missing-player-cell-delta", {
+              _signature: `${row.label}|${index}|${delta}|${turnToken}`,
+              label: row.label,
+              columnIndex: index,
+              delta,
+              turnToken,
+              marksNow: clampMark(currentMarks[index]),
+              marksPrev: clampMark(prevMarks[index] || 0),
+            });
+          }
+          return;
+        }
         if (delta > 0) {
           increased = true;
           animateMark(cell, currentMarks[index]);

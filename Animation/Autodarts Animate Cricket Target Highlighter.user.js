@@ -233,6 +233,7 @@
   let unsubscribeGameState = null;
   let refreshTimer = null;
   let instanceReleased = false;
+  let unstableSnapshotStartedAt = 0;
   const debugWarnSignatures = new Set();
   const debugInfoSignatures = new Map();
   const debugTargetLineSignatures = new Map();
@@ -1625,6 +1626,70 @@
     };
   }
 
+  function resolveUnstableSnapshotDefer(stateContext) {
+    const snapshot = stateContext?.snapshot || null;
+    const resolution = getActivePlayerResolution(snapshot);
+    const sourceConfidence = String(resolution?.sourceConfidence || "").toLowerCase();
+    const resolutionSource = String(resolution?.source || "").toLowerCase();
+    const playerCount = Number.isFinite(snapshot?.playerCount)
+      ? snapshot.playerCount
+      : 0;
+    const visiblePlayerCount = Number.isFinite(snapshot?.visiblePlayerCount)
+      ? snapshot.visiblePlayerCount
+      : 0;
+    const detectedPlayerCount = Number.isFinite(snapshot?.detectedPlayerCount)
+      ? snapshot.detectedPlayerCount
+      : 0;
+    const playerMappingSource = String(snapshot?.playerMappingSource || "");
+    const gameStateSnapshot =
+      gameStateShared && typeof gameStateShared.getState === "function"
+        ? gameStateShared.getState()
+        : null;
+    const gameStateSource = String(gameStateSnapshot?.source || "");
+    const lowConfidence = sourceConfidence === "low";
+    const unstableResolutionSource =
+      resolutionSource.includes("dom-fallback") ||
+      resolutionSource.includes("default-zero");
+    const undercountLikely = playerCount <= 1 && (visiblePlayerCount <= 1 || detectedPlayerCount <= 1);
+    const missingRealtimeState = !gameStateSource;
+    const suspiciousSnapshot =
+      lowConfidence &&
+      unstableResolutionSource &&
+      undercountLikely &&
+      missingRealtimeState;
+
+    if (!suspiciousSnapshot) {
+      unstableSnapshotStartedAt = 0;
+      return { defer: false, reason: "" };
+    }
+
+    const now = Date.now();
+    if (!unstableSnapshotStartedAt) {
+      unstableSnapshotStartedAt = now;
+    }
+    const holdMs = now - unstableSnapshotStartedAt;
+    const maxHoldMs = 1500;
+    const defer = holdMs < maxHoldMs;
+    return {
+      defer,
+      reason: "unstable-low-confidence-single-player-snapshot",
+      holdMs,
+      maxHoldMs,
+      payload: {
+        playerCount,
+        visiblePlayerCount,
+        detectedPlayerCount,
+        playerMappingSource,
+        resolutionSource,
+        sourceConfidence,
+        gameStateSource: gameStateSource || "none",
+        boardPlayerIndex: Number.isFinite(stateContext?.boardPlayerIndex)
+          ? stateContext.boardPlayerIndex
+          : null,
+      },
+    };
+  }
+
   function clearOverlayState() {
     const board = findBoard();
     const overlay =
@@ -1642,6 +1707,7 @@
     }
     lastStateKey = null;
     lastBoardKey = null;
+    unstableSnapshotStartedAt = 0;
   }
 
   function updateTargets() {
@@ -1671,6 +1737,27 @@
     const board = findBoard();
     if (!board) {
       debugTrace("updateTargets: no board");
+      return;
+    }
+
+    const unstableSnapshot = resolveUnstableSnapshotDefer(stateContext);
+    if (unstableSnapshot.defer) {
+      const payload = {
+        ...unstableSnapshot.payload,
+        holdMs: unstableSnapshot.holdMs,
+        maxHoldMs: unstableSnapshot.maxHoldMs,
+      };
+      const signature = [
+        unstableSnapshot.reason || "",
+        payload.playerCount,
+        payload.visiblePlayerCount,
+        payload.detectedPlayerCount,
+        payload.playerMappingSource || "",
+        payload.resolutionSource || "",
+        payload.sourceConfidence || "",
+        payload.gameStateSource || "",
+      ].join("|");
+      debugInfoOnChange("updateTargets: deferred-unstable-snapshot", payload, signature);
       return;
     }
 
