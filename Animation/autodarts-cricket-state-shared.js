@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-cell-detection-label-fix`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-label-cell-shortfall-fix`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -2138,6 +2138,49 @@
     return false;
   }
 
+  function getElementWidth(node) {
+    if (!isElement(node) || typeof node.getBoundingClientRect !== "function") {
+      return null;
+    }
+    const rect = node.getBoundingClientRect();
+    if (!Number.isFinite(rect.width) || rect.width <= 0) {
+      return null;
+    }
+    return rect.width;
+  }
+
+  function looksLikeMergedLabelPlayerCell(labelCell, playerCells) {
+    if (!isElement(labelCell)) {
+      return false;
+    }
+
+    const labelWidth = getElementWidth(labelCell);
+    if (!Number.isFinite(labelWidth)) {
+      return false;
+    }
+
+    const referenceWidths = (Array.isArray(playerCells) ? playerCells : [])
+      .filter((cell) => isElement(cell))
+      .map((cell) => getElementWidth(cell))
+      .filter((width) => Number.isFinite(width));
+    const referenceWidth =
+      referenceWidths.length > 0
+        ? referenceWidths.reduce((sum, width) => sum + width, 0) /
+          referenceWidths.length
+        : null;
+
+    const hasRowLabel = Boolean(getNodeLabel(labelCell));
+    if (!hasRowLabel) {
+      return false;
+    }
+
+    if (Number.isFinite(referenceWidth) && referenceWidth > 0) {
+      return labelWidth >= referenceWidth * 0.72;
+    }
+
+    return labelWidth >= 80;
+  }
+
   function mergeUniqueElements(...collections) {
     const merged = [];
     const seen = new Set();
@@ -2172,9 +2215,12 @@
       ? Math.max(0, Math.round(Number(expectedPlayerCount)))
       : 0;
     const labelCellHasMarks = hasMarkHints(labelCell, label);
+    const shortfallLikely =
+      resolvedExpectedCount > 0 && normalizedCells.length < resolvedExpectedCount;
+    const mergedLayoutHint =
+      shortfallLikely && looksLikeMergedLabelPlayerCell(labelCell, normalizedCells);
 
-    // Include the label cell only when it actually carries mark hints.
-    if (!labelCellHasMarks) {
+    if (!labelCellHasMarks && !mergedLayoutHint) {
       return normalizedCells;
     }
 

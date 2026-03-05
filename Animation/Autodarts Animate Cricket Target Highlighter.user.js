@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Target Highlighter
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      2.16
+// @version      2.17
 // @description  Zeigt Zielzustände in Cricket und Tactics als Overlay direkt auf dem virtuellen Dartboard.
 // @xconfig-description  Markiert in Cricket und Tactics relevante Zielzustände auf dem virtuellen Dartboard. Funktioniert nicht mit dem Live Dartboard.
 // @xconfig-title  Cricket-Ziel-Highlighter
@@ -125,14 +125,14 @@
     CRICKET_INTENSITY_PRESETS[RESOLVED_INTENSITY_KEY] ||
     CRICKET_INTENSITY_PRESETS.normal;
   const DEBUG_ENABLED = resolveDebugToggle(xConfig_DEBUG);
-  const SCRIPT_VERSION = "2.16";
+  const SCRIPT_VERSION = "2.17";
   const FEATURE_KEY = "ad-ext/a-cricket-target";
   const SOURCE_PATH =
     "Animation/Autodarts Animate Cricket Target Highlighter.user.js";
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-cell-detection-label-fix`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-label-cell-shortfall-fix`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
