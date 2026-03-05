@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-aria-mark-guard`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-debug-mark-lines`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -1312,7 +1312,7 @@
     return match ? Number(match[1]) : null;
   }
 
-  function readMarkAttributes(element) {
+  function readMarkAttributesDetailed(element) {
     if (!isElement(element)) {
       return null;
     }
@@ -1332,17 +1332,27 @@
     ];
 
     for (const key of dataKeys) {
-      const parsed = parseMarkString(element.getAttribute(key));
+      const rawValue = element.getAttribute(key);
+      const parsed = parseMarkString(rawValue);
       if (parsed !== null) {
-        return clampMark(parsed);
+        return {
+          marks: clampMark(parsed),
+          source: `attr:${key}`,
+          raw: String(rawValue || ""),
+        };
       }
     }
     for (const key of descriptiveKeys) {
-      const parsed = parseMarkString(element.getAttribute(key), {
+      const rawValue = element.getAttribute(key);
+      const parsed = parseMarkString(rawValue, {
         allowStateWords: false,
       });
       if (parsed !== null) {
-        return clampMark(parsed);
+        return {
+          marks: clampMark(parsed),
+          source: `attr:${key}`,
+          raw: String(rawValue || ""),
+        };
       }
     }
 
@@ -1352,11 +1362,20 @@
       }
       const parsed = parseMarkString(value);
       if (parsed !== null) {
-        return clampMark(parsed);
+        return {
+          marks: clampMark(parsed),
+          source: `dataset:${key}`,
+          raw: String(value || ""),
+        };
       }
     }
 
     return null;
+  }
+
+  function readMarkAttributes(element) {
+    const detail = readMarkAttributesDetailed(element);
+    return detail ? detail.marks : null;
   }
 
   function readMarksFromText(text) {
@@ -1420,14 +1439,26 @@
     return text;
   }
 
-  function readMarks(cell, rowLabel) {
+  function readMarksWithMeta(cell, rowLabel) {
+    const empty = {
+      marks: 0,
+      source: "none",
+      raw: "",
+      iconCount: 0,
+    };
     if (!isElement(cell)) {
-      return 0;
+      return {
+        ...empty,
+        source: "missing-cell",
+      };
     }
 
-    const directAttributeMarks = readMarkAttributes(cell);
-    if (directAttributeMarks !== null) {
-      return directAttributeMarks;
+    const directAttributeMarks = readMarkAttributesDetailed(cell);
+    if (directAttributeMarks) {
+      return {
+        ...empty,
+        ...directAttributeMarks,
+      };
     }
 
     const iconNodes = toArray(
@@ -1435,17 +1466,29 @@
     ).filter((node) => !isIgnoredDecorationElement(node));
 
     let bestAttributeMarks = null;
+    let bestAttributeSource = "";
+    let bestAttributeRaw = "";
     iconNodes.forEach((iconNode) => {
-      const parsed = readMarkAttributes(iconNode);
-      if (parsed !== null) {
+      const parsed = readMarkAttributesDetailed(iconNode);
+      if (parsed) {
         bestAttributeMarks =
           bestAttributeMarks === null
-            ? parsed
-            : Math.max(bestAttributeMarks, parsed);
+            ? parsed.marks
+            : Math.max(bestAttributeMarks, parsed.marks);
+        if (bestAttributeMarks === parsed.marks) {
+          bestAttributeSource = parsed.source || "";
+          bestAttributeRaw = parsed.raw || "";
+        }
       }
     });
     if (bestAttributeMarks !== null) {
-      return clampMark(bestAttributeMarks);
+      return {
+        ...empty,
+        marks: clampMark(bestAttributeMarks),
+        source: bestAttributeSource ? `icon-${bestAttributeSource}` : "icon-attr",
+        raw: bestAttributeRaw,
+        iconCount: iconNodes.length,
+      };
     }
 
     if (iconNodes.length > 0) {
@@ -1453,26 +1496,53 @@
         iconNode.matches("img, svg")
       ).length;
       if (visualMarks > 0) {
-        return Math.min(3, visualMarks);
+        return {
+          ...empty,
+          marks: Math.min(3, visualMarks),
+          source: "icon-count",
+          raw: String(visualMarks),
+          iconCount: visualMarks,
+        };
       }
     }
 
-    const textMarks = readMarksFromText(buildCellText(cell, rowLabel));
+    const cellText = buildCellText(cell, rowLabel);
+    const textMarks = readMarksFromText(cellText);
     if (textMarks !== null) {
-      return clampMark(textMarks);
+      return {
+        ...empty,
+        marks: clampMark(textMarks),
+        source: "text",
+        raw: String(cellText || ""),
+        iconCount: iconNodes.length,
+      };
     }
 
     const nestedAttributeTarget =
       cell.querySelector("[data-marks], [data-mark], [data-hits], [data-hit]") ||
       cell.querySelector("[aria-label], [title], [alt]");
     if (nestedAttributeTarget) {
-      const nestedMarks = readMarkAttributes(nestedAttributeTarget);
-      if (nestedMarks !== null) {
-        return nestedMarks;
+      const nestedDetail = readMarkAttributesDetailed(nestedAttributeTarget);
+      if (nestedDetail) {
+        return {
+          ...empty,
+          marks: nestedDetail.marks,
+          source: `nested-${nestedDetail.source || "attr"}`,
+          raw: nestedDetail.raw || "",
+          iconCount: iconNodes.length,
+        };
       }
     }
 
-    return 0;
+    return {
+      ...empty,
+      source: iconNodes.length > 0 ? "icon-no-mark" : "none",
+      iconCount: iconNodes.length,
+    };
+  }
+
+  function readMarks(cell, rowLabel) {
+    return readMarksWithMeta(cell, rowLabel).marks;
   }
 
   function readThrowLabelFromValue(value, targetSet) {
@@ -3016,8 +3086,29 @@
       .map((row) => {
         const playerCells = row.playerCells.slice(0, playerCount);
         const marksByPlayer = [];
+        const markReadMeta = [];
         for (let index = 0; index < playerCount; index += 1) {
-          marksByPlayer.push(readMarks(playerCells[index], row.label));
+          if (debugLog) {
+            const readDetail = readMarksWithMeta(playerCells[index], row.label);
+            marksByPlayer.push(readDetail.marks);
+            markReadMeta.push({
+              columnIndex: index,
+              source: readDetail.source || "",
+              raw: readDetail.raw || "",
+              initialMarks: readDetail.marks,
+              iconCount: Number.isFinite(readDetail.iconCount)
+                ? readDetail.iconCount
+                : 0,
+              hasCell: isElement(playerCells[index]),
+              cellClass:
+                isElement(playerCells[index]) &&
+                typeof playerCells[index].getAttribute === "function"
+                  ? playerCells[index].getAttribute("class") || ""
+                  : "",
+            });
+          } else {
+            marksByPlayer.push(readMarks(playerCells[index], row.label));
+          }
         }
         const throwMarks = activeThrowMarksByLabel.get(row.label) || 0;
         const domHasAnyMarks = marksByPlayer.some((mark) => clampMark(mark) > 0);
@@ -3045,14 +3136,20 @@
             (marksByPlayer[resolvedActivePlayerIndex] || 0) + throwMarks
           );
         }
+        if (markReadMeta.length) {
+          markReadMeta.forEach((entry, index) => {
+            entry.finalMarks = clampMark(marksByPlayer[index]);
+          });
+        }
         return {
           label: row.label,
           rowElement: row.rowElement,
           labelCell: row.labelCell || null,
           badgeNode: row.badgeNode || null,
-        playerCells,
-        marksByPlayer,
-      };
+          playerCells,
+          marksByPlayer,
+          markReadMeta: markReadMeta.length ? markReadMeta : null,
+        };
       })
       .sort((first, second) => {
         return targetOrder.indexOf(first.label) - targetOrder.indexOf(second.label);

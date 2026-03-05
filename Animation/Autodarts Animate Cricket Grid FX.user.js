@@ -34,7 +34,7 @@
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-aria-mark-guard`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-debug-mark-lines`;
 
   const CRICKET_THEME_STYLE_ID = "autodarts-cricket-custom-style";
   const VARIANT_ID = "ad-ext-game-variant";

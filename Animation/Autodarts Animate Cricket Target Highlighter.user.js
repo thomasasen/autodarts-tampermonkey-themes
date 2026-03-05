@@ -132,7 +132,7 @@
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-aria-mark-guard`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-debug-mark-lines`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
@@ -220,7 +220,8 @@
   const DEBUG_PREFIX = "[xConfig][Cricket Target Highlighter]";
   const DEBUG_TRACE_ENABLED = false;
   const DEBUG_HISTORY_KEY = "__adExtCricketTargetDebugHistory";
-  const DEBUG_HISTORY_LIMIT = 200;
+  const DEBUG_HISTORY_STORAGE_KEY = "__adExtCricketTargetDebugHistorySession";
+  const DEBUG_HISTORY_LIMIT = 600;
   const PROTECTED_TOP_OVERLAY_IDS = new Set([
     "ad-ext-dart-image-overlay",
     "ad-ext-winner-fireworks",
@@ -234,6 +235,37 @@
   let instanceReleased = false;
   const debugWarnSignatures = new Set();
   const debugInfoSignatures = new Map();
+  const debugTargetLineSignatures = new Map();
+
+  function loadPersistedDebugHistory() {
+    if (!DEBUG_ENABLED) {
+      return [];
+    }
+    try {
+      const stored = sessionStorage.getItem(DEBUG_HISTORY_STORAGE_KEY);
+      if (!stored) {
+        return [];
+      }
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function persistDebugHistory(history) {
+    if (!DEBUG_ENABLED) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        DEBUG_HISTORY_STORAGE_KEY,
+        JSON.stringify(Array.isArray(history) ? history : [])
+      );
+    } catch (error) {
+      // intentionally ignored
+    }
+  }
 
   function stripDebugSignature(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -270,12 +302,13 @@
     };
     const history = Array.isArray(window[DEBUG_HISTORY_KEY])
       ? window[DEBUG_HISTORY_KEY]
-      : [];
+      : loadPersistedDebugHistory();
     history.push(entry);
     if (history.length > DEBUG_HISTORY_LIMIT) {
       history.splice(0, history.length - DEBUG_HISTORY_LIMIT);
     }
     window[DEBUG_HISTORY_KEY] = history;
+    persistDebugHistory(history);
   }
 
   function debugLog(event, payload, level = "warn") {
@@ -1316,7 +1349,7 @@
     }
   }
 
-  function buildBoardTargetSummary(stateMap, boardPlayerIndex) {
+  function buildBoardTargetSummary(stateMap, boardPlayerIndex, snapshot = null) {
     const labels = [
       "20",
       "19",
@@ -1336,6 +1369,8 @@
       if (!state) {
         return summary;
       }
+      const row = snapshot?.rowMap?.get(label) || null;
+      const markReadMeta = Array.isArray(row?.markReadMeta) ? row.markReadMeta : [];
       summary[label] = {
         board: getPresentationForBoardIndex(state, boardPlayerIndex),
         marks: Array.isArray(state.marksByPlayer)
@@ -1346,9 +1381,77 @@
               .map((cellState) => String(cellState?.presentation || "open"))
               .join("/")
           : "",
+        playerCells: Array.isArray(row?.playerCells) ? row.playerCells.length : 0,
+        markSources: markReadMeta
+          .map((entry) =>
+            [
+              Number.isFinite(entry?.columnIndex) ? entry.columnIndex : "?",
+              entry?.source || "none",
+              Number.isFinite(entry?.initialMarks) ? entry.initialMarks : 0,
+              Number.isFinite(entry?.finalMarks) ? entry.finalMarks : 0,
+            ].join(":")
+          )
+          .join("/"),
+        markRaw: markReadMeta
+          .map((entry) =>
+            [
+              Number.isFinite(entry?.columnIndex) ? entry.columnIndex : "?",
+              String(entry?.raw || "").replace(/\s+/g, " ").trim().slice(0, 40),
+            ].join(":")
+          )
+          .join("/"),
       };
       return summary;
     }, {});
+  }
+
+  function buildTargetSummaryCompactLine(targetSummary) {
+    return Object.entries(targetSummary || {})
+      .map(([label, entry]) =>
+        [
+          label,
+          entry.board || "open",
+          entry.marks || "",
+          entry.cells || "",
+          entry.playerCells || 0,
+          entry.markSources || "-",
+        ].join(":")
+      )
+      .join(" | ");
+  }
+
+  function logTargetSummaryByLabel(targetSummary, boardPlayerIndex) {
+    if (!DEBUG_ENABLED) {
+      return;
+    }
+    Object.entries(targetSummary || {}).forEach(([label, entry]) => {
+      const line = [
+        `board=${boardPlayerIndex}`,
+        `label=${label}`,
+        `presentation=${entry.board || "open"}`,
+        `marks=${entry.marks || "-"}`,
+        `cells=${entry.cells || "-"}`,
+        `playerCells=${entry.playerCells || 0}`,
+        `sources=${entry.markSources || "-"}`,
+        `raw=${entry.markRaw || "-"}`,
+      ].join(" ");
+      const signature = `${boardPlayerIndex}|${label}|${line}`;
+      if (debugTargetLineSignatures.get(label) === signature) {
+        return;
+      }
+      debugTargetLineSignatures.set(label, signature);
+      console.log(`${DEBUG_PREFIX} target-line ${line}`);
+      pushDebugHistory("target-line", {
+        boardPlayerIndex,
+        label,
+        presentation: entry.board || "open",
+        marks: entry.marks || "",
+        cells: entry.cells || "",
+        playerCells: entry.playerCells || 0,
+        markSources: entry.markSources || "",
+        markRaw: entry.markRaw || "",
+      }, "info");
+    });
   }
 
   function logBoardRenderState(stateContext, board, overlayInfo = null) {
@@ -1387,7 +1490,11 @@
           source: slot?.source || "",
         }))
       : [];
-    const targetSummary = buildBoardTargetSummary(stateMap, boardPlayerIndex);
+    const targetSummary = buildBoardTargetSummary(
+      stateMap,
+      boardPlayerIndex,
+      snapshot
+    );
     const payload = {
       boardPlayerIndex,
       snapshotBoardIndex: Number.isFinite(snapshot?.boardPlayerIndex)
@@ -1470,6 +1577,13 @@
       `age_s=${compactAge}`,
     ].join(" ");
     debugInfoOnChange("board-render-state-compact", compactLine, compactLine);
+    const targetCompactLine = buildTargetSummaryCompactLine(targetSummary);
+    debugInfoOnChange(
+      "board-targets-compact",
+      targetCompactLine,
+      `${payload.boardPlayerIndex}|${targetCompactLine}`
+    );
+    logTargetSummaryByLabel(targetSummary, boardPlayerIndex);
   }
 
   function readStateContext() {
@@ -1627,7 +1741,83 @@
       overlayOrder:
         overlayZOrderInfo?.overlayOrder || summarizeBoardOverlayStack(board.group),
     });
+    const renderTargetSummary = buildBoardTargetSummary(
+      stateContext.stateMap,
+      stateContext.boardPlayerIndex,
+      stateContext.snapshot
+    );
+    const renderCompactLine = [
+      `board=${stateContext.boardPlayerIndex}`,
+      `snapshot=${Number.isFinite(stateContext.snapshot?.boardPlayerIndex)
+        ? stateContext.snapshot.boardPlayerIndex
+        : "na"}`,
+      `decision=${stateContext.boardDecision?.decisionSource || "snapshot"}`,
+      `resolution=${getActivePlayerResolution(stateContext.snapshot)?.source || "none"}`,
+      `mapping=${stateContext.snapshot?.playerMappingSource || "-"}`,
+      `targets=${buildTargetSummaryCompactLine(renderTargetSummary) || "-"}`,
+    ].join(" ");
+    debugInfoOnChange("updateTargets: render compact", renderCompactLine, renderCompactLine);
     renderTargets(stateContext);
+  }
+
+  function exposeDebugHelpers() {
+    if (!DEBUG_ENABLED) {
+      return;
+    }
+    window.__adExtCricketTargetGetDebugHistory = function (limit = 200) {
+      const history = Array.isArray(window[DEBUG_HISTORY_KEY])
+        ? window[DEBUG_HISTORY_KEY]
+        : loadPersistedDebugHistory();
+      const resolvedLimit = Number.isFinite(Number(limit))
+        ? Math.max(0, Math.round(Number(limit)))
+        : 200;
+      if (!(resolvedLimit > 0)) {
+        return [];
+      }
+      return history.slice(Math.max(0, history.length - resolvedLimit));
+    };
+    window.__adExtCricketTargetClearDebugHistory = function () {
+      window[DEBUG_HISTORY_KEY] = [];
+      persistDebugHistory([]);
+      debugTargetLineSignatures.clear();
+      debugInfoSignatures.clear();
+      debugWarnSignatures.clear();
+      return true;
+    };
+    window.__adExtCricketTargetDumpState = function () {
+      const stateContext = readStateContext();
+      const board = findBoard();
+      const payload = {
+        hasStateContext: Boolean(stateContext),
+        hasBoard: Boolean(board),
+        boardRadius: Number.isFinite(board?.radius) ? board.radius : null,
+        boardPlayerIndex: Number.isFinite(stateContext?.boardPlayerIndex)
+          ? stateContext.boardPlayerIndex
+          : null,
+        snapshotBoardPlayerIndex: Number.isFinite(stateContext?.snapshot?.boardPlayerIndex)
+          ? stateContext.snapshot.boardPlayerIndex
+          : null,
+        activePlayerIndex: Number.isFinite(stateContext?.snapshot?.activePlayerIndex)
+          ? stateContext.snapshot.activePlayerIndex
+          : null,
+        boardDecision: stateContext?.boardDecision || null,
+        activePlayerResolution: getActivePlayerResolution(stateContext?.snapshot),
+        playerSlots: Array.isArray(stateContext?.snapshot?.playerSlots)
+          ? stateContext.snapshot.playerSlots
+          : [],
+        targetSummary:
+          stateContext?.stateMap && Number.isFinite(stateContext?.boardPlayerIndex)
+            ? buildBoardTargetSummary(
+                stateContext.stateMap,
+                stateContext.boardPlayerIndex,
+                stateContext.snapshot
+              )
+            : {},
+      };
+      console.log(`${DEBUG_PREFIX} debug-dump`, payload);
+      pushDebugHistory("debug-dump", payload, "info");
+      return payload;
+    };
   }
 
   const scheduleUpdate = createRafScheduler(() => {
@@ -1638,6 +1828,7 @@
   });
 
   ensureStyle(STYLE_ID, STYLE_TEXT);
+  exposeDebugHelpers();
   debugInfoOnChange("init", {
     debug: DEBUG_ENABLED,
     showDeadTargets: RESOLVED_SHOW_DEAD_TARGETS,
