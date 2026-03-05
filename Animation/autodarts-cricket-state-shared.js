@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-cell-detection-fallback`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-cell-detection-label-fix`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -2015,16 +2015,17 @@
             : null;
         const nearLabelColumn =
           Number.isFinite(labelCenterX) && Number.isFinite(cellCenterX)
-            ? Math.abs(cellCenterX - labelCenterX) <= Math.max(24, labelRect.width || 24)
+            ? Math.abs(cellCenterX - labelCenterX) <= Math.max(14, (labelRect?.width || 24) * 0.45)
             : false;
         const narrowLikeLabel =
           cellRect && Number.isFinite(cellRect.width) && cellRect.width > 0
             ? Number.isFinite(labelRect?.width) && labelRect.width > 0
-              ? cellRect.width <= labelRect.width * 1.35
-              : cellRect.width <= 72
+              ? cellRect.width <= labelRect.width * 1.12
+              : cellRect.width <= 56
             : false;
         const looksLikeLabelReplica =
           cellLabel === rowLabel &&
+          !isLikelyGridCellNode(cell) &&
           !hasMarkHints(cell, rowLabel) &&
           (nearLabelColumn || narrowLikeLabel);
         if (looksLikeLabelReplica) {
@@ -2171,9 +2172,9 @@
       ? Math.max(0, Math.round(Number(expectedPlayerCount)))
       : 0;
     const labelCellHasMarks = hasMarkHints(labelCell, label);
-    const compositeLayoutHint = getDirectChildren(labelCell).length > 1;
 
-    if (!labelCellHasMarks && !compositeLayoutHint) {
+    // Include the label cell only when it actually carries mark hints.
+    if (!labelCellHasMarks) {
       return normalizedCells;
     }
 
@@ -2267,8 +2268,15 @@
         ) {
           return false;
         }
-        if (getNodeLabel(node)) {
-          return false;
+        const nodeLabel = getNodeLabel(node);
+        if (nodeLabel) {
+          const keepLabeledGridCell =
+            nodeLabel === label &&
+            isLikelyGridCellNode(node) &&
+            !labelNode.contains(node);
+          if (!keepLabeledGridCell) {
+            return false;
+          }
         }
 
         const rect = node.getBoundingClientRect();
