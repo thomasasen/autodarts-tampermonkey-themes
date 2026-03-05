@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autodarts Animate Cricket Grid FX
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
-// @version      1.1.7
+// @version      1.1.8
 // @description  Erweitert die Cricket-/Tactics-Zielmatrix um klare Live-Effekte für Treffer, Gefahr und Zugwechsel.
 // @xconfig-description  Macht wichtige Cricket-/Tactics-Zustände in der Zielmatrix schneller sichtbar und hält das Bild dabei gut lesbar.
 // @xconfig-title  Cricket-Grid-Effekte
@@ -28,7 +28,7 @@
   const shared = window.autodartsAnimationShared || {};
   const cricketState = window.autodartsCricketStateShared || null;
   const gameState = window.autodartsGameStateShared || null;
-  const SCRIPT_VERSION = "1.1.7";
+  const SCRIPT_VERSION = "1.1.8";
   const FEATURE_KEY = "ad-ext/a-cricket-grid-fx";
   const SOURCE_PATH = "Animation/Autodarts Animate Cricket Grid FX.user.js";
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
@@ -50,6 +50,14 @@
   const LABEL_CELL_CLASS = "ad-ext-crfx-label-cell";
   const BADGE_BEACON_CLASS = "ad-ext-crfx-badge-beacon";
   const BADGE_BURST_CLASS = "ad-ext-crfx-badge-burst";
+  const BADGE_STATE_NEUTRAL_CLASS = "ad-ext-crfx-badge-state-neutral";
+  const BADGE_STATE_OFFENSE_CLASS = "ad-ext-crfx-badge-state-offense";
+  const BADGE_STATE_DANGER_CLASS = "ad-ext-crfx-badge-state-danger";
+  const BADGE_STATE_DEAD_CLASS = "ad-ext-crfx-badge-state-dead";
+  const LABEL_STATE_NEUTRAL_CLASS = "ad-ext-crfx-label-state-neutral";
+  const LABEL_STATE_OFFENSE_CLASS = "ad-ext-crfx-label-state-offense";
+  const LABEL_STATE_DANGER_CLASS = "ad-ext-crfx-label-state-danger";
+  const LABEL_STATE_DEAD_CLASS = "ad-ext-crfx-label-state-dead";
   const MARK_PROGRESS_CLASS = "ad-ext-crfx-mark-progress";
   const MARK_L1_CLASS = "ad-ext-crfx-mark-l1";
   const MARK_L2_CLASS = "ad-ext-crfx-mark-l2";
@@ -481,6 +489,35 @@
     node.classList.toggle(className, Boolean(enabled));
   }
 
+  function resolveBadgeStateToken(presentation) {
+    const normalized = String(presentation || "").trim().toLowerCase();
+    if (normalized === "offense") {
+      return "offense";
+    }
+    if (normalized === "danger" || normalized === "pressure") {
+      return "danger";
+    }
+    if (normalized === "dead") {
+      return "dead";
+    }
+    return "neutral";
+  }
+
+  function syncStateTokenClass(node, classMap, stateToken) {
+    if (!node || !classMap || typeof classMap !== "object") {
+      return;
+    }
+    Object.values(classMap).forEach((className) => {
+      if (className) {
+        node.classList.remove(className);
+      }
+    });
+    const resolvedClassName = classMap[stateToken] || classMap.neutral || "";
+    if (resolvedClassName) {
+      node.classList.add(resolvedClassName);
+    }
+  }
+
   function isDomElement(node) {
     return Boolean(node && typeof node.querySelector === "function");
   }
@@ -603,10 +640,24 @@
       );
     });
     toArray(root.querySelectorAll(`.${BADGE_CLASS}`)).forEach((node) => {
-      node.classList.remove(BADGE_CLASS, BADGE_BEACON_CLASS, BADGE_BURST_CLASS);
+      node.classList.remove(
+        BADGE_CLASS,
+        BADGE_BEACON_CLASS,
+        BADGE_BURST_CLASS,
+        BADGE_STATE_NEUTRAL_CLASS,
+        BADGE_STATE_OFFENSE_CLASS,
+        BADGE_STATE_DANGER_CLASS,
+        BADGE_STATE_DEAD_CLASS
+      );
     });
     toArray(root.querySelectorAll(`.${LABEL_CELL_CLASS}`)).forEach((node) => {
-      node.classList.remove(LABEL_CELL_CLASS);
+      node.classList.remove(
+        LABEL_CELL_CLASS,
+        LABEL_STATE_NEUTRAL_CLASS,
+        LABEL_STATE_OFFENSE_CLASS,
+        LABEL_STATE_DANGER_CLASS,
+        LABEL_STATE_DEAD_CLASS
+      );
     });
     toArray(root.querySelectorAll(`.${MARK_PROGRESS_CLASS}`)).forEach((node) => {
       node.classList.remove(
@@ -760,6 +811,7 @@
         state.marksByLabel.get(row.label) ||
         new Array(snapshot.playerCount).fill(0);
       const prevRowState = state.rowStateByLabel.get(row.label) || null;
+      const badgeStateToken = resolveBadgeStateToken(targetState.presentation);
 
       row.playerCells.forEach((cell, index) => {
         const cellPresentation = readCellPresentation(targetState, index);
@@ -789,11 +841,31 @@
 
       if (row.labelCell) {
         syncClassState(row.labelCell, LABEL_CELL_CLASS, true);
+        syncStateTokenClass(
+          row.labelCell,
+          {
+            neutral: LABEL_STATE_NEUTRAL_CLASS,
+            offense: LABEL_STATE_OFFENSE_CLASS,
+            danger: LABEL_STATE_DANGER_CLASS,
+            dead: LABEL_STATE_DEAD_CLASS,
+          },
+          badgeStateToken
+        );
       }
 
       const badgeNode = getDecoratableBadgeNode(row);
       if (badgeNode) {
         syncClassState(badgeNode, BADGE_CLASS, true);
+        syncStateTokenClass(
+          badgeNode,
+          {
+            neutral: BADGE_STATE_NEUTRAL_CLASS,
+            offense: BADGE_STATE_OFFENSE_CLASS,
+            danger: BADGE_STATE_DANGER_CLASS,
+            dead: BADGE_STATE_DEAD_CLASS,
+          },
+          badgeStateToken
+        );
         syncClassState(
           badgeNode,
           BADGE_BEACON_CLASS,
@@ -876,8 +948,17 @@
   const dangerBandWeak = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.1));
   const waveMidColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.8));
   const waveEdgeColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.48));
+  const dangerWaveColor = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.48));
   const badgeBackColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.42));
   const badgeBorderColor = rgbaColor(offenseColor, clampAlpha(effectAlpha * 0.88));
+  const dangerBadgeBackColor = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.4));
+  const dangerBadgeBorderColor = rgbaColor(dangerColor, clampAlpha(effectAlpha * 0.9));
+  const neutralBadgeBackColor = "rgba(6, 58, 74, 0.72)";
+  const neutralBadgeBorderColor = "rgba(127, 214, 247, 0.4)";
+  const deadBadgeBackColor = "rgba(78, 85, 94, 0.48)";
+  const deadBadgeBorderColor = "rgba(195, 203, 214, 0.42)";
+  const neutralBadgeTextColor = "rgba(233, 247, 255, 0.92)";
+  const deadBadgeTextColor = "rgba(206, 214, 224, 0.8)";
   const markL1Color = rgbaColor(offenseColor, 0.62);
   const markL2Color = rgbaColor(offenseColor, 0.78);
   const markL3Color = rgbaColor(offenseColor, 0.92);
@@ -890,14 +971,49 @@
   const CSS = `
 .${ROOT_CLASS}{position:relative;isolation:isolate;}
 .${ROOT_CLASS} .${CELL_CLASS}{position:relative;overflow:visible;transition:filter .18s ease,opacity .18s ease,box-shadow .18s ease,background .18s ease;}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS},
+.${ROOT_CLASS} .${BADGE_CLASS}{
+  --ad-ext-crfx-badge-bg:${neutralBadgeBackColor};
+  --ad-ext-crfx-badge-border:${neutralBadgeBorderColor};
+  --ad-ext-crfx-badge-text:${neutralBadgeTextColor};
+  --ad-ext-crfx-badge-glow:${waveEdgeColor};
+}
 .${ROOT_CLASS} .${LABEL_CELL_CLASS}{position:relative;}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS}.${LABEL_STATE_NEUTRAL_CLASS},
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_STATE_NEUTRAL_CLASS}{
+  --ad-ext-crfx-badge-bg:${neutralBadgeBackColor};
+  --ad-ext-crfx-badge-border:${neutralBadgeBorderColor};
+  --ad-ext-crfx-badge-text:${neutralBadgeTextColor};
+  --ad-ext-crfx-badge-glow:${waveEdgeColor};
+}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS}.${LABEL_STATE_OFFENSE_CLASS},
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_STATE_OFFENSE_CLASS}{
+  --ad-ext-crfx-badge-bg:${badgeBackColor};
+  --ad-ext-crfx-badge-border:${badgeBorderColor};
+  --ad-ext-crfx-badge-text:#ffffff;
+  --ad-ext-crfx-badge-glow:${waveEdgeColor};
+}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS}.${LABEL_STATE_DANGER_CLASS},
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_STATE_DANGER_CLASS}{
+  --ad-ext-crfx-badge-bg:${dangerBadgeBackColor};
+  --ad-ext-crfx-badge-border:${dangerBadgeBorderColor};
+  --ad-ext-crfx-badge-text:#ffe5e5;
+  --ad-ext-crfx-badge-glow:${dangerWaveColor};
+}
+.${ROOT_CLASS} .${LABEL_CELL_CLASS}.${LABEL_STATE_DEAD_CLASS},
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_STATE_DEAD_CLASS}{
+  --ad-ext-crfx-badge-bg:${deadBadgeBackColor};
+  --ad-ext-crfx-badge-border:${deadBadgeBorderColor};
+  --ad-ext-crfx-badge-text:${deadBadgeTextColor};
+  --ad-ext-crfx-badge-glow:rgba(173, 181, 189, 0.36);
+}
 .${ROOT_CLASS} .${CELL_CLASS}.${THREAT_CLASS}{box-shadow:inset 0 0 0 1px ${dangerBorderColor},inset 0 0 28px ${dangerBandStrong};background-image:repeating-linear-gradient(135deg,${dangerBandStrong} 0px,${dangerBandStrong} 8px,${dangerBandWeak} 8px,${dangerBandWeak} 16px);}
 .${ROOT_CLASS} .${CELL_CLASS}.${SCORE_CLASS}{box-shadow:inset 0 0 0 1px ${scoreBorderColor};background-image:linear-gradient(90deg,${scoreBandStrong} 0%,${scoreBandWeak} 28%,${scoreBandWeak} 72%,${scoreBandStrong} 100%);}
 .${ROOT_CLASS} .${CELL_CLASS}.${DEAD_CLASS}{filter:grayscale(.88) saturate(.25) brightness(.72);opacity:.72;}
 .${ROOT_CLASS} .${CELL_CLASS}.${PRESSURE_CLASS}{box-shadow:inset 0 0 0 1px ${dangerBorderColor},inset 0 0 28px ${dangerBandStrong};background-image:repeating-linear-gradient(135deg,${dangerBandStrong} 0px,${dangerBandStrong} 8px,${dangerBandWeak} 8px,${dangerBandWeak} 16px);}
 .${ROOT_CLASS} .${ROW_WAVE_CLASS}{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(0,0,0,0) 0%,${waveEdgeColor} 42%,${waveMidColor} 52%,${waveEdgeColor} 62%,rgba(0,0,0,0) 100%);transform:translateX(-110%);animation:adCrfxRowWave .76s cubic-bezier(.2,.7,.2,1) forwards;z-index:6;}
-.${ROOT_CLASS} .${BADGE_CLASS}{position:absolute !important;left:8px !important;top:50% !important;transform:translateY(-50%);z-index:12;margin:0 !important;white-space:nowrap;pointer-events:none;}
-.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BEACON_CLASS}{box-shadow:0 0 0 1px ${badgeBorderColor},0 0 14px ${waveEdgeColor};background-color:${badgeBackColor}!important;}
+.${ROOT_CLASS} .${BADGE_CLASS}{position:absolute !important;left:8px !important;top:50% !important;transform:translateY(-50%);z-index:12;margin:0 !important;white-space:nowrap;pointer-events:none;color:var(--ad-ext-crfx-badge-text)!important;background-color:var(--ad-ext-crfx-badge-bg)!important;border:1px solid var(--ad-ext-crfx-badge-border);transition:color .16s ease,background-color .16s ease,border-color .16s ease,box-shadow .16s ease;}
+.${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BEACON_CLASS}{box-shadow:0 0 0 1px var(--ad-ext-crfx-badge-border),0 0 14px var(--ad-ext-crfx-badge-glow);}
 .${ROOT_CLASS} .${BADGE_CLASS}.${BADGE_BURST_CLASS}{animation:adCrfxBadgeBurst .7s ease;}
 .${ROOT_CLASS} .${MARK_PROGRESS_CLASS}{transform-origin:center center;animation:adCrfxMark .46s cubic-bezier(.2,.8,.2,1);}
 .${ROOT_CLASS} .${MARK_PROGRESS_CLASS}.${MARK_L1_CLASS}{filter:drop-shadow(0 0 4px ${markL1Color});}
