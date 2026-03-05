@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-slot-anchor-remap`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-cell-detection-fallback`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -1980,6 +1980,17 @@
   function sanitizePlayerCells(cells, labelNode, labelCell, expectedPlayerCount) {
     const seen = new Set();
     const filtered = [];
+    const rowLabel = getNodeLabel(labelNode);
+    const labelRect =
+      isElement(labelCell) && typeof labelCell.getBoundingClientRect === "function"
+        ? labelCell.getBoundingClientRect()
+        : null;
+    const labelCenterX =
+      labelRect &&
+      Number.isFinite(labelRect.left) &&
+      Number.isFinite(labelRect.width)
+        ? labelRect.left + labelRect.width / 2
+        : null;
 
     cells.forEach((cell) => {
       if (!isElement(cell) || seen.has(cell)) {
@@ -1990,8 +2001,35 @@
       if (cell === labelCell || cell.contains(labelNode)) {
         return;
       }
-      if (getNodeLabel(cell)) {
-        return;
+      const cellLabel = getNodeLabel(cell);
+      if (cellLabel) {
+        const cellRect =
+          typeof cell.getBoundingClientRect === "function"
+            ? cell.getBoundingClientRect()
+            : null;
+        const cellCenterX =
+          cellRect &&
+          Number.isFinite(cellRect.left) &&
+          Number.isFinite(cellRect.width)
+            ? cellRect.left + cellRect.width / 2
+            : null;
+        const nearLabelColumn =
+          Number.isFinite(labelCenterX) && Number.isFinite(cellCenterX)
+            ? Math.abs(cellCenterX - labelCenterX) <= Math.max(24, labelRect.width || 24)
+            : false;
+        const narrowLikeLabel =
+          cellRect && Number.isFinite(cellRect.width) && cellRect.width > 0
+            ? Number.isFinite(labelRect?.width) && labelRect.width > 0
+              ? cellRect.width <= labelRect.width * 1.35
+              : cellRect.width <= 72
+            : false;
+        const looksLikeLabelReplica =
+          cellLabel === rowLabel &&
+          !hasMarkHints(cell, rowLabel) &&
+          (nearLabelColumn || narrowLikeLabel);
+        if (looksLikeLabelReplica) {
+          return;
+        }
       }
       filtered.push(cell);
     });
@@ -2074,6 +2112,29 @@
     }
 
     return readMarksFromText(buildCellText(node, rowLabel)) !== null;
+  }
+
+  function isLikelyGridCellNode(node) {
+    if (!isElement(node) || isIgnoredDecorationElement(node)) {
+      return false;
+    }
+
+    const role = readNodeAttribute(node, "role").toLowerCase();
+    const testId = readNodeAttribute(node, "data-testid").toLowerCase();
+    const className = readNodeAttribute(node, "class").toLowerCase();
+    const tagName = String(node.tagName || "").toLowerCase();
+
+    if (role === "cell" || tagName === "td" || tagName === "th") {
+      return true;
+    }
+    if (testId.includes("cell")) {
+      return true;
+    }
+    if (className.includes("cell") || className.includes("chakra")) {
+      return true;
+    }
+
+    return false;
   }
 
   function mergeUniqueElements(...collections) {
@@ -2161,6 +2222,14 @@
         rowElement.querySelectorAll("[role='cell'], td, .cell, [class*='cell']")
       );
     }
+    if (expectedPlayerCount && playerCells.length < expectedPlayerCount) {
+      const nestedCandidates = toArray(
+        rowElement.querySelectorAll(
+          "[role='cell'], td, th, .cell, [class*='cell'], [data-testid*='cell'], [class*='chakra']"
+        )
+      ).filter((cell) => !isIgnoredDecorationElement(cell));
+      playerCells = mergeUniqueElements(playerCells, nestedCandidates);
+    }
 
     return {
       labelCell,
@@ -2215,7 +2284,11 @@
           return false;
         }
 
-        return hasMarkHints(node, label) || rect.width >= 28;
+        return (
+          hasMarkHints(node, label) ||
+          isLikelyGridCellNode(node) ||
+          rect.width >= 28
+        );
       }
     );
 
