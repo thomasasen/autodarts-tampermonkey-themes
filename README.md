@@ -1,4 +1,4 @@
-# Autodarts Tampermonkey Themes & Effekte
+﻿# Autodarts Tampermonkey Themes & Effekte
 
 > Rein visuelle Erweiterungen für Autodarts: bessere Lesbarkeit, klarere Hinweise und optionale Effekte. Keine Änderung an Spiellogik, Scores oder Erkennung.
 
@@ -65,9 +65,9 @@ Zusatz: Die Option `Debug` ist in vielen Modulen vorhanden und nur für Fehlersu
   Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
 - `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
   Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
-- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40 / 25 / 10` (Standard: `25`).
   Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
-- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+- `Spielerfelder-Transparenz`: Presets `0 / 5 / 10 / 15 / 30 / 45 / 60` (Standard: `10`).
   Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
 - `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
   Vorteil: Danach greift wieder der originale Theme-Hintergrund.
@@ -102,9 +102,9 @@ DartsZoom-Vorschau:
   Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
 - `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
   Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
-- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40 / 25 / 10` (Standard: `25`).
   Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
-- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+- `Spielerfelder-Transparenz`: Presets `0 / 5 / 10 / 15 / 30 / 45 / 60` (Standard: `10`).
   Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
 - `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
   Vorteil: Danach greift wieder der originale Theme-Hintergrund.
@@ -132,9 +132,9 @@ DartsZoom-Vorschau:
   Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
 - `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
   Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
-- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40 / 25 / 10` (Standard: `25`).
   Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
-- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+- `Spielerfelder-Transparenz`: Presets `0 / 5 / 10 / 15 / 30 / 45 / 60` (Standard: `10`).
   Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
 - `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
   Vorteil: Danach greift wieder der originale Theme-Hintergrund.
@@ -165,9 +165,9 @@ DartsZoom-Vorschau:
   Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
 - `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
   Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
-- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40 / 25 / 10` (Standard: `25`).
   Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
-- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+- `Spielerfelder-Transparenz`: Presets `0 / 5 / 10 / 15 / 30 / 45 / 60` (Standard: `10`).
   Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
 - `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
   Vorteil: Danach greift wieder der originale Theme-Hintergrund.
@@ -197,9 +197,9 @@ DartsZoom-Vorschau:
   Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
 - `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
   Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
-- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40 / 25 / 10` (Standard: `25`).
   Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
-- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+- `Spielerfelder-Transparenz`: Presets `0 / 5 / 10 / 15 / 30 / 45 / 60` (Standard: `10`).
   Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
 - `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
   Vorteil: Danach greift wieder der originale Theme-Hintergrund.
@@ -718,3 +718,4 @@ Die Themes basieren auf der [inventwo-Stylebot-Sammlung](https://github.com/inve
 
 Nutzung auf eigene Verantwortung.
 Änderungen an [play.autodarts.io](https://play.autodarts.io) können Skript-Updates erforderlich machen.
+

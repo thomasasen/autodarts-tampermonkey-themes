@@ -1,4 +1,4 @@
-# Technische Referenz
+﻿# Technische Referenz
 
 > Technische Detaildokumentation zu allen Themes und Animationen (Variablen, Selektoren, Trigger, CSS-Blöcke, Fallbacks).
 
@@ -120,8 +120,8 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert für X01 ein oder aus.
 - Kombination: Wenn `Aus` gesetzt ist, wird auch der Trendpfeil aus `Autodarts Animate Average Trend Arrow` ausgeblendet.
 - `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
-- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
-- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40/25/10`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/5/10/15/30/45/60`; reduziert nur Kartenhintergründe.
 - `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
 - `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
@@ -132,8 +132,8 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 | `SOURCE_PATH`                   | `Template/Autodarts Theme X01.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.                         |
 | `xConfig_AVG_ANZEIGE`           | `true`                       | `true` zeigt den AVG normal an, `false` blendet AVG und Trendpfeil aus.                                               |
 | `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`                     | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                                              |
-| `xConfig_HINTERGRUND_OPAZITAET` | `85`                         | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                         |
-| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                       | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                                |
+| `xConfig_HINTERGRUND_OPAZITAET` | `25`                         | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                         |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `10`                       | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                                |
 | `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                                                        |
 | `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                                                     |
 | `PREVIEW_PLACEMENT`             | `under-throws`               | Position der DartsZoom-Vorschau: `standard` (Standardplatz) oder `under-throws` (unter den Würfen).                   |
@@ -199,8 +199,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Shanghai-Theme ein oder aus.
 - Kombination: Bei `Aus` wird zusätzlich der Trendpfeil (`Autodarts Animate Average Trend Arrow`) verborgen.
 - `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
-- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
-- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40/25/10`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/5/10/15/30/45/60`; reduziert nur Kartenhintergründe.
 - `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
 - `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
@@ -211,8 +211,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `SOURCE_PATH`         | `Template/Autodarts Theme Shanghai.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen. |
 | `xConfig_AVG_ANZEIGE` | `true`                            | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                     |
 | `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`               | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).           |
-| `xConfig_HINTERGRUND_OPAZITAET` | `85`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                      |
-| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.             |
+| `xConfig_HINTERGRUND_OPAZITAET` | `25`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                      |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `10`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.             |
 | `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.             |
 | `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.          |
 | `PREVIEW_PLACEMENT`   | `under-throws`                    | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                  |
@@ -262,8 +262,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 **AD xConfig-Einstellungen (empfohlen)**
 
 - `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
-- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
-- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40/25/10`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/5/10/15/30/45/60`; reduziert nur Kartenhintergründe.
 - `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
 - `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
@@ -273,8 +273,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `VARIANT_NAME`        | `bermuda`                        | Basisname der Variante, an dem geprüft wird.                                         |
 | `SOURCE_PATH`         | `Template/Autodarts Theme Bermuda.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen. |
 | `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`              | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).             |
-| `xConfig_HINTERGRUND_OPAZITAET` | `85`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                        |
-| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.               |
+| `xConfig_HINTERGRUND_OPAZITAET` | `25`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                        |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `10`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.               |
 | `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.           |
 | `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.        |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                     |
@@ -328,8 +328,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-/Tactics-Theme ein oder aus.
 - Kombination: Bei `Aus` wird auch der Trendpfeil (`Autodarts Animate Average Trend Arrow`) ausgeblendet.
 - `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
-- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
-- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40/25/10`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/5/10/15/30/45/60`; reduziert nur Kartenhintergründe.
 - `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
 - `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
@@ -340,8 +340,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `SOURCE_PATH`         | `Template/Autodarts Theme Cricket.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.                 |
 | `xConfig_AVG_ANZEIGE` | `true`                           | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                                                    |
 | `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`              | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                                          |
-| `xConfig_HINTERGRUND_OPAZITAET` | `85`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                    |
-| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                           |
+| `xConfig_HINTERGRUND_OPAZITAET` | `25`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                    |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `10`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                           |
 | `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                                       |
 | `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                                    |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                                 |
@@ -395,8 +395,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `Sanft` ist ruhiger, `Standard` entspricht dem bisherigen Look, `Kräftig` hebt Kontraste deutlich stärker hervor.
 - Das Preset ändert nur die Intensität, nicht Layout oder Positionen.
 - `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
-- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
-- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40/25/10`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/5/10/15/30/45/60`; reduziert nur Kartenhintergründe.
 - `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
 - `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
@@ -407,8 +407,8 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `SOURCE_PATH`         | `Template/Autodarts Theme Bull-off.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.     |
 | `xConfig_KONTRAST_PRESET` | `standard`                    | Preset für Kontrast-Intensität: `soft`, `standard`, `high` (sichtbar als Sanft/Standard/Kräftig). |
 | `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`               | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                            |
-| `xConfig_HINTERGRUND_OPAZITAET` | `85`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                      |
-| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                             |
+| `xConfig_HINTERGRUND_OPAZITAET` | `25`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                      |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `10`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                             |
 | `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                         |
 | `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                      |
 | `PREVIEW_PLACEMENT`   | `standard`                        | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                  |
@@ -1511,5 +1511,6 @@ Ergebnis: Ohne die Freigabe aus Q209 gibt es keinen AD xConfig-Menüpunkt, keine
 - Aktivieren/Deaktivieren und Konfigurieren über AD xConfig bleibt unverändert möglich.
 - Speziell bei temporären GitHub-API-Limits führt der Sync nicht mehr sofort zu einem Totalausfall.
 - `Autodarts Animate Cricket Grid FX.user.js` bleibt dadurch auch unter Rate-Limit-Bedingungen in der Regel steuerbar.
+
 
 

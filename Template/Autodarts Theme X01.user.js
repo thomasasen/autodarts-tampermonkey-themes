@@ -42,11 +42,11 @@
 	// xConfig: {"type":"select","label":"Hintergrund-Darstellung","description":"Legt fest, wie das hochgeladene Hintergrundbild angezeigt wird.","options":[{"value":"fill","label":"Füllen (Cover)"},{"value":"fit","label":"Einpassen (Contain)"},{"value":"stretch","label":"Strecken"},{"value":"center","label":"Zentriert"},{"value":"tile","label":"Kacheln"}]}
 	const xConfig_HINTERGRUND_DARSTELLUNG = "fill";
 
-	// xConfig: {"type":"select","label":"Hintergrundbild-Deckkraft","description":"Steuert die Sichtbarkeit des hochgeladenen Hintergrundbilds.","options":[{"value":100,"label":"100% (voll sichtbar)"},{"value":85,"label":"85%"},{"value":70,"label":"70%"},{"value":55,"label":"55%"},{"value":40,"label":"40%"}]}
-	const xConfig_HINTERGRUND_OPAZITAET = 85;
+	// xConfig: {"type":"select","label":"Hintergrundbild-Deckkraft","description":"Steuert die Sichtbarkeit des hochgeladenen Hintergrundbilds.","options":[{"value":100,"label":"100% (voll sichtbar)"},{"value":85,"label":"85%"},{"value":70,"label":"70%"},{"value":55,"label":"55%"},{"value":40,"label":"40%"},{"value":25,"label":"25%"},{"value":10,"label":"10%"}]}
+	const xConfig_HINTERGRUND_OPAZITAET = 25;
 
-	// xConfig: {"type":"select","label":"Spielerfelder-Transparenz","description":"Regelt, wie transparent die Spielerfelder dargestellt werden (Texte bleiben unverändert).","options":[{"value":0,"label":"0% (keine Transparenz)"},{"value":15,"label":"15%"},{"value":30,"label":"30%"},{"value":45,"label":"45%"},{"value":60,"label":"60%"}]}
-	const xConfig_SPIELERFELD_TRANSPARENZ = 30;
+	// xConfig: {"type":"select","label":"Spielerfelder-Transparenz","description":"Regelt, wie transparent die Spielerfelder dargestellt werden (Texte bleiben unverändert).","options":[{"value":0,"label":"0% (keine Transparenz)"},{"value":5,"label":"5%"},{"value":10,"label":"10%"},{"value":15,"label":"15%"},{"value":30,"label":"30%"},{"value":45,"label":"45%"},{"value":60,"label":"60%"}]}
+	const xConfig_SPIELERFELD_TRANSPARENZ = 10;
 
 	// xConfig: {"type":"action","label":"Hintergrundbild hochladen","description":"Wählt ein eigenes Hintergrundbild für dieses Theme. Das Bild wird komprimiert und persistent gespeichert.","action":"theme-background-upload","buttonLabel":"Bild hochladen"}
 	const xConfig_HINTERGRUND_BILD_HOCHLADEN = "theme-background-upload";
