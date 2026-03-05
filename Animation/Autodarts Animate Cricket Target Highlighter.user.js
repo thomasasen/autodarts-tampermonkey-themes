@@ -132,7 +132,7 @@
   const EXPECTED_SHARED_MODULE_ID = "autodarts-cricket-state-shared";
   const EXPECTED_SHARED_API_VERSION = 2;
   const EXPECTED_SHARED_BUILD_SIGNATURE =
-    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-debug-mark-lines`;
+    `${EXPECTED_SHARED_MODULE_ID}@${EXPECTED_SHARED_API_VERSION}:2026-03-slot-anchor-remap`;
 
   const animationShared = window.autodartsAnimationShared || {};
   const cricketStateShared = window.autodartsCricketStateShared || null;
@@ -1386,6 +1386,7 @@
           .map((entry) =>
             [
               Number.isFinite(entry?.columnIndex) ? entry.columnIndex : "?",
+              entry?.rowSlotMappingMethod || "direct",
               entry?.source || "none",
               Number.isFinite(entry?.initialMarks) ? entry.initialMarks : 0,
               Number.isFinite(entry?.finalMarks) ? entry.finalMarks : 0,
@@ -1396,6 +1397,9 @@
           .map((entry) =>
             [
               Number.isFinite(entry?.columnIndex) ? entry.columnIndex : "?",
+              Number.isFinite(entry?.cellCenterX)
+                ? Math.round(entry.cellCenterX)
+                : "na",
               String(entry?.raw || "").replace(/\s+/g, " ").trim().slice(0, 40),
             ].join(":")
           )

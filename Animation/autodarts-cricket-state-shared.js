@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-debug-mark-lines`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-slot-anchor-remap`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -541,6 +541,141 @@
         return first.index - second.index;
       })
       .map((entry) => entry.element);
+  }
+
+  function getElementCenterX(element) {
+    if (!isElement(element) || typeof element.getBoundingClientRect !== "function") {
+      return null;
+    }
+    const rect = element.getBoundingClientRect();
+    if (
+      !Number.isFinite(rect.left) ||
+      !Number.isFinite(rect.width) ||
+      rect.width <= 0
+    ) {
+      return null;
+    }
+    return rect.left + rect.width / 2;
+  }
+
+  function collectPlayerColumnAnchorCenters(rows, playerCount) {
+    const resolvedCount = Number.isFinite(playerCount)
+      ? Math.max(0, Math.round(playerCount))
+      : 0;
+    if (!(resolvedCount > 0) || !Array.isArray(rows) || !rows.length) {
+      return [];
+    }
+
+    const samplesByColumn = Array.from({ length: resolvedCount }, () => []);
+    rows.forEach((row) => {
+      const cells = sortElementsByVisualOrder(
+        (Array.isArray(row?.playerCells) ? row.playerCells : []).filter((cell) =>
+          isElement(cell)
+        )
+      );
+      if (cells.length < 2) {
+        return;
+      }
+      const limit = Math.min(resolvedCount, cells.length);
+      for (let index = 0; index < limit; index += 1) {
+        const centerX = getElementCenterX(cells[index]);
+        if (Number.isFinite(centerX)) {
+          samplesByColumn[index].push(centerX);
+        }
+      }
+    });
+
+    return samplesByColumn.map((samples) => {
+      if (!samples.length) {
+        return null;
+      }
+      const total = samples.reduce((sum, value) => sum + value, 0);
+      return total / samples.length;
+    });
+  }
+
+  function resolveNearestPlayerColumnIndex(cell, columnAnchors) {
+    const centerX = getElementCenterX(cell);
+    if (!Number.isFinite(centerX) || !Array.isArray(columnAnchors)) {
+      return null;
+    }
+
+    let bestIndex = null;
+    let bestDelta = Infinity;
+    columnAnchors.forEach((anchor, index) => {
+      if (!Number.isFinite(anchor)) {
+        return;
+      }
+      const delta = Math.abs(centerX - anchor);
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        bestIndex = index;
+      }
+    });
+    return Number.isFinite(bestIndex) ? bestIndex : null;
+  }
+
+  function mapRowCellsToPlayerSlots(rowCells, playerCount, columnAnchors) {
+    const resolvedCount = Number.isFinite(playerCount)
+      ? Math.max(0, Math.round(playerCount))
+      : 0;
+    if (!(resolvedCount > 0)) {
+      return [];
+    }
+
+    const orderedCells = sortElementsByVisualOrder(
+      (Array.isArray(rowCells) ? rowCells : []).filter((cell) => isElement(cell))
+    );
+    if (!orderedCells.length) {
+      return new Array(resolvedCount).fill(null);
+    }
+    if (orderedCells.length >= resolvedCount) {
+      return orderedCells.slice(0, resolvedCount);
+    }
+
+    const slots = new Array(resolvedCount).fill(null);
+    orderedCells.forEach((cell, fallbackIndex) => {
+      const nearestIndex = resolveNearestPlayerColumnIndex(cell, columnAnchors);
+      const targetIndex = Number.isFinite(nearestIndex)
+        ? nearestIndex
+        : Math.min(fallbackIndex, resolvedCount - 1);
+      if (!(targetIndex >= 0 && targetIndex < resolvedCount)) {
+        return;
+      }
+      if (!slots[targetIndex]) {
+        slots[targetIndex] = cell;
+        return;
+      }
+
+      const anchor = Array.isArray(columnAnchors)
+        ? columnAnchors[targetIndex]
+        : null;
+      const existingCenter = getElementCenterX(slots[targetIndex]);
+      const nextCenter = getElementCenterX(cell);
+      const existingDelta = Number.isFinite(anchor) && Number.isFinite(existingCenter)
+        ? Math.abs(existingCenter - anchor)
+        : Infinity;
+      const nextDelta = Number.isFinite(anchor) && Number.isFinite(nextCenter)
+        ? Math.abs(nextCenter - anchor)
+        : Infinity;
+
+      if (nextDelta < existingDelta) {
+        const displaced = slots[targetIndex];
+        slots[targetIndex] = cell;
+        const emptyIndex = slots.findIndex((entry) => !entry);
+        if (emptyIndex >= 0) {
+          slots[emptyIndex] = displaced;
+        }
+        return;
+      }
+
+      const emptyIndex = slots.findIndex((entry) => !entry);
+      if (emptyIndex >= 0) {
+        slots[emptyIndex] = cell;
+      }
+    });
+
+    return slots;
   }
 
   function normalizeIdentityKey(value) {
@@ -3081,14 +3216,39 @@
       playerMappingSource: playerMapping.playerMappingSource,
     });
 
+    const playerColumnAnchors = collectPlayerColumnAnchorCenters(
+      parsedRows.rows,
+      playerCount
+    );
+    if (
+      debugLog &&
+      Array.isArray(playerColumnAnchors) &&
+      playerColumnAnchors.some((value) => Number.isFinite(value))
+    ) {
+      debugTrace(debugLog, "buildGridSnapshot: player-column-anchors", {
+        anchors: playerColumnAnchors,
+        playerCount,
+      });
+    }
+
     const rows = parsedRows.rows
       .filter((row) => targetSet.has(row.label))
       .map((row) => {
-        const playerCells = row.playerCells.slice(0, playerCount);
+        const rawPlayerCells = mapRowCellsToPlayerSlots(
+          row.playerCells,
+          playerCount,
+          playerColumnAnchors
+        );
+        const playerCells = rawPlayerCells.slice(0, playerCount);
         const marksByPlayer = [];
         const markReadMeta = [];
+        const rowSlotMappingMethod =
+          Array.isArray(row?.playerCells) && row.playerCells.length < playerCount
+            ? "anchor-remap"
+            : "direct";
         for (let index = 0; index < playerCount; index += 1) {
           if (debugLog) {
+            const cellCenterX = getElementCenterX(playerCells[index]);
             const readDetail = readMarksWithMeta(playerCells[index], row.label);
             marksByPlayer.push(readDetail.marks);
             markReadMeta.push({
@@ -3096,10 +3256,12 @@
               source: readDetail.source || "",
               raw: readDetail.raw || "",
               initialMarks: readDetail.marks,
+              rowSlotMappingMethod,
               iconCount: Number.isFinite(readDetail.iconCount)
                 ? readDetail.iconCount
                 : 0,
               hasCell: isElement(playerCells[index]),
+              cellCenterX: Number.isFinite(cellCenterX) ? cellCenterX : null,
               cellClass:
                 isElement(playerCells[index]) &&
                 typeof playerCells[index].getAttribute === "function"
