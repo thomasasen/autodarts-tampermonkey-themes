@@ -468,7 +468,7 @@
             helper.__moduleId === "autodarts-cricket-state-shared" &&
             helper.__apiVersion === 2 &&
             helper.__buildSignature ===
-              "autodarts-cricket-state-shared@2:2026-03-turn-preview-active-baseline",
+              "autodarts-cricket-state-shared@2:2026-03-aria-mark-guard",
           "Shared helper exposes moduleId, apiVersion and buildSignature for runtime compatibility checks",
           helper
             ? JSON.stringify({
@@ -1017,6 +1017,45 @@
             ? JSON.stringify({
                 twenty: case22.snapshot.rows.find((row) => row.label === "20").marksByPlayer,
                 nineteen: case22.snapshot.rows.find((row) => row.label === "19").marksByPlayer,
+              })
+            : "snapshot=null"
+        );
+
+        const case22bRoot = buildLinearRoot(
+          TACTICS_TARGETS,
+          createUniformMarkSets(TACTICS_TARGETS, function (label) {
+            if (label === "19") {
+              return [0, 3];
+            }
+            return [0, 0];
+          })
+        );
+        const case22bRowIndex = TACTICS_TARGETS.indexOf("19");
+        if (case22bRowIndex >= 0) {
+          const case22bOpponentCell = case22bRoot.children[case22bRowIndex * 3 + 1];
+          if (case22bOpponentCell) {
+            case22bOpponentCell.setAttribute("aria-label", "closed lane warning");
+          }
+        }
+        const case22b = buildState(
+          case22bRoot,
+          2,
+          1,
+          "standard",
+          "Tactics"
+        );
+        assert(
+          case22b.snapshot &&
+            case22b.snapshot.rows.find((row) => row.label === "19").marksByPlayer.join(",") === "0,3" &&
+            case22b.states.get("19").presentation === "offense" &&
+            readCellPresentations(case22b, "19").join(",") === "pressure,offense",
+          "Generic aria-label text with \"closed\" must not override real marks and suppress offense",
+          case22b.snapshot
+            ? JSON.stringify({
+                nineteenMarks: case22b.snapshot.rows.find((row) => row.label === "19")
+                  .marksByPlayer,
+                nineteen: case22b.states.get("19"),
+                nineteenCells: readCellPresentations(case22b, "19"),
               })
             : "snapshot=null"
         );

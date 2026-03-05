@@ -11,7 +11,7 @@
   const MODULE_ID = "autodarts-cricket-state-shared";
   const API_VERSION = 2;
   const BUILD_SIGNATURE =
-    `${MODULE_ID}@${API_VERSION}:2026-03-turn-preview-active-baseline`;
+    `${MODULE_ID}@${API_VERSION}:2026-03-aria-mark-guard`;
   const CRICKET_TARGET_ORDER = ["20", "19", "18", "17", "16", "15", "BULL"];
   const TACTICS_TARGET_ORDER = [
     "20",
@@ -1295,15 +1295,16 @@
     };
   }
 
-  function parseMarkString(value) {
+  function parseMarkString(value, options = {}) {
+    const allowStateWords = options.allowStateWords !== false;
     const text = String(value || "").trim().toLowerCase();
     if (!text) {
       return null;
     }
-    if (text.includes("closed")) {
+    if (allowStateWords && text.includes("closed")) {
       return 3;
     }
-    if (text.includes("open")) {
+    if (allowStateWords && text.includes("open")) {
       return 0;
     }
 
@@ -1316,20 +1317,30 @@
       return null;
     }
 
-    const keys = [
+    const dataKeys = [
       "data-marks",
       "data-mark",
       "data-hits",
       "data-hit",
       "data-value",
       "data-count",
+    ];
+    const descriptiveKeys = [
       "aria-label",
       "title",
       "alt",
     ];
 
-    for (const key of keys) {
+    for (const key of dataKeys) {
       const parsed = parseMarkString(element.getAttribute(key));
+      if (parsed !== null) {
+        return clampMark(parsed);
+      }
+    }
+    for (const key of descriptiveKeys) {
+      const parsed = parseMarkString(element.getAttribute(key), {
+        allowStateWords: false,
+      });
       if (parsed !== null) {
         return clampMark(parsed);
       }
