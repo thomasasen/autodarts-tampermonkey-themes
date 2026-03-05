@@ -268,6 +268,18 @@ div.css-y3hfdd > .css-1igwmid{
 .css-1emway5 { grid-column: 1 / 3; }
 `;
 
+  const THEME_BACKGROUND_ASSETS_STORAGE_KEY = "ad-xconfig:theme-background-assets:v1";
+  const THEME_BACKGROUND_UPDATED_EVENT_NAME = "ad-xconfig:theme-background-updated";
+  const THEME_FEATURE_ID_BY_SOURCE = Object.freeze({
+    "template/autodarts theme x01.user.js": "theme-x01",
+    "template/autodarts theme shanghai.user.js": "theme-shanghai",
+    "template/autodarts theme bermuda.user.js": "theme-bermuda",
+    "template/autodarts theme cricket.user.js": "theme-cricket",
+    "template/autodarts theme bull-off.user.js": "theme-bull-off",
+  });
+  let cachedBackgroundAssetsRaw = null;
+  let cachedBackgroundAssetsMap = {};
+
   function getVariantName() {
     const variantEl = document.getElementById("ad-ext-game-variant");
     return variantEl?.textContent?.trim().toLowerCase() || "";
@@ -367,18 +379,226 @@ div.css-y3hfdd > .css-1igwmid{
     return parts.filter(Boolean).join("");
   }
 
+  function normalizeSourcePath(pathValue) {
+    return String(pathValue || "")
+      .replaceAll("\\", "/")
+      .replace(/^\/+/, "")
+      .trim();
+  }
+
+  function clampNumber(value, minValue, maxValue, fallbackValue) {
+    const numeric = Number(value);
+    const resolved = Number.isFinite(numeric) ? numeric : fallbackValue;
+    if (resolved < minValue) {
+      return minValue;
+    }
+    if (resolved > maxValue) {
+      return maxValue;
+    }
+    return resolved;
+  }
+
+  function readThemeBackgroundAssetMap() {
+    let rawValue = "";
+    try {
+      rawValue = String(localStorage.getItem(THEME_BACKGROUND_ASSETS_STORAGE_KEY) || "");
+    } catch (_) {
+      return cachedBackgroundAssetsMap;
+    }
+
+    if (rawValue === cachedBackgroundAssetsRaw) {
+      return cachedBackgroundAssetsMap;
+    }
+
+    cachedBackgroundAssetsRaw = rawValue;
+    if (!rawValue) {
+      cachedBackgroundAssetsMap = {};
+      return cachedBackgroundAssetsMap;
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      const assetsSource = parsed && typeof parsed === "object" && parsed.assets && typeof parsed.assets === "object"
+        ? parsed.assets
+        : {};
+      const normalizedAssets = {};
+
+      Object.keys(assetsSource).forEach((featureId) => {
+        const normalizedFeatureId = String(featureId || "").trim();
+        if (!normalizedFeatureId) {
+          return;
+        }
+
+        const entry = assetsSource[featureId];
+        const dataUrl = String(entry?.dataUrl || "").trim();
+        if (!dataUrl || !dataUrl.startsWith("data:image/")) {
+          return;
+        }
+
+        normalizedAssets[normalizedFeatureId] = {
+          dataUrl,
+          mimeType: String(entry?.mimeType || "").trim() || "image/webp",
+          width: Math.max(1, Math.trunc(clampNumber(entry?.width, 1, 16384, 1))),
+          height: Math.max(1, Math.trunc(clampNumber(entry?.height, 1, 16384, 1))),
+          sizeBytes: Math.max(0, Math.trunc(clampNumber(entry?.sizeBytes, 0, 20 * 1024 * 1024, 0))),
+          updatedAt: String(entry?.updatedAt || "").trim() || null,
+        };
+      });
+
+      cachedBackgroundAssetsMap = normalizedAssets;
+      return cachedBackgroundAssetsMap;
+    } catch (_) {
+      cachedBackgroundAssetsMap = {};
+      return cachedBackgroundAssetsMap;
+    }
+  }
+
+  function resolveThemeFeatureId(options = {}) {
+    const runtimeApi = global.__adXConfigRuntime;
+    const sourcePath = normalizeSourcePath(options.featureSourcePath || "");
+    const sourcePathLower = sourcePath.toLowerCase();
+    const featureIdHint = String(options.featureId || "").trim();
+
+    if (runtimeApi && typeof runtimeApi.resolveFeatureId === "function") {
+      if (featureIdHint) {
+        const resolvedFromHint = String(runtimeApi.resolveFeatureId(featureIdHint) || "").trim();
+        if (resolvedFromHint) {
+          return resolvedFromHint;
+        }
+      }
+      if (sourcePath) {
+        const resolvedFromSource = String(runtimeApi.resolveFeatureId(sourcePath) || "").trim();
+        if (resolvedFromSource) {
+          return resolvedFromSource;
+        }
+      }
+    }
+
+    if (featureIdHint) {
+      return featureIdHint;
+    }
+
+    if (sourcePathLower && Object.prototype.hasOwnProperty.call(THEME_FEATURE_ID_BY_SOURCE, sourcePathLower)) {
+      return THEME_FEATURE_ID_BY_SOURCE[sourcePathLower];
+    }
+
+    return "";
+  }
+
+  function normalizeBackgroundDisplayMode(modeValue) {
+    const normalized = String(modeValue || "").trim().toLowerCase();
+    if (["fill", "fit", "stretch", "center", "tile"].includes(normalized)) {
+      return normalized;
+    }
+    return "fill";
+  }
+
+  function getBackgroundModeCss(modeValue) {
+    const mode = normalizeBackgroundDisplayMode(modeValue);
+    if (mode === "fit") {
+      return {
+        size: "contain",
+        position: "center center",
+        repeat: "no-repeat",
+      };
+    }
+    if (mode === "stretch") {
+      return {
+        size: "100% 100%",
+        position: "center center",
+        repeat: "no-repeat",
+      };
+    }
+    if (mode === "center") {
+      return {
+        size: "auto",
+        position: "center center",
+        repeat: "no-repeat",
+      };
+    }
+    if (mode === "tile") {
+      return {
+        size: "auto",
+        position: "left top",
+        repeat: "repeat",
+      };
+    }
+    return {
+      size: "cover",
+      position: "center center",
+      repeat: "no-repeat",
+    };
+  }
+
+  function escapeCssUrl(urlValue) {
+    return String(urlValue || "")
+      .replaceAll("\\", "\\\\")
+      .replaceAll("\"", "\\\"")
+      .replaceAll("\n", "")
+      .replaceAll("\r", "");
+  }
+
+  function buildThemeVisualSettingsCss(options = {}) {
+    const featureId = resolveThemeFeatureId(options);
+    const backgroundAssets = readThemeBackgroundAssetMap();
+    const backgroundEntry = featureId ? backgroundAssets[featureId] : null;
+    const hasBackgroundImage = Boolean(backgroundEntry && typeof backgroundEntry.dataUrl === "string" && backgroundEntry.dataUrl.startsWith("data:image/"));
+    const displayModeCss = getBackgroundModeCss(options.backgroundDisplayMode);
+    const opacityPercent = clampNumber(options.backgroundOpacity, 0, 100, 100);
+    const overlayAlpha = clampNumber((100 - opacityPercent) / 100, 0, 1, 0);
+    const playerTransparencyPercent = clampNumber(options.playerFieldTransparency, 0, 95, 0);
+    const playerFieldAlpha = clampNumber((100 - playerTransparencyPercent) / 100, 0.05, 1, 1);
+    const playerFieldCss = `
+#ad-ext-player-display .ad-ext-player,
+#ad-ext-player-display .ad-ext-player.ad-ext-player-active,
+#ad-ext-player-display .ad-ext-player.ad-ext-player-inactive,
+#ad-ext-player-display .ad-ext-player.ad-ext-player-winner {
+  background: rgba(8, 12, 24, ${playerFieldAlpha.toFixed(3)}) !important;
+}
+
+#ad-ext-player-display .ad-ext-player > .chakra-stack {
+  background: transparent !important;
+}
+`;
+
+    if (!hasBackgroundImage) {
+      return playerFieldCss;
+    }
+
+    const escapedDataUrl = escapeCssUrl(backgroundEntry.dataUrl);
+    const backgroundCss = `
+div.css-gmuwbf,
+div.css-tkevr6,
+div.css-nfhdnc {
+  background-color: #06080d !important;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, ${overlayAlpha.toFixed(3)}), rgba(0, 0, 0, ${overlayAlpha.toFixed(3)})),
+    url("${escapedDataUrl}") !important;
+  background-size: ${displayModeCss.size} !important;
+  background-position: ${displayModeCss.position} !important;
+  background-repeat: ${displayModeCss.repeat} !important;
+}
+`;
+
+    return joinCss(backgroundCss, playerFieldCss);
+  }
+
   function createCssBuilder(options = {}) {
     const {
       fallbackThemeCss = "",
       fallbackLayoutCss = "",
       extraCss = "",
+      visualSettingsCss = "",
     } = options;
 
     return () => {
       const design = global.autodartsDesign;
       const themeCss = design?.themeCommonCss ?? fallbackThemeCss;
       const layoutCss = design?.layoutCommonCss ?? fallbackLayoutCss;
-      return joinCss(themeCss, layoutCss, extraCss);
+      const resolvedVisualSettingsCss = typeof visualSettingsCss === "function"
+        ? visualSettingsCss()
+        : visualSettingsCss;
+      return joinCss(themeCss, layoutCss, extraCss, resolvedVisualSettingsCss);
     };
   }
 
@@ -739,6 +959,14 @@ div.css-y3hfdd > .css-1igwmid{
       });
     }
 
+    function handleThemeBackgroundUpdated(event) {
+      if (destroyed) {
+        return;
+      }
+
+      scheduleEvaluation();
+    }
+
     evaluateAndApply();
 
     const observer = new MutationObserver((mutations) => {
@@ -777,10 +1005,12 @@ div.css-y3hfdd > .css-1igwmid{
       lastUrl = currentUrl;
       scheduleEvaluation();
     }, 1000);
+    window.addEventListener(THEME_BACKGROUND_UPDATED_EVENT_NAME, handleThemeBackgroundUpdated);
     return function disposeThemeAttachment() {
       destroyed = true;
       observer.disconnect();
       clearInterval(locationTimer);
+      window.removeEventListener(THEME_BACKGROUND_UPDATED_EVENT_NAME, handleThemeBackgroundUpdated);
       removeStyle();
     };
   }
@@ -792,6 +1022,7 @@ div.css-y3hfdd > .css-1igwmid{
     isVariantNameActive,
     joinCss,
     createCssBuilder,
+    buildThemeVisualSettingsCss,
     initPreviewPlacement,
     attachTheme,
   };

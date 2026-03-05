@@ -51,6 +51,40 @@ Diese Skripte verändern Layout und Farben und aktivieren sich automatisch je Sp
 - Die Template-Skripte laden den Helfer per `@require`, du musst ihn nicht separat installieren.
 - URL: [autodarts-theme-shared.js](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Template/autodarts-theme-shared.js)
 - Wenn du das Repo forkst oder lokale Dateien nutzt, passe die `@require`-URL im Skript an.
+- Enthält die gemeinsame Visual-Settings-Pipeline für Hintergrundbilder und Spielerfeld-Transparenz aller Template-Themes.
+
+**Theme-Hintergrund-Assets (persistente Daten)**
+
+- Storage-Key: `ad-xconfig:theme-background-assets:v1`
+- Struktur: Map `assets[featureId] -> { dataUrl, mimeType, width, height, sizeBytes, updatedAt }`
+- Scope: strikt theme-spezifisch über `featureId` (`theme-x01`, `theme-shanghai`, `theme-bermuda`, `theme-cricket`, `theme-bull-off`)
+
+**Upload-/Clear-Contract (AD xConfig Actions)**
+
+- `theme-background-upload`: Öffnet Dateiauswahl (`image/*`), normalisiert und komprimiert clientseitig.
+- `theme-background-clear`: Entfernt das gespeicherte Bild nur für das aktuelle Theme.
+- Runtime-Event nach beiden Aktionen: `ad-xconfig:theme-background-updated` mit `{ featureId, hasImage, updatedAt }`.
+
+**Upload-Verarbeitung**
+
+- Max. lange Kante: `1920px`
+- Export: bevorzugt `image/webp`, Fallback `image/jpeg`
+- Zielgröße: max. `600 KB` pro Theme-Bild (`THEME_BACKGROUND_MAX_ENCODED_BYTES`)
+- Bei Fehlern (invalid image, quota/size) bleibt der bisher gespeicherte Zustand unverändert.
+
+**Darstellungs-Mapping (xConfig -> CSS)**
+
+- `fill` -> `background-size: cover`
+- `fit` -> `background-size: contain`
+- `stretch` -> `background-size: 100% 100%`
+- `center` -> zentriert, nicht wiederholt
+- `tile` -> wiederholt (`background-repeat: repeat`)
+
+**Deckkraft und Transparenz**
+
+- Hintergrundbild-Deckkraft wird über ein Overlay (`linear-gradient(...alpha...)`) geregelt, nicht über globale Container-`opacity`.
+- Spielerfeld-Transparenz wird ausschließlich per `background: rgba(...)` auf die Karten gelegt.
+- Wichtig: Text-Deckkraft bleibt erhalten; Namen/Scores werden nicht transparent gerendert.
 
 Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert ist, wird kein Platz reserviert.
 
@@ -85,12 +119,23 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert für X01 ein oder aus.
 - Kombination: Wenn `Aus` gesetzt ist, wird auch der Trendpfeil aus `Autodarts Animate Average Trend Arrow` ausgeblendet.
+- `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
+- `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
 | Variable                        | Standard                     | Wirkung                                                                                                               |
 | :------------------------------ | :--------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`                      | `autodarts-x01-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleiben alte Styles bis zum Reload aktiv.                                  |
 | `VARIANT_NAME`                  | `x01`                        | Name der Spielvariante, bei der das Theme aktiv wird.                                                                 |
+| `SOURCE_PATH`                   | `Template/Autodarts Theme X01.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.                         |
 | `xConfig_AVG_ANZEIGE`           | `true`                       | `true` zeigt den AVG normal an, `false` blendet AVG und Trendpfeil aus.                                               |
+| `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`                     | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                                              |
+| `xConfig_HINTERGRUND_OPAZITAET` | `85`                         | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                         |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                       | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                                |
+| `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                                                        |
+| `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                                                     |
 | `PREVIEW_PLACEMENT`             | `under-throws`               | Position der DartsZoom-Vorschau: `standard` (Standardplatz) oder `under-throws` (unter den Würfen).                   |
 | `PREVIEW_HEIGHT_PX`             | `128`                        | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                                      |
 | `PREVIEW_GAP_PX`                | `8`                          | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                                      |
@@ -104,6 +149,7 @@ Hinweis: Wenn die DartsZoom-Vorschau in den "Tools für Autodarts" deaktiviert i
 | `INACTIVE_STAT_SCALE`           | `0.6`                        | Skalierung der Stats bei inaktiven Spielern.                                                                          |
 | `fallbackThemeCss`              | CSS-Block                    | Fallback-Farben und Typografie, falls der Shared Helper nicht lädt.                                                   |
 | `fallbackLayoutCss`             | CSS-Block                    | Fallback-Layout/Grid, falls der Shared Helper nicht lädt.                                                             |
+| `visualSettingsCss`             | Funktionsaufruf              | Hängt die gemeinsamen Visual-Regeln für Hintergrundbild + Spielerfeld-Transparenz an das Theme-CSS an.              |
 | `x01LayoutOverrides`            | CSS-Block                    | X01-spezifische Layout-Regeln (z.B. Score/Player/Grid); nur ändern, wenn du das X01-Layout bewusst anpassen möchtest. |
 | `navigationOverride`            | CSS-Block                    | Erzwingt die dunkle Navigation in X01, auch wenn andere Styles aktiv sind.                                            |
 
@@ -152,18 +198,30 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Shanghai-Theme ein oder aus.
 - Kombination: Bei `Aus` wird zusätzlich der Trendpfeil (`Autodarts Animate Average Trend Arrow`) verborgen.
+- `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
+- `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
 | Variable              | Standard                          | Wirkung                                                                           |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-shanghai-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv. |
 | `VARIANT_NAME`        | `shanghai`                        | Name der Spielvariante, bei der das Theme aktiv wird.                             |
+| `SOURCE_PATH`         | `Template/Autodarts Theme Shanghai.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen. |
 | `xConfig_AVG_ANZEIGE` | `true`                            | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                     |
+| `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`               | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).           |
+| `xConfig_HINTERGRUND_OPAZITAET` | `85`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                      |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.             |
+| `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.             |
+| `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.          |
 | `PREVIEW_PLACEMENT`   | `under-throws`                    | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                  |
 | `PREVIEW_HEIGHT_PX`   | `128`                             | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                  |
 | `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                  |
 | `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`       | CSS-Klasse für den reservierten Platz (für eigenes Styling).                      |
 | `fallbackThemeCss`    | `commonThemeCss`                  | Fallback-Farben und Typografie aus dem Shared Helper.                             |
 | `fallbackLayoutCss`   | `commonLayoutCss`                 | Fallback-Layout/Grid aus dem Shared Helper.                                       |
+| `visualSettingsCss`   | Funktionsaufruf                   | Hängt die gemeinsamen Visual-Regeln für Hintergrundbild + Spielerfeld-Transparenz an das Theme-CSS an. |
 
 ##### 🖼️ Beispiele/Screenshots
 
@@ -201,10 +259,24 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 ##### ⚙️ Konfiguration (Variablen)
 
+**AD xConfig-Einstellungen (empfohlen)**
+
+- `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
+- `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
+
 | Variable              | Standard                         | Wirkung                                                                              |
 | :-------------------- | :------------------------------- | :----------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-bermuda-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.    |
 | `VARIANT_NAME`        | `bermuda`                        | Basisname der Variante, an dem geprüft wird.                                         |
+| `SOURCE_PATH`         | `Template/Autodarts Theme Bermuda.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen. |
+| `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`              | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).             |
+| `xConfig_HINTERGRUND_OPAZITAET` | `85`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                        |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.               |
+| `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.           |
+| `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.        |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                     |
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                     |
 | `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                     |
@@ -212,6 +284,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `matchMode`           | `includes`                       | Aktiviert das Theme, wenn der Varianten-Text `bermuda` enthält (z.B. `bermuda-pro`). |
 | `fallbackThemeCss`    | `commonThemeCss`                 | Fallback-Farben und Typografie aus dem Shared Helper.                                |
 | `fallbackLayoutCss`   | `commonLayoutCss`                | Fallback-Layout/Grid aus dem Shared Helper.                                          |
+| `visualSettingsCss`   | Funktionsaufruf                  | Hängt die gemeinsamen Visual-Regeln für Hintergrundbild + Spielerfeld-Transparenz an das Theme-CSS an. |
 
 ##### 🖼️ Beispiele/Screenshots
 
@@ -254,17 +327,29 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 
 - `xConfig_AVG_ANZEIGE`: Blendet den AVG-Wert im Cricket-/Tactics-Theme ein oder aus.
 - Kombination: Bei `Aus` wird auch der Trendpfeil (`Autodarts Animate Average Trend Arrow`) ausgeblendet.
+- `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
+- `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
 | Variable              | Standard                         | Wirkung                                                                                                          |
 | :-------------------- | :------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-cricket-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                                |
 | `VARIANT_NAME`        | `cricket`                        | Basis-Variantename; die Aktivierung erweitert `cricket` im Shared Helper automatisch auf die sichtbaren Modi `Cricket` und `Tactics`. |
+| `SOURCE_PATH`         | `Template/Autodarts Theme Cricket.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.                 |
 | `xConfig_AVG_ANZEIGE` | `true`                           | `true` zeigt den AVG, `false` blendet AVG und Trendpfeil aus.                                                    |
+| `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`              | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                                          |
+| `xConfig_HINTERGRUND_OPAZITAET` | `85`                   | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                                    |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                 | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                                           |
+| `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                                       |
+| `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                                    |
 | `PREVIEW_PLACEMENT`   | `under-throws`                   | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                                 |
 | `PREVIEW_HEIGHT_PX`   | `128`                            | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                                 |
 | `PREVIEW_GAP_PX`      | `8`                              | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                                 |
 | `PREVIEW_SPACE_CLASS` | `ad-ext-turn-preview-space`      | CSS-Klasse für den reservierten Platz (für eigenes Styling).                                                     |
 | `customCss`           | CSS-Block                        | CSS-Block für Cricket; oben im Block stehen `--theme-...` Variablen für Farben, darunter Layout-/Abstandsregeln. |
+| `buildThemeVisualSettingsCss(...)` | Helper-Aufruf       | Ergänzt Hintergrundbild- und Spielerfeld-Transparenz zur bestehenden `customCss`-Ausgabe.                       |
 
 ##### 🖼️ Beispiele/Screenshots
 
@@ -309,12 +394,23 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 - `xConfig_KONTRAST_PRESET`: Regelt, wie deutlich Kontraste, Konturen und Glow-Effekte im Bull-off-Theme sichtbar sind.
 - `Sanft` ist ruhiger, `Standard` entspricht dem bisherigen Look, `Kräftig` hebt Kontraste deutlich stärker hervor.
 - Das Preset ändert nur die Intensität, nicht Layout oder Positionen.
+- `xConfig_HINTERGRUND_DARSTELLUNG`: Steuert die Bilddarstellung (`fill`, `fit`, `stretch`, `center`, `tile`).
+- `xConfig_HINTERGRUND_OPAZITAET`: Presets `100/85/70/55/40`; wirkt nur auf das Hintergrundbild.
+- `xConfig_SPIELERFELD_TRANSPARENZ`: Presets `0/15/30/45/60`; reduziert nur Kartenhintergründe.
+- `xConfig_HINTERGRUND_BILD_HOCHLADEN`: Action `theme-background-upload` (pro Theme persistent gespeichert).
+- `xConfig_HINTERGRUND_BILD_ENTFERNEN`: Action `theme-background-clear` (Fallback auf Standard-Hintergrund).
 
 | Variable              | Standard                          | Wirkung                                                                                             |
 | :-------------------- | :-------------------------------- | :-------------------------------------------------------------------------------------------------- |
 | `STYLE_ID`            | `autodarts-bull-off-custom-style` | Eindeutige ID des Style-Tags; bei Änderung bleibt altes CSS bis zum Reload aktiv.                 |
 | `VARIANT_NAME`        | `bull-off`                        | Basisname der Variante, an dem geprüft wird.                                                       |
+| `SOURCE_PATH`         | `Template/Autodarts Theme Bull-off.user.js` | Wird genutzt, um das korrekte Theme-`featureId` für Hintergrund-Assets aufzulösen.     |
 | `xConfig_KONTRAST_PRESET` | `standard`                    | Preset für Kontrast-Intensität: `soft`, `standard`, `high` (sichtbar als Sanft/Standard/Kräftig). |
+| `xConfig_HINTERGRUND_DARSTELLUNG` | `fill`               | Mapping auf CSS-Hintergrundmodus (`cover/contain/stretch/center/tile`).                            |
+| `xConfig_HINTERGRUND_OPAZITAET` | `85`                    | Regelt die Sichtbarkeit des Custom-Bildes über Overlay-Alpha.                                      |
+| `xConfig_SPIELERFELD_TRANSPARENZ` | `30`                  | Reduziert Kartenhintergründe via RGBA ohne Text-Opacity zu verändern.                             |
+| `xConfig_HINTERGRUND_BILD_HOCHLADEN` | `theme-background-upload` | Reservierte Action zum Upload und Speichern des Theme-Bildes.                         |
+| `xConfig_HINTERGRUND_BILD_ENTFERNEN` | `theme-background-clear` | Reservierte Action zum Entfernen des gespeicherten Theme-Bildes.                      |
 | `PREVIEW_PLACEMENT`   | `standard`                        | Position der DartsZoom-Vorschau: `standard` oder `under-throws`.                                  |
 | `PREVIEW_HEIGHT_PX`   | `128`                             | Reservierte Höhe der Vorschau in Pixeln; beeinflusst das Layout.                                  |
 | `PREVIEW_GAP_PX`      | `8`                               | Abstand zwischen Wurfbox und Vorschau in Pixeln.                                                   |
@@ -322,6 +418,7 @@ DartsZoom-Vorschau (PREVIEW_PLACEMENT):
 | `matchMode`           | `includes`                        | Aktiviert das Theme, wenn der Varianten-Text `bull-off` enthält.                                  |
 | `fallbackThemeCss`    | `commonThemeCss`                  | Fallback-Farben und Typografie aus dem Shared Helper.                                              |
 | `fallbackLayoutCss`   | `commonLayoutCss`                 | Fallback-Layout/Grid aus dem Shared Helper.                                                        |
+| `visualSettingsCss`   | Funktionsaufruf                   | Hängt die gemeinsamen Visual-Regeln für Hintergrundbild + Spielerfeld-Transparenz an das Theme-CSS an. |
 | `bullOffCss`          | CSS-Block                         | Bull-off-spezifische Farben und UI-Regeln (Variant-Badge, Spielerkarten, Throw-Boxen, Board-Rahmen). |
 
 ##### 🖼️ Beispiele/Screenshots

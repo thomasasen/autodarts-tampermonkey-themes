@@ -61,6 +61,16 @@ Zusatz: Die Option `Debug` ist in vielen Modulen vorhanden und nur für Fehlersu
 
 - `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
   Vorteil: Mit `An` siehst du deinen Formtrend sofort, mit `Aus` wirkt das Layout ruhiger.
+- `Hintergrundbild hochladen`: Wählt ein eigenes Bild für dieses Theme.
+  Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
+- `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
+  Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+  Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
+- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+  Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
+- `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
+  Vorteil: Danach greift wieder der originale Theme-Hintergrund.
 
 **Vorschau**
 
@@ -88,6 +98,16 @@ DartsZoom-Vorschau:
 
 - `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
   Vorteil: Du kannst Shanghai je nach Geschmack zwischen „mehr Infos“ und „mehr Ruhe“ umschalten.
+- `Hintergrundbild hochladen`: Wählt ein eigenes Bild für dieses Theme.
+  Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
+- `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
+  Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+  Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
+- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+  Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
+- `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
+  Vorteil: Danach greift wieder der originale Theme-Hintergrund.
 
 **Vorschau**
 
@@ -108,8 +128,16 @@ DartsZoom-Vorschau:
 
 **Einstellungen einfach erklärt**
 
-- Keine zusätzlichen Einstellungen.
-  Vorteil: Das Theme ist sofort startklar und braucht kein Feintuning.
+- `Hintergrundbild hochladen`: Wählt ein eigenes Bild für dieses Theme.
+  Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
+- `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
+  Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+  Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
+- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+  Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
+- `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
+  Vorteil: Danach greift wieder der originale Theme-Hintergrund.
 
 **Vorschau**
 
@@ -133,6 +161,16 @@ DartsZoom-Vorschau:
 
 - `AVG anzeigen`: Blendet die AVG-Anzeige ein oder aus.
   Vorteil: Mit `An` behältst du deinen Schnitt im Blick, mit `Aus` wirkt die Ansicht aufgeräumter.
+- `Hintergrundbild hochladen`: Wählt ein eigenes Bild für dieses Theme.
+  Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
+- `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
+  Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+  Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
+- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+  Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
+- `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
+  Vorteil: Danach greift wieder der originale Theme-Hintergrund.
 
 **Vorschau**
 
@@ -155,6 +193,16 @@ DartsZoom-Vorschau:
 
 - `Kontrast-Preset`: Steuert, wie kräftig die Kontraste im Bull-off-Theme sind (`Sanft`, `Standard`, `Kräftig`).
   Vorteil: Du kannst die Sichtbarkeit schnell an Monitor, Abstand und Raumlicht anpassen.
+- `Hintergrundbild hochladen`: Wählt ein eigenes Bild für dieses Theme.
+  Vorteil: Das Bild wird komprimiert gespeichert und bleibt pro Theme nach Reload erhalten.
+- `Hintergrund-Darstellung`: `Füllen`, `Einpassen`, `Strecken`, `Zentriert`, `Kacheln`.
+  Vorteil: Verhalten wie bei Desktop-Hintergründen (ähnlich Windows).
+- `Hintergrundbild-Deckkraft`: Presets `100 / 85 / 70 / 55 / 40`.
+  Vorteil: Reduziert nur die Bildintensität, nicht die Lesbarkeit der Texte.
+- `Spielerfelder-Transparenz`: Presets `0 / 15 / 30 / 45 / 60`.
+  Vorteil: Player-Karten werden transparenter, Text bleibt voll deckend.
+- `Hintergrundbild entfernen`: Löscht nur das gespeicherte Bild dieses Themes.
+  Vorteil: Danach greift wieder der originale Theme-Hintergrund.
 
 **Vorschau**
 

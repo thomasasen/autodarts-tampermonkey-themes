@@ -9,7 +9,7 @@
 // @xconfig-readme-anchor  template-autodarts-theme-x01
 // @xconfig-tech-anchor  template-autodarts-theme-x01
 // @xconfig-background     assets/template-theme-x01-xConfig.png
-// @xconfig-settings-version 3
+// @xconfig-settings-version 4
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -26,6 +26,7 @@
 	const {
 		attachTheme,
 		createCssBuilder,
+		buildThemeVisualSettingsCss,
 		commonThemeCss,
 		commonLayoutCss,
 		initPreviewPlacement
@@ -34,8 +35,24 @@
 	// Style tag identifier and expected variant name.
 	const STYLE_ID = "autodarts-x01-custom-style";
 	const VARIANT_NAME = "x01";
+	const SOURCE_PATH = "Template/Autodarts Theme X01.user.js";
 	// xConfig: {"type":"toggle","label":"AVG anzeigen","description":"Zeigt den AVG-Wert im Theme an oder blendet ihn aus.","options":[{"value":true,"label":"An"},{"value":false,"label":"Aus"}]}
 	const xConfig_AVG_ANZEIGE = true;
+
+	// xConfig: {"type":"select","label":"Hintergrund-Darstellung","description":"Legt fest, wie das hochgeladene Hintergrundbild angezeigt wird.","options":[{"value":"fill","label":"Füllen (Cover)"},{"value":"fit","label":"Einpassen (Contain)"},{"value":"stretch","label":"Strecken"},{"value":"center","label":"Zentriert"},{"value":"tile","label":"Kacheln"}]}
+	const xConfig_HINTERGRUND_DARSTELLUNG = "fill";
+
+	// xConfig: {"type":"select","label":"Hintergrundbild-Deckkraft","description":"Steuert die Sichtbarkeit des hochgeladenen Hintergrundbilds.","options":[{"value":100,"label":"100% (voll sichtbar)"},{"value":85,"label":"85%"},{"value":70,"label":"70%"},{"value":55,"label":"55%"},{"value":40,"label":"40%"}]}
+	const xConfig_HINTERGRUND_OPAZITAET = 85;
+
+	// xConfig: {"type":"select","label":"Spielerfelder-Transparenz","description":"Regelt, wie transparent die Spielerfelder dargestellt werden (Texte bleiben unverändert).","options":[{"value":0,"label":"0% (keine Transparenz)"},{"value":15,"label":"15%"},{"value":30,"label":"30%"},{"value":45,"label":"45%"},{"value":60,"label":"60%"}]}
+	const xConfig_SPIELERFELD_TRANSPARENZ = 30;
+
+	// xConfig: {"type":"action","label":"Hintergrundbild hochladen","description":"Wählt ein eigenes Hintergrundbild für dieses Theme. Das Bild wird komprimiert und persistent gespeichert.","action":"theme-background-upload","buttonLabel":"Bild hochladen"}
+	const xConfig_HINTERGRUND_BILD_HOCHLADEN = "theme-background-upload";
+
+	// xConfig: {"type":"action","label":"Hintergrundbild entfernen","description":"Entfernt das gespeicherte Hintergrundbild für dieses Theme.","action":"theme-background-clear","buttonLabel":"Bild entfernen"}
+	const xConfig_HINTERGRUND_BILD_ENTFERNEN = "theme-background-clear";
 
 	// xConfig: {"type":"toggle","label":"Debug","description":"Nur bei Fehlersuche aktivieren. Zeigt zusätzliche Hinweise in der Browser-Konsole.","options":[{"value":false,"label":"Aus"},{"value":true,"label":"An"}]}
 	const xConfig_DEBUG = false;
@@ -215,7 +232,13 @@ span.chakra-badge.css-1c4630i {
 	const buildCss = createCssBuilder({
 		fallbackThemeCss: commonThemeCss,
 		fallbackLayoutCss: commonLayoutCss,
-		extraCss: navigationOverride + previewPlacementCss + avgVisibilityCss + statsSizingCss + x01LayoutOverrides
+		extraCss: navigationOverride + previewPlacementCss + avgVisibilityCss + statsSizingCss + x01LayoutOverrides,
+		visualSettingsCss: () => buildThemeVisualSettingsCss({
+			featureSourcePath: SOURCE_PATH,
+			backgroundDisplayMode: xConfig_HINTERGRUND_DARSTELLUNG,
+			backgroundOpacity: xConfig_HINTERGRUND_OPAZITAET,
+			playerFieldTransparency: xConfig_SPIELERFELD_TRANSPARENZ
+		})
 	});
 
 	attachTheme({styleId: STYLE_ID, variantName: VARIANT_NAME, buildCss});

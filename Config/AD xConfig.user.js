@@ -35,6 +35,10 @@
   const CONFIG_VERSION = 7;
   const MODULE_CACHE_STORAGE_KEY = "ad-xconfig:module-cache:v1";
   const MANAGED_SOURCE_INDEX_STORAGE_KEY = "ad-xconfig:managed-source-index:v1";
+  const THEME_BACKGROUND_ASSETS_STORAGE_KEY = "ad-xconfig:theme-background-assets:v1";
+  const THEME_BACKGROUND_ASSETS_VERSION = 1;
+  const THEME_BACKGROUND_MAX_LONG_EDGE_PX = 1920;
+  const THEME_BACKGROUND_MAX_ENCODED_BYTES = 600 * 1024;
   const MODULE_CACHE_VERSION = 1;
   const LOADER_MODE = "xconfig-authoritative";
   const CONFIG_PATH = "/ad-xconfig";
@@ -57,6 +61,9 @@
   const RUNTIME_GLOBAL_KEY = "__adXConfigRuntime";
   const RUNTIME_EVENT_NAME = "ad-xconfig:changed";
   const SETTING_ACTION_EVENT_NAME = "ad-xconfig:setting-action";
+  const THEME_BACKGROUND_UPDATED_EVENT_NAME = "ad-xconfig:theme-background-updated";
+  const THEME_BACKGROUND_UPLOAD_ACTION_NAME = "theme-background-upload";
+  const THEME_BACKGROUND_CLEAR_ACTION_NAME = "theme-background-clear";
   const HOT_RELOAD_FALLBACK_GUARD_KEY =
     "ad-xconfig:hot-reload-fallback-once";
   const RUNTIME_CLEANUP_INTERVAL_MS = 450;
@@ -312,6 +319,306 @@
     } catch (_) {
       return text;
     }
+  }
+
+  function toFiniteNumber(value, fallbackValue) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallbackValue;
+  }
+
+  function clampNumber(value, minValue, maxValue) {
+    const numeric = toFiniteNumber(value, minValue);
+    if (numeric < minValue) {
+      return minValue;
+    }
+    if (numeric > maxValue) {
+      return maxValue;
+    }
+    return numeric;
+  }
+
+  function createEmptyThemeBackgroundAssetsStore() {
+    return {
+      version: THEME_BACKGROUND_ASSETS_VERSION,
+      updatedAt: null,
+      assets: {},
+    };
+  }
+
+  function normalizeThemeBackgroundAssetEntry(rawEntry) {
+    if (!rawEntry || typeof rawEntry !== "object") {
+      return null;
+    }
+
+    const dataUrl = String(rawEntry.dataUrl || "").trim();
+    if (!dataUrl || !dataUrl.startsWith("data:image/")) {
+      return null;
+    }
+
+    const mimeType = String(rawEntry.mimeType || "").trim() || "image/webp";
+    const width = Math.max(1, Math.trunc(clampNumber(rawEntry.width, 1, 16384)));
+    const height = Math.max(1, Math.trunc(clampNumber(rawEntry.height, 1, 16384)));
+    const sizeBytes = Math.max(0, Math.trunc(clampNumber(rawEntry.sizeBytes, 0, 20 * 1024 * 1024)));
+    const updatedAt = String(rawEntry.updatedAt || "").trim() || null;
+
+    return {
+      dataUrl,
+      mimeType,
+      width,
+      height,
+      sizeBytes,
+      updatedAt,
+    };
+  }
+
+  function normalizeThemeBackgroundAssetsStore(rawStore) {
+    const source = rawStore && typeof rawStore === "object" ? rawStore : {};
+    const assetsSource = source.assets && typeof source.assets === "object" ? source.assets : {};
+    const normalizedAssets = {};
+
+    Object.keys(assetsSource).forEach((featureId) => {
+      const normalizedFeatureId = String(featureId || "").trim();
+      if (!normalizedFeatureId) {
+        return;
+      }
+
+      const normalizedEntry = normalizeThemeBackgroundAssetEntry(assetsSource[featureId]);
+      if (!normalizedEntry) {
+        return;
+      }
+      normalizedAssets[normalizedFeatureId] = normalizedEntry;
+    });
+
+    return {
+      version: THEME_BACKGROUND_ASSETS_VERSION,
+      updatedAt: String(source.updatedAt || "").trim() || null,
+      assets: normalizedAssets,
+    };
+  }
+
+  async function readThemeBackgroundAssetsStore() {
+    const rawValue = await readStore(THEME_BACKGROUND_ASSETS_STORAGE_KEY, null);
+    return normalizeThemeBackgroundAssetsStore(rawValue);
+  }
+
+  function dispatchThemeBackgroundUpdatedEvent(featureId, hasImage) {
+    const detail = {
+      featureId: String(featureId || ""),
+      hasImage: Boolean(hasImage),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (typeof window.CustomEvent === "function") {
+      window.dispatchEvent(new window.CustomEvent(THEME_BACKGROUND_UPDATED_EVENT_NAME, { detail }));
+      return;
+    }
+
+    const fallbackEvent = document.createEvent("CustomEvent");
+    fallbackEvent.initCustomEvent(THEME_BACKGROUND_UPDATED_EVENT_NAME, false, false, detail);
+    window.dispatchEvent(fallbackEvent);
+  }
+
+  function pickThemeBackgroundImageFile() {
+    return new Promise((resolve) => {
+      let settled = false;
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.style.top = "-9999px";
+
+      const finalize = (fileValue) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        window.clearTimeout(fallbackTimer);
+        input.removeEventListener("change", onChange);
+        input.remove();
+        resolve(fileValue || null);
+      };
+
+      const onChange = () => {
+        const fileValue = input.files && input.files.length ? input.files[0] : null;
+        finalize(fileValue || null);
+      };
+
+      const fallbackTimer = window.setTimeout(() => {
+        finalize(null);
+      }, 45000);
+
+      input.addEventListener("change", onChange, { once: true });
+      (document.body || document.documentElement).appendChild(input);
+      input.click();
+    });
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!(file instanceof File)) {
+        reject(new Error("Ungültige Bilddatei."));
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Bild konnte nicht geladen werden."));
+      };
+
+      image.src = objectUrl;
+    });
+  }
+
+  function computeScaledDimensions(width, height, maxLongEdge) {
+    const safeWidth = Math.max(1, Math.trunc(toFiniteNumber(width, 1)));
+    const safeHeight = Math.max(1, Math.trunc(toFiniteNumber(height, 1)));
+    const longEdge = Math.max(safeWidth, safeHeight);
+    if (longEdge <= maxLongEdge) {
+      return { width: safeWidth, height: safeHeight };
+    }
+
+    const scale = maxLongEdge / longEdge;
+    return {
+      width: Math.max(1, Math.round(safeWidth * scale)),
+      height: Math.max(1, Math.round(safeHeight * scale)),
+    };
+  }
+
+  function canEncodeCanvasMimeType(canvas, mimeType) {
+    try {
+      const probe = canvas.toDataURL(mimeType, 0.8);
+      return typeof probe === "string" && probe.startsWith(`data:${mimeType}`);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function encodeCanvasToDataUrl(canvas, mimeType, qualityValue) {
+    return new Promise((resolve, reject) => {
+      const quality = clampNumber(qualityValue, 0.2, 0.95);
+
+      const toResultFromBlob = (blob) => {
+        if (!blob) {
+          reject(new Error(`Bildkonvertierung fehlgeschlagen (${mimeType}).`));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || "");
+          if (!dataUrl.startsWith("data:image/")) {
+            reject(new Error("Ungültiges Konvertierungsergebnis."));
+            return;
+          }
+          resolve({
+            dataUrl,
+            sizeBytes: Number(blob.size || 0),
+            mimeType,
+          });
+        };
+        reader.onerror = () => {
+          reject(new Error("Bilddaten konnten nicht gelesen werden."));
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      if (typeof canvas.toBlob === "function") {
+        canvas.toBlob(toResultFromBlob, mimeType, quality);
+        return;
+      }
+
+      try {
+        const dataUrl = canvas.toDataURL(mimeType, quality);
+        if (!dataUrl.startsWith("data:image/")) {
+          reject(new Error(`Browser kann ${mimeType} nicht exportieren.`));
+          return;
+        }
+        const base64 = dataUrl.split(",")[1] || "";
+        const sizeBytes = Math.floor((base64.length * 3) / 4);
+        resolve({
+          dataUrl,
+          sizeBytes,
+          mimeType,
+        });
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
+  async function normalizeThemeBackgroundFile(file) {
+    if (!(file instanceof File)) {
+      throw new Error("Keine gültige Datei ausgewählt.");
+    }
+
+    const mimeType = String(file.type || "").toLowerCase();
+    if (!mimeType.startsWith("image/")) {
+      throw new Error("Bitte eine Bilddatei auswählen.");
+    }
+
+    const image = await loadImageFromFile(file);
+    const targetSize = computeScaledDimensions(
+      image.naturalWidth,
+      image.naturalHeight,
+      THEME_BACKGROUND_MAX_LONG_EDGE_PX,
+    );
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetSize.width;
+    canvas.height = targetSize.height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas-Kontext konnte nicht erzeugt werden.");
+    }
+    context.drawImage(image, 0, 0, targetSize.width, targetSize.height);
+
+    const preferredEncodings = [];
+    if (canEncodeCanvasMimeType(canvas, "image/webp")) {
+      preferredEncodings.push({
+        mimeType: "image/webp",
+        qualities: [0.88, 0.8, 0.72, 0.64, 0.56, 0.48, 0.4, 0.32],
+      });
+    }
+    preferredEncodings.push({
+      mimeType: "image/jpeg",
+      qualities: [0.9, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42, 0.34],
+    });
+
+    const attempts = [];
+    for (const encoding of preferredEncodings) {
+      for (const quality of encoding.qualities) {
+        const encoded = await encodeCanvasToDataUrl(canvas, encoding.mimeType, quality);
+        attempts.push({
+          ...encoded,
+          quality,
+        });
+        if (encoded.sizeBytes <= THEME_BACKGROUND_MAX_ENCODED_BYTES) {
+          return {
+            dataUrl: encoded.dataUrl,
+            mimeType: encoded.mimeType,
+            width: targetSize.width,
+            height: targetSize.height,
+            sizeBytes: encoded.sizeBytes,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      }
+    }
+
+    const smallestAttempt = attempts.sort((left, right) => left.sizeBytes - right.sizeBytes)[0] || null;
+    if (smallestAttempt) {
+      throw new Error(`Bild ist zu groß. Maximal ${Math.round(THEME_BACKGROUND_MAX_ENCODED_BYTES / 1024)} KB, aktuell ${Math.round(smallestAttempt.sizeBytes / 1024)} KB.`);
+    }
+
+    throw new Error("Bild konnte nicht verarbeitet werden.");
   }
 
   function getFeatureSourcePathById(featureId) {
@@ -3565,6 +3872,74 @@
     }
   }
 
+  async function writeStoreStrict(key, value, options = {}) {
+    const requireLocalStorage = normalizeBooleanSettingValue(options.requireLocalStorage) === true;
+    let wroteAtLeastOneTarget = false;
+    let wroteLocalStorage = false;
+    let lastError = null;
+
+    try {
+      if (typeof GM_setValue === "function") {
+        await toPromise(GM_setValue(key, value));
+        wroteAtLeastOneTarget = true;
+      }
+    } catch (error) {
+      lastError = error;
+      debugWarn("AD xConfig: GM_setValue failed (strict mode)", error);
+    }
+
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      wroteAtLeastOneTarget = true;
+      wroteLocalStorage = true;
+    } catch (error) {
+      lastError = error;
+      debugWarn("AD xConfig: localStorage write failed (strict mode)", error);
+    }
+
+    if (requireLocalStorage && !wroteLocalStorage) {
+      throw lastError instanceof Error ? lastError : new Error("Speichern fehlgeschlagen.");
+    }
+
+    if (!wroteAtLeastOneTarget) {
+      throw lastError instanceof Error ? lastError : new Error("Speichern fehlgeschlagen.");
+    }
+  }
+
+  async function saveThemeBackgroundAsset(featureId, assetEntry) {
+    const normalizedFeatureId = String(featureId || "").trim();
+    const normalizedEntry = normalizeThemeBackgroundAssetEntry(assetEntry);
+    if (!normalizedFeatureId || !normalizedEntry) {
+      throw new Error("Ungültiger Theme-Background-Datensatz.");
+    }
+
+    const store = await readThemeBackgroundAssetsStore();
+    store.assets[normalizedFeatureId] = {
+      ...normalizedEntry,
+      updatedAt: new Date().toISOString(),
+    };
+    store.updatedAt = new Date().toISOString();
+    await writeStoreStrict(THEME_BACKGROUND_ASSETS_STORAGE_KEY, store, { requireLocalStorage: true });
+    return store.assets[normalizedFeatureId];
+  }
+
+  async function removeThemeBackgroundAsset(featureId) {
+    const normalizedFeatureId = String(featureId || "").trim();
+    if (!normalizedFeatureId) {
+      return false;
+    }
+
+    const store = await readThemeBackgroundAssetsStore();
+    if (!Object.prototype.hasOwnProperty.call(store.assets, normalizedFeatureId)) {
+      return false;
+    }
+
+    delete store.assets[normalizedFeatureId];
+    store.updatedAt = new Date().toISOString();
+    await writeStoreStrict(THEME_BACKGROUND_ASSETS_STORAGE_KEY, store, { requireLocalStorage: true });
+    return true;
+  }
+
   async function loadConfig() {
     const stored = await readStore(STORAGE_KEY, null);
     let parsed = stored;
@@ -4842,6 +5217,55 @@
     });
   }
 
+  function isThemeBackgroundReservedAction(actionName) {
+    return actionName === THEME_BACKGROUND_UPLOAD_ACTION_NAME
+      || actionName === THEME_BACKGROUND_CLEAR_ACTION_NAME;
+  }
+
+  async function handleThemeBackgroundReservedAction(feature, actionName) {
+    const featureTitle = String(feature?.title || feature?.id || "Theme");
+    const featureId = String(feature?.id || "").trim();
+    if (!featureId) {
+      setNotice("error", `${featureTitle}: Aktion konnte nicht ausgeführt werden.`);
+      return;
+    }
+
+    if (actionName === THEME_BACKGROUND_UPLOAD_ACTION_NAME) {
+      const pickedFile = await pickThemeBackgroundImageFile();
+      if (!pickedFile) {
+        return;
+      }
+
+      try {
+        const normalizedAsset = await normalizeThemeBackgroundFile(pickedFile);
+        const savedAsset = await saveThemeBackgroundAsset(featureId, normalizedAsset);
+        dispatchThemeBackgroundUpdatedEvent(featureId, true);
+        renderPanel();
+        setNotice("success", `${featureTitle}: Hintergrundbild gespeichert (${Math.round(savedAsset.sizeBytes / 1024)} KB).`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error || "Unbekannter Fehler");
+        setNotice("error", `${featureTitle}: ${message}`);
+      }
+      return;
+    }
+
+    if (actionName === THEME_BACKGROUND_CLEAR_ACTION_NAME) {
+      try {
+        const removed = await removeThemeBackgroundAsset(featureId);
+        dispatchThemeBackgroundUpdatedEvent(featureId, false);
+        renderPanel();
+        if (removed) {
+          setNotice("success", `${featureTitle}: Hintergrundbild entfernt.`);
+        } else {
+          setNotice("info", `${featureTitle}: Kein gespeichertes Hintergrundbild gefunden.`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error || "Unbekannter Fehler");
+        setNotice("error", `${featureTitle}: ${message}`);
+      }
+    }
+  }
+
   function triggerFeatureSettingAction(featureId, settingKey, requestedAction = "") {
     if (!featureId || !settingKey || !state.config) {
       return;
@@ -4853,15 +5277,29 @@
       return;
     }
 
+    const actionName = String(requestedAction || field.actionName || settingKey).trim()
+      || String(settingKey);
+    if (!actionName) {
+      setNotice("error", `${feature.title}: Aktion konnte nicht ausgelöst werden.`);
+      return;
+    }
+
+    const isReservedThemeBackgroundAction = isThemeBackgroundReservedAction(actionName);
     const featureState = ensureFeatureState(featureId);
-    if (!featureState.enabled) {
+    if (!featureState.enabled && !isReservedThemeBackgroundAction) {
       setNotice("info", `${feature.title}: Zum Testen zuerst das Skript aktivieren.`);
       renderPanel();
       return;
     }
 
-    const actionName = String(requestedAction || field.actionName || settingKey).trim()
-      || String(settingKey);
+    if (isReservedThemeBackgroundAction) {
+      handleThemeBackgroundReservedAction(feature, actionName).catch((error) => {
+        debugError("AD xConfig: reserved background action failed", error);
+        setNotice("error", `${feature.title}: Aktion konnte nicht ausgeführt werden.`);
+      });
+      return;
+    }
+
     const detail = {
       source: "ad-xconfig",
       featureId,
@@ -4985,17 +5423,27 @@
         String(field.buttonLabel || field.label || "Aktion ausführen").trim()
           || "Aktion ausführen",
       );
-      const actionName = escapeHtml(String(field.actionName || field.key || field.variableName || "").trim());
+      const normalizedActionName = String(field.actionName || field.key || field.variableName || "").trim();
+      const actionName = escapeHtml(normalizedActionName);
+      const allowWhenFeatureDisabled = isThemeBackgroundReservedAction(normalizedActionName);
+      const actionEnabled = enabled || allowWhenFeatureDisabled;
       const buttonClass = field.prominent
         ? "xcfg-setting-action-btn xcfg-setting-action-btn--prominent"
         : "xcfg-setting-action-btn";
-      const helperClass = enabled
+      const helperClass = actionEnabled
         ? "xcfg-setting-action-state"
         : "xcfg-setting-action-state xcfg-setting-action-state--disabled";
-      const helperText = enabled
-        ? "Führt den Test sofort aus."
+      const reservedActionHelperText = normalizedActionName === THEME_BACKGROUND_CLEAR_ACTION_NAME
+        ? "Entfernt das pro Theme gespeicherte Bild aus AD xConfig."
+        : "Speichert das Bild zentral in AD xConfig (theme-spezifisch).";
+      const helperText = actionEnabled
+        ? (
+          allowWhenFeatureDisabled
+            ? reservedActionHelperText
+            : "Führt den Test sofort aus."
+        )
         : "Skript ist derzeit aus. Zum Testen zuerst auf \"An\" stellen.";
-      const disabledAttr = enabled ? "" : " disabled";
+      const disabledAttr = actionEnabled ? "" : " disabled";
 
       return `
         <div class="${rowClass}">
@@ -5332,6 +5780,8 @@
     }
 
     state.config = createDefaultConfig();
+    await writeStoreStrict(THEME_BACKGROUND_ASSETS_STORAGE_KEY, createEmptyThemeBackgroundAssetsStore(), { requireLocalStorage: true });
+    dispatchThemeBackgroundUpdatedEvent("", false);
     executeEnabledFeaturesFromCache("config-change");
     queueRuntimeCleanup();
     await saveConfig();
