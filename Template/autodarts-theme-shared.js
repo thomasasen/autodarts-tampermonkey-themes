@@ -270,6 +270,11 @@ div.css-y3hfdd > .css-1igwmid{
 
   const THEME_BACKGROUND_ASSETS_STORAGE_KEY = "ad-xconfig:theme-background-assets:v1";
   const THEME_BACKGROUND_UPDATED_EVENT_NAME = "ad-xconfig:theme-background-updated";
+  const THEME_SCOPE_VARIANT_ID = "ad-ext-game-variant";
+  const THEME_SCOPE_TURN_ID = "ad-ext-turn";
+  const THEME_SCOPE_PLAYER_DISPLAY_ID = "ad-ext-player-display";
+  const THEME_SCOPE_PLAYER_CARD_SELECTOR = ".ad-ext-player";
+  const THEME_SCOPE_TURN_SLOT_SELECTOR = ".ad-ext-turn-throw, .score, .suggestion";
   const THEME_FEATURE_ID_BY_SOURCE = Object.freeze({
     "template/autodarts theme x01.user.js": "theme-x01",
     "template/autodarts theme shanghai.user.js": "theme-shanghai",
@@ -280,8 +285,75 @@ div.css-y3hfdd > .css-1igwmid{
   let cachedBackgroundAssetsRaw = null;
   let cachedBackgroundAssetsMap = {};
 
+  function isElementVisibleInLayout(element) {
+    if (!(element instanceof Element) || !element.isConnected) {
+      return false;
+    }
+
+    let current = element;
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+      if (
+        current instanceof HTMLElement &&
+        (current.hidden || current.getAttribute("aria-hidden") === "true")
+      ) {
+        return false;
+      }
+
+      let style;
+      try {
+        style = window.getComputedStyle(current);
+      } catch (_) {
+        return false;
+      }
+      if (!style) {
+        return false;
+      }
+
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.visibility === "collapse"
+      ) {
+        return false;
+      }
+
+      const opacity = Number.parseFloat(style.opacity);
+      if (Number.isFinite(opacity) && opacity <= 0) {
+        return false;
+      }
+
+      current = current.parentElement;
+    }
+
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function hasActiveThemeScope() {
+    const variantEl = document.getElementById(THEME_SCOPE_VARIANT_ID);
+    const turnEl = document.getElementById(THEME_SCOPE_TURN_ID);
+    const playerDisplayEl = document.getElementById(THEME_SCOPE_PLAYER_DISPLAY_ID);
+    if (!variantEl || !turnEl || !playerDisplayEl) {
+      return false;
+    }
+
+    if (
+      !isElementVisibleInLayout(variantEl) ||
+      !isElementVisibleInLayout(turnEl) ||
+      !isElementVisibleInLayout(playerDisplayEl)
+    ) {
+      return false;
+    }
+
+    const hasPlayerCards = Boolean(
+      playerDisplayEl.querySelector(THEME_SCOPE_PLAYER_CARD_SELECTOR)
+    );
+    const hasTurnSlots = Boolean(turnEl.querySelector(THEME_SCOPE_TURN_SLOT_SELECTOR));
+    return hasPlayerCards && hasTurnSlots;
+  }
+
   function getVariantName() {
-    const variantEl = document.getElementById("ad-ext-game-variant");
+    const variantEl = document.getElementById(THEME_SCOPE_VARIANT_ID);
     return variantEl?.textContent?.trim().toLowerCase() || "";
   }
 
@@ -308,6 +380,9 @@ div.css-y3hfdd > .css-1igwmid{
   function isVariantNameActive(variantName, matchMode = "equals") {
     const expectedVariant = String(variantName || "").trim().toLowerCase();
     if (!expectedVariant) {
+      return false;
+    }
+    if (!hasActiveThemeScope()) {
       return false;
     }
 
