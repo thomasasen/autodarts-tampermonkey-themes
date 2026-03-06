@@ -2593,13 +2593,34 @@
     return error;
   }
 
+  function computeContentFingerprint(content) {
+    const text = String(content || "");
+    if (!text) {
+      return "";
+    }
+
+    let hash = 2166136261;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+
+    return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}:${text.length}`;
+  }
+
   function requestText(url) {
     if (typeof GM_xmlhttpRequest === "function") {
       return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
           method: "GET",
           url,
-          headers: { Accept: "application/vnd.github+json" },
+          headers: {
+            Accept: "application/vnd.github+json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+          nocache: true,
+          revalidate: true,
           onload: (response) => {
             if (response.status >= 200 && response.status < 300) {
               resolve(response.responseText || "");
@@ -3233,7 +3254,9 @@
       : {};
     const fileShas = {};
     paths.forEach((path) => {
-      fileShas[path] = String(files[path]?.sha || "");
+      const fileEntry = files[path];
+      const shaValue = String(fileEntry?.sha || "");
+      fileShas[path] = shaValue || computeContentFingerprint(fileEntry?.content || "");
     });
     const signature = paths
       .map((path) => `${path}@${fileShas[path] || ""}`)
