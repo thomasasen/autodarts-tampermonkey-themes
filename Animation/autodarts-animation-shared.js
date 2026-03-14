@@ -7,9 +7,194 @@
 
   const SVG_NS = "http://www.w3.org/2000/svg";
   const FEATURE_INSTANCE_GLOBAL_KEY = "__adExtFeatureInstances";
+  const DEPRECATION_BANNER_GLOBAL_KEY = "__adLegacyDeprecationBannerState";
+  const DEPRECATION_BANNER_STYLE_ID = "ad-legacy-deprecation-banner-style";
+  const DEPRECATION_BANNER_ID = "ad-legacy-deprecation-banner";
+  const DEPRECATION_COPY = Object.freeze({
+    url: "https://github.com/thomasasen/autodarts-xconfig",
+    title: "Dieses Skript ist veraltet (deprecated).",
+    body: "Dieses Legacy-Repo wird von mir nicht weiter gepflegt und wurde durch autodarts-xconfig ersetzt.",
+    benefits: "autodarts-xconfig bietet ein ueberarbeitetes Programmdesign, einen zentralen Installationspfad, mehr Stabilitaet und laufende Weiterentwicklung.",
+    cta: "Zum Nachfolger autodarts-xconfig",
+  });
   const SEGMENT_ORDER = [
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
   ];
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function getDeprecationBannerState() {
+    const existing = global[DEPRECATION_BANNER_GLOBAL_KEY];
+    if (existing && typeof existing === "object") {
+      existing.payload = DEPRECATION_COPY;
+      return existing;
+    }
+
+    const next = {
+      payload: DEPRECATION_COPY,
+      waitingForDom: false,
+    };
+    global[DEPRECATION_BANNER_GLOBAL_KEY] = next;
+    return next;
+  }
+
+  function ensureDeprecationBannerStyle() {
+    const target = document.head || document.documentElement;
+    if (!target) {
+      return false;
+    }
+
+    const cssText = `
+#${DEPRECATION_BANNER_ID} {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, calc(100vw - 1rem));
+  z-index: 2147483646;
+  pointer-events: none;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 196, 88, 0.55);
+  background: linear-gradient(135deg, rgba(54, 33, 5, 0.96), rgba(90, 45, 8, 0.92));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+  color: #fff4de;
+  pointer-events: auto;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__copy {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__title {
+  margin: 0 0 0.2rem;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__body {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.42;
+  color: rgba(255, 244, 222, 0.94);
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 219, 143, 0.72);
+  background: rgba(255, 247, 228, 0.14);
+  color: #fff7e7;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link:hover {
+  background: rgba(255, 247, 228, 0.22);
+}
+@media (max-width: 720px) {
+  #${DEPRECATION_BANNER_ID} {
+    width: calc(100vw - 0.75rem);
+    top: 0.5rem;
+  }
+  #${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__inner {
+    padding: 0.72rem 0.82rem;
+  }
+  #${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link {
+    width: 100%;
+  }
+}
+`;
+
+    const existingStyle = document.getElementById(DEPRECATION_BANNER_STYLE_ID);
+    if (existingStyle) {
+      if (existingStyle.textContent !== cssText) {
+        existingStyle.textContent = cssText;
+      }
+      if (existingStyle.parentElement !== target) {
+        target.appendChild(existingStyle);
+      }
+      return true;
+    }
+
+    const style = document.createElement("style");
+    style.id = DEPRECATION_BANNER_STYLE_ID;
+    style.textContent = cssText;
+    target.appendChild(style);
+    return true;
+  }
+
+  function ensureDeprecationBanner() {
+    const host = document.body || document.documentElement;
+    if (!host) {
+      return false;
+    }
+
+    ensureDeprecationBannerStyle();
+    const { payload } = getDeprecationBannerState();
+    let banner = document.getElementById(DEPRECATION_BANNER_ID);
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = DEPRECATION_BANNER_ID;
+      banner.setAttribute("role", "note");
+    }
+
+    banner.innerHTML = `
+      <div class="ad-legacy-deprecation-banner__inner">
+        <div class="ad-legacy-deprecation-banner__copy">
+          <p class="ad-legacy-deprecation-banner__title">${escapeHtml(payload.title)}</p>
+          <p class="ad-legacy-deprecation-banner__body">${escapeHtml(payload.body)} ${escapeHtml(payload.benefits)}</p>
+        </div>
+        <a class="ad-legacy-deprecation-banner__link" href="${escapeHtml(payload.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(payload.cta)}</a>
+      </div>
+    `;
+
+    if (banner.parentElement !== host) {
+      host.appendChild(banner);
+    }
+    return true;
+  }
+
+  function scheduleDeprecationBanner() {
+    if (ensureDeprecationBanner()) {
+      return;
+    }
+
+    const state = getDeprecationBannerState();
+    if (state.waitingForDom) {
+      return;
+    }
+    state.waitingForDom = true;
+
+    const retry = () => {
+      state.waitingForDom = false;
+      ensureDeprecationBanner();
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", retry, { once: true });
+      return;
+    }
+
+    global.setTimeout(retry, 0);
+  }
 
   function ensureStyle(styleId, cssText) {
     if (!styleId) {
@@ -612,6 +797,8 @@
     return ring;
   }
 
+  scheduleDeprecationBanner();
+
   global.autodartsAnimationShared = {
     SVG_NS,
     SEGMENT_ORDER,
@@ -639,5 +826,6 @@
     segmentAngles,
     createWedge,
     createBull,
+    ensureLegacyDeprecationBanner: scheduleDeprecationBanner,
   };
 })(window);

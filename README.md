@@ -2,12 +2,32 @@
 
 > Rein visuelle Erweiterungen für Autodarts: bessere Lesbarkeit, klarere Hinweise und optionale Effekte. Keine Änderung an Spiellogik, Scores oder Erkennung.
 
+> [!WARNING]
+> Dieses Repository ist veraltet (deprecated) und wird von mir nicht weiter gepflegt.
+> Es wurde durch [autodarts-xconfig](https://github.com/thomasasen/autodarts-xconfig) ersetzt.
+> Der Nachfolger bietet ein ueberarbeitetes Programmdesign, einen zentralen Installationspfad, mehr Stabilitaet und laufende Weiterentwicklung.
+> Neue Installationen sollten dieses Legacy-Repo nicht mehr verwenden.
+
+## Nachfolger (empfohlen)
+
+1. Tampermonkey installieren: [tampermonkey.net](https://www.tampermonkey.net/)
+2. `autodarts-xconfig` installieren: [Installieren](https://raw.githubusercontent.com/thomasasen/autodarts-xconfig/main/dist/autodarts-xconfig.user.js)
+3. `https://play.autodarts.io/` neu laden
+4. In der linken Navigation **AD xConfig** öffnen und Module direkt im Spiel konfigurieren
+
+- Repository: [thomasasen/autodarts-xconfig](https://github.com/thomasasen/autodarts-xconfig)
+- Direkter Install-Link: [autodarts-xconfig.user.js](https://raw.githubusercontent.com/thomasasen/autodarts-xconfig/main/dist/autodarts-xconfig.user.js)
+
+## Legacy-Dokumentation / Bestand
+
 ## Für wen ist das?
 
 Diese Sammlung ist für Spieler, die in Autodarts schneller erfassen wollen, was gerade wichtig ist.
 Du kannst Module einzeln aktivieren, kombinieren und direkt in **AD xConfig** anpassen.
 
-## Schnellstart (empfohlen)
+## Legacy-Schnellstart (nur fuer Bestand)
+
+Neue Installationen sollten stattdessen `autodarts-xconfig` aus dem Abschnitt oben nutzen.
 
 1. Tampermonkey installieren: [tampermonkey.net](https://www.tampermonkey.net/index.php?browser=chrome)
 2. **AD xConfig Auto Loader** installieren: [Installieren](https://github.com/thomasasen/autodarts-tampermonkey-themes/raw/refs/heads/main/Config/AD%20xConfig%20Auto%20Loader.user.js)
@@ -701,10 +721,9 @@ In der [Technischen Referenz](docs/TECHNIK-REFERENZ.md).
 
 ## Fehler und Feedback
 
-- Fehler melden: [GitHub Issues](https://github.com/thomasasen/autodarts-tampermonkey-themes/issues)
-- Bug-Formular: [Bug melden](https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%90%9E-bug-melden.md)
-- Feature-Wünsche: [Feature vorschlagen](https://github.com/thomasasen/autodarts-tampermonkey-themes/issues/new?template=%F0%9F%92%A1-feature-vorschlagen.md)
-- Diskussionen: [GitHub Discussions](https://github.com/thomasasen/autodarts-tampermonkey-themes/discussions)
+- Dieses Legacy-Repo wird nicht weiter gepflegt. Bitte keine neuen Features oder Support-Anfragen mehr hier einreichen.
+- Fehler und Weiterentwicklung: [autodarts-xconfig Issues](https://github.com/thomasasen/autodarts-xconfig/issues)
+- Diskussionen und Rueckfragen: [autodarts-xconfig Discussions](https://github.com/thomasasen/autodarts-xconfig/discussions)
 
 ## Danksagung
 

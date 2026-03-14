@@ -2,7 +2,7 @@
 // @name         AD xConfig
 // @namespace    https://github.com/thomasasen/autodarts-tampermonkey-themes
 // @version      1.0.3
-// @description  Adds a central AD xConfig menu with script discovery, configurable xConfig_ settings, and GitHub rate-limit aware RAW/cache fallback.
+// @description  Legacy AD xConfig aus dem deprecated Repo autodarts-tampermonkey-themes mit Modulverwaltung und GitHub RAW/cache fallback.
 // @author       Thomas Asen
 // @license      MIT
 // @match        *://play.autodarts.io/*
@@ -50,6 +50,17 @@
   const REPO_TECH_REFERENCE_URL = `${REPO_BASE_URL}/blob/${REPO_BRANCH}/docs/TECHNIK-REFERENZ.md`;
   const REPO_API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
   const REPO_RAW_BASE = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}`;
+  const SUCCESSOR_REPO_URL = "https://github.com/thomasasen/autodarts-xconfig";
+  const DEPRECATION_BANNER_GLOBAL_KEY = "__adLegacyDeprecationBannerState";
+  const DEPRECATION_BANNER_STYLE_ID = "ad-legacy-deprecation-banner-style";
+  const DEPRECATION_BANNER_ID = "ad-legacy-deprecation-banner";
+  const DEPRECATION_COPY = Object.freeze({
+    url: SUCCESSOR_REPO_URL,
+    title: "Dieses Skript ist veraltet (deprecated).",
+    body: "Dieses Legacy-Repo wird von mir nicht weiter gepflegt und wurde durch autodarts-xconfig ersetzt.",
+    benefits: "autodarts-xconfig bietet ein ueberarbeitetes Programmdesign, einen zentralen Installationspfad, mehr Stabilitaet und laufende Weiterentwicklung.",
+    cta: "Zum Nachfolger autodarts-xconfig",
+  });
   const GIT_API_BACKOFF_STORAGE_KEY = "ad-xconfig:git-api-backoff-until:v1";
   const GIT_API_BACKOFF_DEFAULT_MS = 10 * 60 * 1000;
   const GIT_API_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
@@ -205,6 +216,186 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
   }
+
+  function getDeprecationBannerState() {
+    const existing = window[DEPRECATION_BANNER_GLOBAL_KEY];
+    if (existing && typeof existing === "object") {
+      existing.payload = DEPRECATION_COPY;
+      return existing;
+    }
+
+    const next = {
+      payload: DEPRECATION_COPY,
+      waitingForDom: false,
+    };
+    window[DEPRECATION_BANNER_GLOBAL_KEY] = next;
+    return next;
+  }
+
+  function ensureDeprecationBannerStyle() {
+    const target = document.head || document.documentElement;
+    if (!target) {
+      return false;
+    }
+
+    const cssText = `
+#${DEPRECATION_BANNER_ID} {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, calc(100vw - 1rem));
+  z-index: 2147483646;
+  pointer-events: none;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 196, 88, 0.55);
+  background: linear-gradient(135deg, rgba(54, 33, 5, 0.96), rgba(90, 45, 8, 0.92));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+  color: #fff4de;
+  pointer-events: auto;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__copy {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__title {
+  margin: 0 0 0.2rem;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__body {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.42;
+  color: rgba(255, 244, 222, 0.94);
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 219, 143, 0.72);
+  background: rgba(255, 247, 228, 0.14);
+  color: #fff7e7;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link:hover {
+  background: rgba(255, 247, 228, 0.22);
+}
+@media (max-width: 720px) {
+  #${DEPRECATION_BANNER_ID} {
+    width: calc(100vw - 0.75rem);
+    top: 0.5rem;
+  }
+  #${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__inner {
+    padding: 0.72rem 0.82rem;
+  }
+  #${DEPRECATION_BANNER_ID} .ad-legacy-deprecation-banner__link {
+    width: 100%;
+  }
+}
+`;
+
+    const existingStyle = document.getElementById(DEPRECATION_BANNER_STYLE_ID);
+    if (existingStyle) {
+      if (existingStyle.textContent !== cssText) {
+        existingStyle.textContent = cssText;
+      }
+      if (existingStyle.parentElement !== target) {
+        target.appendChild(existingStyle);
+      }
+      return true;
+    }
+
+    const style = document.createElement("style");
+    style.id = DEPRECATION_BANNER_STYLE_ID;
+    style.textContent = cssText;
+    target.appendChild(style);
+    return true;
+  }
+
+  function ensureDeprecationBanner() {
+    const host = document.body || document.documentElement;
+    if (!host) {
+      return false;
+    }
+
+    ensureDeprecationBannerStyle();
+    const { payload } = getDeprecationBannerState();
+    let banner = document.getElementById(DEPRECATION_BANNER_ID);
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = DEPRECATION_BANNER_ID;
+      banner.setAttribute("role", "note");
+    }
+
+    banner.innerHTML = `
+      <div class="ad-legacy-deprecation-banner__inner">
+        <div class="ad-legacy-deprecation-banner__copy">
+          <p class="ad-legacy-deprecation-banner__title">${escapeHtml(payload.title)}</p>
+          <p class="ad-legacy-deprecation-banner__body">${escapeHtml(payload.body)} ${escapeHtml(payload.benefits)}</p>
+        </div>
+        <a class="ad-legacy-deprecation-banner__link" href="${escapeHtml(payload.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(payload.cta)}</a>
+      </div>
+    `;
+
+    if (banner.parentElement !== host) {
+      host.appendChild(banner);
+    }
+    return true;
+  }
+
+  function scheduleDeprecationBanner() {
+    if (ensureDeprecationBanner()) {
+      return;
+    }
+
+    const state = getDeprecationBannerState();
+    if (state.waitingForDom) {
+      return;
+    }
+    state.waitingForDom = true;
+
+    const retry = () => {
+      state.waitingForDom = false;
+      ensureDeprecationBanner();
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", retry, { once: true });
+      return;
+    }
+
+    window.setTimeout(retry, 0);
+  }
+
+  function renderDeprecationCardHtml() {
+    return `
+      <section class="xcfg-deprecation" aria-label="Legacy-Hinweis">
+        <div class="xcfg-deprecation-badge">Deprecated / Legacy</div>
+        <h2 class="xcfg-deprecation-title">${escapeHtml(DEPRECATION_COPY.title)}</h2>
+        <p class="xcfg-deprecation-text">${escapeHtml(DEPRECATION_COPY.body)}</p>
+        <p class="xcfg-deprecation-text">${escapeHtml(DEPRECATION_COPY.benefits)}</p>
+        <a class="xcfg-deprecation-link" href="${escapeHtml(DEPRECATION_COPY.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(DEPRECATION_COPY.cta)}</a>
+      </section>
+    `;
+  }
+
+  scheduleDeprecationBanner();
 
   function getFeatureRegistry() {
     return Array.isArray(state.featureRegistry) ? state.featureRegistry : [];
@@ -4292,6 +4483,57 @@
 #${PANEL_HOST_ID} .xcfg-btn--square { width: 2.5rem; min-width: 2.5rem; padding: 0; }
 
 #${PANEL_HOST_ID} .xcfg-notice { margin-top: 0.85rem; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.85rem; border: 1px solid transparent; }
+#${PANEL_HOST_ID} .xcfg-deprecation {
+  margin-top: 0.9rem;
+  padding: 1rem 1.05rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 201, 108, 0.52);
+  background: linear-gradient(145deg, rgba(61, 34, 4, 0.96), rgba(105, 56, 6, 0.9));
+  box-shadow: 0 10px 26px rgba(0,0,0,0.24);
+}
+#${PANEL_HOST_ID} .xcfg-deprecation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.56rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 222, 157, 0.45);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255, 243, 221, 0.95);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+#${PANEL_HOST_ID} .xcfg-deprecation-title {
+  margin: 0.72rem 0 0;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+#${PANEL_HOST_ID} .xcfg-deprecation-text {
+  margin: 0.45rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.9);
+}
+#${PANEL_HOST_ID} .xcfg-deprecation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.85rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 225, 166, 0.65);
+  background: rgba(255,255,255,0.1);
+  color: #fff7e7;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+#${PANEL_HOST_ID} .xcfg-deprecation-link:hover {
+  background: rgba(255,255,255,0.16);
+}
 #${PANEL_HOST_ID} .xcfg-notice--success { background: rgba(58,180,122,0.17); border-color: rgba(58,180,122,0.52); }
 #${PANEL_HOST_ID} .xcfg-notice--error { background: rgba(255,84,84,0.15); border-color: rgba(255,84,84,0.5); }
 #${PANEL_HOST_ID} .xcfg-notice--info { background: rgba(74,178,255,0.18); border-color: rgba(74,178,255,0.5); }
@@ -5768,6 +6010,7 @@
               <button type="button" class="xcfg-btn xcfg-btn--danger" data-action="reset">↺ Zurücksetzen</button>
             </div>
           </header>
+          ${renderDeprecationCardHtml()}
           ${renderGitConnectionHtml()}
           ${renderNoticeHtml()}
           ${debugOverviewNoticeHtml}
