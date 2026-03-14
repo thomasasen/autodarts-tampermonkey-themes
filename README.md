@@ -5,7 +5,7 @@
 > [!WARNING]
 > Dieses Repository ist veraltet (deprecated) und wird von mir nicht weiter gepflegt.
 > Es wurde durch [autodarts-xconfig](https://github.com/thomasasen/autodarts-xconfig) ersetzt.
-> Der Nachfolger bietet ein ueberarbeitetes Programmdesign, einen zentralen Installationspfad, mehr Stabilitaet und laufende Weiterentwicklung.
+> Der Nachfolger bietet ein überarbeitetes Programmdesign, einen zentralen Installationspfad, mehr Stabilitaet und laufende Weiterentwicklung.
 > Neue Installationen sollten dieses Legacy-Repo nicht mehr verwenden.
 
 ## Nachfolger (empfohlen)
